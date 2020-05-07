@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "SDFG Viewer (SDFV)",
     "description": "SDFG Viewer for VS Code",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "engines": {
         "vscode": "^1.43.0"
     },
@@ -22,7 +22,19 @@
         "url": "https://github.com/spcl/dace-vscode"
     },
     "icon": "icon.png",
-    "contributes": {},
+    "contributes": {
+        "languages": [
+            {
+                "id": "sdfg",
+                "extensions": [
+                    ".sdfg"
+                ],
+                "aliases": [
+                    "SDFG"
+                ]
+            }
+        ]
+    },
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
