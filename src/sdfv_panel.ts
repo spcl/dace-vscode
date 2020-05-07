@@ -164,7 +164,7 @@ export class SdfvPanel {
 
         // Load the base HTML we want to display in the webview.
         const fpBaseHtml: vscode.Uri = vscode.Uri.file(path.join(
-            this._extensionPath, 'src', 'html', 'sdfv_base_layout.html'
+            this._extensionPath, 'media', 'sdfv_base_layout.html'
         ));
         let baseHtml = fs.readFileSync(fpBaseHtml.fsPath, 'utf8');
 

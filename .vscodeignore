@@ -3,6 +3,8 @@
 out/test/**
 src/**
 .gitignore
+tslint.json
+*.code-workspace
 vsc-extension-quickstart.md
 **/tsconfig.json
 **/.eslintrc.json
