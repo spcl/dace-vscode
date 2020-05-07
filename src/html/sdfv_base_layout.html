@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SDFG Viewer</title>
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/material-icons.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/sdfv_embedded.css">
+
+    <script src="{{ CSP_SRC }}/dagre.js"></script>
+    <script src="{{ CSP_SRC }}/jquery.min.js"></script>
+    <script src="{{ CSP_SRC }}/pdfkit.standalone.js"></script>
+    <script src="{{ CSP_SRC }}/blob-stream.js"></script>
+    <script src="{{ CSP_SRC }}/canvas2pdf.js"></script>
+    <script src="{{ CSP_SRC }}/math.min.js"></script>
+
+    <script src="{{ CSP_SRC }}/global_vars.js"></script>
+    <script src="{{ CSP_SRC }}/renderer_elements.js"></script>
+    <script src="{{ CSP_SRC }}/context_menu.js"></script>
+    <script src="{{ CSP_SRC }}/sdfg_utils.js"></script>
+    <script src="{{ CSP_SRC }}/renderer.js"></script>
+</head>
+<body>
+<div id="file-reference-container">
+    <h3 id="file-reference"></h3>
+</div>
+<div>
+    <div id="search-bar" class="hidden">
+        <div id="search-container">
+            <input id="search" type="text" placeholder="Search the graph">
+        </div>
+        <div id="search-case-container">
+            <label for="search-case">
+                <input id="search-case" type="checkbox">
+                Case Sensitive
+            </label>
+        </div>
+        <div id="search-btn" class="hidden button">
+            <span>
+                Search
+            </span>
+        </div>
+        <div id="outline" class="hidden button">
+            <span>
+                SDFG Outline
+            </span>
+        </div>
+        <div class="clearfix"></div>
+    </div>
+</div>
+<div id="contents"></div>
+<div id="info-container">
+    <div id="info-header">
+        <div id="info-title-container">
+            <h3 id="info-title"></h3>
+        </div>
+        <div id="info-clear-btn" class="hidden button" onclick="clear_info_box();">
+            <span>
+                Clear Info &times;
+            </span>
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div id="info-contents"></div>
+</div>
+
+<script>
+    var sdfg_json = '{{ SDFG_JSON }}';
+    var file_name = '{{ FILE_NAME }}';
+</script>
+<script src="{{ CSP_SRC }}/sdfv.js"></script>
+<script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
+<script>
+    document.getElementById('file-reference').innerHTML = 'Showing ' + file_name;
+    init_sdfv(parse_sdfg(sdfg_json));
+</script>
+</body>
+</html>

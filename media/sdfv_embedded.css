@@ -1,0 +1,280 @@
+html {
+  height: 100%;
+  padding: 0;
+}
+
+body {
+  height: 98%;
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.hidden {
+  display: none;
+}
+
+.clearfix {
+  clear: both;
+}
+
+.button {
+  color: var(--vscode-button-foreground);
+  background-color: var(--vscode-button-background);
+  padding: .3rem .4rem;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.button > span {
+  margin: 0;
+}
+
+pre.code {
+  margin-top: 0;
+  margin-bottom: 0;
+  display: block;
+  float: left;
+  white-space: pre-wrap;
+}
+
+pre.code code {
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-right: auto;
+  padding: .3rem;
+  display: block;
+  color: #966;
+  border-radius: 3px;
+  background-color: #eee;
+}
+
+#contents {
+    position: relative;
+    resize: none;
+    width: 100%;
+    height: 50%;
+    /*border: 1px solid;*/
+    overflow: auto;
+    margin-top: 1rem;
+}
+
+#search-bar {
+  margin: .5rem 0;
+  float: left;
+}
+
+#search-bar > div {
+  display: inline-block;
+}
+
+#search-bar #search {
+  padding: .3rem .1rem;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-placeholderForeground);
+}
+
+#search-bar #search::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+}
+
+#search-bar #search-case-container {
+  height: 100%;
+  vertical-align: middle;
+}
+
+#search-bar #search-case {
+  height: 1.3rem;
+  width: 1.3rem;
+  vertical-align: middle;
+  background-color: var(--vscode-checkbox-background);
+  color: var(--vscode-checkbox-foreground);
+  border-color: var(--vscode-checkbox-border);
+}
+
+#search-bar #search-btn {
+  margin: 0 .5rem;
+}
+
+#outline-btn {
+  float: right;
+}
+
+#sdfv-toolbar {
+  position: absolute;
+  top: .5rem;
+  left: .5rem;
+}
+
+#sdfv-toolbar .sdfv-toolbar-button {
+  padding-bottom: 0;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: pointer;
+}
+
+.sdfvtooltip {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 1rem;
+  font-family: "Segoe UI", Arial, sans-serif;
+  padding: .2rem .4rem;
+  border-radius: 4px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  position: absolute;
+  display: none;
+}
+
+#contextmenu {
+  position: absolute;
+  background-color: var(--vscode-editor-background);
+  box-shadow: 0 4px 5px 3px rgba(0, 0, 0, 0.2);
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  z-index: 999;
+}
+
+#contextmenu .context_menu_option {
+  padding: .5rem 2rem .5rem .4rem;
+  font-size: 1rem;
+  font-family: "Segoe UI", Arial, sans-serif;
+  cursor: pointer;
+}
+
+#contextmenu .context_menu_option:hover {
+  background-color: var(--vscode-inputOption-activeBackground);
+}
+
+/* Checkmarks for context menu items */
+.checkmark {
+  position: absolute;
+  right: 5px;
+  height: 20px;
+  width: 20px;
+  background-color: #eee;
+}
+
+.checkmark_checked {
+  position: absolute;
+  right: 5px;
+  height: 20px;
+  width: 20px;
+  background-color: #2196F3;
+}
+
+.context_menu_option:hover .checkmark {
+  background-color: #ccc;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.context_menu_option .checkmark_checked:after {
+  content: "";
+  position: absolute;
+  display: block;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+#info-container {
+  margin-top: .5rem;
+  width: 100%;
+  height: 40%;
+}
+
+#info-title-container {
+  float: left;
+}
+
+#info-clear-btn {
+  float: right;
+}
+
+#info-clear-btn span {
+  display: block;
+  height: 100%;
+}
+
+#info-clear-btn .material-icons {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+#info-contents {
+  overflow-y: scroll;
+  height: 90%;
+  width: 100%;
+}
+
+#info-contents .info-subtitle {
+  font-size: 1rem;
+}
+
+#info-contents .material-icons {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.info-table {
+  width: 100%;
+  word-break: break-all;
+  border-collapse: collapse;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 1rem;
+}
+
+.info-table th {
+  text-align: left;
+}
+
+.info-table .key-col {
+  width: 20%;
+  min-width: 15%;
+}
+
+.info-table .val-col {
+  max-width: 85%;
+}
+
+.info-table tr {
+  border-bottom: 1px solid var(--vscode-editor-foreground);
+}
+
+.info-table tr td {
+  padding: .5rem 0;
+}
+
+.context_menu_option {
+  margin: .2rem 0 -.2rem;
+  padding: .4rem .4rem;
+  font-size: 1rem;
+  font-family: "Segoe UI", Arial, sans-serif;
+  cursor: pointer;
+  background-color: var(--vscode-editor-background);
+}
+
+.context_menu_option:hover {
+  background-color: var(--vscode-inputOption-activeBackground);
+}
