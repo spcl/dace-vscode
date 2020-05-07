@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "SDFG Viewer (SDFV)",
     "description": "SDFG Viewer for VS Code",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "engines": {
         "vscode": "^1.43.0"
     },
@@ -30,8 +30,17 @@
                     ".sdfg"
                 ],
                 "aliases": [
-                    "SDFG"
-                ]
+                    "SDFG",
+                    "sdfg"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "sdfg",
+                "scopeName": "source.sdfg",
+                "path": "./syntaxes/SDFG.tmLanguage.json"
             }
         ]
     },
