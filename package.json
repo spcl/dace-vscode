@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "SDFV",
     "description": "SDFG Viewer for VS Code",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "engines": {
         "vscode": "^1.43.0"
     },
@@ -13,6 +13,19 @@
         "*"
     ],
     "main": "./out/extension.js",
+    "publisher": "phschaad",
+    "bugs": {
+        "url": "https://github.com/spcl/dace-vscode/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/spcl/dace-vscode"
+    },
+    "galleryBanner": {
+        "color:": "#454545",
+        "theme": "dark"
+    },
+    "icon": "icon.png",
     "contributes": {},
     "scripts": {
         "vscode:prepublish": "npm run compile",
