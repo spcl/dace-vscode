@@ -21,9 +21,6 @@
     <script src="{{ CSP_SRC }}/renderer.js"></script>
 </head>
 <body>
-<div id="file-reference-container">
-    <h3 id="file-reference"></h3>
-</div>
 <div>
     <div id="search-bar" class="hidden">
         <div id="search-container">
@@ -71,8 +68,23 @@
 <script src="{{ CSP_SRC }}/sdfv.js"></script>
 <script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
 <script>
-    document.getElementById('file-reference').innerHTML = 'Showing ' + file_name;
     init_sdfv(parse_sdfg(sdfg_json));
+
+    // Reference to the VSCode API.
+    const vscode = acquireVsCodeApi();
+
+    // Add a listener to update the content when the extension calls for it.
+    window.addEventListener('message', e => {
+        const message = e.data;
+        switch (message.type) {
+            case 'update':
+                const new_json = message.text;
+                if (renderer)
+                    renderer.destroy();
+                init_sdfv(parse_sdfg(new_json));
+                return;
+        }
+    });
 </script>
 </body>
 </html>
