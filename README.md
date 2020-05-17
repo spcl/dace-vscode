@@ -8,13 +8,20 @@ of [DaCe](https://github.com/spcl/dace).
 ## Features
 
 Provides an SDFG viewing panel which:
-- opens to the side automatically, when you open up a valid SDFG file
+- opens automatically, when you open up a valid SDFG file
   (file ending in `.sdfg`, JSON formatted).
-- Always updates to show the last looked at SDFG.
-- Auto-updates the SDFG Viewer when the file is saved from within VS Code.
+- Auto-updates the SDFG Viewer when the file changed on disk.
+
+You can switch between the custom SDFG viewer and a standard text editor
+by clicking the option `Reopen with...` in the editor's three-dot-menu in
+the top right.
 
 ## Release Notes
 
 ### 0.1.0
 
-Initial release of SDFV for VS Code
+Initial release of SDFV for VS Code.
+
+### 0.1.2
+
+SDFG Viewer is now registered as a custom text editor for `.sdfg` files.
