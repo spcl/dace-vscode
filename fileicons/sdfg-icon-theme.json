@@ -1,0 +1,10 @@
+{
+    "iconDefinitions": {
+        "_sdfg_file": {
+            "iconPath": "./sdfg.svg"
+        },
+    },
+    "fileExtensions": {
+        "sdfg": "_sdfg_file"
+    },
+}
