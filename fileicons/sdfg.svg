@@ -6,12 +6,12 @@
 	.st0{fill:none;stroke:#9ECBFF;stroke-width:20;stroke-miterlimit:8;}
 	.st1{fill:#9ECBFF;stroke:#9ECBFF;stroke-miterlimit:8;}
 </style>
-<polygon class="st0" points="28.3,234.1 55.5,207.1 281.8,207.1 309,234.1 309,272.5 281.8,299.7 55.5,299.7 28.3,272.5 "/>
-<polygon class="st0" points="30.9,127.6 82.8,37.6 257.3,37.6 309,127.6 "/>
-<line class="st0" x1="171.3" y1="124.2" x2="171.3" y2="165.2"/>
-<polygon class="st1" points="148.6,158.5 171.3,197.8 194,158.5 "/>
-<line class="st0" x1="258" y1="124.2" x2="258" y2="165.2"/>
-<polygon class="st1" points="235.3,158.5 258,197.8 280.7,158.5 "/>
-<line class="st0" x1="84.6" y1="125.6" x2="84.6" y2="166.6"/>
-<polygon class="st1" points="62,160 84.6,199.3 107.3,160 "/>
+<polygon class="st0" points="90.1,225.4 111.8,203.8 292.7,203.8 314.4,225.4 314.4,256.1 292.7,277.8 111.8,277.8 90.1,256.1 "/>
+<polygon class="st0" points="92.1,140.3 133.6,68.3 273.1,68.3 314.4,140.3 "/>
+<line class="st0" x1="204.4" y1="137.5" x2="204.4" y2="170.3"/>
+<polygon class="st1" points="186.2,165 204.4,196.4 222.5,165 "/>
+<line class="st0" x1="273.7" y1="137.5" x2="273.7" y2="170.3"/>
+<polygon class="st1" points="255.5,165 273.7,196.4 291.8,165 "/>
+<line class="st0" x1="135.1" y1="138.7" x2="135.1" y2="171.4"/>
+<polygon class="st1" points="117,166.2 135.1,197.6 153.2,166.2 "/>
 </svg>

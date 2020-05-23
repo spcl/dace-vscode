@@ -38,7 +38,7 @@
         "iconThemes": [
             {
                 "id": "sdfgicon",
-                "label": "SDFG Icons",
+                "label": "Seti + SDFG Extension",
                 "path": "./fileicons/sdfg-icon-theme.json"
             }
         ]
