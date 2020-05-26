@@ -4,9 +4,11 @@ html {
 }
 
 body {
-  height: 98%;
+  height: 100%;
   margin: 0;
   font-family: "Segoe UI", Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
 .hidden {
@@ -52,23 +54,42 @@ pre.code code {
   background-color: #eee;
 }
 
+#split-container {
+  height: 100%;
+  width: 100%;
+  display: block;
+  position: relative;
+  overflow: hidden;
+  padding-top: 1rem;
+}
+
+.gutter {
+  background-color: var(--vscode-scrollbarSlider-background);
+  background-repeat: no-repeat;
+  background-position: 50%;
+}
+
+.gutter.gutter-vertical {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=');
+  cursor: row-resize;
+}
+
+.gutter.gutter-horizontal {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+  cursor: col-resize;
+}
+
 #contents {
     position: relative;
-    resize: none;
     width: 100%;
-    height: 50%;
-    /*border: 1px solid;*/
-    overflow: auto;
-    margin-top: 1rem;
+    height: 100%;
+    overflow: hidden;
 }
 
 #search-bar {
   margin: .5rem 0;
-  float: left;
-}
-
-#search-bar > div {
-  display: inline-block;
+  display: flex;
+  flex-direction: row;
 }
 
 #search-bar #search {
@@ -98,10 +119,6 @@ pre.code code {
 
 #search-bar #search-btn {
   margin: 0 .5rem;
-}
-
-#outline-btn {
-  float: right;
 }
 
 #sdfv-toolbar {
@@ -201,7 +218,9 @@ pre.code code {
 #info-container {
   margin-top: .5rem;
   width: 100%;
+  /*
   height: 40%;
+  */
 }
 
 #info-title-container {

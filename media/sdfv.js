@@ -16,7 +16,6 @@ function init_sdfv(sdfg) {
         if (renderer)
             setTimeout(() => outline(renderer, renderer.graph), 1);
     });
-    $('#search-bar').show();
     $('#search-btn').click(function(e){
         if (renderer)
             setTimeout(() => {find_in_graph(renderer, renderer.graph, $('#search').val(),
