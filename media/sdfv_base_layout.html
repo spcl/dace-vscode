@@ -94,12 +94,14 @@
             }
         });
 
-    Split(['#contents', '#info-container'], {
-        sizes: [60, 40],
-        minSize: [300, 200],
-        direction: 'vertical',
-        cursor: 'row-resize',
-    });
-</script>
+        Split(['#contents', '#info-container'], {
+            sizes: [60, 40],
+            minSize: [0, 0],
+            snapOffset: 10,
+            direction: 'vertical',
+            cursor: 'row-resize',
+        });
+    </script>
 </body>
+
 </html>
