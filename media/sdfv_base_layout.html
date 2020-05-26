@@ -13,6 +13,7 @@
     <script src="{{ CSP_SRC }}/blob-stream.js"></script>
     <script src="{{ CSP_SRC }}/canvas2pdf.js"></script>
     <script src="{{ CSP_SRC }}/math.min.js"></script>
+    <script src="{{ CSP_SRC }}/split.min.js"></script>
 
     <script src="{{ CSP_SRC }}/global_vars.js"></script>
     <script src="{{ CSP_SRC }}/renderer_elements.js"></script>
@@ -21,8 +22,8 @@
     <script src="{{ CSP_SRC }}/renderer.js"></script>
 </head>
 <body>
-<div>
-    <div id="search-bar" class="hidden">
+<div id="top-bar">
+    <div id="search-bar">
         <div id="search-container">
             <input id="search" type="text" placeholder="Search the graph">
         </div>
@@ -32,33 +33,35 @@
                 Case Sensitive
             </label>
         </div>
-        <div id="search-btn" class="hidden button">
+        <div id="search-btn" class="button">
             <span>
                 Search
             </span>
         </div>
-        <div id="outline" class="hidden button">
+        <div id="outline" class="button">
             <span>
                 SDFG Outline
             </span>
         </div>
-        <div class="clearfix"></div>
     </div>
 </div>
-<div id="contents"></div>
-<div id="info-container">
-    <div id="info-header">
-        <div id="info-title-container">
-            <h3 id="info-title"></h3>
+
+<div id="split-container">
+    <div id="contents"></div>
+    <div id="info-container">
+        <div id="info-header">
+            <div id="info-title-container">
+                <h3 id="info-title"></h3>
+            </div>
+            <div id="info-clear-btn" class="hidden button" onclick="clear_info_box();">
+                <span>
+                    Clear Info &times;
+                </span>
+            </div>
+            <div class="clearfix"></div>
         </div>
-        <div id="info-clear-btn" class="hidden button" onclick="clear_info_box();">
-            <span>
-                Clear Info &times;
-            </span>
-        </div>
-        <div class="clearfix"></div>
+        <div id="info-contents"></div>
     </div>
-    <div id="info-contents"></div>
 </div>
 
 <script>
@@ -84,6 +87,13 @@
                 init_sdfv(parse_sdfg(new_json));
                 return;
         }
+    });
+
+    Split(['#contents', '#info-container'], {
+        sizes: [60, 40],
+        minSize: [300, 200],
+        direction: 'vertical',
+        cursor: 'row-resize',
     });
 </script>
 </body>
