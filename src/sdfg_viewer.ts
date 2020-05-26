@@ -74,7 +74,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      * @returns        HTML to be displayed
      */
     private getHtml(webview: vscode.Webview,
-                    document: vscode.TextDocument): string {
+        document: vscode.TextDocument): string {
         // Load the base HTML we want to display in the webview/editor.
         const fpBaseHtml: vscode.Uri = vscode.Uri.file(path.join(
             this.context.extensionPath, 'media', 'sdfv_base_layout.html'
