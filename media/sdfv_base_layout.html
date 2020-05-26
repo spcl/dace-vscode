@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -21,73 +22,77 @@
     <script src="{{ CSP_SRC }}/sdfg_utils.js"></script>
     <script src="{{ CSP_SRC }}/renderer.js"></script>
 </head>
-<body>
-<div id="top-bar">
-    <div id="search-bar">
-        <div id="search-container">
-            <input id="search" type="text" placeholder="Search the graph">
-        </div>
-        <div id="search-case-container">
-            <label for="search-case">
-                <input id="search-case" type="checkbox">
-                Case Sensitive
-            </label>
-        </div>
-        <div id="search-btn" class="button">
-            <span>
-                Search
-            </span>
-        </div>
-        <div id="outline" class="button">
-            <span>
-                SDFG Outline
-            </span>
-        </div>
-    </div>
-</div>
 
-<div id="split-container">
-    <div id="contents"></div>
-    <div id="info-container">
-        <div id="info-header">
-            <div id="info-title-container">
-                <h3 id="info-title"></h3>
+<body>
+    <div id="top-bar">
+        <div id="search-bar">
+            <div id="search-container">
+                <input id="search" type="text" placeholder="Search the graph">
             </div>
-            <div id="info-clear-btn" class="hidden button" onclick="clear_info_box();">
+            <div id="search-case-container">
+                <label for="search-case">
+                    <input id="search-case" type="checkbox">
+                    Case Sensitive
+                </label>
+            </div>
+            <div id="search-btn" class="button">
                 <span>
-                    Clear Info &times;
+                    Search
                 </span>
             </div>
-            <div class="clearfix"></div>
+            <div id="outline" class="button">
+                <span>
+                    SDFG Outline
+                </span>
+            </div>
         </div>
-        <div id="info-contents"></div>
     </div>
-</div>
 
-<script>
-    var sdfg_json = '{{ SDFG_JSON }}';
-    var file_name = '{{ FILE_NAME }}';
-</script>
-<script src="{{ CSP_SRC }}/sdfv.js"></script>
-<script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
-<script>
-    init_sdfv(parse_sdfg(sdfg_json));
+    <div id="split-container">
+        <div id="contents"></div>
+        <div id="info-container">
+            <div id="info-header">
+                <div id="info-title-container">
+                    <h3 id="info-title"></h3>
+                </div>
+                <div id="info-clear-btn" class="hidden button" onclick="clear_info_box();">
+                    <span>
+                        Clear Info &times;
+                    </span>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+            <div id="info-contents"></div>
+        </div>
+    </div>
 
-    // Reference to the VSCode API.
-    const vscode = acquireVsCodeApi();
+    <script>
+        var sdfg_json = '{{ SDFG_JSON }}';
+        var file_name = '{{ FILE_NAME }}';
+    </script>
+    <script src="{{ CSP_SRC }}/sdfv.js"></script>
+    <script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
+    <script>
+        init_sdfv(parse_sdfg(sdfg_json));
 
-    // Add a listener to update the content when the extension calls for it.
-    window.addEventListener('message', e => {
-        const message = e.data;
-        switch (message.type) {
-            case 'update':
-                const new_json = message.text;
-                if (renderer)
-                    renderer.destroy();
-                init_sdfv(parse_sdfg(new_json));
-                return;
-        }
-    });
+        // Reference to the VSCode API.
+        const vscode = acquireVsCodeApi();
+
+        // Add a listener to update the content when the extension calls for it.
+        window.addEventListener('message', e => {
+            const message = e.data;
+            switch (message.type) {
+                case 'update':
+                    const new_json = message.text;
+                    let user_transform = null;
+                    if (renderer) {
+                        user_transform = renderer.canvas_manager.user_transform;
+                        renderer.destroy();
+                    }
+                    init_sdfv(parse_sdfg(new_json), user_transform);
+                    return;
+            }
+        });
 
     Split(['#contents', '#info-container'], {
         sizes: [60, 40],
