@@ -25,3 +25,9 @@ Initial release of SDFV for VS Code.
 ### 0.1.2
 
 SDFG Viewer is now registered as a custom text editor for `.sdfg` files.
+
+### 0.1.5
+
+Added support for dark mode, added SDFG file icons, and made the border
+between the graph and the info box a draggable border, such that you can
+now decide how large the info box should be.
