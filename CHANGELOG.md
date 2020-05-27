@@ -13,3 +13,8 @@ Initial release of SDFV for VS Code
 
 - Added draggable separator bar to resize canvas/info-box
 - Removed obsolete scrollbars and changed layout to flexbox layout
+
+## 0.1.6
+
+- Translation and zoom is retained upon external reloading of the SDFG
+- Draggable splitter behavior improvements w.r.t. snapping, minimum sizes, and dragging out of bounds
