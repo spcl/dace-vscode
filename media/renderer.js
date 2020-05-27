@@ -865,7 +865,7 @@ function relayout_state(ctx, sdfg_state, sdfg, sdfg_list, state_parent_list) {
 }
 
 class SDFGRenderer {
-    constructor(sdfg, container, on_mouse_event = null) {
+    constructor(sdfg, container, on_mouse_event = null, user_transform = null) {
         // DIODE/SDFV-related fields
         this.sdfg = sdfg;
         this.sdfg_list = {};
@@ -895,7 +895,7 @@ class SDFGRenderer {
         this.drag_second_start = null; // Null if two touch points are not activated
         this.external_mouse_handler = on_mouse_event;
 
-        this.init_elements();
+        this.init_elements(user_transform);
     }
 
     destroy() {
@@ -916,7 +916,7 @@ class SDFGRenderer {
     }
 
     // Initializes the DOM
-    init_elements() {
+    init_elements(user_transform) {
 
         this.canvas = document.createElement('canvas');
         this.canvas.style = 'background-color: inherit';
@@ -1009,6 +1009,8 @@ class SDFGRenderer {
 
         // Translation/scaling management
         this.canvas_manager = new CanvasManager(this.ctx, this, this.canvas);
+        if (user_transform !== null)
+            this.user_transform = user_transform;
 
         // Resize event for container
         let observer = new MutationObserver((mutations) => { this.onresize(); this.draw_async(); });
@@ -1023,8 +1025,9 @@ class SDFGRenderer {
         // Set mouse event handlers
         this.set_mouse_handlers();
 
-        // Set initial zoom
-        this.zoom_to_view();
+        // Set initial zoom, if not already set
+        if (user_transform === null)
+            this.zoom_to_view();
 
         // Queue first render
         this.draw_async();
