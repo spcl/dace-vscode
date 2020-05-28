@@ -1010,7 +1010,7 @@ class SDFGRenderer {
         // Translation/scaling management
         this.canvas_manager = new CanvasManager(this.ctx, this, this.canvas);
         if (user_transform !== null)
-            this.user_transform = user_transform;
+            this.canvas_manager.user_transform = user_transform;
 
         // Resize event for container
         let observer = new MutationObserver((mutations) => { this.onresize(); this.draw_async(); });
