@@ -931,6 +931,7 @@ class SDFGRenderer {
         try {
             ContextMenu;
             d = document.createElement('button');
+            d.className = 'button';
             d.innerHTML = '<i class="material-icons">menu</i>';
             d.style = 'padding-bottom: 0px; user-select: none';
             let that = this;
@@ -956,6 +957,7 @@ class SDFGRenderer {
 
         // Zoom to fit
         d = document.createElement('button');
+        d.className = 'button';
         d.innerHTML = '<i class="material-icons">filter_center_focus</i>';
         d.style = 'padding-bottom: 0px; user-select: none';
         d.onclick = () => this.zoom_to_view();
@@ -964,6 +966,7 @@ class SDFGRenderer {
 
         // Collapse all
         d = document.createElement('button');
+        d.className = 'button';
         d.innerHTML = '<i class="material-icons">unfold_less</i>';
         d.style = 'padding-bottom: 0px; user-select: none';
         d.onclick = () => this.collapse_all();
@@ -972,6 +975,7 @@ class SDFGRenderer {
 
         // Expand all
         d = document.createElement('button');
+        d.className = 'button';
         d.innerHTML = '<i class="material-icons">unfold_more</i>';
         d.style = 'padding-bottom: 0px; user-select: none';
         d.onclick = () => this.expand_all();
@@ -980,6 +984,7 @@ class SDFGRenderer {
 
         // Enter object moving mode
         d = document.createElement('button');
+        d.className = 'button';
         d.innerHTML = '<i class="material-icons">open_with</i>';
         d.style = 'padding-bottom: 0px; user-select: none';
         d.onclick = () => {

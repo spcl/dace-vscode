@@ -35,6 +35,13 @@ body {
   margin: 0;
 }
 
+button {
+ border: 0;
+ margin: 2px;
+ background: none;
+ box-shadow: none;
+}
+
 pre.code {
   margin-top: 0;
   margin-bottom: 0;
