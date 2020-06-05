@@ -18,3 +18,9 @@ Initial release of SDFV for VS Code
 
 - Translation and zoom is retained upon external reloading of the SDFG
 - Draggable splitter behavior improvements w.r.t. snapping, minimum sizes, and dragging out of bounds
+
+## 0.1.7
+
+- Inherit SDFV button styles from VSCode
+- Inter-State edges are now color friendlier
+- Added DaCe to the plugin name for visibility and discoverability
