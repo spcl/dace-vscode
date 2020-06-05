@@ -1,4 +1,4 @@
-# SDFV in VS Code
+# DaCe SDFG Viewer (SDFV) in VS Code
 
 This VS Code extension aims to provide a viewing panel for
 [SDFGs](http://spcl.inf.ethz.ch/Research/DAPP/) inside of VS Code. It
