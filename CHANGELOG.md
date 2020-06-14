@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.8
+
+- Made canvas resize correctly when VSCode window or editor is resized.
+
 ## 0.1.7
 
 - Inherit SDFV button styles from VSCode

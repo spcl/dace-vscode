@@ -23,7 +23,7 @@
     <script src="{{ CSP_SRC }}/renderer.js"></script>
 </head>
 
-<body>
+<body onresize="rendererSendResize();">
     <div id="top-bar">
         <div id="search-bar">
             <div id="search-container">
@@ -93,6 +93,15 @@
                     return;
             }
         });
+
+        // Resize the canvas correctly if the renderer exists. This gets
+        // called whenever the body's size changes.
+        function rendererSendResize() {
+            if (renderer) {
+                renderer.onresize();
+                renderer.draw_async();
+            }
+        }
 
         Split(['#contents', '#info-container'], {
             sizes: [60, 40],
