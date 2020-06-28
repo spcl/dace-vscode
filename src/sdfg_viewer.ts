@@ -60,11 +60,36 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.onDidReceiveMessage(e => {
             switch (e.type) {
                 case 'gotoSource':
-                    console.log(e.file_path);
-                    console.log(e.startRow);
-                    console.log(e.startChar);
-                    console.log(e.endRow);
-                    console.log(e.endChar);
+                    if (fs.existsSync(path.normalize(
+                        vscode.workspace.rootPath + '/' + e.file_path))) {
+                        const fileUri: vscode.Uri =vscode.Uri.file(
+                            e.file_path
+                        );
+                        vscode.workspace.openTextDocument(fileUri).then(
+                            (doc: vscode.TextDocument) => {
+                                vscode.window.showTextDocument(
+                                    doc,
+                                    1,
+                                    false
+                                ).then(editor => {
+                                    const startPos = new vscode.Position(
+                                        e.startRow, e.startChar
+                                    );
+                                    const endPos = new vscode.Position(
+                                        e.endRow, e.endChar
+                                    );
+                                    const range = new vscode.Range(
+                                        startPos, endPos
+                                    );
+                                    editor.revealRange(range);
+                                });
+                            }
+                        );
+                    } else {
+                        console.log('File not found at: ' +
+                            path.normalize(
+                                vscode.workspace.rootPath + '/' + e.file_path));
+                    }
                     return;
             }
         });
