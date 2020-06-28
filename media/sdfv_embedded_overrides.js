@@ -37,6 +37,11 @@ function clear_info_box() {
  * @param {*} elem  The element to display info about
  */
 function fill_info_embedded(elem) {
+    const gotoSourceBtn = $('#goto-source-btn');
+    // Clear and hide the go to source button.
+    gotoSourceBtn.hide();
+    gotoSourceBtn.off('click');
+
     if (elem) {
         document.getElementById('info-title').innerText =
             elem.type() + ' ' + elem.label();
@@ -80,6 +85,21 @@ function fill_info_embedded(elem) {
             );
             if (val === null || val === '')
                 continue;
+
+            if (attr[0] === 'debuginfo') {
+                gotoSourceBtn.on('click', function() {
+                    gotoSource(
+                        attr[1].filename,
+                        attr[1].start_line,
+                        attr[1].start_column,
+                        attr[1].end_line,
+                        attr[1].end_column
+                    );
+                });
+                gotoSourceBtn.show();
+                continue;
+            }
+
             const row = $('<tr>').appendTo(attr_table_body);
             $('<th>', {
                 'class': 'key-col',
@@ -141,7 +161,7 @@ function fill_info_embedded(elem) {
             }
         }
 
-        $('#info-clear-button').show();
+        $('#info-clear-btn').show();
     } else {
         clear_info_box();
     }

@@ -59,6 +59,13 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         // Handle received messages from the webview.
         webviewPanel.webview.onDidReceiveMessage(e => {
             switch (e.type) {
+                case 'gotoSource':
+                    console.log(e.file_path);
+                    console.log(e.startRow);
+                    console.log(e.startChar);
+                    console.log(e.endRow);
+                    console.log(e.endChar);
+                    return;
             }
         });
 
