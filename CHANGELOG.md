@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.10
+
+- Added back language support to automatically suggest the extension for SDFG
+  files.
+
 ## 0.1.9
 
 - Added jump to (Python) source functionality for tasklets.

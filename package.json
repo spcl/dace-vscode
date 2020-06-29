@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Viewer (SDFV)",
     "description": "DaCe SDFG Viewer (SDFV) for VS Code",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "engines": {
         "vscode": "^1.45.1"
     },
@@ -23,6 +23,26 @@
     },
     "icon": "icon.png",
     "contributes": {
+        "languages": [
+            {
+                "id": "sdfg",
+                "extensions": [
+                    ".sdfg"
+                ],
+                "aliases": [
+                    "SDFG",
+                    "sdfg"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "sdfg",
+                "scopeName": "source.sdfg",
+                "path": "./syntaxes/SDFG.tmLanguage.json"
+            }
+        ],
         "customEditors": [
             {
                 "viewType": "sdfgCustom.sdfv",
