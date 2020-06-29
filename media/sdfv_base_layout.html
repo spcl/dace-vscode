@@ -60,6 +60,7 @@
                         Go to source
                     </span>
                 </div>
+                <div class="flex-spacer"></div>
                 <div id="info-clear-btn" class="hidden button" onclick="clear_info_box();">
                     <span>
                         Clear Info &times;
@@ -99,6 +100,8 @@
             }
         });
 
+        // Send a request to the extension to jump to a specific source code
+        // file and location, if it exists.
         function gotoSource(filePath, startRow, startChar, endRow, endChar) {
             vscode.postMessage({
                 type: 'gotoSource',

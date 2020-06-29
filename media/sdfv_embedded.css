@@ -232,12 +232,22 @@ pre.code code {
   overflow-y: scroll;
 }
 
-#info-title-container {
-  float: left;
+#info-header {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+}
+
+.flex-spacer {
+  flex-grow: 1;
+}
+
+#goto-source-btn {
+  margin: 0 1rem;
 }
 
 #info-clear-btn {
-  float: right;
+  margin: 0 1rem;
 }
 
 #info-clear-btn span {

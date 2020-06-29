@@ -60,35 +60,34 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.onDidReceiveMessage(e => {
             switch (e.type) {
                 case 'gotoSource':
-                    if (fs.existsSync(path.normalize(
-                        vscode.workspace.rootPath + '/' + e.file_path))) {
-                        const fileUri: vscode.Uri =vscode.Uri.file(
-                            e.file_path
-                        );
+                    // We want to jump to a specific file and location if it
+                    // exists.
+                    const filePath: string = path.normalize(
+                        vscode.workspace.rootPath + '/' + e.file_path
+                    );
+                    if (fs.existsSync(filePath)) {
+                        // The file exists, load it and show it in a new
+                        // editor, highlighting the indicated range.
+                        const fileUri: vscode.Uri = vscode.Uri.file(filePath);
                         vscode.workspace.openTextDocument(fileUri).then(
                             (doc: vscode.TextDocument) => {
+                                const startPos = new vscode.Position(
+                                    e.startRow, e.startChar
+                                );
+                                const endPos = new vscode.Position(
+                                    e.endRow, e.endChar
+                                );
+                                const range = new vscode.Range(
+                                    startPos, endPos
+                                );
                                 vscode.window.showTextDocument(
-                                    doc,
-                                    1,
-                                    false
-                                ).then(editor => {
-                                    const startPos = new vscode.Position(
-                                        e.startRow, e.startChar
-                                    );
-                                    const endPos = new vscode.Position(
-                                        e.endRow, e.endChar
-                                    );
-                                    const range = new vscode.Range(
-                                        startPos, endPos
-                                    );
-                                    editor.revealRange(range);
-                                });
+                                    doc, {
+                                        preview: true,
+                                        selection: range,
+                                    }
+                                );
                             }
                         );
-                    } else {
-                        console.log('File not found at: ' +
-                            path.normalize(
-                                vscode.workspace.rootPath + '/' + e.file_path));
                     }
                     return;
             }

@@ -28,6 +28,7 @@ function clear_info_box() {
     $('#info-contents').html('');
     $('#info-title').text('');
     $('#info-clear-btn').hide();
+    $('#goto-source-btn').hide();
 }
 
 /**
