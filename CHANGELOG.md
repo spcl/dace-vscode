@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.9
+
+- Added jump to (Python) source functionality for tasklets.
+
 ## 0.1.8
 
 - Made canvas resize correctly when VSCode window or editor is resized.

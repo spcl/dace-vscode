@@ -16,18 +16,5 @@ You can switch between the custom SDFG viewer and a standard text editor
 by clicking the option `Reopen with...` in the editor's three-dot-menu in
 the top right.
 
-## Release Notes
-
-### 0.1.0
-
-Initial release of SDFV for VS Code.
-
-### 0.1.2
-
-SDFG Viewer is now registered as a custom text editor for `.sdfg` files.
-
-### 0.1.5
-
-Added support for dark mode, added SDFG file icons, and made the border
-between the graph and the info box a draggable border, such that you can
-now decide how large the info box should be.
+When viewing a tasklet referencing a piece of Python code, you can jump to the
+corresponding lines of Python code with a button click.
