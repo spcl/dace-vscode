@@ -42,6 +42,7 @@ function fill_info_embedded(elem) {
     // Clear and hide the go to source button.
     gotoSourceBtn.hide();
     gotoSourceBtn.off('click');
+    gotoSourceBtn.prop('title', '');
 
     if (elem) {
         document.getElementById('info-title').innerText =
@@ -97,6 +98,8 @@ function fill_info_embedded(elem) {
                         attr[1].end_column
                     );
                 });
+                gotoSourceBtn.prop('title',
+                    attr[1].filename + ':' + attr[1].start_line);
                 gotoSourceBtn.show();
                 continue;
             }

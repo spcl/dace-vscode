@@ -88,6 +88,10 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
                                 );
                             }
                         );
+                    } else {
+                        vscode.window.showInformationMessage(
+                            'Could not find file ' + filePath
+                        );
                     }
                     return;
             }
