@@ -62,9 +62,13 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
                 case 'gotoSource':
                     // We want to jump to a specific file and location if it
                     // exists.
-                    const filePath: string = path.normalize(
-                        vscode.workspace.rootPath + '/' + e.file_path
-                    );
+                    let filePath: string;
+                    if (path.isAbsolute(e.file_path))
+                        filePath = e.file_path;
+                    else
+                        filePath = path.normalize(
+                            vscode.workspace.rootPath + '/' + e.file_path
+                        );
                     if (fs.existsSync(filePath)) {
                         // The file exists, load it and show it in a new
                         // editor, highlighting the indicated range.
@@ -82,9 +86,9 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
                                 );
                                 vscode.window.showTextDocument(
                                     doc, {
-                                        preview: true,
-                                        selection: range,
-                                    }
+                                    preview: true,
+                                    selection: range,
+                                }
                                 );
                             }
                         );
