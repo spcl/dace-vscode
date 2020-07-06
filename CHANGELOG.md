@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.1.11
+
+- Updated the renderer with a new version as found in upstream DaCe.
+- A number of improvements to the `Go to source` functionality:
+  - `Go to source` buttons now show a tooltip on hovering, indicating what file
+    and line the code is located at.
+  - If the `Go to source` button fails to find the file referenced, it will now
+    display an error notification as well as the expected file path.
+  - The `Go to source` button can now handle absolute paths.
+
 ## 0.1.10
 
 - Added back language support to automatically suggest the extension for SDFG
