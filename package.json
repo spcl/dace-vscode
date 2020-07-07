@@ -10,7 +10,8 @@
         "Other"
     ],
     "activationEvents": [
-        "onCustomEditor:sdfgCustom.sdfv"
+        "onCustomEditor:sdfgCustom.sdfv",
+        "onView:transformationView"
     ],
     "main": "./out/extension.js",
     "publisher": "phschaad",
@@ -61,7 +62,26 @@
                 "label": "Seti + SDFG Extension",
                 "path": "./fileicons/sdfg-icon-theme.json"
             }
-        ]
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "transformation-explorer",
+                    "title": "SDFG Transformations",
+                    "icon": "media/dace-hollow.svg"
+                }
+            ]
+        },
+        "views": {
+            "transformation-explorer": [
+                {
+                    "id": "transformationView",
+                    "name": "SDFG Transformations",
+                    "icon": "media/dace-hollow.svg",
+                    "contextualTitle": "SDFG Transformation Explorer"
+                }
+            ]
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
