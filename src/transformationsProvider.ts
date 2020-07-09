@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 
 import { Transformation } from './transformation';
-import { config } from 'process';
+import { request } from 'http';
 
 export class TransformationsProvider
 implements vscode.TreeDataProvider<Transformation> {
@@ -12,6 +12,64 @@ implements vscode.TreeDataProvider<Transformation> {
     readonly onDidChangeTreeData: vscode.Event<Transformation | null> =
         this._onDidChangeTreeData.event;
 
+    private async getPythonPath(document: vscode.TextDocument | null) {
+        try {
+            let pyExt = vscode.extensions.getExtension('ms-python.python');
+            if (!pyExt)
+                return 'python';
+
+            if (pyExt.packageJSON?.featureFlags?.usingNewInterpreterStorage) {
+                if (!pyExt.isActive)
+                    await pyExt.activate();
+                const pythonPath = pyExt.exports.settings.getExecutionDetails ?
+                    pyExt.exports.settings.getExecutionDetails(document?.uri).execCommand :
+                    pyExt.exports.settings.getExecutionCommand(document?.uri);
+                return pythonPath ? pythonPath.join(' ') : 'python';
+            } else {
+                if (document)
+                    return vscode.workspace.getConfiguration(
+                        'python',
+                        document.uri
+                    ).get<string>('pythonPath');
+                else
+                    return vscode.workspace.getConfiguration(
+                        'python'
+                    ).get<string>('pythonPath');
+            }
+        } catch (ignored) {
+            return 'python';
+        }
+    }
+
+    private async startPythonDaemon() {
+        const pythonPath = await this.getPythonPath(null);
+        const daemon = cp.spawn(
+            pythonPath,
+            ['-m', 'dace.transformation.interface.vscode']
+        );
+        /*
+        daemon.stdout.on('data', (data) => {
+            console.log(data.toString());
+        });
+        daemon.stderr.on('data', (data) => {
+            console.error(data.toString());
+        });
+        */
+
+        setTimeout(() => {
+            const req = request({
+                host: 'localhost',
+                port: 5000,
+                path: '/',
+                method: 'GET',
+            }, response => {
+                this.loadTransformations();
+                //console.warn(response.statusCode);
+            });
+            req.end();
+        }, 1000);
+    }
+
     constructor(private context: vscode.ExtensionContext) {
         vscode.window.onDidChangeActiveTextEditor(
             () => this.onActiveEditorChanged
@@ -20,25 +78,9 @@ implements vscode.TreeDataProvider<Transformation> {
             e => this.onDocumentChanged(e)
         );
 
-        this.onActiveEditorChanged();
+        this.startPythonDaemon();
 
-        console.log('Starting Python deamon');
-        const pythonConfig = vscode.workspace.getConfiguration('python');
-        const pythonPath = pythonConfig.get<string>('pythonPath') || null;
-        if (!pythonPath) {
-            vscode.window.showErrorMessage('Failed to find Python executable');
-        } else {
-            cp.exec(
-                '"' + pythonPath + '" -c "print(\'Hello world\')',
-                (err, stdout, stderr) => {
-                    console.log('stdout: ' + stdout);
-                    console.log('stderr: ' + stderr);
-                    if (err) {
-                        console.log('error: ' + err);
-                    }
-                }
-            );
-        }
+        //this.onActiveEditorChanged();
     }
 
     getTreeItem(element: Transformation): vscode.TreeItem | Thenable<vscode.TreeItem> {
@@ -62,6 +104,7 @@ implements vscode.TreeDataProvider<Transformation> {
     }
 
     private loadTransformations(): void {
+        console.log('Loading transformations');
     }
 
 }
