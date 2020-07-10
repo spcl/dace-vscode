@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
+import * as fs from 'fs';
 
 import { Transformation } from './transformation';
 import { request } from 'http';
@@ -7,10 +8,12 @@ import { request } from 'http';
 export class TransformationsProvider
 implements vscode.TreeDataProvider<Transformation> {
 
-    private _onDidChangeTreeData: vscode.EventEmitter<Transformation | null> =
-        new vscode.EventEmitter<Transformation | null>();
-    readonly onDidChangeTreeData: vscode.Event<Transformation | null> =
+    private _onDidChangeTreeData: vscode.EventEmitter<Transformation | undefined> =
+        new vscode.EventEmitter<Transformation | undefined>();
+    readonly onDidChangeTreeData: vscode.Event<Transformation | undefined> =
         this._onDidChangeTreeData.event;
+
+    private transformations: Transformation[] = [];
 
     private async getPythonPath(document: vscode.TextDocument | null) {
         try {
@@ -47,64 +50,123 @@ implements vscode.TreeDataProvider<Transformation> {
             pythonPath,
             ['-m', 'dace.transformation.interface.vscode']
         );
-        /*
-        daemon.stdout.on('data', (data) => {
-            console.log(data.toString());
-        });
-        daemon.stderr.on('data', (data) => {
-            console.error(data.toString());
-        });
-        */
 
-        setTimeout(() => {
+        // TODO: Randomize port choice.
+        // We poll the daemon every second to see if it's awake.
+        const connectionIntervalId = setInterval(() => {
+            console.log('Checking for daemon');
             const req = request({
                 host: 'localhost',
                 port: 5000,
                 path: '/',
                 method: 'GET',
+                timeout: 1000,
             }, response => {
-                this.loadTransformations();
-                //console.warn(response.statusCode);
+                if (response.statusCode === 200) {
+                    console.log('Daemon running');
+                    clearInterval(connectionIntervalId);
+                    this.refresh();
+                }
             });
             req.end();
         }, 1000);
+
+        // If we were unable to connect after 10 seconds, stop trying.
+        setTimeout(() => { clearInterval(connectionIntervalId); }, 10000);
     }
 
     constructor(private context: vscode.ExtensionContext) {
         vscode.window.onDidChangeActiveTextEditor(
-            () => this.onActiveEditorChanged
+            () => this.onActiveEditorChanged()
         );
         vscode.workspace.onDidChangeTextDocument(
             e => this.onDocumentChanged(e)
         );
 
         this.startPythonDaemon();
-
-        //this.onActiveEditorChanged();
     }
 
-    getTreeItem(element: Transformation): vscode.TreeItem | Thenable<vscode.TreeItem> {
-        return new vscode.TreeItem(
-            'Test Item',
-            vscode.TreeItemCollapsibleState.None
-        );
-    }
-
-    getChildren(element?: Transformation | undefined): vscode.ProviderResult<Transformation[]> {
-        return Promise.resolve(null);
-    }
-
-    private onActiveEditorChanged(): void {
+    public refresh(element?: Transformation): void {
         this.loadTransformations();
     }
 
-    private onDocumentChanged(
-        changeEvent: vscode.TextDocumentChangeEvent
-    ): void {
+    getTreeItem(element: Transformation): vscode.TreeItem | Thenable<vscode.TreeItem> {
+        return element;
+    }
+
+    getChildren(element?: Transformation | undefined): vscode.ProviderResult<Transformation[]> {
+        return Promise.resolve(this.transformations);
+    }
+
+    private onActiveEditorChanged() {
+        this.refresh();
+    }
+
+    private onDocumentChanged(changeEvent: vscode.TextDocumentChangeEvent) {
+        this.refresh();
     }
 
     private loadTransformations(): void {
         console.log('Loading transformations');
+
+        // If there's a last active SDFG file, load that.
+        const lastSdfgFileName: string | undefined =
+            this.context.workspaceState.get('lastSdfgFile');
+        let sdfgJson = undefined;
+        if (lastSdfgFileName)
+            sdfgJson = fs.readFileSync(lastSdfgFileName, 'utf8');
+
+        if (!sdfgJson) {
+            const activeEditor = vscode.window.activeTextEditor;
+            if (!activeEditor) {
+                console.log('No active editor');
+                return;
+            }
+
+            const document = activeEditor.document;
+            if (!document.fileName.endsWith('.sdfg')) {
+                console.log('Not an SDFG file');
+                return;
+            }
+
+            sdfgJson = document.getText();
+            if (!sdfgJson) {
+                console.log('Couldn\'t load document contents');
+                return;
+            }
+        }
+
+        const postData = JSON.stringify(sdfgJson);
+        const req = request({
+            host: 'localhost',
+            port: 5000,
+            path: '/transformations',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': postData.length,
+            },
+        }, response => {
+            response.setEncoding('utf8');
+            response.on('data', (data) => {
+                if (response.statusCode === 200) {
+                    this.transformations = [];
+                    const transformations_raw =
+                        JSON.parse(data).transformations;
+                    for (const elem of transformations_raw) {
+                        const transformation = new Transformation(
+                            elem.label,
+                            vscode.TreeItemCollapsibleState.None
+                        );
+                        this.transformations.push(transformation);
+                    }
+                    // Refresh the tree view to show the new contents.
+                    this._onDidChangeTreeData.fire(undefined);
+                }
+            });
+        });
+        req.write(postData);
+        req.end();
     }
 
 }

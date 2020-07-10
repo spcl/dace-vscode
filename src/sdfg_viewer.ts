@@ -11,6 +11,8 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
     private static readonly viewType = 'sdfgCustom.sdfv';
 
+    private static context = null;
+
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         return vscode.window.registerCustomEditorProvider(
             SdfgViewerProvider.viewType, new SdfgViewerProvider(ctx)
@@ -18,6 +20,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
     }
 
     constructor(private readonly context: vscode.ExtensionContext) {
+        this.context = context;
     }
 
     public async resolveCustomTextEditor(
@@ -37,6 +40,17 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
             webviewPanel.webview,
             document
         );
+
+        // We want to track the last active SDFG viewer/file.
+        webviewPanel.onDidChangeViewState(e => {
+            // Store a ref to the document if it becomes active.
+            if (e.webviewPanel.active) {
+                this.context.workspaceState.update(
+                    'lastSdfgFile',
+                    document.fileName
+                );
+            }
+        });
 
         function updateWebview() {
             webviewPanel.webview.postMessage({

@@ -4,7 +4,7 @@ import { SdfgViewerProvider } from './sdfg_viewer';
 import { TransformationsProvider } from './transformationsProvider';
 
 /**
- * Activates the plugin, called when VSCode first loads up.
+ * Activates the plugin.
  * @param context The extension context to load into.
  */
 export function activate(context: vscode.ExtensionContext) {
@@ -15,6 +15,9 @@ export function activate(context: vscode.ExtensionContext) {
         'transformationView',
         transformationsProvider
     );
+    vscode.commands.registerCommand('transformationView.refreshEntry', () => {
+        transformationsProvider.refresh();
+    });
 }
 
 /**

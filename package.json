@@ -81,6 +81,21 @@
                     "contextualTitle": "SDFG Transformation Explorer"
                 }
             ]
+        },
+        "commands": [
+            {
+                "command": "transformationView.refreshEntry",
+                "title": "Refresh Transformations"
+            }
+        ],
+        "menus": {
+            "view/title": [
+                {
+                    "command": "transformationView.refreshEntry",
+                    "when": "view == transformationView",
+                    "group": "navigation"
+                }
+            ]
         }
     },
     "scripts": {
