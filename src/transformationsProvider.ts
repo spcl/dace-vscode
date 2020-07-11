@@ -45,11 +45,13 @@ implements vscode.TreeDataProvider<Transformation> {
     }
 
     private async startPythonDaemon() {
+        /*
         const pythonPath = await this.getPythonPath(null);
         const daemon = cp.spawn(
             pythonPath,
             ['-m', 'dace.transformation.interface.vscode']
         );
+        */
 
         // TODO: Randomize port choice.
         // We poll the daemon every second to see if it's awake.
@@ -156,7 +158,13 @@ implements vscode.TreeDataProvider<Transformation> {
                     for (const elem of transformations_raw) {
                         const transformation = new Transformation(
                             elem.label,
-                            vscode.TreeItemCollapsibleState.None
+                            elem,
+                            vscode.TreeItemCollapsibleState.None,
+                            {
+                                command: 'extension.applyTransformation',
+                                title: '',
+                                arguments: [elem],
+                            }
                         );
                         this.transformations.push(transformation);
                     }

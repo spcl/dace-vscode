@@ -15,8 +15,22 @@ export function activate(context: vscode.ExtensionContext) {
         'transformationView',
         transformationsProvider
     );
+    /*
+    vscode.window.registerTreeDataProvider(
+        'transformationHistory',
+        transformationsProvider
+    );
+    */
     vscode.commands.registerCommand('transformationView.refreshEntry', () => {
         transformationsProvider.refresh();
+    });
+    vscode.commands.registerCommand('extension.applyTransformation', (elem) => {
+        console.log('Applying the following transformation:');
+        console.log(elem);
+    });
+    vscode.commands.registerCommand('transformationView.previewTransformation', (elem) => {
+        console.log('Previewing:');
+        console.log(elem.elem);
     });
 }
 

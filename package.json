@@ -67,7 +67,7 @@
             "activitybar": [
                 {
                     "id": "transformation-explorer",
-                    "title": "SDFG Transformations",
+                    "title": "SDFG Optimization",
                     "icon": "media/dace-hollow.svg"
                 }
             ]
@@ -79,21 +79,57 @@
                     "name": "SDFG Transformations",
                     "icon": "media/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation Explorer"
+                },
+                {
+                    "id": "transformationHistory",
+                    "name": "Transformation History",
+                    "icon": "media/dace-hollow.svg",
+                    "contextualTitle": "SDFG Transformation History"
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+                "view": "transformationView",
+                "contents": "No possible transformations"
+            },
+            {
+                "view": "transformationHistory",
+                "contents": "No previously applied transformations"
+            }
+        ],
         "commands": [
             {
                 "command": "transformationView.refreshEntry",
-                "title": "Refresh Transformations"
+                "title": "Refresh Transformations",
+                "icon": {
+                    "dark": "resources/dark/refresh.svg",
+                    "light": "resources/light/refresh.svg"
+                }
+            },
+            {
+                "command": "transformationView.previewTransformation",
+                "title": "Preview"
             }
         ],
         "menus": {
+            "commandPalette": [
+                {
+                    "command": "transformationView.previewTransformation",
+                    "when": "false"
+                }
+            ],
             "view/title": [
                 {
                     "command": "transformationView.refreshEntry",
                     "when": "view == transformationView",
                     "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "transformationView.previewTransformation",
+                    "when": "view == transformationView"
                 }
             ]
         }
