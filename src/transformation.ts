@@ -6,19 +6,27 @@ export class Transformation extends vscode.TreeItem {
 
     constructor(
         public readonly label: string,
-        public readonly elem: Object,
-        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly command?: vscode.Command
+        public readonly json: Object
     ) {
-        super(label, collapsibleState);
+        super(label, vscode.TreeItemCollapsibleState.None);
     }
 
     get tooltip(): string {
         return this.label;
     }
 
+    /*
     get description(): string {
         return this.label;
+    }
+    */
+
+    get command(): vscode.Command {
+        return {
+            command: 'sdfg.previewTransformation',
+            title: '',
+            arguments: [this],
+        };
     }
 
     iconPath = {

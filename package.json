@@ -76,7 +76,7 @@
             "transformation-explorer": [
                 {
                     "id": "transformationView",
-                    "name": "SDFG Transformations",
+                    "name": "Transformations",
                     "icon": "media/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation Explorer"
                 },
@@ -108,14 +108,22 @@
                 }
             },
             {
-                "command": "transformationView.previewTransformation",
+                "command": "sdfg.previewTransformation",
                 "title": "Preview"
+            },
+            {
+                "command": "sdfg.applyTransformation",
+                "title": "Apply"
             }
         ],
         "menus": {
             "commandPalette": [
                 {
-                    "command": "transformationView.previewTransformation",
+                    "command": "sdfg.previewTransformation",
+                    "when": "false"
+                },
+                {
+                    "command": "sdfg.applyTransformation",
                     "when": "false"
                 }
             ],
@@ -128,8 +136,9 @@
             ],
             "view/item/context": [
                 {
-                    "command": "transformationView.previewTransformation",
-                    "when": "view == transformationView"
+                    "command": "sdfg.applyTransformation",
+                    "when": "view == transformationView",
+                    "group": "inline"
                 }
             ]
         }

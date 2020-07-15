@@ -1,12 +1,22 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import * as fs from 'fs';
+import { request } from 'http';
 
 import { Transformation } from './transformation';
-import { request } from 'http';
 
 export class TransformationsProvider
 implements vscode.TreeDataProvider<Transformation> {
+
+    private static INSTANCE = new TransformationsProvider();
+
+    private constructor() {
+        this.startPythonDaemon();
+    }
+
+    public static getInstance(): TransformationsProvider {
+        return this.INSTANCE;
+    }
 
     private _onDidChangeTreeData: vscode.EventEmitter<Transformation | undefined> =
         new vscode.EventEmitter<Transformation | undefined>();
@@ -14,6 +24,9 @@ implements vscode.TreeDataProvider<Transformation> {
         this._onDidChangeTreeData.event;
 
     private transformations: Transformation[] = [];
+
+    private activeSdfgFileName: string | undefined = undefined;
+    private activeEditor: vscode.WebviewPanel | undefined = undefined;
 
     private async getPythonPath(document: vscode.TextDocument | null) {
         try {
@@ -77,17 +90,6 @@ implements vscode.TreeDataProvider<Transformation> {
         setTimeout(() => { clearInterval(connectionIntervalId); }, 10000);
     }
 
-    constructor(private context: vscode.ExtensionContext) {
-        vscode.window.onDidChangeActiveTextEditor(
-            () => this.onActiveEditorChanged()
-        );
-        vscode.workspace.onDidChangeTextDocument(
-            e => this.onDocumentChanged(e)
-        );
-
-        this.startPythonDaemon();
-    }
-
     public refresh(element?: Transformation): void {
         this.loadTransformations();
     }
@@ -100,42 +102,100 @@ implements vscode.TreeDataProvider<Transformation> {
         return Promise.resolve(this.transformations);
     }
 
-    private onActiveEditorChanged() {
+    public updateActiveSdfg(activeSdfgFileName: string,
+                            activeEditor: vscode.WebviewPanel) {
+        this.activeSdfgFileName = activeSdfgFileName;
+        this.activeEditor = activeEditor;
         this.refresh();
     }
 
-    private onDocumentChanged(changeEvent: vscode.TextDocumentChangeEvent) {
-        this.refresh();
+    private getActiveSdfg(): string | undefined {
+        let sdfgJson = undefined;
+        if (this.activeSdfgFileName)
+            sdfgJson = fs.readFileSync(this.activeSdfgFileName, 'utf8');
+        if (sdfgJson === '')
+            sdfgJson = undefined;
+        return sdfgJson;
+    }
+
+    private sendApplyTransformationRequest(transformation: Transformation,
+                                           callback: CallableFunction,
+                                           processingMessage?: string) {
+        this.activeEditor?.webview.postMessage({
+            type: 'processing',
+            show: true,
+            text: processingMessage ?
+                processingMessage : 'Applying Transformation',
+        });
+
+        const sdfgJson = this.getActiveSdfg();
+        if (sdfgJson) {
+            let requestData = {
+                sdfg: sdfgJson,
+                transformation: transformation.json,
+            };
+
+            const postData = JSON.stringify(requestData);
+            const req = request({
+                host: 'localhost',
+                port: 5000,
+                path: '/apply_transformation',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': postData.length,
+                },
+            }, response => {
+                response.setEncoding('utf8');
+                response.on('data', (data) => {
+                    if (response.statusCode === 200)
+                        callback(data);
+                });
+            });
+            req.write(postData);
+            req.end();
+        }
+    }
+
+    public applyTransformation(transformation: Transformation) {
+        this.sendApplyTransformationRequest(transformation, (data: any) => {
+            let parsed = JSON.parse(data);
+            this.activeEditor?.webview.postMessage({
+                type: 'processing',
+                show: false,
+                text: '',
+            });
+
+            if (this.activeSdfgFileName)
+                fs.writeFileSync(this.activeSdfgFileName,
+                    JSON.stringify(parsed.sdfg));
+        });
+    }
+
+    public previewTransformation(transformation: Transformation) {
+        this.sendApplyTransformationRequest(
+            transformation,
+            (data: any) => {
+                let parsed = JSON.parse(data);
+                this.activeEditor?.webview.postMessage({
+                    type: 'preview_sdfg',
+                    text: JSON.stringify(parsed.sdfg),
+                });
+                this.activeEditor?.webview.postMessage({
+                    type: 'processing',
+                    show: false,
+                    text: '',
+                });
+            },
+            'Generating Preview'
+        );
     }
 
     private loadTransformations(): void {
-        console.log('Loading transformations');
-
-        // If there's a last active SDFG file, load that.
-        const lastSdfgFileName: string | undefined =
-            this.context.workspaceState.get('lastSdfgFile');
-        let sdfgJson = undefined;
-        if (lastSdfgFileName)
-            sdfgJson = fs.readFileSync(lastSdfgFileName, 'utf8');
-
+        let sdfgJson = this.getActiveSdfg();
         if (!sdfgJson) {
-            const activeEditor = vscode.window.activeTextEditor;
-            if (!activeEditor) {
-                console.log('No active editor');
-                return;
-            }
-
-            const document = activeEditor.document;
-            if (!document.fileName.endsWith('.sdfg')) {
-                console.log('Not an SDFG file');
-                return;
-            }
-
-            sdfgJson = document.getText();
-            if (!sdfgJson) {
-                console.log('Couldn\'t load document contents');
-                return;
-            }
+            console.log('No active SDFG editor!');
+            return;
         }
 
         const postData = JSON.stringify(sdfgJson);
@@ -153,21 +213,10 @@ implements vscode.TreeDataProvider<Transformation> {
             response.on('data', (data) => {
                 if (response.statusCode === 200) {
                     this.transformations = [];
-                    const transformations_raw =
-                        JSON.parse(data).transformations;
-                    for (const elem of transformations_raw) {
-                        const transformation = new Transformation(
-                            elem.label,
-                            elem,
-                            vscode.TreeItemCollapsibleState.None,
-                            {
-                                command: 'extension.applyTransformation',
-                                title: '',
-                                arguments: [elem],
-                            }
+                    for (const elem of JSON.parse(data).transformations)
+                        this.transformations.push(
+                            new Transformation(elem.label, elem)
                         );
-                        this.transformations.push(transformation);
-                    }
                     // Refresh the tree view to show the new contents.
                     this._onDidChangeTreeData.fire(undefined);
                 }

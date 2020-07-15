@@ -131,6 +131,57 @@ pre.code code {
   margin: 0 .5rem;
 }
 
+#processing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(61, 61, 61, 0.8);
+  z-index: 5000;
+
+  /* Center the content */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@keyframes spin {
+
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+
+}
+
+#processing-overlay-spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#processing-overlay-spinner {
+  border: .5rem solid #ccc;
+  border-top: .5rem solid #aaa;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  animation: spin 2s linear infinite;
+}
+
+#processing-overlay-msg-container {
+  margin-top: .5rem;
+}
+
+#processing-overlay-msg {
+  font-weight: lighter;
+  font-size: 2rem;
+}
+
 #sdfv-toolbar {
   position: absolute;
   top: .5rem;

@@ -8,30 +8,31 @@ import { TransformationsProvider } from './transformationsProvider';
  * @param context The extension context to load into.
  */
 export function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(SdfgViewerProvider.register(context));
-
-    const transformationsProvider = new TransformationsProvider(context);
+    // Create and register the transformations view.
+    const transformationsProvider = TransformationsProvider.getInstance();
     vscode.window.registerTreeDataProvider(
         'transformationView',
         transformationsProvider
     );
+
+    // Register the SDFG custom editor.
+    context.subscriptions.push(SdfgViewerProvider.register(context));
+
     /*
     vscode.window.registerTreeDataProvider(
         'transformationHistory',
         transformationsProvider
     );
     */
+
+    // Register necessary commands.
     vscode.commands.registerCommand('transformationView.refreshEntry', () => {
         transformationsProvider.refresh();
     });
-    vscode.commands.registerCommand('extension.applyTransformation', (elem) => {
-        console.log('Applying the following transformation:');
-        console.log(elem);
-    });
-    vscode.commands.registerCommand('transformationView.previewTransformation', (elem) => {
-        console.log('Previewing:');
-        console.log(elem.elem);
-    });
+    vscode.commands.registerCommand('sdfg.applyTransformation', (t) =>
+        transformationsProvider.applyTransformation(t));
+    vscode.commands.registerCommand('sdfg.previewTransformation', (t) =>
+        transformationsProvider.previewTransformation(t));
 }
 
 /**
