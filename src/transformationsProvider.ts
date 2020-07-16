@@ -215,7 +215,7 @@ implements vscode.TreeDataProvider<Transformation> {
                     this.transformations = [];
                     for (const elem of JSON.parse(data).transformations)
                         this.transformations.push(
-                            new Transformation(elem.label, elem)
+                            new Transformation(elem.transformation, elem)
                         );
                     // Refresh the tree view to show the new contents.
                     this._onDidChangeTreeData.fire(undefined);

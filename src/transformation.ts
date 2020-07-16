@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { pathToFileURL } from 'url';
 
 export class Transformation extends vscode.TreeItem {
 
@@ -14,12 +13,6 @@ export class Transformation extends vscode.TreeItem {
     get tooltip(): string {
         return this.label;
     }
-
-    /*
-    get description(): string {
-        return this.label;
-    }
-    */
 
     get command(): vscode.Command {
         return {
