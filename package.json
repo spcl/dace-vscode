@@ -10,7 +10,8 @@
         "Other"
     ],
     "activationEvents": [
-        "onCustomEditor:sdfgCustom.sdfv"
+        "onCustomEditor:sdfgCustom.sdfv",
+        "onView:transformationView"
     ],
     "main": "./out/extension.js",
     "publisher": "phschaad",
@@ -61,7 +62,86 @@
                 "label": "Seti + SDFG Extension",
                 "path": "./fileicons/sdfg-icon-theme.json"
             }
-        ]
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "transformation-explorer",
+                    "title": "SDFG Optimization",
+                    "icon": "media/dace-hollow.svg"
+                }
+            ]
+        },
+        "views": {
+            "transformation-explorer": [
+                {
+                    "id": "transformationView",
+                    "name": "Transformations",
+                    "icon": "media/dace-hollow.svg",
+                    "contextualTitle": "SDFG Transformation Explorer"
+                },
+                {
+                    "id": "transformationHistory",
+                    "name": "Transformation History",
+                    "icon": "media/dace-hollow.svg",
+                    "contextualTitle": "SDFG Transformation History"
+                }
+            ]
+        },
+        "viewsWelcome": [
+            {
+                "view": "transformationView",
+                "contents": "No possible transformations"
+            },
+            {
+                "view": "transformationHistory",
+                "contents": "No previously applied transformations"
+            }
+        ],
+        "commands": [
+            {
+                "command": "transformationView.refreshEntry",
+                "title": "Refresh Transformations",
+                "icon": {
+                    "dark": "resources/dark/refresh.svg",
+                    "light": "resources/light/refresh.svg"
+                }
+            },
+            {
+                "command": "sdfg.previewTransformation",
+                "title": "Preview"
+            },
+            {
+                "command": "sdfg.applyTransformation",
+                "title": "Apply"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "sdfg.previewTransformation",
+                    "when": "false"
+                },
+                {
+                    "command": "sdfg.applyTransformation",
+                    "when": "false"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "transformationView.refreshEntry",
+                    "when": "view == transformationView",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "sdfg.applyTransformation",
+                    "when": "view == transformationView",
+                    "group": "inline"
+                }
+            ]
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

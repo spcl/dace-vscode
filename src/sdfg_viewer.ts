@@ -2,6 +2,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 
+import { TransformationsProvider } from './transformationsProvider';
+
 export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
     // Identifiers for code placement into the webview's HTML.
@@ -11,6 +13,11 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
     private static readonly viewType = 'sdfgCustom.sdfv';
 
+    private activeSdfgFileName: string | undefined = undefined;
+    private activeEditor: vscode.WebviewPanel | undefined  = undefined;
+
+    private transformationsView = TransformationsProvider.getInstance();
+
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         return vscode.window.registerCustomEditorProvider(
             SdfgViewerProvider.viewType, new SdfgViewerProvider(ctx)
@@ -18,6 +25,57 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
     }
 
     constructor(private readonly context: vscode.ExtensionContext) {
+    }
+
+    /**
+     * Register the current SDFG file and editor to be the last active editor.
+     * 
+     * This is an unfortunate workaround because the vscode API does not allow
+     * you to grab the currently active editor unless it's a TextEditor.
+     * 
+     * @param document      Active SDFG document.
+     * @param webviewPanel  Active SDFG editor webview panel.
+     */
+    private updateActiveEditor(document: vscode.TextDocument,
+                               webviewPanel: vscode.WebviewPanel): void {
+        this.activeSdfgFileName = document.fileName;
+        this.activeEditor = webviewPanel;
+        this.transformationsView.updateActiveSdfg(this.activeSdfgFileName,
+            this.activeEditor);
+    }
+
+    /**
+     * Update the contents of the editor's webview.
+     * 
+     * This also forces the transformation view to update, if the webview is the
+     * last active SDFG editor.
+     * 
+     * @param document      SDFG document with updated contents.
+     * @param webviewPanel  SDFG editor webview panel to update.
+     */
+    private updateWebview(document: vscode.TextDocument,
+                          webviewPanel: vscode.WebviewPanel): void {
+        webviewPanel.webview.postMessage({
+            type: 'update',
+            text: document.getText(),
+        });
+    }
+
+    /**
+     * Callback for when the document changes.
+     * 
+     * This updates the corresponding webview accordingly.
+     * If this is the last active SDFG document, we also force a reload of the
+     * attached transformation panel.
+     * 
+     * @param document      Changed document.
+     * @param webviewPanel  Attached webview panel.
+     */
+    private documentChanged(document: vscode.TextDocument,
+                            webviewPanel: vscode.WebviewPanel): void {
+        this.updateWebview(document, webviewPanel);
+        if (this.activeEditor === webviewPanel)
+            this.transformationsView.refresh();
     }
 
     public async resolveCustomTextEditor(
@@ -38,18 +96,20 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
             document
         );
 
-        function updateWebview() {
-            webviewPanel.webview.postMessage({
-                type: 'update',
-                text: document.getText(),
-            });
-        }
+        // We want to track the last active SDFG viewer/file.
+        if (webviewPanel.active)
+            this.updateActiveEditor(document, webviewPanel);
+        // Store a ref to the document if it becomes active.
+        webviewPanel.onDidChangeViewState(e => {
+            if (e.webviewPanel.active)
+                this.updateActiveEditor(document, webviewPanel);
+        });
 
         // Register an event listener for when the document changes on disc.
         // We want to update our webview if that happens.
         const docChangeSubs = vscode.workspace.onDidChangeTextDocument(e => {
             if (e.document.uri.toString() === document.uri.toString())
-                updateWebview();
+                this.documentChanged(document, webviewPanel);
         });
         // Get rid of it when the editor closes.
         webviewPanel.onDidDispose(() => {
@@ -86,9 +146,9 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
                                 );
                                 vscode.window.showTextDocument(
                                     doc, {
-                                    preview: true,
-                                    selection: range,
-                                }
+                                        preview: true,
+                                        selection: range,
+                                    }
                                 );
                             }
                         );
@@ -101,7 +161,8 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
             }
         });
 
-        updateWebview();
+        this.updateWebview(document, webviewPanel);
+        webviewPanel.reveal();
     }
 
     /**

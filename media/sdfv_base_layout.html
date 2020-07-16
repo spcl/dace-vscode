@@ -49,7 +49,20 @@
     </div>
 
     <div id="split-container">
-        <div id="contents"></div>
+        <div id="contents">
+            <div id="processing-overlay">
+                <div id="processing-overlay-box">
+                    <div id="processing-overlay-spinner-container">
+                        <div id="processing-overlay-spinner">
+                        </div>
+                    </div>
+                    <div id="processing-overlay-msg-container">
+                        <span id="processing-overlay-msg">
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div id="info-container">
             <div id="info-header">
                 <div id="info-title-container">
@@ -84,18 +97,35 @@
         // Reference to the VSCode API.
         const vscode = acquireVsCodeApi();
 
+        function setRendererContent(sdfg) {
+            let user_transform = null;
+            if (renderer) {
+                user_transform = renderer.canvas_manager.user_transform;
+                renderer.destroy();
+            }
+            init_sdfv(parse_sdfg(sdfg), user_transform);
+        }
+
         // Add a listener to update the content when the extension calls for it.
         window.addEventListener('message', e => {
             const message = e.data;
             switch (message.type) {
                 case 'update':
-                    const new_json = message.text;
-                    let user_transform = null;
-                    if (renderer) {
-                        user_transform = renderer.canvas_manager.user_transform;
-                        renderer.destroy();
+                    setRendererContent(message.text);
+                    return;
+                case 'processing':
+                    if (message.show && message.show === true) {
+                        $('#processing-overlay').show();
+                        $('#processing-overlay-msg').text(message.text);
+                    } else {
+                        $('#processing-overlay').hide();
+                        $('#processing-overlay-msg').text();
                     }
-                    init_sdfv(parse_sdfg(new_json), user_transform);
+                    return;
+                case 'preview_sdfg':
+                    // TODO: Indicate that this is a preview, and give an option
+                    // to revert/close the preview.
+                    setRendererContent(message.text);
                     return;
             }
         });
@@ -128,6 +158,10 @@
             snapOffset: 10,
             direction: 'vertical',
             cursor: 'row-resize',
+        });
+
+        $(document).ready(() => {
+            $('#processing-overlay').hide();
         });
     </script>
 </body>
