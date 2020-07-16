@@ -33,6 +33,11 @@ export function activate(context: vscode.ExtensionContext) {
         transformationsProvider.applyTransformation(t));
     vscode.commands.registerCommand('sdfg.previewTransformation', (t) =>
         transformationsProvider.previewTransformation(t));
+    vscode.commands.registerCommand('dace.installDace', () => {
+        const term = vscode.window.createTerminal('Install DaCe');
+        term.show();
+        term.sendText('pip install dace');
+    });
 }
 
 /**

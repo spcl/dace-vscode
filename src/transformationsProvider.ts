@@ -28,6 +28,8 @@ implements vscode.TreeDataProvider<Transformation> {
     private activeSdfgFileName: string | undefined = undefined;
     private activeEditor: vscode.WebviewPanel | undefined = undefined;
 
+    private daemonFound = false;
+
     private async getPythonPath(document: vscode.TextDocument | null) {
         try {
             let pyExt = vscode.extensions.getExtension('ms-python.python');
@@ -77,6 +79,7 @@ implements vscode.TreeDataProvider<Transformation> {
             }, response => {
                 if (response.statusCode === 200) {
                     console.log('Daemon running');
+                    this.daemonFound = true;
                     clearInterval(connectionIntervalId);
                     this.refresh();
                 }
@@ -85,7 +88,24 @@ implements vscode.TreeDataProvider<Transformation> {
         }, 1000);
 
         // If we were unable to connect after 10 seconds, stop trying.
-        setTimeout(() => { clearInterval(connectionIntervalId); }, 10000);
+        setTimeout(() => {
+            if (!this.daemonFound) {
+                // We were unable to start and connect to a daemon, show a
+                // message hinting at a potentially missing DaCe instance.
+                vscode.window.showErrorMessage(
+                    'Unable to start and connect to DaCe. Do you have it ' +
+                    'installed?',
+                    'Install DaCe'
+                ).then(opt => {
+                    switch (opt) {
+                        case 'Install DaCe':
+                            vscode.commands.executeCommand('dace.installDace');
+                            break;
+                    }
+                });
+            }
+            clearInterval(connectionIntervalId);
+        }, 10000);
     }
 
     public refresh(element?: Transformation): void {
