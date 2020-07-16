@@ -58,13 +58,11 @@ implements vscode.TreeDataProvider<Transformation> {
     }
 
     private async startPythonDaemon() {
-        /*
         const pythonPath = await this.getPythonPath(null);
         const daemon = cp.spawn(
             pythonPath,
             ['-m', 'dace.transformation.interface.vscode']
         );
-        */
 
         // TODO: Randomize port choice.
         // We poll the daemon every second to see if it's awake.
