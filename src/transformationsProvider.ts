@@ -231,10 +231,19 @@ implements vscode.TreeDataProvider<Transformation> {
             response.on('data', (data) => {
                 if (response.statusCode === 200) {
                     this.transformations = [];
-                    for (const elem of JSON.parse(data).transformations)
-                        this.transformations.push(
-                            new Transformation(elem.transformation, elem)
-                        );
+                    const parsedData = JSON.parse(data);
+                    for (const elem of parsedData.transformations) {
+                        let docstring = '';
+                        if (parsedData.docstrings)
+                            docstring = parsedData.docstrings[
+                                elem.transformation
+                            ];
+                        this.transformations.push(new Transformation(
+                                elem.transformation,
+                                elem,
+                                docstring
+                        ));
+                    }
                     // Refresh the tree view to show the new contents.
                     this._onDidChangeTreeData.fire(undefined);
                 }

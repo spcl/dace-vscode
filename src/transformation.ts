@@ -5,13 +5,14 @@ export class Transformation extends vscode.TreeItem {
 
     constructor(
         public readonly label: string,
-        public readonly json: Object
+        public readonly json: any,
+        public readonly docstring: string
     ) {
         super(label, vscode.TreeItemCollapsibleState.None);
     }
 
     get tooltip(): string {
-        return this.label;
+        return this.docstring;
     }
 
     get command(): vscode.Command {
