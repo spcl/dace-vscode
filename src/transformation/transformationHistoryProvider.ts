@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { TransformationHistoryItem } from './transformationHistoryItem';
-import { DaCeInterface } from './daceInterface';
+import { DaCeInterface } from '../daceInterface';
 
 export class TransformationHistoryProvider
 implements vscode.TreeDataProvider<TransformationHistoryItem> {

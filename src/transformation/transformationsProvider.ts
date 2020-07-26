@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { Transformation } from './transformation';
-import { DaCeInterface } from './daceInterface';
+import { DaCeInterface } from '../daceInterface';
 
 export class TransformationsProvider
 implements vscode.TreeDataProvider<Transformation> {

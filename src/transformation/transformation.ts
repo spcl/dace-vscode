@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 
-export class TransformationHistoryItem extends vscode.TreeItem {
+export class Transformation extends vscode.TreeItem {
 
     constructor(
         public readonly label: string,
@@ -15,7 +15,6 @@ export class TransformationHistoryItem extends vscode.TreeItem {
         return this.docstring;
     }
 
-    /*
     get command(): vscode.Command {
         return {
             command: 'sdfg.previewTransformation',
@@ -23,11 +22,10 @@ export class TransformationHistoryItem extends vscode.TreeItem {
             arguments: [this],
         };
     }
-    */
 
     iconPath = {
-        light: path.join(__filename, '..', '..', 'fileicons', 'sdfg.svg'),
-        dark: path.join(__filename, '..', '..', 'fileicons', 'sdfg.svg'),
+        light: path.join(__filename, '..', '..', '..', 'fileicons', 'sdfg.svg'),
+        dark: path.join(__filename, '..', '..', '..', 'fileicons', 'sdfg.svg'),
     };
 
 }

@@ -2,11 +2,26 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 
-import { TransformationsProvider } from './transformationsProvider';
+import { TransformationsProvider } from './transformation/transformationsProvider';
+import { TransformationHistoryProvider } from './transformation/transformationHistoryProvider';
 import { DaCeInterface } from './daceInterface';
-import { TransformationHistoryProvider } from './transformationHistoryProvider';
+
+class SdfgViewer {
+
+    public constructor(
+        public readonly webviewPanel: vscode.WebviewPanel,
+        public readonly document: vscode.TextDocument
+    ) {}
+
+}
 
 export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
+
+    public static INSTANCE: SdfgViewerProvider | undefined = undefined;
+
+    public static getInstance(): SdfgViewerProvider | undefined {
+        return this.INSTANCE;
+    }
 
     // Identifiers for code placement into the webview's HTML.
     private readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
@@ -22,9 +37,12 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
     private transformationsView = TransformationsProvider.getInstance();
     private trafoHistoryView = TransformationHistoryProvider.getInstance();
 
+    private openEditors: SdfgViewer[] = [];
+
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
+        SdfgViewerProvider.INSTANCE = new SdfgViewerProvider(ctx);
         return vscode.window.registerCustomEditorProvider(
-            SdfgViewerProvider.viewType, new SdfgViewerProvider(ctx)
+            SdfgViewerProvider.viewType, SdfgViewerProvider.INSTANCE
         );
     }
 
@@ -84,11 +102,38 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         }
     }
 
+    public getOpenEditors() {
+        return this.openEditors;
+    }
+
+    public findEditorForPanel(webviewPanel: vscode.WebviewPanel): SdfgViewer | undefined {
+        for (const element of this.openEditors) {
+            if (element.webviewPanel === webviewPanel)
+                return element;
+        }
+        return undefined;
+    }
+
+    public removeOpenEditor(webviewPanel: vscode.WebviewPanel) {
+        const editor = this.findEditorForPanel(webviewPanel);
+        if (editor)
+            this.openEditors.splice(this.openEditors.indexOf(editor), 1);
+    }
+
     public async resolveCustomTextEditor(
         document: vscode.TextDocument,
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
+        // Add this editor to the list of all editors.
+        this.openEditors.push(new SdfgViewer(webviewPanel, document));
+
+        // Make sure that if the webview (editor) gets closed again, we remove
+        // it from the open editors list.
+        webviewPanel.onDidDispose(() => {
+            SdfgViewerProvider.getInstance()?.removeOpenEditor(webviewPanel);
+        });
+
         webviewPanel.webview.options = {
             enableScripts: true,
             localResourceRoots: [
@@ -126,8 +171,13 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.onDidReceiveMessage(e => {
             switch (e.type) {
                 case 'exitPreview':
-                    console.log(webviewPanel);
-                    console.log('is trying to exit');
+                    const instance = SdfgViewerProvider.getInstance();
+                    if (instance) {
+                        const editor: SdfgViewer | undefined =
+                            instance.findEditorForPanel(webviewPanel);
+                        if (editor !== undefined)
+                            this.updateWebview(editor.document, webviewPanel);
+                    }
                     break;
                 case 'gotoSource':
                     // We want to jump to a specific file and location if it

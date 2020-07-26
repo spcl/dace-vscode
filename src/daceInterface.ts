@@ -3,10 +3,10 @@ import * as cp from 'child_process';
 import * as fs from 'fs';
 import { request } from 'http';
 
-import { TransformationsProvider } from './transformationsProvider';
-import { Transformation } from './transformation';
-import { TransformationHistoryProvider } from './transformationHistoryProvider';
-import { TransformationHistoryItem } from './transformationHistoryItem';
+import { TransformationsProvider } from './transformation/transformationsProvider';
+import { Transformation } from './transformation/transformation';
+import { TransformationHistoryProvider } from './transformation/transformationHistoryProvider';
+import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
 
 export class DaCeInterface {
 
