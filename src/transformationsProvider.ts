@@ -165,9 +165,20 @@ implements vscode.TreeDataProvider<Transformation> {
                 },
             }, response => {
                 response.setEncoding('utf8');
+                // Accumulate all the data, in case data is chunked up.
+                let accumulatedData = '';
                 response.on('data', (data) => {
-                    if (response.statusCode === 200)
-                        callback(data);
+                    if (response.statusCode === 200) {
+                        accumulatedData += data;
+                        // Check if this is all the data we're going to receive,
+                        // or if the data is chunked up into pieces.
+                        const contentLength =
+                            Number(response.headers?.['content-length']);
+                        if (!contentLength)
+                            callback(data);
+                        else if (accumulatedData.length >= contentLength)
+                            callback(accumulatedData);
+                    }
                 });
             });
             req.write(postData);
@@ -186,7 +197,7 @@ implements vscode.TreeDataProvider<Transformation> {
 
             if (this.activeSdfgFileName)
                 fs.writeFileSync(this.activeSdfgFileName,
-                    JSON.stringify(parsed.sdfg));
+                    JSON.stringify(parsed.sdfg, null, 2));
         });
     }
 
