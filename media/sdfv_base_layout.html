@@ -8,6 +8,11 @@
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/material-icons.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/sdfv_embedded.css">
 
+    <script>
+        // Reference to the VSCode API.
+        const vscode = acquireVsCodeApi();
+    </script>
+
     <script src="{{ CSP_SRC }}/dagre.js"></script>
     <script src="{{ CSP_SRC }}/jquery.min.js"></script>
     <script src="{{ CSP_SRC }}/pdfkit.standalone.js"></script>
@@ -94,9 +99,6 @@
     <script>
         init_sdfv(parse_sdfg(sdfg_json));
 
-        // Reference to the VSCode API.
-        const vscode = acquireVsCodeApi();
-
         function setRendererContent(sdfg) {
             let user_transform = null;
             if (renderer) {
@@ -123,9 +125,10 @@
                     }
                     return;
                 case 'preview_sdfg':
-                    // TODO: Indicate that this is a preview, and give an option
-                    // to revert/close the preview.
                     setRendererContent(message.text);
+                    let el = document.getElementById('exit-preview-button');
+                    if (el)
+                        el.className = 'button';
                     return;
             }
         });

@@ -1021,6 +1021,24 @@ class SDFGRenderer {
         d.title = 'Enter object moving mode';
         this.toolbar.appendChild(d);
 
+        // Exit previewing mode
+        d = document.createElement('button');
+        d.id = 'exit-preview-button';
+        d.className = 'button hidden';
+        d.innerHTML = '<i class="material-icons">close</i>';
+        d.style = 'padding-bottom: 0px; user-select: none';
+        d.onclick = () => {
+            d.className = 'button hidden';
+            console.log('exiting');
+            console.log(vscode);
+            if (vscode)
+                vscode.postMessage({
+                    type: 'exitPreview',
+                });
+        };
+        d.title = 'Exit preview';
+        this.toolbar.appendChild(d);
+
         this.container.append(this.toolbar);
         // End of buttons
 

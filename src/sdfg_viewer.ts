@@ -3,6 +3,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 
 import { TransformationsProvider } from './transformationsProvider';
+import { DaCeInterface } from './daceInterface';
+import { TransformationHistoryProvider } from './transformationHistoryProvider';
 
 export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
@@ -16,7 +18,9 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
     private activeSdfgFileName: string | undefined = undefined;
     private activeEditor: vscode.WebviewPanel | undefined  = undefined;
 
+    private daceInterface = DaCeInterface.getInstance();
     private transformationsView = TransformationsProvider.getInstance();
+    private trafoHistoryView = TransformationHistoryProvider.getInstance();
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         return vscode.window.registerCustomEditorProvider(
@@ -40,7 +44,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
                                webviewPanel: vscode.WebviewPanel): void {
         this.activeSdfgFileName = document.fileName;
         this.activeEditor = webviewPanel;
-        this.transformationsView.updateActiveSdfg(this.activeSdfgFileName,
+        this.daceInterface.updateActiveSdfg(this.activeSdfgFileName,
             this.activeEditor);
     }
 
@@ -74,8 +78,10 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
     private documentChanged(document: vscode.TextDocument,
                             webviewPanel: vscode.WebviewPanel): void {
         this.updateWebview(document, webviewPanel);
-        if (this.activeEditor === webviewPanel)
+        if (this.activeEditor === webviewPanel) {
             this.transformationsView.refresh();
+            this.trafoHistoryView.refresh();
+        }
     }
 
     public async resolveCustomTextEditor(
@@ -119,6 +125,10 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         // Handle received messages from the webview.
         webviewPanel.webview.onDidReceiveMessage(e => {
             switch (e.type) {
+                case 'exitPreview':
+                    console.log(webviewPanel);
+                    console.log('is trying to exit');
+                    break;
                 case 'gotoSource':
                     // We want to jump to a specific file and location if it
                     // exists.
