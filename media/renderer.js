@@ -1029,8 +1029,6 @@ class SDFGRenderer {
         d.style = 'padding-bottom: 0px; user-select: none';
         d.onclick = () => {
             d.className = 'button hidden';
-            console.log('exiting');
-            console.log(vscode);
             if (vscode)
                 vscode.postMessage({
                     type: 'exitPreview',

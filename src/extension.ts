@@ -52,6 +52,10 @@ export class DaCeVSCode {
             daceInterface.applyTransformation(t));
         vscode.commands.registerCommand('sdfg.previewTransformation', (t) =>
             daceInterface.previewTransformation(t));
+        vscode.commands.registerCommand('sdfg.previewHistoryPoint', (h) =>
+            daceInterface.previewHistoryPoint(h));
+        vscode.commands.registerCommand('sdfg.applyHistoryPoint', (h) =>
+            daceInterface.applyHistoryPoint(h));
         vscode.commands.registerCommand('dace.installDace', () => {
             const term = vscode.window.createTerminal('Install DaCe');
             term.show();

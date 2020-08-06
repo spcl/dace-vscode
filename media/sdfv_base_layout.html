@@ -10,7 +10,7 @@
 
     <script>
         // Reference to the VSCode API.
-        const vscode = acquireVsCodeApi();
+        let vscode = undefined;
     </script>
 
     <script src="{{ CSP_SRC }}/dagre.js"></script>
@@ -97,20 +97,37 @@
     <script src="{{ CSP_SRC }}/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
     <script>
+        vscode = acquireVsCodeApi();
+
         init_sdfv(parse_sdfg(sdfg_json));
 
-        function setRendererContent(sdfg) {
+        function setRendererContent(sdfg, previewing = false) {
             let user_transform = null;
             if (renderer) {
                 user_transform = renderer.canvas_manager.user_transform;
                 renderer.destroy();
             }
-            init_sdfv(parse_sdfg(sdfg), user_transform);
+            if (previewing) {
+                init_sdfv(parse_sdfg(sdfg), user_transform);
+            } else {
+                sdfg_json = sdfg;
+                init_sdfv(parse_sdfg(sdfg_json), user_transform);
+            }
+        }
+
+        function resetRendererContent() {
+            let user_transform = null;
+            if (renderer) {
+                user_transform = renderer.canvas_manager.user_transform;
+                renderer.destroy();
+            }
+            init_sdfv(parse_sdfg(sdfg_json), user_transform);
         }
 
         // Add a listener to update the content when the extension calls for it.
         window.addEventListener('message', e => {
             const message = e.data;
+            let el = undefined;
             switch (message.type) {
                 case 'update':
                     setRendererContent(message.text);
@@ -125,10 +142,16 @@
                     }
                     return;
                 case 'preview_sdfg':
-                    setRendererContent(message.text);
-                    let el = document.getElementById('exit-preview-button');
+                    setRendererContent(message.text, true);
+                    el = document.getElementById('exit-preview-button');
                     if (el)
                         el.className = 'button';
+                    return;
+                case 'exit_preview':
+                    resetRendererContent();
+                    el = document.getElementById('exit-preview-button');
+                    if (el)
+                        el.className = 'button hidden';
                     return;
             }
         });
