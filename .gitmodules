@@ -1,0 +1,3 @@
+[submodule "media/webclient"]
+	path = media/webclient
+	url = git@github.com:spcl/dace-webclient.git

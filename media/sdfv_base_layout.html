@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/material-icons.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/sdfv_embedded.css">
 
     <script>
@@ -13,19 +13,19 @@
         let vscode = undefined;
     </script>
 
-    <script src="{{ CSP_SRC }}/dagre.js"></script>
-    <script src="{{ CSP_SRC }}/jquery.min.js"></script>
-    <script src="{{ CSP_SRC }}/pdfkit.standalone.js"></script>
-    <script src="{{ CSP_SRC }}/blob-stream.js"></script>
-    <script src="{{ CSP_SRC }}/canvas2pdf.js"></script>
-    <script src="{{ CSP_SRC }}/math.min.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/renderer_dir/dagre.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/external_lib/pdfkit.standalone.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/external_lib/blob-stream.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>
     <script src="{{ CSP_SRC }}/split.min.js"></script>
 
-    <script src="{{ CSP_SRC }}/global_vars.js"></script>
-    <script src="{{ CSP_SRC }}/renderer_elements.js"></script>
-    <script src="{{ CSP_SRC }}/context_menu.js"></script>
-    <script src="{{ CSP_SRC }}/sdfg_utils.js"></script>
-    <script src="{{ CSP_SRC }}/renderer.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/renderer_elements.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/context_menu.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/sdfg_utils.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/renderer.js"></script>
 </head>
 
 <body onresize="rendererSendResize();">
@@ -94,7 +94,7 @@
         var sdfg_json = '{{ SDFG_JSON }}';
         var file_name = '{{ FILE_NAME }}';
     </script>
-    <script src="{{ CSP_SRC }}/sdfv.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
     <script>
         vscode = acquireVsCodeApi();
