@@ -170,6 +170,11 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         // Handle received messages from the webview.
         webviewPanel.webview.onDidReceiveMessage(e => {
             switch (e.type) {
+                case 'sortTransformations':
+                    const elements = JSON.parse(e.visibleElements);
+                    if (elements)
+                        TransformationsProvider.getInstance().sortTransformations(elements);
+                    break;
                 case 'exitPreview':
                     const instance = SdfgViewerProvider.getInstance();
                     if (instance) {

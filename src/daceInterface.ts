@@ -61,6 +61,10 @@ export class DaCeInterface {
         return this.activeSdfgFileName;
     }
 
+    public getActiveEditor() {
+        return this.activeEditor;
+    }
+
     private async startPythonDaemon() {
         if (this.daemonFound)
             return;
@@ -310,6 +314,8 @@ export class DaCeInterface {
     }
 
     public loadTransformations(): void {
+        this.showSpinner('Loading transformations');
+
         let sdfg = this.getActiveSdfg();
         if (!sdfg) {
             console.log('No active SDFG editor!');
@@ -335,6 +341,12 @@ export class DaCeInterface {
             }
             // Refresh the tree view to show the new contents.
             tProvider.notifyTreeDataChanged();
+
+            const daceInterface = DaCeInterface.getInstance();
+            daceInterface.getActiveEditor()?.webview.postMessage({
+                type: 'get_viewport_elem',
+            });
+            daceInterface.hideSpinner();
         }
 
         this.sendPostRequest(

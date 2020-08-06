@@ -153,6 +153,16 @@
                     if (el)
                         el.className = 'button hidden';
                     return;
+                case 'get_viewport_elem':
+                    if (renderer) {
+                        let visibleElements = renderer.visible_elements();
+                        console.log(visibleElements);
+                        vscode.postMessage({
+                            type: 'sortTransformations',
+                            visibleElements: JSON.stringify(visibleElements),
+                        });
+                    }
+                    return;
             }
         });
 

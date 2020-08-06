@@ -45,4 +45,38 @@ implements vscode.TreeDataProvider<Transformation> {
         return Promise.resolve(this.transformations);
     }
 
+    public sortTransformations(elements: any) {
+        const nodeList = [];
+        if (elements.nodes)
+            for (const node of elements.nodes)
+                nodeList.push(Number(node.id));
+        const stateList = [];
+        if (elements.states)
+            for (const state of elements.states)
+                stateList.push(Number(state.id));
+
+        let weakTransformations = [];
+        let strongTransformations = [];
+        for (const trafo of this.transformations) {
+            let matched = false;
+            if (trafo.json.state_id >= 0) {
+                if (stateList.includes(trafo.json.state_id)) {
+                    for (const element of Object.values(trafo.json._subgraph)) {
+                        if (nodeList.includes(Number(element))) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (matched)
+                strongTransformations.push(trafo);
+            else
+                weakTransformations.push(trafo);
+        }
+        this.transformations = strongTransformations.concat(weakTransformations);
+        this.notifyTreeDataChanged();
+    }
+
 }
