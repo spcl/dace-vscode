@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { request } from 'http';
 
 import { TransformationsProvider } from './transformation/transformationsProvider';
-import { Transformation } from './transformation/transformation';
+import { Transformation, TransformationCategory } from './transformation/transformation';
 import { TransformationHistoryProvider } from './transformation/transformationHistoryProvider';
 import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
 
@@ -209,25 +209,27 @@ export class DaCeInterface {
     }
 
     public applyTransformation(transformation: Transformation) {
-        this.sendApplyTransformationRequest(transformation, (data: any) => {
-            let parsed = JSON.parse(data);
-            this.hideSpinner();
-            if (this.activeSdfgFileName)
-                fs.writeFileSync(this.activeSdfgFileName,
-                    JSON.stringify(parsed.sdfg, null, 2));
-        });
+        if (transformation.json)
+            this.sendApplyTransformationRequest(transformation, (data: any) => {
+                let parsed = JSON.parse(data);
+                this.hideSpinner();
+                if (this.activeSdfgFileName)
+                    fs.writeFileSync(this.activeSdfgFileName,
+                        JSON.stringify(parsed.sdfg, null, 2));
+            });
     }
 
     public previewTransformation(transformation: Transformation) {
-        this.sendApplyTransformationRequest(
-            transformation,
-            (data: any) => {
-                let parsed = JSON.parse(data);
-                this.previewSdfg(parsed.sdfg);
-                this.hideSpinner();
-            },
-            'Generating Preview'
-        );
+        if (transformation.json)
+            this.sendApplyTransformationRequest(
+                transformation,
+                (data: any) => {
+                    let parsed = JSON.parse(data);
+                    this.previewSdfg(parsed.sdfg);
+                    this.hideSpinner();
+                },
+                'Generating Preview'
+            );
     }
 
     private gotoHistoryPoint(histItem: TransformationHistoryItem,
@@ -333,7 +335,7 @@ export class DaCeInterface {
                     docstring = parsedData.docstrings[
                         elem.transformation
                     ];
-                tProvider.addTransformation(new Transformation(
+                tProvider.addUncategorizedTransformation(new Transformation(
                         elem.transformation,
                         elem,
                         docstring

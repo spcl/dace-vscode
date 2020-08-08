@@ -154,7 +154,7 @@
             "view/item/context": [
                 {
                     "command": "sdfg.applyTransformation",
-                    "when": "view == transformationView",
+                    "when": "view == transformationView && viewItem == transformation",
                     "group": "inline"
                 },
                 {

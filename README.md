@@ -1,5 +1,14 @@
 # DaCe SDFG Viewer (SDFV) in VS Code
 
+[![](http://vsmarketplacebadge.apphb.com/version-short/phschaad.sdfv.svg
+)](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
+[![](http://vsmarketplacebadge.apphb.com/installs-short/phschaad.sdfv.svg
+)](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
+[![](http://vsmarketplacebadge.apphb.com/downloads-short/phschaad.sdfv.svg
+)](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
+[![](http://vsmarketplacebadge.apphb.com/rating-short/phschaad.sdfv.svg
+)](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
+
 This VS Code extension aims to provide a viewing panel for
 [SDFGs](http://spcl.inf.ethz.ch/Research/DAPP/) inside of VS Code. It
 serves as a wrapper for the SDFG Viewer SDFV, found in the current version
