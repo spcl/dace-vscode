@@ -234,7 +234,6 @@ export class DaCeInterface {
 
     private gotoHistoryPoint(histItem: TransformationHistoryItem,
                              mode: InteractionMode) {
-        // TODO: If it is the current one, exit any preview that may be active.
         if (histItem.isCurrent) {
             if (mode === InteractionMode.PREVIEW)
                 this.exitPreview();

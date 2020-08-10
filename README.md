@@ -12,7 +12,8 @@
 This VS Code extension aims to provide a viewing panel for
 [SDFGs](http://spcl.inf.ethz.ch/Research/DAPP/) inside of VS Code. It
 serves as a wrapper for the SDFG Viewer SDFV, found in the current version
-of [DaCe](https://github.com/spcl/dace).
+of [DaCe](https://github.com/spcl/dace). Additionally, some features geared
+towards working with and editing SDFGs are provided.
 
 ## Features
 
@@ -27,3 +28,9 @@ the top right.
 
 When viewing a tasklet referencing a piece of Python code, you can jump to the
 corresponding lines of Python code with a button click.
+
+A separate side panel is provided in which applicable transformations to the
+currently open SDFG can be browsed, previewed, and directly applied. A history
+of previously applied transformations is being kept, allowing you to preview
+previous states of the SDFG as well as giving you the option to travel back in
+time.
