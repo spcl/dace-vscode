@@ -2,6 +2,10 @@
 
 ## 0.2
 
+### 0.2.2
+
+- Fixes missing info contents in the info bar.
+
 ### 0.2.1
 
 - Switched the renderer to a separate submodule with the DaCe webclient.

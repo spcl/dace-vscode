@@ -171,7 +171,12 @@ function fill_info_embedded(elem) {
     }
 }
 
+function init_info_box() {
+    // Pass
+}
+
 // Redefine the standard SDFV sidebar interface with the one for the info-box.
+init_menu = init_info_box;
 sidebar_set_title = info_box_set_title;
 sidebar_show = info_box_show;
 sidebar_get_contents = info_box_get_contents;
