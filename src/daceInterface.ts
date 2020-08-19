@@ -23,7 +23,7 @@ export class DaCeInterface {
         return this.INSTANCE;
     }
 
-    private daemonFound = false;
+    private daemonRunning = false;
 
     private activeSdfgFileName: string | undefined = undefined;
     private activeEditor: vscode.WebviewPanel | undefined = undefined;
@@ -38,7 +38,9 @@ export class DaCeInterface {
                 if (!pyExt.isActive)
                     await pyExt.activate();
                 const pythonPath = pyExt.exports.settings.getExecutionDetails ?
-                    pyExt.exports.settings.getExecutionDetails(document?.uri).execCommand :
+                    pyExt.exports.settings.getExecutionDetails(
+                        document?.uri
+                    ).execCommand :
                     pyExt.exports.settings.getExecutionCommand(document?.uri);
                 return pythonPath ? pythonPath.join(' ') : 'python';
             } else {
@@ -65,8 +67,23 @@ export class DaCeInterface {
         return this.activeEditor;
     }
 
+    public genericErrorHandler(message: string, details?: string) {
+        this.hideSpinner();
+        console.error(message);
+        if (details) {
+            console.error(details);
+            vscode.window.showErrorMessage(
+                message + ' (' + details + ')'
+            );
+        } else {
+            vscode.window.showErrorMessage(
+                message
+            );
+        }
+    }
+
     private async startPythonDaemon() {
-        if (this.daemonFound)
+        if (this.daemonRunning)
             return;
 
         const pythonPath = await this.getPythonPath(null);
@@ -74,6 +91,22 @@ export class DaCeInterface {
             pythonPath,
             ['-m', 'dace.transformation.interface.vscode']
         );
+
+        daemon.on('exit', (code, signal) => {
+            this.daemonRunning = false;
+        });
+
+        /*
+        daemon.stdout.on('data', data => {
+            console.log(data.toString());
+        });
+        */
+
+        daemon.stderr.on('data', data => {
+            vscode.window.showErrorMessage(
+                'Encountered an error in the DaCe daemon: ' + data.toString()
+            );
+        });
 
         // TODO: Randomize port choice.
         // We poll the daemon every second to see if it's awake.
@@ -88,18 +121,21 @@ export class DaCeInterface {
             }, response => {
                 if (response.statusCode === 200) {
                     console.log('Daemon running');
-                    this.daemonFound = true;
+                    vscode.window.setStatusBarMessage(
+                        'Connected to a DaCe daemon', 10000
+                    );
+                    this.daemonRunning = true;
                     clearInterval(connectionIntervalId);
                     TransformationsProvider.getInstance().refresh();
                     TransformationHistoryProvider.getInstance().refresh();
                 }
             });
             req.end();
-        }, 1000);
+        }, 2000);
 
         // If we were unable to connect after 10 seconds, stop trying.
         setTimeout(() => {
-            if (!this.daemonFound) {
+            if (!this.daemonRunning) {
                 // We were unable to start and connect to a daemon, show a
                 // message hinting at a potentially missing DaCe instance.
                 vscode.window.showErrorMessage(
@@ -124,7 +160,8 @@ export class DaCeInterface {
 
     private sendPostRequest(url: string,
                             requestData: any,
-                            callback?: CallableFunction) {
+                            callback?: CallableFunction,
+                            customErrorHandler?: CallableFunction) {
         const postData = JSON.stringify(requestData);
         const req = request({
             host: 'localhost',
@@ -147,10 +184,49 @@ export class DaCeInterface {
                         // or if the data is chunked up into pieces.
                         const contentLength =
                             Number(response.headers?.['content-length']);
-                        if (!contentLength)
-                            callback(data);
-                        else if (accumulatedData.length >= contentLength)
-                            callback(accumulatedData);
+                        if (!contentLength ||
+                            accumulatedData.length >= contentLength) {
+                            let error = undefined;
+                            let parsed = undefined;
+                            try {
+                                parsed = JSON.parse(accumulatedData);
+                                if (parsed.error) {
+                                    error = parsed.error;
+                                    parsed = undefined;
+                                }
+                            } catch(e) {
+                                error = {
+                                    message: 'Failed to parse response',
+                                    details: e,
+                                };
+                            }
+
+                            if (parsed) {
+                                callback(parsed);
+                            } else if (error) {
+                                if (customErrorHandler)
+                                    customErrorHandler(error);
+                                else
+                                    DaCeInterface.getInstance()
+                                        .genericErrorHandler(
+                                            error.message, error.details
+                                        );
+                            }
+                        }
+                    } else {
+                        const errorMessage =
+                            'An internal DaCe error was encountered!';
+                        const errorDetails = 'DaCe request failed with code ' +
+                            response.statusCode;
+                        if (customErrorHandler) 
+                            customErrorHandler({
+                                message: errorMessage,
+                                details: errorDetails,
+                            });
+                        else
+                            DaCeInterface.getInstance().genericErrorHandler(
+                                errorMessage, errorDetails
+                            );
                     }
                 });
             }
@@ -215,11 +291,10 @@ export class DaCeInterface {
     public applyTransformation(transformation: Transformation) {
         if (transformation.json)
             this.sendApplyTransformationRequest(transformation, (data: any) => {
-                let parsed = JSON.parse(data);
                 this.hideSpinner();
                 if (this.activeSdfgFileName)
                     fs.writeFileSync(this.activeSdfgFileName,
-                        JSON.stringify(parsed.sdfg, null, 2));
+                        JSON.stringify(data.sdfg, null, 2));
             });
     }
 
@@ -228,8 +303,7 @@ export class DaCeInterface {
             this.sendApplyTransformationRequest(
                 transformation,
                 (data: any) => {
-                    let parsed = JSON.parse(data);
-                    this.previewSdfg(parsed.sdfg);
+                    this.previewSdfg(data.sdfg);
                     this.hideSpinner();
                 },
                 'Generating Preview'
@@ -271,21 +345,20 @@ export class DaCeInterface {
             switch (mode) {
                 case InteractionMode.APPLY:
                     callback = function(data: any) {
-                        let parsed = JSON.parse(data);
                         const daceInterface = DaCeInterface.getInstance();
-                        const fileName = daceInterface.getActiveSdfgFileName();
+                        const fileName =
+                            daceInterface.getActiveSdfgFileName();
                         if (fileName)
                             fs.writeFileSync(fileName,
-                                JSON.stringify(parsed.sdfg, null, 2));
+                                JSON.stringify(data.sdfg, null, 2));
                         daceInterface.hideSpinner();
                     };
                     break;
                 case InteractionMode.PREVIEW:
                 default:
                     callback = function(data: any) {
-                        let parsed = JSON.parse(data);
                         const daceInterface = DaCeInterface.getInstance();
-                        daceInterface.previewSdfg(parsed.sdfg);
+                        daceInterface.previewSdfg(data.sdfg);
                         daceInterface.hideSpinner();
                     };
                     break;
@@ -294,7 +367,8 @@ export class DaCeInterface {
             const history = sdfg.attributes?.transformation_hist;
             if (history) {
                 for (let i = 0; i < history.length; i++) {
-                    if (JSON.stringify(history[i]) === JSON.stringify(histItem.json)) {
+                    if (JSON.stringify(history[i]) ===
+                        JSON.stringify(histItem.json)) {
                         this.sendPostRequest(
                             '/reapply_history_until',
                             {
@@ -327,15 +401,14 @@ export class DaCeInterface {
             return;
         }
 
-        function callback(data: string) {
+        function callback(data: any) {
             const tProvider = TransformationsProvider.getInstance();
             tProvider.clearTransformations();
-            const parsedData = JSON.parse(data);
 
-            for (const elem of parsedData.transformations) {
+            for (const elem of data.transformations) {
                 let docstring = '';
-                if (parsedData.docstrings)
-                    docstring = parsedData.docstrings[
+                if (data.docstrings)
+                    docstring = data.docstrings[
                         elem.transformation
                     ];
                 tProvider.addUncategorizedTransformation(new Transformation(
