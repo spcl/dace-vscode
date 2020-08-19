@@ -105,9 +105,13 @@ export class DaCeInterface {
                 vscode.window.showErrorMessage(
                     'Unable to start and connect to DaCe. Do you have it ' +
                     'installed?',
+                    'Retry',
                     'Install DaCe'
                 ).then(opt => {
                     switch (opt) {
+                        case 'Retry':
+                            this.startPythonDaemon();
+                            break;
                         case 'Install DaCe':
                             vscode.commands.executeCommand('dace.installDace');
                             break;
