@@ -2,6 +2,12 @@
 
 ## 0.2
 
+### 0.2.3
+
+- Improved error reporting and recovery.
+- Allows for a retry when the startup of the DaCe backend failed.
+- Clears transformations when the document is changed.
+
 ### 0.2.2
 
 - Fixes missing info contents in the info bar.
