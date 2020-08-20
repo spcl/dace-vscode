@@ -64,6 +64,10 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      */
     private updateActiveEditor(document: vscode.TextDocument,
                                webviewPanel: vscode.WebviewPanel): void {
+        this.trafoHistoryView.clearHistory();
+        this.trafoHistoryView.notifyTreeDataChanged();
+        this.transformationsView.clearTransformations();
+        this.transformationsView.notifyTreeDataChanged();
         this.activeSdfgFileName = document.fileName;
         this.activeEditor = webviewPanel;
         this.daceInterface.updateActiveSdfg(this.activeSdfgFileName,
@@ -99,6 +103,10 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      */
     private documentChanged(document: vscode.TextDocument,
                             webviewPanel: vscode.WebviewPanel): void {
+        this.trafoHistoryView.clearHistory();
+        this.trafoHistoryView.notifyTreeDataChanged();
+        this.transformationsView.clearTransformations();
+        this.transformationsView.notifyTreeDataChanged();
         this.updateWebview(document, webviewPanel);
         if (this.activeEditor === webviewPanel) {
             this.transformationsView.refresh();
