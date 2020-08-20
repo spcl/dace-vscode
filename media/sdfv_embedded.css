@@ -180,6 +180,7 @@ pre.code code {
 #processing-overlay-msg {
   font-weight: lighter;
   font-size: 2rem;
+  user-select: none;
 }
 
 #sdfv-toolbar {

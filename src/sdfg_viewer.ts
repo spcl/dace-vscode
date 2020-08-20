@@ -2,8 +2,12 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 
-import { TransformationsProvider } from './transformation/transformationsProvider';
-import { TransformationHistoryProvider } from './transformation/transformationHistoryProvider';
+import {
+    TransformationsProvider
+} from './transformation/transformationsProvider';
+import {
+    TransformationHistoryProvider
+} from './transformation/transformationHistoryProvider';
 import { DaCeInterface } from './daceInterface';
 
 class SdfgViewer {
@@ -106,7 +110,9 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         return this.openEditors;
     }
 
-    public findEditorForPanel(webviewPanel: vscode.WebviewPanel): SdfgViewer | undefined {
+    public findEditorForPanel(
+        webviewPanel: vscode.WebviewPanel
+    ): SdfgViewer | undefined {
         for (const element of this.openEditors) {
             if (element.webviewPanel === webviewPanel)
                 return element;
@@ -173,9 +179,10 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
                 case 'sortTransformations':
                     const elements = JSON.parse(e.visibleElements);
                     if (elements)
-                        TransformationsProvider.getInstance().sortTransformations(elements);
+                        TransformationsProvider.getInstance()
+                            .sortTransformations(elements);
                     break;
-                case 'exitPreview':
+                case 'getCurrentSdfg':
                     const instance = SdfgViewerProvider.getInstance();
                     if (instance) {
                         const editor: SdfgViewer | undefined =
@@ -255,17 +262,8 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
             this.csrSrcIdentifier, mediaFolderUri.toString()
         );
 
-        // Place the bound file's name and contents into the HTML so our SDFV
-        // script(s) can utilize it.
-        let contents: string = document.getText();
-        if (contents) {
-            contents = contents.replace(/\\/g, '\\\\');
-            if (/\r|\n/.exec(contents))
-                contents = JSON.stringify(JSON.parse(contents));
-            baseHtml = baseHtml.replace(this.jsonIdentifier, contents);
-        } else {
-            baseHtml = baseHtml.replace(this.jsonIdentifier, '');
-        }
+        // Place the bound file's name into the HTML so our SDFV script(s) can
+        // utilize it.
         const fUri: string = document.uri.toString();
         const fName = fUri.substr(fUri.lastIndexOf('/') + 1);
         baseHtml = baseHtml.replace(this.fnameIdentifier, fName);

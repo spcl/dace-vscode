@@ -40,7 +40,6 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
                 []
             ),
         ];
-        console.log(this.categories);
     }
 
     public static getInstance(): TransformationsProvider {

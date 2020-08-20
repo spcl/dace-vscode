@@ -91,15 +91,13 @@
     </div>
 
     <script>
-        var sdfg_json = '{{ SDFG_JSON }}';
+        var sdfg_json = '';
         var file_name = '{{ FILE_NAME }}';
     </script>
     <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
     <script>
         vscode = acquireVsCodeApi();
-
-        init_sdfv(parse_sdfg(sdfg_json));
 
         function setRendererContent(sdfg, previewing = false) {
             let user_transform = null;
@@ -197,6 +195,9 @@
 
         $(document).ready(() => {
             $('#processing-overlay').hide();
+            vscode.postMessage({
+                type: 'getCurrentSdfg',
+            });
         });
     </script>
 </body>
