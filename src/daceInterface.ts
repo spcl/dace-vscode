@@ -24,6 +24,7 @@ export class DaCeInterface {
     }
 
     private daemonRunning = false;
+    private daemonBooting = false;
 
     private activeSdfgFileName: string | undefined = undefined;
     private activeEditor: vscode.WebviewPanel | undefined = undefined;
@@ -82,9 +83,18 @@ export class DaCeInterface {
         }
     }
 
-    private async startPythonDaemon() {
-        if (this.daemonRunning)
+    private async startPythonDaemon(callback?: CallableFunction) {
+        if (this.daemonRunning) {
+            if (callback)
+                callback();
             return;
+        }
+
+        this.daemonBooting = true;
+
+        vscode.window.setStatusBarMessage(
+            'Trying to start and connect to a DaCe daemon', 5000
+        );
 
         const pythonPath = await this.getPythonPath(null);
         const daemon = cp.spawn(
@@ -94,6 +104,7 @@ export class DaCeInterface {
 
         daemon.on('exit', (code, signal) => {
             this.daemonRunning = false;
+            this.daemonBooting = false;
         });
 
         /*
@@ -125,9 +136,12 @@ export class DaCeInterface {
                         'Connected to a DaCe daemon', 10000
                     );
                     this.daemonRunning = true;
+                    this.daemonBooting = false;
                     clearInterval(connectionIntervalId);
-                    TransformationsProvider.getInstance().refresh();
-                    TransformationHistoryProvider.getInstance().refresh();
+
+                    // If a callback was provided, continue execution there.
+                    if (callback)
+                        callback();
                 }
             });
             req.end();
@@ -235,8 +249,30 @@ export class DaCeInterface {
         req.end();
     }
 
+    public promptStartDaemon() {
+        if (this.daemonBooting)
+            return;
+        vscode.window.showWarningMessage(
+            'The DaCe daemon isn\'t running, so this action can\'t be ' +
+            'performed. Do you want to start it?',
+            'Yes',
+            'No'
+        ).then(opt => {
+            switch (opt) {
+                case 'Yes':
+                    DaCeInterface.getInstance().startPythonDaemon();
+                    break;
+                case 'No':
+                    break;
+            }
+        });
+    }
+
     public start() {
-        this.startPythonDaemon();
+        this.startPythonDaemon(() => {
+            TransformationHistoryProvider.getInstance().refresh();
+            TransformationsProvider.getInstance().refresh();
+        });
     }
 
     public previewSdfg(sdfg: any) {
@@ -272,6 +308,11 @@ export class DaCeInterface {
     private sendApplyTransformationRequest(transformation: Transformation,
                                            callback: CallableFunction,
                                            processingMessage?: string) {
+        if (!this.daemonRunning) {
+            this.promptStartDaemon();
+            return;
+        }
+
         this.showSpinner(
             processingMessage ? processingMessage : 'Applying Transformation'
         );
@@ -340,6 +381,11 @@ export class DaCeInterface {
                 }
             }
         } else {
+            if (!this.daemonRunning) {
+                this.promptStartDaemon();
+                return;
+            }
+
             this.showSpinner('Loading SDFG');
             let callback: any;
             switch (mode) {
@@ -393,6 +439,11 @@ export class DaCeInterface {
     }
 
     public loadTransformations(): void {
+        if (!this.daemonRunning) {
+            this.promptStartDaemon();
+            return;
+        }
+
         this.showSpinner('Loading transformations');
 
         let sdfg = this.getActiveSdfg();
