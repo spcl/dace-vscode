@@ -45,8 +45,8 @@ button {
 pre.code {
   margin-top: 0;
   margin-bottom: 0;
-  display: block;
   float: left;
+  display: block;
   white-space: pre-wrap;
 }
 

@@ -98,12 +98,15 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
         return Promise.resolve(this.categories);
     }
 
-    public async sortTransformations(elements: any) {
+    public async sortTransformations(viewElements: any, selectedElements: any) {
         const viewportTransformations = [];
         const uncatTransformations = [];
+        const selectedTransformations = [];
 
         const catViewport =
             this.categories[TransformationsProvider.CAT_VIEWPORT_IDX];
+        const catSelected =
+            this.categories[TransformationsProvider.CAT_SELECTION_IDX];
         const catUncat =
             this.categories[TransformationsProvider.CAT_UNCATEGORIZED_IDX];
 
@@ -115,12 +118,57 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
         for (const trafo of allTransformations) {
             let matched = false;
             if (trafo.json.state_id >= 0) {
-                if (elements.states?.includes(trafo.json.state_id)) {
-                    for (const element of Object.values(trafo.json._subgraph)) {
-                        if (elements.nodes?.includes(Number(element))) {
-                            viewportTransformations.push(trafo);
+                // Matching a node.
+                if (trafo.json._subgraph) {
+                    for (const node_id of Object.values(trafo.json._subgraph)) {
+                        if (selectedElements.nodes?.filter((e: any) =>
+                                e.sdfg_id === trafo.json.sdfg_id &&
+                                e.state_id === trafo.json.state_id &&
+                                e.id === Number(node_id)
+                            ).length > 0) {
+                            selectedTransformations.push(trafo);
                             matched = true;
                             break;
+                        }
+                    }
+
+                    if (!matched) {
+                        for (const node_id of Object.values(trafo.json._subgraph)) {
+                            if (viewElements.nodes?.filter((e: any) =>
+                                    e.sdfg_id === trafo.json.sdfg_id &&
+                                    e.state_id === trafo.json.state_id &&
+                                    e.id === Number(node_id)
+                                ).length > 0) {
+                                viewportTransformations.push(trafo);
+                                matched = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (trafo.json._subgraph) {
+                    for (const state_id of Object.values(trafo.json._subgraph)) {
+                        if (selectedElements.states?.filter((e: any) =>
+                                e.sdfg_id === trafo.json.sdfg_id &&
+                                e.id === Number(state_id)
+                            ).length > 0) {
+                            selectedTransformations.push(trafo);
+                            matched = true;
+                            break;
+                        }
+                    }
+
+                    if (!matched) {
+                        for (const state_id of Object.values(trafo.json._subgraph)) {
+                            if (viewElements.states?.filter((e: any) =>
+                                    e.sdfg_id === trafo.json.sdfg_id &&
+                                    e.id === Number(state_id)
+                                ).length > 0) {
+                                viewportTransformations.push(trafo);
+                                matched = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -131,6 +179,7 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
         }
 
         catViewport.setTransformations(viewportTransformations);
+        catSelected.setTransformations(selectedTransformations);
         catUncat.setTransformations(uncatTransformations);
 
         this.notifyTreeDataChanged();

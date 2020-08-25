@@ -17,6 +17,8 @@ export class DaCeVSCode {
 
     private context: vscode.ExtensionContext | undefined = undefined;
 
+    private outputChannel: vscode.OutputChannel | undefined;
+
     public init(context: vscode.ExtensionContext) {
         this.context = context;
 
@@ -65,6 +67,14 @@ export class DaCeVSCode {
 
     public getExtensionContext() {
         return this.context;
+    }
+
+    public getOutputChannel(): vscode.OutputChannel {
+        if (!this.outputChannel)
+            this.outputChannel = vscode.window.createOutputChannel(
+                'SDFG Viewer'
+            );
+        return this.outputChannel;
     }
 
 }

@@ -7,6 +7,7 @@ import { TransformationsProvider } from './transformation/transformationsProvide
 import { Transformation, TransformationCategory } from './transformation/transformation';
 import { TransformationHistoryProvider } from './transformation/transformationHistoryProvider';
 import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
+import { DaCeVSCode } from './extension';
 
 enum InteractionMode {
     PREVIEW,
@@ -107,16 +108,20 @@ export class DaCeInterface {
             this.daemonBooting = false;
         });
 
-        /*
-        daemon.stdout.on('data', data => {
-            console.log(data.toString());
-        });
-        */
-
         daemon.stderr.on('data', data => {
-            vscode.window.showErrorMessage(
-                'Encountered an error in the DaCe daemon: ' + data.toString()
+            DaCeVSCode.getInstance().getOutputChannel().append(
+                data.toString()
             );
+            vscode.window.showErrorMessage(
+                'Encountered an error in the DaCe daemon! ',
+                'Show Error Output'
+            ).then((opt) => {
+                switch (opt) {
+                    case 'Show Error Output':
+                        DaCeVSCode.getInstance().getOutputChannel().show();
+                        break;
+                }
+            });
         });
 
         // TODO: Randomize port choice.
