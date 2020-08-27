@@ -2,6 +2,14 @@
 
 ## 0.2
 
+### 0.2.4
+
+- Improved error reporting for exceptions in DaCe.
+- Allows multi-selection of elements (nodes / edges) in the graph view via
+  Ctrl. + Click or box-select.
+- Now grouping applicable transformations for relevance to the selected
+  elements.
+
 ### 0.2.3
 
 - Improved error reporting and recovery.
