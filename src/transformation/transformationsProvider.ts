@@ -121,7 +121,8 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
                 // Matching a node.
                 if (trafo.json._subgraph) {
                     for (const node_id of Object.values(trafo.json._subgraph)) {
-                        if (selectedElements.nodes?.filter((e: any) =>
+                        if (selectedElements.filter((e: any) =>
+                                e.type === 'node' &&
                                 e.sdfg_id === trafo.json.sdfg_id &&
                                 e.state_id === trafo.json.state_id &&
                                 e.id === Number(node_id)
@@ -134,7 +135,8 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
 
                     if (!matched) {
                         for (const node_id of Object.values(trafo.json._subgraph)) {
-                            if (viewElements.nodes?.filter((e: any) =>
+                            if (viewElements.filter((e: any) =>
+                                    e.type === 'node' &&
                                     e.sdfg_id === trafo.json.sdfg_id &&
                                     e.state_id === trafo.json.state_id &&
                                     e.id === Number(node_id)
@@ -149,7 +151,8 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
             } else {
                 if (trafo.json._subgraph) {
                     for (const state_id of Object.values(trafo.json._subgraph)) {
-                        if (selectedElements.states?.filter((e: any) =>
+                        if (selectedElements.filter((e: any) =>
+                                e.type === 'state' &&
                                 e.sdfg_id === trafo.json.sdfg_id &&
                                 e.id === Number(state_id)
                             ).length > 0) {
@@ -161,7 +164,8 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
 
                     if (!matched) {
                         for (const state_id of Object.values(trafo.json._subgraph)) {
-                            if (viewElements.states?.filter((e: any) =>
+                            if (viewElements.filter((e: any) =>
+                                    e.type === 'state' &&
                                     e.sdfg_id === trafo.json.sdfg_id &&
                                     e.id === Number(state_id)
                                 ).length > 0) {
