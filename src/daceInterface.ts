@@ -487,6 +487,7 @@ export class DaCeInterface {
             '/transformations',
             {
                 'sdfg': sdfg,
+                'selected_elements': TransformationsProvider.getInstance().getLastSelectedElements(),
             },
             callback
         );

@@ -17,6 +17,8 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
 
     private static INSTANCE = new TransformationsProvider();
 
+    private lastSelectedElements: any[] = [];
+
     private constructor() {
         this.categories = [
             new TransformationCategory(
@@ -98,7 +100,13 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
         return Promise.resolve(this.categories);
     }
 
-    public async sortTransformations(viewElements: any, selectedElements: any) {
+    public getLastSelectedElements(): any[] {
+        return this.lastSelectedElements;
+    }
+
+    public async sortTransformations(viewElements: any[], selectedElements: any[]) {
+        this.lastSelectedElements = selectedElements;
+
         const viewportTransformations = [];
         const uncatTransformations = [];
         const selectedTransformations = [];
