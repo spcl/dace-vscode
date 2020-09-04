@@ -98,6 +98,7 @@
     <script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
     <script>
         vscode = acquireVsCodeApi();
+        var debug_draw = true;
 
         function setRendererContent(sdfg, previewing = false) {
             let user_transform = null;
@@ -106,10 +107,10 @@
                 renderer.destroy();
             }
             if (previewing) {
-                init_sdfv(parse_sdfg(sdfg), user_transform);
+                init_sdfv(parse_sdfg(sdfg), user_transform, debug_draw);
             } else {
                 sdfg_json = sdfg;
-                init_sdfv(parse_sdfg(sdfg_json), user_transform);
+                init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
             }
         }
 
@@ -119,7 +120,7 @@
                 user_transform = renderer.canvas_manager.user_transform;
                 renderer.destroy();
             }
-            init_sdfv(parse_sdfg(sdfg_json), user_transform);
+            init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
         }
 
         // Add a listener to update the content when the extension calls for it.
