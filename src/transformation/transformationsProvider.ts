@@ -104,6 +104,10 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
         return this.lastSelectedElements;
     }
 
+    public clearLastSelectedElements() {
+        this.lastSelectedElements = [];
+    }
+
     public async sortTransformations(viewElements: any[], selectedElements: any[]) {
         this.lastSelectedElements = selectedElements;
 

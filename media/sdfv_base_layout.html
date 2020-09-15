@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/sdfv_embedded.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/sdfv_embedded_overrides.css">
 
     <script>
         // Reference to the VSCode API.
@@ -92,26 +93,23 @@
 
     <script>
         var sdfg_json = '';
-        var file_name = '{{ FILE_NAME }}';
     </script>
     <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
     <script>
         vscode = acquireVsCodeApi();
-        var debug_draw = true;
+        var debug_draw = false;
 
         function setRendererContent(sdfg, previewing = false) {
-            let user_transform = null;
-            if (renderer) {
-                user_transform = renderer.canvas_manager.user_transform;
-                renderer.destroy();
-            }
-            if (previewing) {
-                init_sdfv(parse_sdfg(sdfg), user_transform, debug_draw);
-            } else {
+            parsed_sdfg = parse_sdfg(sdfg);
+
+            if (renderer)
+                renderer.set_sdfg(parsed_sdfg);
+            else
+                init_sdfv(parsed_sdfg, null, debug_draw);
+
+            if (!previewing)
                 sdfg_json = sdfg;
-                init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
-            }
         }
 
         function resetRendererContent() {
@@ -158,6 +156,9 @@
                         vscode.postMessage({
                             type: 'sortTransformations',
                             visibleElements: JSON.stringify(visibleElements),
+                            selectedElements: JSON.stringify(
+                                renderer.selected_elements
+                            ),
                         });
                     }
                     return;

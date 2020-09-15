@@ -29,8 +29,6 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
     // Identifiers for code placement into the webview's HTML.
     private readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
-    private readonly jsonIdentifier = '{{ SDFG_JSON }}';
-    private readonly fnameIdentifier = '{{ FILE_NAME }}';
 
     private static readonly viewType = 'sdfgCustom.sdfv';
 
@@ -156,10 +154,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
                 ))
             ],
         };
-        webviewPanel.webview.html = this.getHtml(
-            webviewPanel.webview,
-            document
-        );
+        webviewPanel.webview.html = this.getHtml(webviewPanel.webview);
 
         // We want to track the last active SDFG viewer/file.
         if (webviewPanel.active)
@@ -254,8 +249,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      * 
      * @returns        HTML to be displayed
      */
-    private getHtml(webview: vscode.Webview,
-        document: vscode.TextDocument): string {
+    private getHtml(webview: vscode.Webview): string {
         // Load the base HTML we want to display in the webview/editor.
         const fpBaseHtml: vscode.Uri = vscode.Uri.file(path.join(
             this.context.extensionPath, 'media', 'sdfv_base_layout.html'
@@ -270,12 +264,6 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         baseHtml = baseHtml.replace(
             this.csrSrcIdentifier, mediaFolderUri.toString()
         );
-
-        // Place the bound file's name into the HTML so our SDFV script(s) can
-        // utilize it.
-        const fUri: string = document.uri.toString();
-        const fName = fUri.substr(fUri.lastIndexOf('/') + 1);
-        baseHtml = baseHtml.replace(this.fnameIdentifier, fName);
 
         return baseHtml;
     }

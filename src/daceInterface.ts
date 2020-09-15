@@ -24,7 +24,7 @@ export class DaCeInterface {
         return this.INSTANCE;
     }
 
-    private daemonRunning = false;
+    private daemonRunning = true;
     private daemonBooting = false;
 
     private activeSdfgFileName: string | undefined = undefined;
@@ -338,9 +338,12 @@ export class DaCeInterface {
         if (transformation.json)
             this.sendApplyTransformationRequest(transformation, (data: any) => {
                 this.hideSpinner();
-                if (this.activeSdfgFileName)
+                if (this.activeSdfgFileName) {
+                    TransformationsProvider.getInstance()
+                        .clearLastSelectedElements();
                     fs.writeFileSync(this.activeSdfgFileName,
                         JSON.stringify(data.sdfg, null, 2));
+                }
             });
     }
 
@@ -374,7 +377,6 @@ export class DaCeInterface {
             if (originalSdfg) {
                 switch (mode) {
                     case InteractionMode.APPLY:
-                        // TODO: keep the 'future' history to 'redo'.
                         if (this.activeSdfgFileName)
                             fs.writeFileSync(this.activeSdfgFileName,
                                 JSON.stringify(originalSdfg, null, 2));
@@ -487,7 +489,8 @@ export class DaCeInterface {
             '/transformations',
             {
                 'sdfg': sdfg,
-                'selected_elements': TransformationsProvider.getInstance().getLastSelectedElements(),
+                'selected_elements': TransformationsProvider.getInstance()
+                    .getLastSelectedElements(),
             },
             callback
         );
