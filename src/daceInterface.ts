@@ -8,6 +8,7 @@ import { Transformation, TransformationCategory } from './transformation/transfo
 import { TransformationHistoryProvider } from './transformation/transformationHistoryProvider';
 import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
 import { DaCeVSCode } from './extension';
+import { SdfgViewerProvider } from './sdfg_viewer';
 
 enum InteractionMode {
     PREVIEW,
@@ -338,12 +339,9 @@ export class DaCeInterface {
         if (transformation.json)
             this.sendApplyTransformationRequest(transformation, (data: any) => {
                 this.hideSpinner();
-                if (this.activeSdfgFileName) {
-                    TransformationsProvider.getInstance()
-                        .clearLastSelectedElements();
-                    fs.writeFileSync(this.activeSdfgFileName,
-                        JSON.stringify(data.sdfg, null, 2));
-                }
+                this.writeToActiveDocument(data.sdfg);
+                TransformationsProvider.getInstance()
+                    .clearLastSelectedElements();
             });
     }
 
@@ -357,6 +355,24 @@ export class DaCeInterface {
                 },
                 'Generating Preview'
             );
+    }
+
+    public writeToActiveDocument(json: any) {
+        if (this.activeEditor) {
+            const sdfvInstance = SdfgViewerProvider.getInstance();
+            const document = sdfvInstance?.findEditorForPanel(
+                this.activeEditor
+            )?.document;
+            if (document) {
+                const edit = new vscode.WorkspaceEdit();
+                edit.replace(
+                    document.uri,
+                    new vscode.Range(0, 0, document.lineCount, 0),
+                    JSON.stringify(json, null, 2)
+                );
+                vscode.workspace.applyEdit(edit);
+            }
+        }
     }
 
     private gotoHistoryPoint(histItem: TransformationHistoryItem,
@@ -377,9 +393,7 @@ export class DaCeInterface {
             if (originalSdfg) {
                 switch (mode) {
                     case InteractionMode.APPLY:
-                        if (this.activeSdfgFileName)
-                            fs.writeFileSync(this.activeSdfgFileName,
-                                JSON.stringify(originalSdfg, null, 2));
+                        this.writeToActiveDocument(originalSdfg);
                         break;
                     case InteractionMode.PREVIEW:
                     default:
@@ -399,11 +413,7 @@ export class DaCeInterface {
                 case InteractionMode.APPLY:
                     callback = function(data: any) {
                         const daceInterface = DaCeInterface.getInstance();
-                        const fileName =
-                            daceInterface.getActiveSdfgFileName();
-                        if (fileName)
-                            fs.writeFileSync(fileName,
-                                JSON.stringify(data.sdfg, null, 2));
+                        daceInterface.writeToActiveDocument(data.sdfg);
                         daceInterface.hideSpinner();
                     };
                     break;

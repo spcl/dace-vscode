@@ -93,6 +93,10 @@ pre.code {
   margin: 0 .5rem;
 }
 
+#search-bar #refresh-btn {
+  margin-left: auto;
+}
+
 /* End search bar */
 
 /* Processing overlay */

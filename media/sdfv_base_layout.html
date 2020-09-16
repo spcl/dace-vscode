@@ -51,6 +51,11 @@
                     SDFG Outline
                 </span>
             </div>
+            <div id="refresh-btn" class="button" onclick="refreshSdfg();">
+                <span>
+                    Refresh
+                </span>
+            </div>
         </div>
     </div>
 
@@ -119,6 +124,13 @@
                 renderer.destroy();
             }
             init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
+        }
+
+        function refreshSdfg() {
+            if (vscode)
+                vscode.postMessage({
+                    type: 'getCurrentSdfg',
+                });
         }
 
         // Add a listener to update the content when the extension calls for it.
