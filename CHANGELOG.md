@@ -2,6 +2,20 @@
 
 ## 0.2
 
+### 0.2.5
+
+- Added subgraph transformations.
+  - Subgraph Transformations can be listed in the applicable transformations
+    list when the corresponding subgraph is selected and the list is manually
+    refreshed.
+  - Subgraph Transformations get listed as selected transformations.
+- Updated the icon pack.
+- Updated to the latest version of the DaCe webclient.
+  - For details please refer to
+    [the DaCe webclient's github page](https://github.com/spcl/dace-webclient).
+- The custom editor now interacts with the `TextDocument` API in the VSCode-way
+  instead of directly writing to the filesystem.
+
 ### 0.2.4
 
 - Improved error reporting for exceptions in DaCe.
