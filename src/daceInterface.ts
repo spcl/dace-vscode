@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { request } from 'http';
 
 import { TransformationsProvider } from './transformation/transformationsProvider';
-import { Transformation, TransformationCategory } from './transformation/transformation';
+import { Transformation, SubgraphTransformation } from './transformation/transformation';
 import { TransformationHistoryProvider } from './transformation/transformationHistoryProvider';
 import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
 import { DaCeVSCode } from './extension';
@@ -479,11 +479,19 @@ export class DaCeInterface {
                     docstring = data.docstrings[
                         elem.transformation
                     ];
-                tProvider.addUncategorizedTransformation(new Transformation(
-                        elem.transformation,
-                        elem,
-                        docstring
-                ));
+                if (elem.type && elem.type === 'SubgraphTransformation') {
+                    tProvider.addUncategorizedTransformation(new SubgraphTransformation(
+                            elem.transformation,
+                            elem,
+                            docstring
+                    ));
+                } else {
+                    tProvider.addUncategorizedTransformation(new Transformation(
+                            elem.transformation,
+                            elem,
+                            docstring
+                    ));
+                }
             }
             // Refresh the tree view to show the new contents.
             tProvider.notifyTreeDataChanged();

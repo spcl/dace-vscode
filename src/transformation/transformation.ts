@@ -51,12 +51,13 @@ export class Transformation extends BaseTransformationItem {
         super(label, vscode.TreeItemCollapsibleState.None);
     }
 
-    get command(): vscode.Command {
-        return {
-            command: 'sdfg.previewTransformation',
-            title: '',
-            arguments: [this],
-        };
-    }
+    command = {
+        command: 'sdfg.previewTransformation',
+        title: '',
+        arguments: [this],
+    };
 
+}
+
+export class SubgraphTransformation extends Transformation {
 }

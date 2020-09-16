@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import {
     BaseTransformationItem,
+    SubgraphTransformation,
     Transformation,
     TransformationCategory
 } from './transformation';
@@ -128,6 +129,12 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
                 allTransformations.push(trafo);
 
         for (const trafo of allTransformations) {
+            // Subgraph Transformations always apply to the selection.
+            if (trafo instanceof SubgraphTransformation) {
+                selectedTransformations.push(trafo);
+                continue;
+            }
+
             let matched = false;
             if (trafo.json.state_id >= 0) {
                 // Matching a node.
