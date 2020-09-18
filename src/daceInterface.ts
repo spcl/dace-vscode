@@ -25,7 +25,7 @@ export class DaCeInterface {
         return this.INSTANCE;
     }
 
-    private daemonRunning = true;
+    private daemonRunning = false;
     private daemonBooting = false;
 
     private activeSdfgFileName: string | undefined = undefined;
