@@ -79,7 +79,7 @@ function fill_info_embedded(elem) {
         const attr_table_body = $('<tbody>').appendTo(attr_table);
         for (const attr of Object.entries(elem.attributes())) {
             if (attr[0] === 'layout' || attr[0] === 'sdfg' ||
-                attr[0].startsWith('_meta_'))
+                attr[0].startsWith('_'))
                 continue;
             const val = sdfg_property_to_string(
                 attr[1],
