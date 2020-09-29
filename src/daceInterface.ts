@@ -19,7 +19,7 @@ export class DaCeInterface {
 
     private static INSTANCE = new DaCeInterface();
 
-    private constructor() {}
+    private constructor() { }
 
     public static getInstance(): DaCeInterface {
         return this.INSTANCE;
@@ -115,11 +115,15 @@ export class DaCeInterface {
             );
             vscode.window.showErrorMessage(
                 'Encountered an error in the DaCe daemon! ',
-                'Show Error Output'
+                'Show Error Output',
+                'Retry in Terminal Mode'
             ).then((opt) => {
                 switch (opt) {
                     case 'Show Error Output':
                         DaCeVSCode.getInstance().getOutputChannel().show();
+                        break;
+                    case 'Retry in Terminal Mode':
+                        vscode.commands.executeCommand('dace.openOptimizerInTerminal');
                         break;
                 }
             });
@@ -155,6 +159,7 @@ export class DaCeInterface {
 
         // If we were unable to connect after 10 seconds, stop trying.
         setTimeout(() => {
+
             if (!this.daemonRunning) {
                 // We were unable to start and connect to a daemon, show a
                 // message hinting at a potentially missing DaCe instance.
@@ -162,19 +167,30 @@ export class DaCeInterface {
                     'Unable to start and connect to DaCe. Do you have it ' +
                     'installed?',
                     'Retry',
+                    'Retry in Terminal Mode',
                     'Install DaCe'
                 ).then(opt => {
                     switch (opt) {
                         case 'Retry':
+                            clearInterval(connectionIntervalId);
                             this.startPythonDaemon();
                             break;
+                        case 'Retry in Terminal Mode':
+                            vscode.commands.executeCommand('dace.openOptimizerInTerminal');
+                            // Do not clear the connection interval immediately
+                            setTimeout(() => {
+                                clearInterval(connectionIntervalId);
+                            }, 10000);
+                            break;
                         case 'Install DaCe':
+                            clearInterval(connectionIntervalId);
                             vscode.commands.executeCommand('dace.installDace');
                             break;
                     }
                 });
+            } else {
+                clearInterval(connectionIntervalId);
             }
-            clearInterval(connectionIntervalId);
         }, 10000);
     }
 
@@ -214,7 +230,7 @@ export class DaCeInterface {
                                     error = parsed.error;
                                     parsed = undefined;
                                 }
-                            } catch(e) {
+                            } catch (e) {
                                 error = {
                                     message: 'Failed to parse response',
                                     details: e,
@@ -238,7 +254,7 @@ export class DaCeInterface {
                             'An internal DaCe error was encountered!';
                         const errorDetails = 'DaCe request failed with code ' +
                             response.statusCode;
-                        if (customErrorHandler) 
+                        if (customErrorHandler)
                             customErrorHandler({
                                 message: errorMessage,
                                 details: errorDetails,
@@ -411,7 +427,7 @@ export class DaCeInterface {
             let callback: any;
             switch (mode) {
                 case InteractionMode.APPLY:
-                    callback = function(data: any) {
+                    callback = function (data: any) {
                         const daceInterface = DaCeInterface.getInstance();
                         daceInterface.writeToActiveDocument(data.sdfg);
                         daceInterface.hideSpinner();
@@ -419,7 +435,7 @@ export class DaCeInterface {
                     break;
                 case InteractionMode.PREVIEW:
                 default:
-                    callback = function(data: any) {
+                    callback = function (data: any) {
                         const daceInterface = DaCeInterface.getInstance();
                         daceInterface.previewSdfg(data.sdfg);
                         daceInterface.hideSpinner();
@@ -481,15 +497,15 @@ export class DaCeInterface {
                     ];
                 if (elem.type && elem.type === 'SubgraphTransformation') {
                     tProvider.addUncategorizedTransformation(new SubgraphTransformation(
-                            elem.transformation,
-                            elem,
-                            docstring
+                        elem.transformation,
+                        elem,
+                        docstring
                     ));
                 } else {
                     tProvider.addUncategorizedTransformation(new Transformation(
-                            elem.transformation,
-                            elem,
-                            docstring
+                        elem.transformation,
+                        elem,
+                        docstring
                     ));
                 }
             }
