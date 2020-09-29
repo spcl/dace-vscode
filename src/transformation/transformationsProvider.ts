@@ -9,7 +9,7 @@ import {
 import { DaCeInterface } from '../daceInterface';
 
 export class TransformationsProvider
-implements vscode.TreeDataProvider<BaseTransformationItem> {
+    implements vscode.TreeDataProvider<BaseTransformationItem> {
 
     public static readonly CAT_SELECTION_IDX = 0;
     public static readonly CAT_VIEWPORT_IDX = 1;
@@ -25,21 +25,25 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
             new TransformationCategory(
                 'Selection',
                 'Transformations relevant to the current selection',
+                true,
                 []
             ),
             new TransformationCategory(
                 'Viewport',
                 'Transformations relevant to the current viewport',
+                true,
                 []
             ),
             new TransformationCategory(
                 'Global',
                 'Transformations relevant on a global scale',
+                false,
                 []
             ),
             new TransformationCategory(
                 'Uncategorized',
                 'Uncategorized transformations',
+                false,
                 []
             ),
         ];
@@ -114,12 +118,15 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
 
         const viewportTransformations = [];
         const uncatTransformations = [];
+        const globalTransformations = [];
         const selectedTransformations = [];
 
         const catViewport =
             this.categories[TransformationsProvider.CAT_VIEWPORT_IDX];
         const catSelected =
             this.categories[TransformationsProvider.CAT_SELECTION_IDX];
+        const catGlobal =
+            this.categories[TransformationsProvider.CAT_GLOBAL_IDX];
         const catUncat =
             this.categories[TransformationsProvider.CAT_UNCATEGORIZED_IDX];
 
@@ -136,16 +143,20 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
             }
 
             let matched = false;
+            if (trafo.json.state_id === -1 && Object.keys(trafo.json._subgraph).length === 0) {
+                globalTransformations.push(trafo);
+                matched = true;
+            }
             if (trafo.json.state_id >= 0) {
                 // Matching a node.
                 if (trafo.json._subgraph) {
                     for (const node_id of Object.values(trafo.json._subgraph)) {
                         if (selectedElements.filter((e: any) =>
-                                e.type === 'node' &&
-                                e.sdfg_id === trafo.json.sdfg_id &&
-                                e.state_id === trafo.json.state_id &&
-                                e.id === Number(node_id)
-                            ).length > 0) {
+                            e.type === 'node' &&
+                            e.sdfg_id === trafo.json.sdfg_id &&
+                            e.state_id === trafo.json.state_id &&
+                            e.id === Number(node_id)
+                        ).length > 0) {
                             selectedTransformations.push(trafo);
                             matched = true;
                             break;
@@ -155,11 +166,11 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
                     if (!matched) {
                         for (const node_id of Object.values(trafo.json._subgraph)) {
                             if (viewElements.filter((e: any) =>
-                                    e.type === 'node' &&
-                                    e.sdfg_id === trafo.json.sdfg_id &&
-                                    e.state_id === trafo.json.state_id &&
-                                    e.id === Number(node_id)
-                                ).length > 0) {
+                                e.type === 'node' &&
+                                e.sdfg_id === trafo.json.sdfg_id &&
+                                e.state_id === trafo.json.state_id &&
+                                e.id === Number(node_id)
+                            ).length > 0) {
                                 viewportTransformations.push(trafo);
                                 matched = true;
                                 break;
@@ -171,10 +182,10 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
                 if (trafo.json._subgraph) {
                     for (const state_id of Object.values(trafo.json._subgraph)) {
                         if (selectedElements.filter((e: any) =>
-                                e.type === 'state' &&
-                                e.sdfg_id === trafo.json.sdfg_id &&
-                                e.id === Number(state_id)
-                            ).length > 0) {
+                            e.type === 'state' &&
+                            e.sdfg_id === trafo.json.sdfg_id &&
+                            e.id === Number(state_id)
+                        ).length > 0) {
                             selectedTransformations.push(trafo);
                             matched = true;
                             break;
@@ -184,10 +195,10 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
                     if (!matched) {
                         for (const state_id of Object.values(trafo.json._subgraph)) {
                             if (viewElements.filter((e: any) =>
-                                    e.type === 'state' &&
-                                    e.sdfg_id === trafo.json.sdfg_id &&
-                                    e.id === Number(state_id)
-                                ).length > 0) {
+                                e.type === 'state' &&
+                                e.sdfg_id === trafo.json.sdfg_id &&
+                                e.id === Number(state_id)
+                            ).length > 0) {
                                 viewportTransformations.push(trafo);
                                 matched = true;
                                 break;
@@ -202,6 +213,7 @@ implements vscode.TreeDataProvider<BaseTransformationItem> {
         }
 
         catViewport.setTransformations(viewportTransformations);
+        catGlobal.setTransformations(globalTransformations);
         catSelected.setTransformations(selectedTransformations);
         catUncat.setTransformations(uncatTransformations);
 
