@@ -11,9 +11,10 @@ export class TransformationCategory extends BaseTransformationItem {
     constructor(
         public readonly label: string,
         public readonly tooltip: string,
+        public readonly expanded: boolean,
         private transformations: Transformation[]
     ) {
-        super(label, vscode.TreeItemCollapsibleState.Expanded);
+        super(label, expanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed);
     }
 
     public addTransformation(transformation: Transformation) {

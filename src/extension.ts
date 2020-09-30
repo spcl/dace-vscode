@@ -9,7 +9,7 @@ export class DaCeVSCode {
 
     private static INSTANCE = new DaCeVSCode();
 
-    private constructor() {}
+    private constructor() { }
 
     public static getInstance(): DaCeVSCode {
         return this.INSTANCE;
@@ -62,6 +62,11 @@ export class DaCeVSCode {
             const term = vscode.window.createTerminal('Install DaCe');
             term.show();
             term.sendText('pip install git+https://github.com/spcl/dace.git');
+        });
+        vscode.commands.registerCommand('dace.openOptimizerInTerminal', () => {
+            const term = vscode.window.createTerminal('SDFG Optimizer');
+            term.show();
+            term.sendText('python -m dace.transformation.interface.vscode');
         });
     }
 
