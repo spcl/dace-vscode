@@ -25,6 +25,28 @@
     },
     "icon": "icon.png",
     "contributes": {
+        "configuration": [
+            {
+                "title": "DaCe SDFG Optimizer",
+                "properties": {
+                    "dace.interface.terminalMode": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Run the DaCe backend in a new terminal instead of a subprocess",
+                        "scope": "machine-overridable"
+                    },
+                    "dace.sdfv.layout": {
+                        "type": "string",
+                        "default": "horizontal",
+                        "enum": ["horizontal", "vertical"],
+                        "enumDescriptions": [
+                            "Split the SDFG Optimizer layout horizontally",
+                            "Split the SDFG Optimizer layout vertically"
+                        ]
+                    }
+                }
+            }
+        ],
         "languages": [
             {
                 "id": "sdfg",

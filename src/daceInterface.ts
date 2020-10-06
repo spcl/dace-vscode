@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import * as fs from 'fs';
@@ -85,51 +86,50 @@ export class DaCeInterface {
         }
     }
 
-    private async startPythonDaemon(callback?: CallableFunction) {
-        if (this.daemonRunning) {
-            if (callback)
-                callback();
-            return;
-        }
-
-        this.daemonBooting = true;
-
-        vscode.window.setStatusBarMessage(
-            'Trying to start and connect to a DaCe daemon', 5000
-        );
-
-        const pythonPath = await this.getPythonPath(null);
-        const daemon = cp.spawn(
-            pythonPath,
-            ['-m', 'dace.transformation.interface.vscode']
-        );
-
-        daemon.on('exit', (code, signal) => {
-            this.daemonRunning = false;
-            this.daemonBooting = false;
+    private genericBackendErrorPopup() {
+        vscode.window.showErrorMessage(
+            'Encountered an error in the DaCe daemon! ',
+            'Show Error Output',
+            'Retry in Terminal Mode'
+        ).then((opt) => {
+            switch (opt) {
+                case 'Show Error Output':
+                    DaCeVSCode.getInstance().getOutputChannel().show();
+                    break;
+                case 'Retry in Terminal Mode':
+                    vscode.commands.executeCommand(
+                        'dace.openOptimizerInTerminal'
+                    );
+                    break;
+            }
         });
+    }
 
-        daemon.stderr.on('data', data => {
+    private getRunDaceScriptPath(): string | undefined{
+        const extensionPath =
+            DaCeVSCode.getInstance().getExtensionContext()?.extensionPath;
+        if (!extensionPath) {
             DaCeVSCode.getInstance().getOutputChannel().append(
-                data.toString()
+                'Failed to load the file path to the extension'
             );
-            vscode.window.showErrorMessage(
-                'Encountered an error in the DaCe daemon! ',
-                'Show Error Output',
-                'Retry in Terminal Mode'
-            ).then((opt) => {
-                switch (opt) {
-                    case 'Show Error Output':
-                        DaCeVSCode.getInstance().getOutputChannel().show();
-                        break;
-                    case 'Retry in Terminal Mode':
-                        vscode.commands.executeCommand('dace.openOptimizerInTerminal');
-                        break;
-                }
-            });
-        });
+            this.genericBackendErrorPopup();
+            return undefined;
+        }
+        return path.join(extensionPath, 'backend', 'run_dace.py');
+    }
 
-        // TODO: Randomize port choice.
+    public startDaemonInTerminal(callback?: CallableFunction) {
+        const term = vscode.window.createTerminal('SDFG Optimizer');
+        term.show();
+        const scriptPath = this.getRunDaceScriptPath();
+        if (scriptPath) {
+            this.daemonBooting = true;
+            term.sendText('python ' + scriptPath);
+            this.pollDaemon(callback, true);
+        }
+    }
+
+    private pollDaemon(callback?: CallableFunction, terminalMode?: boolean) {
         // We poll the daemon every second to see if it's awake.
         const connectionIntervalId = setInterval(() => {
             console.log('Checking for daemon');
@@ -149,6 +149,61 @@ export class DaCeInterface {
                     this.daemonBooting = false;
                     clearInterval(connectionIntervalId);
 
+                    if (vscode.workspace.getConfiguration(
+                            'dace.interface'
+                        ).terminalMode === true
+                    ) {
+                        if (terminalMode !== true) {
+                            vscode.window.showInformationMessage(
+                                'DaCe successfully started as a subprocess, ' +
+                                'but you have it configured to start in ' +
+                                'terminal mode. Do you want to update this ' +
+                                'setting?',
+                                'Yes',
+                                'No'
+                            ).then((opt) => {
+                                switch (opt) {
+                                    case 'Yes':
+                                        vscode.workspace.getConfiguration(
+                                            'dace.interface'
+                                        ).update(
+                                            'terminalMode', false,
+                                            vscode.ConfigurationTarget.Global
+                                        );
+                                        break;
+                                    case 'No':
+                                    default:
+                                        break;
+                                }
+                            });
+                        }
+                    } else {
+                        if (terminalMode === true) {
+                            vscode.window.showInformationMessage(
+                                'DaCe successfully started in terminal mode, ' +
+                                'but you have it configured to start as a ' +
+                                'subprocess. Do you want to update this ' +
+                                'setting?',
+                                'Yes',
+                                'No'
+                            ).then((opt) => {
+                                switch (opt) {
+                                    case 'Yes':
+                                        vscode.workspace.getConfiguration(
+                                            'dace.interface'
+                                        ).update(
+                                            'terminalMode', true,
+                                            vscode.ConfigurationTarget.Global
+                                        );
+                                        break;
+                                    case 'No':
+                                    default:
+                                        break;
+                                }
+                            });
+                        }
+                    }
+
                     // If a callback was provided, continue execution there.
                     if (callback)
                         callback();
@@ -159,7 +214,6 @@ export class DaCeInterface {
 
         // If we were unable to connect after 10 seconds, stop trying.
         setTimeout(() => {
-
             if (!this.daemonRunning) {
                 // We were unable to start and connect to a daemon, show a
                 // message hinting at a potentially missing DaCe instance.
@@ -176,7 +230,9 @@ export class DaCeInterface {
                             this.startPythonDaemon();
                             break;
                         case 'Retry in Terminal Mode':
-                            vscode.commands.executeCommand('dace.openOptimizerInTerminal');
+                            vscode.commands.executeCommand(
+                                'dace.openOptimizerInTerminal'
+                            );
                             // Do not clear the connection interval immediately
                             setTimeout(() => {
                                 clearInterval(connectionIntervalId);
@@ -192,6 +248,45 @@ export class DaCeInterface {
                 clearInterval(connectionIntervalId);
             }
         }, 10000);
+    }
+
+    private async startPythonDaemon(callback?: CallableFunction) {
+        if (this.daemonRunning) {
+            if (callback)
+                callback();
+            return;
+        }
+
+        this.daemonBooting = true;
+
+        vscode.window.setStatusBarMessage(
+            'Trying to start and connect to a DaCe daemon', 5000
+        );
+
+        const pythonPath = await this.getPythonPath(null);
+        const scriptPath = this.getRunDaceScriptPath();
+        if (!scriptPath)
+            return;
+
+        // TODO: Randomize port choice.
+        const daemon = cp.spawn(
+            pythonPath,
+            [scriptPath]
+        );
+
+        daemon.on('exit', (code, signal) => {
+            this.daemonRunning = false;
+            this.daemonBooting = false;
+        });
+
+        daemon.stderr.on('data', data => {
+            DaCeVSCode.getInstance().getOutputChannel().append(
+                data.toString()
+            );
+            this.genericBackendErrorPopup();
+        });
+
+        this.pollDaemon(callback, false);
     }
 
     private sendPostRequest(url: string,
@@ -291,10 +386,17 @@ export class DaCeInterface {
     }
 
     public start() {
-        this.startPythonDaemon(() => {
+        const callback = () => {
             TransformationHistoryProvider.getInstance().refresh();
             TransformationsProvider.getInstance().refresh();
-        });
+        };
+        if (vscode.workspace.getConfiguration(
+                'dace.interface'
+            ).terminalMode === true
+        )
+            this.startDaemonInTerminal(callback);
+        else
+            this.startPythonDaemon(callback);
     }
 
     public previewSdfg(sdfg: any) {
@@ -469,6 +571,37 @@ export class DaCeInterface {
 
     public previewHistoryPoint(histItem: TransformationHistoryItem) {
         this.gotoHistoryPoint(histItem, InteractionMode.PREVIEW);
+    }
+
+    public getFlops(): void {
+        if (!this.daemonRunning) {
+            this.promptStartDaemon();
+            return;
+        }
+
+        this.showSpinner('Calculating FLOPS');
+
+        let sdfg = this.getActiveSdfg();
+        if (!sdfg) {
+            console.log('No active SDFG editor!');
+            return;
+        }
+
+        function callback(data: any) {
+            DaCeInterface.getInstance().activeEditor?.webview.postMessage({
+                type: 'flopsCallback',
+                map: data.arith_ops_map,
+            });
+            DaCeInterface.getInstance().hideSpinner();
+        }
+
+        this.sendPostRequest(
+            '/get_arith_ops',
+            {
+                'sdfg': sdfg,
+            },
+            callback
+        );
     }
 
     public loadTransformations(): void {

@@ -2,6 +2,10 @@
 
 ## 0.2
 
+### 0.2.6
+
+- Bugfixes.
+
 ### 0.2.5
 
 - Added subgraph transformations.

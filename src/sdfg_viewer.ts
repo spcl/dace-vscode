@@ -179,6 +179,9 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         // Handle received messages from the webview.
         webviewPanel.webview.onDidReceiveMessage(e => {
             switch (e.type) {
+                case 'getFlops':
+                    this.daceInterface.getFlops();
+                    break;
                 case 'sortTransformations':
                     const viewElements = JSON.parse(e.visibleElements);
                     const selectedElements = JSON.parse(e.selectedElements);
@@ -264,6 +267,22 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         baseHtml = baseHtml.replace(
             this.csrSrcIdentifier, mediaFolderUri.toString()
         );
+
+        // If the settings indicate it, split the webview vertically and put
+        // the info container to the right instead of at the bottom.
+        if (vscode.workspace.getConfiguration(
+                'dace.sdfv'
+            ).layout === 'vertical'
+        ) {
+            baseHtml = baseHtml.replace(
+                '<div id="split-container">',
+                '<div id="split-container" style="display: flex;">'
+            );
+            baseHtml = baseHtml.replace(
+                'direction: \'vertical\',',
+                'direction: \'horizontal\','
+            );
+        }
 
         return baseHtml;
     }
