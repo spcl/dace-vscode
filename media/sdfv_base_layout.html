@@ -139,6 +139,20 @@
             const message = e.data;
             let el = undefined;
             switch (message.type) {
+                case 'flopsCallback':
+                    if (renderer && renderer.overlay_manager &&
+                        renderer.overlay_manager.static_flops_overlay_active) {
+                        let overlay = undefined;
+                        renderer.overlay_manager.overlays.forEach(ol => {
+                            if (ol.type === GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS) {
+                                overlay = ol;
+                                return;
+                            }
+                        });
+                        if (overlay && message.map)
+                            overlay.update_flops_map(message.map);
+                    }
+                    return;
                 case 'update':
                     setRendererContent(message.text);
                     return;
@@ -205,7 +219,7 @@
             minSize: [0, 0],
             snapOffset: 10,
             direction: 'vertical',
-            cursor: 'row-resize',
+            //cursor: 'row-resize',
         });
 
         $(document).ready(() => {

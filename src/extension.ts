@@ -58,15 +58,12 @@ export class DaCeVSCode {
             daceInterface.previewHistoryPoint(h));
         vscode.commands.registerCommand('sdfg.applyHistoryPoint', (h) =>
             daceInterface.applyHistoryPoint(h));
+        vscode.commands.registerCommand('dace.openOptimizerInTerminal', () =>
+            daceInterface.startDaemonInTerminal());
         vscode.commands.registerCommand('dace.installDace', () => {
             const term = vscode.window.createTerminal('Install DaCe');
             term.show();
             term.sendText('pip install git+https://github.com/spcl/dace.git');
-        });
-        vscode.commands.registerCommand('dace.openOptimizerInTerminal', () => {
-            const term = vscode.window.createTerminal('SDFG Optimizer');
-            term.show();
-            term.sendText('python -m dace.transformation.interface.vscode');
         });
     }
 
