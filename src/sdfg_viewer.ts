@@ -9,6 +9,8 @@ import {
     TransformationHistoryProvider
 } from './transformation/transformationHistoryProvider';
 import { DaCeInterface } from './daceInterface';
+import { OutlineProvider } from './viewer/outlineProvider';
+import { DaCeVSCode } from './extension';
 
 class SdfgViewer {
 
@@ -43,8 +45,15 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         SdfgViewerProvider.INSTANCE = new SdfgViewerProvider(ctx);
+        const options: vscode.WebviewPanelOptions = {
+            retainContextWhenHidden: true,
+        };
         return vscode.window.registerCustomEditorProvider(
-            SdfgViewerProvider.viewType, SdfgViewerProvider.INSTANCE
+            SdfgViewerProvider.viewType,
+            SdfgViewerProvider.INSTANCE,
+            {
+                webviewOptions: options
+            }
         );
     }
 
@@ -62,13 +71,14 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      */
     private updateActiveEditor(document: vscode.TextDocument,
                                webviewPanel: vscode.WebviewPanel): void {
+        OutlineProvider.getInstance()?.clearOutline();
         this.trafoHistoryView.clearHistory();
         this.trafoHistoryView.notifyTreeDataChanged();
         this.transformationsView.clearTransformations();
         this.transformationsView.notifyTreeDataChanged();
         this.activeSdfgFileName = document.fileName;
         this.activeEditor = webviewPanel;
-        this.daceInterface.updateActiveSdfg(this.activeSdfgFileName,
+        DaCeVSCode.getInstance().updateActiveSdfg(this.activeSdfgFileName,
             this.activeEditor);
     }
 
@@ -181,6 +191,13 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
             switch (e.type) {
                 case 'getFlops':
                     this.daceInterface.getFlops();
+                    break;
+                case 'setOutline':
+                    const outlineProvider = OutlineProvider.getInstance();
+                    if (outlineProvider)
+                        outlineProvider.updateOutline(
+                            e.html,
+                        );
                     break;
                 case 'sortTransformations':
                     const viewElements = JSON.parse(e.visibleElements);

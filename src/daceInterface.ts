@@ -1,7 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
-import * as fs from 'fs';
 import { request } from 'http';
 
 import { TransformationsProvider } from './transformation/transformationsProvider';
@@ -28,9 +27,6 @@ export class DaCeInterface {
 
     private daemonRunning = false;
     private daemonBooting = false;
-
-    private activeSdfgFileName: string | undefined = undefined;
-    private activeEditor: vscode.WebviewPanel | undefined = undefined;
 
     private async getPythonPath(document: vscode.TextDocument | null) {
         try {
@@ -61,14 +57,6 @@ export class DaCeInterface {
         } catch (ignored) {
             return 'python';
         }
-    }
-
-    public getActiveSdfgFileName() {
-        return this.activeSdfgFileName;
-    }
-
-    public getActiveEditor() {
-        return this.activeEditor;
     }
 
     public genericErrorHandler(message: string, details?: string) {
@@ -400,20 +388,20 @@ export class DaCeInterface {
     }
 
     public previewSdfg(sdfg: any) {
-        this.activeEditor?.webview.postMessage({
+        DaCeVSCode.getInstance().activeEditorSendPost({
             type: 'preview_sdfg',
             text: JSON.stringify(sdfg),
         });
     }
 
     public exitPreview() {
-        this.activeEditor?.webview.postMessage({
+        DaCeVSCode.getInstance().activeEditorSendPost({
             type: 'exit_preview',
         });
     }
 
     public showSpinner(message?: string) {
-        this.activeEditor?.webview.postMessage({
+        DaCeVSCode.getInstance().activeEditorSendPost({
             type: 'processing',
             show: true,
             text: message ?
@@ -422,7 +410,7 @@ export class DaCeInterface {
     }
 
     public hideSpinner() {
-        this.activeEditor?.webview.postMessage({
+        DaCeVSCode.getInstance().activeEditorSendPost({
             type: 'processing',
             show: false,
             text: '',
@@ -440,7 +428,7 @@ export class DaCeInterface {
         this.showSpinner(
             processingMessage ? processingMessage : 'Applying Transformation'
         );
-        const sdfg = this.getActiveSdfg();
+        const sdfg = DaCeVSCode.getInstance().getActiveSdfg();
         if (sdfg) {
             this.sendPostRequest(
                 '/apply_transformation',
@@ -476,10 +464,11 @@ export class DaCeInterface {
     }
 
     public writeToActiveDocument(json: any) {
-        if (this.activeEditor) {
+        const activeEditor = DaCeVSCode.getInstance().getActiveEditor();
+        if (activeEditor) {
             const sdfvInstance = SdfgViewerProvider.getInstance();
             const document = sdfvInstance?.findEditorForPanel(
-                this.activeEditor
+                activeEditor
             )?.document;
             if (document) {
                 const edit = new vscode.WorkspaceEdit();
@@ -501,7 +490,7 @@ export class DaCeInterface {
             return;
         }
 
-        const sdfg = this.getActiveSdfg();
+        const sdfg = DaCeVSCode.getInstance().getActiveSdfg();
         if (!sdfg)
             return;
 
@@ -581,14 +570,14 @@ export class DaCeInterface {
 
         this.showSpinner('Calculating FLOPS');
 
-        let sdfg = this.getActiveSdfg();
+        let sdfg = DaCeVSCode.getInstance().getActiveSdfg();
         if (!sdfg) {
             console.log('No active SDFG editor!');
             return;
         }
 
         function callback(data: any) {
-            DaCeInterface.getInstance().activeEditor?.webview.postMessage({
+            DaCeVSCode.getInstance().activeEditorSendPost({
                 type: 'flopsCallback',
                 map: data.arith_ops_map,
             });
@@ -612,7 +601,7 @@ export class DaCeInterface {
 
         this.showSpinner('Loading transformations');
 
-        let sdfg = this.getActiveSdfg();
+        let sdfg = DaCeVSCode.getInstance().getActiveSdfg();
         if (!sdfg) {
             console.log('No active SDFG editor!');
             return;
@@ -645,11 +634,10 @@ export class DaCeInterface {
             // Refresh the tree view to show the new contents.
             tProvider.notifyTreeDataChanged();
 
-            const daceInterface = DaCeInterface.getInstance();
-            daceInterface.getActiveEditor()?.webview.postMessage({
+            DaCeVSCode.getInstance().activeEditorSendPost({
                 type: 'get_viewport_elem',
             });
-            daceInterface.hideSpinner();
+            DaCeInterface.getInstance().hideSpinner();
         }
 
         this.sendPostRequest(
@@ -663,29 +651,10 @@ export class DaCeInterface {
         );
     }
 
-    public updateActiveSdfg(activeSdfgFileName: string,
-                            activeEditor: vscode.WebviewPanel) {
-        this.activeSdfgFileName = activeSdfgFileName;
-        this.activeEditor = activeEditor;
-        TransformationsProvider.getInstance().refresh();
-        TransformationHistoryProvider.getInstance().refresh();
-    }
-
-    private getActiveSdfg(): any | undefined {
-        let sdfgJson = undefined;
-        if (this.activeSdfgFileName)
-            sdfgJson = fs.readFileSync(this.activeSdfgFileName, 'utf8');
-        if (sdfgJson === '' || !sdfgJson)
-            sdfgJson = undefined;
-        else
-            sdfgJson = JSON.parse(sdfgJson);
-        return sdfgJson;
-    }
-
     public activeSdfgGetHistory() {
         const trafoProvider = TransformationHistoryProvider.getInstance();
         trafoProvider.clearHistory();
-        const activeSdfg = this.getActiveSdfg();
+        const activeSdfg = DaCeVSCode.getInstance().getActiveSdfg();
         if (activeSdfg) {
             const history = activeSdfg?.attributes?.transformation_hist;
             if (history) {
