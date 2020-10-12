@@ -2,6 +2,27 @@
 
 ## 0.2
 
+### 0.2.7
+
+- Terminal mode for the DaCe backend.
+  - The DaCe interface was moved in to the plugin itself.
+  - The DaCe backend can now be started either silently in the background,
+    or as a terminal process in a new terminal from within VSCode. This is
+    configurable via the workspace settings.
+- The SDFV can now be configured (workspace settings) to be split vertically
+  instead of horizontally.
+- Static analysis overlays:
+  - A static analysis overlay to examine the memory volume in memlets was added.
+    - This overlay visualizes memory movement and indicates hotspots on a color
+      scale.
+  - A static analysis overlay for FLOPS analysis was added.
+    - This overlay visualizes compute time in the form of FLOPS on the graph.
+  - Overlays can be toggled from the main menu inside the SDFV.
+  - Overlays support the definition and subsequent resolution of symbols in
+    symbolic expressions.
+    - Unknown expressions are highlighted in grey, allowing the user to click on
+      the element and define the missing symbols.
+
 ### 0.2.6
 
 - Bugfixes.
