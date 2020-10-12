@@ -93,7 +93,7 @@ export class DaCeVSCode {
                 const term = vscode.window.createTerminal('Install DaCe');
                 term.show();
                 term.sendText(
-                    'pip install git+https://github.com/spcl/dace.git'
+                    'pip install dace'
                 );
             }
         ));
