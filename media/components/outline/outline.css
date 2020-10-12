@@ -1,0 +1,24 @@
+html {
+    height: 100%;
+    padding: 0;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    font-family: "Segeo UI", Arial, sans-serif;
+}
+
+.outline-item {
+    user-select: none;
+    font-size: 1rem;
+    font-family: "Segoe UI", Arial, sans-serif;
+    padding: .5rem 2rem .5rem .4rem;
+    cursor: pointer;
+    /*margin: .2rem 0 -.2rem;*/
+    background-color: var(--vscode-editor-background);
+}
+
+.outline-item:hover {
+    background-color: var(--vscode-inputOption-activeBackground);
+}

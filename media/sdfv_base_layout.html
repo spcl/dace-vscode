@@ -47,11 +47,6 @@
                     Search
                 </span>
             </div>
-            <div id="outline" class="button">
-                <span>
-                    SDFG Outline
-                </span>
-            </div>
             <div id="refresh-btn" class="button" onclick="refreshSdfg();">
                 <span>
                     Refresh SDFG
@@ -116,6 +111,9 @@
 
             if (!previewing)
                 sdfg_json = sdfg;
+
+            if (renderer)
+                outline(renderer, renderer.graph);
         }
 
         function resetRendererContent() {
@@ -187,6 +185,38 @@
                                 renderer.selected_elements
                             ),
                         });
+                    }
+                    return;
+                case 'refresh_outline':
+                    if (renderer)
+                        outline(renderer, renderer.graph);
+                    return;
+                case 'zoom_to_node':
+                    if (renderer) {
+                        const result = find_graph_element_by_uuid(
+                            renderer.graph, message.uuid
+                        );
+                        if (result === undefined)
+                            return;
+
+                        const element = result.element;
+                        if (element === undefined) {
+                            renderer.zoom_to_view();
+                            return;
+                        }
+                        const parent = result.parent;
+
+                        const elements_to_display = [element];
+                        if (element.type().endsWith('Entry') &&
+                            parent !== undefined) {
+                            const state = element.sdfg.nodes[element.parent_id];
+                            if (state.scope_dict[element.id] !== undefined) {
+                                for (const n_id of state.scope_dict[element.id])
+                                    elements_to_display.push(parent.node(n_id));
+                            }
+                        }
+
+                        renderer.zoom_to_view(elements_to_display);
                     }
                     return;
             }

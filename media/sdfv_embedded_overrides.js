@@ -172,6 +172,73 @@ function fill_info_embedded(elem) {
     }
 }
 
+function embedded_outline(renderer, graph) {
+    if (vscode === undefined)
+        return;
+
+    const outline_container = $('<div>', {
+        'id': 'outline-container',
+    });
+
+    $('<div>', {
+        'class': 'outline-item',
+        'html': `
+            <i class='material-icons' style='font-size: inherit'>
+                filter_center_focus
+            </i> SDFG ${renderer.sdfg.attributes.name}
+        `,
+        'sdfg_uuid': get_uuid_graph_element(undefined),
+    }).appendTo(outline_container);
+
+    const stack = [outline_container];
+
+    traverse_sdfg_scopes(graph, (node, parent) => {
+        // Skip exit nodes when scopes are known.
+        if (node.type().endsWith('Exit') && node.data.node.scope_entry >= 0) {
+            stack.push(null);
+            return true;
+        }
+
+        // Create an entry.
+        let is_collapsed = node.attributes().is_collapsed;
+        is_collapsed = (is_collapsed === undefined) ? false : is_collapsed;
+        let collapsed_text = is_collapsed ? '(collapsed)' : '';
+        let node_label = node.label();
+
+        // If a scope has children, remove the name "Entry" from the type.
+        let node_type = node.type();
+        if (node_type.endsWith('Entry')) {
+            const state = node.sdfg.nodes[node.parent_id];
+            if (state.scope_dict[node.id] !== undefined)
+                node_type = node_type.slice(0, -5);
+        }
+
+        stack.push($('<div>', {
+            'class': 'outline-item',
+            'html': `
+                ${node_type} ${node_label} ${collapsed_text}
+            `,
+            'sdfg_uuid': get_uuid_graph_element(node),
+        }));
+
+        // If the node's collapsed we don't traverse any further.
+        if (is_collapsed)
+            return false;
+    }, (node, parent) => {
+        // After scope ends, pop ourselves as the current element and add
+        // outselves to the parent.
+        const elem = stack.pop();
+        const elem_parent = stack[stack.length - 1];
+        if (elem && elem_parent)
+            elem.appendTo(elem_parent);
+    });
+
+    vscode.postMessage({
+        type: 'setOutline',
+        html: outline_container.html(),
+    });
+}
+
 function init_info_box() {
     // Pass
 }
@@ -182,6 +249,7 @@ sidebar_set_title = info_box_set_title;
 sidebar_show = info_box_show;
 sidebar_get_contents = info_box_get_contents;
 close_menu = clear_info_box;
+outline = embedded_outline;
 // Redefine the standard SDFV element information-display function with the one
 // for the embedded layout.
 fill_info = fill_info_embedded;

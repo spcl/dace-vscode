@@ -4,7 +4,7 @@
     "description": "DaCe SDFG Viewer (SDFV) for VS Code",
     "version": "0.2.7",
     "engines": {
-        "vscode": "^1.45.1"
+        "vscode": "^1.47.0"
     },
     "categories": [
         "Visualization",
@@ -38,7 +38,10 @@
                     "dace.sdfv.layout": {
                         "type": "string",
                         "default": "horizontal",
-                        "enum": ["horizontal", "vertical"],
+                        "enum": [
+                            "horizontal",
+                            "vertical"
+                        ],
                         "enumDescriptions": [
                             "Split the SDFG Optimizer layout horizontally",
                             "Split the SDFG Optimizer layout vertically"
@@ -108,6 +111,13 @@
                     "name": "Transformation History",
                     "icon": "media/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation History"
+                },
+                {
+                    "id": "sdfgOutline",
+                    "type": "webview",
+                    "name": "SDFG Outline",
+                    "icon": "media/dace-hollow.svg",
+                    "contextualTitle": "SDFG Outline"
                 }
             ]
         },
@@ -119,12 +129,24 @@
             {
                 "view": "transformationHistory",
                 "contents": "No previously applied transformations"
+            },
+            {
+                "view": "sdfgOutline",
+                "contents": "No active SDFG"
             }
         ],
         "commands": [
             {
                 "command": "transformationView.refreshEntry",
                 "title": "Refresh Transformations",
+                "icon": {
+                    "dark": "resources/dark/refresh.svg",
+                    "light": "resources/light/refresh.svg"
+                }
+            },
+            {
+                "command": "sdfgOutline.refreshEntry",
+                "title": "Refresh Outline",
                 "icon": {
                     "dark": "resources/dark/refresh.svg",
                     "light": "resources/light/refresh.svg"
@@ -171,6 +193,11 @@
                     "command": "transformationView.refreshEntry",
                     "when": "view == transformationView",
                     "group": "navigation"
+                },
+                {
+                    "command": "sdfgOutline.refreshEntry",
+                    "when": "view == sdfgOutline",
+                    "group": "navigation"
                 }
             ],
             "view/item/context": [
@@ -196,17 +223,17 @@
         "test": "node ./out/test/runTest.js"
     },
     "devDependencies": {
-        "@types/glob": "^7.1.1",
+        "@types/glob": "^7.1.3",
         "@types/mocha": "^7.0.1",
-        "@types/node": "^12.12.39",
-        "@types/vscode": "^1.45.1",
-        "@typescript-eslint/eslint-plugin": "^2.33.0",
-        "@typescript-eslint/parser": "^2.33.0",
+        "@types/node": "^12.12.67",
+        "@types/vscode": "^1.50.0",
+        "@typescript-eslint/eslint-plugin": "^2.34.0",
+        "@typescript-eslint/parser": "^2.34.0",
         "eslint": "^6.8.0",
         "glob": "^7.1.6",
-        "mocha": "^7.1.2",
-        "typescript": "^3.9.2",
-        "vscode-test": "^1.3.0"
+        "mocha": "^7.2.0",
+        "typescript": "^3.9.7",
+        "vscode-test": "^1.4.0"
     },
     "dependencies": {}
 }
