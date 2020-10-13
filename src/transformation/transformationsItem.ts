@@ -40,8 +40,14 @@ export class Transformation extends BaseTransformationItem {
     contextValue = 'transformation';
 
     iconPath = {
-        light: path.join(__filename, '..', '..', '..', 'fileicons', 'sdfg.svg'),
-        dark: path.join(__filename, '..', '..', '..', 'fileicons', 'sdfg.svg'),
+        light: path.join(
+            __filename, '..', '..', '..',
+            'resources', 'icon-theme', 'sdfg.svg'
+        ),
+        dark: path.join(
+            __filename, '..', '..', '..',
+            'resources', 'icon-theme', 'sdfg.svg'
+        ),
     };
 
     constructor(

@@ -86,7 +86,7 @@
             {
                 "id": "sdfgicon",
                 "label": "Seti + SDFG Extension",
-                "path": "./fileicons/sdfg-icon-theme.json"
+                "path": "./resources/icon-theme/sdfg-icon-theme.json"
             }
         ],
         "viewsContainers": {
@@ -94,7 +94,7 @@
                 {
                     "id": "transformation-explorer",
                     "title": "SDFG Optimization",
-                    "icon": "media/dace-hollow.svg"
+                    "icon": "resources/icons/dace-hollow.svg"
                 }
             ]
         },
@@ -103,20 +103,20 @@
                 {
                     "id": "transformationView",
                     "name": "Transformations",
-                    "icon": "media/dace-hollow.svg",
+                    "icon": "resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation Explorer"
                 },
                 {
                     "id": "transformationHistory",
                     "name": "Transformation History",
-                    "icon": "media/dace-hollow.svg",
+                    "icon": "resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation History"
                 },
                 {
                     "id": "sdfgOutline",
                     "type": "webview",
                     "name": "SDFG Outline",
-                    "icon": "media/dace-hollow.svg",
+                    "icon": "resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Outline"
                 }
             ]
@@ -140,16 +140,16 @@
                 "command": "transformationView.refreshEntry",
                 "title": "Refresh Transformations",
                 "icon": {
-                    "dark": "resources/dark/refresh.svg",
-                    "light": "resources/light/refresh.svg"
+                    "dark": "resources/icons/dark/refresh.svg",
+                    "light": "resources/icons/light/refresh.svg"
                 }
             },
             {
                 "command": "sdfgOutline.refreshEntry",
                 "title": "Refresh Outline",
                 "icon": {
-                    "dark": "resources/dark/refresh.svg",
-                    "light": "resources/light/refresh.svg"
+                    "dark": "resources/icons/dark/refresh.svg",
+                    "light": "resources/icons/light/refresh.svg"
                 }
             },
             {

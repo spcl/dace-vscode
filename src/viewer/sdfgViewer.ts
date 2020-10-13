@@ -4,13 +4,13 @@ import * as fs from 'fs';
 
 import {
     TransformationsProvider
-} from './transformation/transformationsProvider';
+} from '../transformation/transformations';
 import {
     TransformationHistoryProvider
-} from './transformation/transformationHistoryProvider';
-import { DaCeInterface } from './daceInterface';
-import { OutlineProvider } from './viewer/outlineProvider';
-import { DaCeVSCode } from './extension';
+} from '../transformation/transformationHistory';
+import { DaCeInterface } from '../daceInterface';
+import { OutlineProvider } from './outline';
+import { DaCeVSCode } from '../extension';
 
 class SdfgViewer {
 
@@ -272,7 +272,11 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
     private getHtml(webview: vscode.Webview): string {
         // Load the base HTML we want to display in the webview/editor.
         const fpBaseHtml: vscode.Uri = vscode.Uri.file(path.join(
-            this.context.extensionPath, 'media', 'sdfv_base_layout.html'
+            this.context.extensionPath,
+            'media',
+            'components',
+            'sdfv',
+            'index.html'
         ));
         let baseHtml = fs.readFileSync(fpBaseHtml.fsPath, 'utf8');
 
