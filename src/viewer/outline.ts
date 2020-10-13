@@ -52,7 +52,11 @@ export class OutlineProvider implements vscode.WebviewViewProvider {
         };
 
         const fpBaseHtml: vscode.Uri = vscode.Uri.file(path.join(
-            this.context.extensionPath, 'media', 'outline_base_layout.html'
+            this.context.extensionPath,
+            'media',
+            'components',
+            'outline',
+            'index.html'
         ));
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
             this.context.extensionPath, 'media'

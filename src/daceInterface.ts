@@ -3,12 +3,12 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { request } from 'http';
 
-import { TransformationsProvider } from './transformation/transformationsProvider';
-import { Transformation, SubgraphTransformation } from './transformation/transformation';
-import { TransformationHistoryProvider } from './transformation/transformationHistoryProvider';
+import { TransformationsProvider } from './transformation/transformations';
+import { Transformation, SubgraphTransformation } from './transformation/transformationsItem';
+import { TransformationHistoryProvider } from './transformation/transformationHistory';
 import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
 import { DaCeVSCode } from './extension';
-import { SdfgViewerProvider } from './sdfg_viewer';
+import { SdfgViewerProvider } from './viewer/sdfgViewer';
 
 enum InteractionMode {
     PREVIEW,

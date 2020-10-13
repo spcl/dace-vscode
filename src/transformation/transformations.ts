@@ -5,7 +5,7 @@ import {
     SubgraphTransformation,
     Transformation,
     TransformationCategory
-} from './transformation';
+} from './transformationsItem';
 import { DaCeInterface } from '../daceInterface';
 
 export class TransformationsProvider

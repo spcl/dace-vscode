@@ -9,21 +9,17 @@ export class TransformationHistoryItem extends vscode.TreeItem {
         public readonly isCurrent: boolean
     ) {
         super(label, vscode.TreeItemCollapsibleState.None);
+        if (isCurrent)
+            this.description = 'Current SDFG';
+        else
+            this.description = '';
     }
 
-    get description(): string {
-        if (this.isCurrent)
-            return 'Current SDFG';
-        return '';
-    }
-
-    get command(): vscode.Command {
-        return {
-            command: 'sdfg.previewHistoryPoint',
-            title: '',
-            arguments: [this],
-        };
-    }
+    command = {
+        command: 'sdfg.previewHistoryPoint',
+        title: '',
+        arguments: [this],
+    };
 
     iconPath = new vscode.ThemeIcon('git-commit');
 

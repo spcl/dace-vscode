@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 
-import { SdfgViewerProvider } from './sdfg_viewer';
+import { SdfgViewerProvider } from './viewer/sdfgViewer';
 import { DaCeInterface } from './daceInterface';
-import { TransformationsProvider } from './transformation/transformationsProvider';
-import { TransformationHistoryProvider } from './transformation/transformationHistoryProvider';
-import { OutlineProvider } from './viewer/outlineProvider';
+import { TransformationsProvider } from './transformation/transformations';
+import { TransformationHistoryProvider } from './transformation/transformationHistory';
+import { OutlineProvider } from './viewer/outline';
 
 export class DaCeVSCode {
 

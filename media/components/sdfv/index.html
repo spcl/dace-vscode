@@ -7,7 +7,7 @@
     <title>SDFG Viewer</title>
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/sdfv_embedded_overrides.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
 
     <script>
         // Reference to the VSCode API.
@@ -20,7 +20,7 @@
     <script src="{{ CSP_SRC }}/webclient/external_lib/blob-stream.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>
-    <script src="{{ CSP_SRC }}/split.min.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/lib/split.min.js"></script>
 
     <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
     <script src="{{ CSP_SRC }}/webclient/renderer_elements.js"></script>
@@ -96,7 +96,7 @@
         var sdfg_json = '';
     </script>
     <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
-    <script src="{{ CSP_SRC }}/sdfv_embedded_overrides.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
     <script>
         vscode = acquireVsCodeApi();
         var debug_draw = false;
