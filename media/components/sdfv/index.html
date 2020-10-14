@@ -101,6 +101,30 @@
         vscode = acquireVsCodeApi();
         var debug_draw = false;
 
+        function symbolResolverRegisterSymbols() {
+            if (renderer === undefined || vscode === undefined)
+                return;
+            vscode.postMessage({
+                type: 'symbol_resolver.add_symbols',
+                symbols: renderer.sdfg.attributes.symbols,
+            });
+        }
+
+        function symbolResolverRefreshSymbols() {
+            if (renderer === undefined || vscode === undefined)
+                return;
+            const map =
+                renderer.overlay_manager.symbol_resolver.symbol_value_map;
+            Object.keys(map).forEach((symbol) => {
+                if (map[symbol] === undefined)
+                    map[symbol] = '';
+            });
+            vscode.postMessage({
+                type: 'symbol_resolver.set_symbols',
+                symbols: map,
+            });
+        }
+
         function setRendererContent(sdfg, previewing = false) {
             parsed_sdfg = parse_sdfg(sdfg);
 
@@ -112,8 +136,8 @@
             if (!previewing)
                 sdfg_json = sdfg;
 
-            if (renderer)
-                outline(renderer, renderer.graph);
+            outline(renderer, renderer.graph);
+            symbolResolverRegisterSymbols();
         }
 
         function resetRendererContent() {
@@ -123,6 +147,8 @@
                 renderer.destroy();
             }
             init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
+            outline(renderer, renderer.graph);
+            symbolResolverRegisterSymbols();
         }
 
         function refreshSdfg() {
@@ -137,6 +163,22 @@
             const message = e.data;
             let el = undefined;
             switch (message.type) {
+                case 'symbol_value_changed':
+                    if (message.symbol !== undefined && renderer)
+                        renderer.overlay_manager.symbol_value_changed(
+                            message.symbol,
+                            message.value
+                        );
+                    break;
+                case 'update_badness_scale_method':
+                    if (message.method !== undefined && renderer)
+                        renderer.overlay_manager.update_badness_scale_method(
+                            message.method
+                        );
+                    break;
+                case 'refresh_symbol_list':
+                    symbolResolverRefreshSymbols();
+                    break;
                 case 'flopsCallback':
                     if (renderer && renderer.overlay_manager &&
                         renderer.overlay_manager.static_flops_overlay_active) {
@@ -187,7 +229,7 @@
                         });
                     }
                     return;
-                case 'refresh_outline':
+                    case 'refresh_outline':
                     if (renderer)
                         outline(renderer, renderer.graph);
                     return;

@@ -1,0 +1,22 @@
+html {
+    height: 100%;
+    padding: 0;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    font-family: "Segeo UI", Arial, sans-serif;
+}
+
+#contents {
+    width: 100%;
+}
+
+#symbol-table {
+    width: 100%;
+}
+
+#symbol-table .symbol-entry .symbol {
+    padding-right: .5rem;
+}

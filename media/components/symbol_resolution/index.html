@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Symbol Definitions</title>
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/components/symbol_resolution/symbol_resolution.css">
+
+    <script>
+        // Reference to the VSCode API.
+        let vscode = undefined;
+    </script>
+
+    <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
+    <script src="{{ CSP_SRC }}/components/symbol_resolution/symbol_resolution.js"></script>
+</head>
+
+<body>
+    <div id="contents">
+        <div id="symbol-list">
+            <table id="symbol-table">
+            </table>
+        </div>
+        <div id="badness-scale-method-container">
+            <div>
+                <span>
+                    Overlay scaling method:
+                </span>
+            </div>
+            <div>
+                <label>
+                    <input type="radio"
+                        name="badness-scale-method"
+                        value="mean">
+                    Mean
+                </label>
+                <label>
+                    <input type="radio"
+                        name="badness-scale-method"
+                        value="median"
+                        checked="checked">
+                    Median
+                </label>
+                <label>
+                    <input type="radio"
+                        name="badness-scale-method"
+                        value="mode">
+                    Mode
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        vscode = acquireVsCodeApi();
+
+        symbol_resolution = new SymbolResolution();
+
+        // Add a listener to receive messages from the extension.
+        window.addEventListener('message', e => {
+            const message = e.data;
+            switch (message.type) {
+                case 'add_symbol':
+                    if (message.symbol !== undefined)
+                        symbol_resolution.add_symbol(message.symbol);
+                    break;
+                case 'add_symbols':
+                    if (message.symbols !== undefined)
+                        symbol_resolution.add_symbols(message.symbols);
+                    break;
+                case 'define_symbol':
+                    if (message.symbol !== undefined)
+                        symbol_resolution.define_symbol(
+                            message.symbol,
+                            message.definition
+                        );
+                    break;
+                case 'remove_symbol_definition':
+                    if (message.symbol !== undefined)
+                        symbol_resolution.remove_symbol_definition(
+                            message.symbol
+                        );
+                    break;
+                case 'remove_symbol':
+                    if (message.symbol !== undefined)
+                        symbol_resolution.remove_symbol(message.symbol);
+                    break;
+                case 'remove_all_symbol_definitions':
+                    symbol_resolution.remove_all_symbol_definitions();
+                    break;
+                case 'set_symbols':
+                    if (message.symbols !== undefined) {
+                        const symbols = {};
+                        Object.keys(message.symbols).forEach((symbol) => {
+                            if (message.symbols[symbol] === '')
+                                symbols[symbol] = undefined;
+                            else
+                                symbols[symbol] = message.symbols[symbol];
+                        });
+                        symbol_resolution.set_symbols(symbols);
+                    }
+                    break;
+                case 'clear_symbols':
+                    symbol_resolution.clear_symbols();
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        $(document).ready(() => {
+            $('input[type=radio][name=badness-scale-method]').change(function() {
+                if (vscode)
+                    vscode.postMessage({
+                        type: 'sdfv.update_badness_scale_method',
+                        method: this.value,
+                    });
+            });
+            if (vscode)
+                vscode.postMessage({
+                    type: 'sdfv.refresh_symbol_list',
+                });
+        });
+    </script>
+</body>
+
+</html>
+

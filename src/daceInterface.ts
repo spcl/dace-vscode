@@ -8,7 +8,7 @@ import { Transformation, SubgraphTransformation } from './transformation/transfo
 import { TransformationHistoryProvider } from './transformation/transformationHistory';
 import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
 import { DaCeVSCode } from './extension';
-import { SdfgViewerProvider } from './viewer/sdfgViewer';
+import { SdfgViewerProvider } from './components/sdfgViewer';
 
 enum InteractionMode {
     PREVIEW,

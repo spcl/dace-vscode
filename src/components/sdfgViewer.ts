@@ -11,6 +11,7 @@ import {
 import { DaCeInterface } from '../daceInterface';
 import { OutlineProvider } from './outline';
 import { DaCeVSCode } from '../extension';
+import { SymbolResolutionProvider } from './symbolResolution';
 
 class SdfgViewer {
 
@@ -72,6 +73,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
     private updateActiveEditor(document: vscode.TextDocument,
                                webviewPanel: vscode.WebviewPanel): void {
         OutlineProvider.getInstance()?.clearOutline();
+        SymbolResolutionProvider.getInstance()?.clearSymbols();
         this.trafoHistoryView.clearHistory();
         this.trafoHistoryView.notifyTreeDataChanged();
         this.transformationsView.clearTransformations();
@@ -80,6 +82,8 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         this.activeEditor = webviewPanel;
         DaCeVSCode.getInstance().updateActiveSdfg(this.activeSdfgFileName,
             this.activeEditor);
+        OutlineProvider.getInstance()?.refresh();
+        SymbolResolutionProvider.getInstance()?.refresh();
     }
 
     /**
@@ -111,6 +115,8 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      */
     private documentChanged(document: vscode.TextDocument,
                             webviewPanel: vscode.WebviewPanel): void {
+        OutlineProvider.getInstance()?.clearOutline();
+        SymbolResolutionProvider.getInstance()?.clearSymbols();
         this.trafoHistoryView.clearHistory();
         this.trafoHistoryView.notifyTreeDataChanged();
         this.transformationsView.clearTransformations();
@@ -119,6 +125,8 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         if (this.activeEditor === webviewPanel) {
             this.transformationsView.refresh();
             this.trafoHistoryView.refresh();
+            OutlineProvider.getInstance()?.refresh();
+            SymbolResolutionProvider.getInstance()?.refresh();
         }
     }
 
@@ -140,6 +148,87 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         const editor = this.findEditorForPanel(webviewPanel);
         if (editor)
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
+    }
+
+    public handleMessage(
+        message: any,
+        originPanel: vscode.WebviewPanel | undefined
+    ) {
+        switch (message.type) {
+            case 'getFlops':
+                this.daceInterface.getFlops();
+                break;
+            case 'sortTransformations':
+                const viewElements = JSON.parse(message.visibleElements);
+                const selectedElements = JSON.parse(message.selectedElements);
+                if (viewElements && selectedElements)
+                    TransformationsProvider.getInstance()
+                        .sortTransformations(viewElements, selectedElements);
+                break;
+            case 'getCurrentSdfg':
+                const instance = SdfgViewerProvider.getInstance();
+                if (instance && originPanel) {
+                    const editor: SdfgViewer | undefined =
+                        instance.findEditorForPanel(originPanel);
+                    if (editor !== undefined)
+                        this.updateWebview(editor.document, originPanel);
+                }
+                break;
+            case 'gotoSource':
+                // We want to jump to a specific file and location if it
+                // exists.
+                let filePath: string;
+                if (path.isAbsolute(message.file_path))
+                    filePath = message.file_path;
+                else
+                    filePath = path.normalize(
+                        vscode.workspace.rootPath + '/' + message.file_path
+                    );
+                if (fs.existsSync(filePath)) {
+                    // The file exists, load it and show it in a new
+                    // editor, highlighting the indicated range.
+                    const fileUri: vscode.Uri = vscode.Uri.file(filePath);
+                    vscode.workspace.openTextDocument(fileUri).then(
+                        (doc: vscode.TextDocument) => {
+                            const startPos = new vscode.Position(
+                                message.startRow, message.startChar
+                            );
+                            const endPos = new vscode.Position(
+                                message.endRow, message.endChar
+                            );
+                            const range = new vscode.Range(
+                                startPos, endPos
+                            );
+                            vscode.window.showTextDocument(
+                                doc, {
+                                    preview: true,
+                                    selection: range,
+                                }
+                            );
+                        }
+                    );
+                } else {
+                    vscode.window.showInformationMessage(
+                        'Could not find file ' + filePath
+                    );
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    public handleExternalMessage(message: any) {
+        switch (message.type) {
+            case 'update_badness_scale_method':
+            case 'symbol_value_changed':
+            case 'refresh_outline':
+            case 'refresh_symbol_list':
+                this.activeEditor?.webview.postMessage(message);
+                break;
+            default:
+                break;
+        }
     }
 
     public async resolveCustomTextEditor(
@@ -187,73 +276,20 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         });
 
         // Handle received messages from the webview.
-        webviewPanel.webview.onDidReceiveMessage(e => {
-            switch (e.type) {
-                case 'getFlops':
-                    this.daceInterface.getFlops();
-                    break;
-                case 'setOutline':
-                    const outlineProvider = OutlineProvider.getInstance();
-                    if (outlineProvider)
-                        outlineProvider.updateOutline(
-                            e.html,
-                        );
-                    break;
-                case 'sortTransformations':
-                    const viewElements = JSON.parse(e.visibleElements);
-                    const selectedElements = JSON.parse(e.selectedElements);
-                    if (viewElements && selectedElements)
-                        TransformationsProvider.getInstance()
-                            .sortTransformations(viewElements, selectedElements);
-                    break;
-                case 'getCurrentSdfg':
-                    const instance = SdfgViewerProvider.getInstance();
-                    if (instance) {
-                        const editor: SdfgViewer | undefined =
-                            instance.findEditorForPanel(webviewPanel);
-                        if (editor !== undefined)
-                            this.updateWebview(editor.document, webviewPanel);
-                    }
-                    break;
-                case 'gotoSource':
-                    // We want to jump to a specific file and location if it
-                    // exists.
-                    let filePath: string;
-                    if (path.isAbsolute(e.file_path))
-                        filePath = e.file_path;
-                    else
-                        filePath = path.normalize(
-                            vscode.workspace.rootPath + '/' + e.file_path
-                        );
-                    if (fs.existsSync(filePath)) {
-                        // The file exists, load it and show it in a new
-                        // editor, highlighting the indicated range.
-                        const fileUri: vscode.Uri = vscode.Uri.file(filePath);
-                        vscode.workspace.openTextDocument(fileUri).then(
-                            (doc: vscode.TextDocument) => {
-                                const startPos = new vscode.Position(
-                                    e.startRow, e.startChar
-                                );
-                                const endPos = new vscode.Position(
-                                    e.endRow, e.endChar
-                                );
-                                const range = new vscode.Range(
-                                    startPos, endPos
-                                );
-                                vscode.window.showTextDocument(
-                                    doc, {
-                                        preview: true,
-                                        selection: range,
-                                    }
-                                );
-                            }
-                        );
-                    } else {
-                        vscode.window.showInformationMessage(
-                            'Could not find file ' + filePath
-                        );
-                    }
-                    return;
+        webviewPanel.webview.onDidReceiveMessage(message => {
+            if (message.type === undefined)
+                return;
+
+            if (message.type.startsWith('symbol_resolver.')) {
+                message.type = message.type.replace(/^(symbol_resolver\.)/, '');
+                SymbolResolutionProvider.getInstance()?.handleExternalMessage(
+                    message
+                );
+            } else if (message.type.startsWith('outline.')) {
+                message.type = message.type.replace(/^(outline\.)/, '');
+                OutlineProvider.getInstance()?.handleExternalMessage(message);
+            } else {
+                this.handleMessage(message, webviewPanel);
             }
         });
 
