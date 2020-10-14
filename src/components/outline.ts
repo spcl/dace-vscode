@@ -1,10 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DaCeVSCode } from '../extension';
-import { SdfgViewerProvider } from './sdfgViewer';
 
-export class OutlineProvider implements vscode.WebviewViewProvider {
+import { BaseComponent } from './baseComponent';
+import { ComponentMessageHandler } from './messaging/componentMessageHandler';
+
+export class OutlineProvider
+extends BaseComponent
+implements vscode.WebviewViewProvider {
 
     // Identifiers for code placement into the webview's HTML.
     private readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
@@ -14,9 +17,6 @@ export class OutlineProvider implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
 
     private static INSTANCE: OutlineProvider | undefined = undefined;
-
-    constructor(private readonly context: vscode.ExtensionContext) {
-    }
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         OutlineProvider.INSTANCE = new OutlineProvider(ctx);
@@ -70,28 +70,14 @@ export class OutlineProvider implements vscode.WebviewViewProvider {
         webviewView.webview.html = baseHtml;
 
         webviewView.webview.onDidReceiveMessage(message => {
-            if (message.type === undefined)
-                return;
-
-            if (message.type.startsWith('sdfv.')) {
-                message.type = message.type.replace(/^(sdfv\.)/, '');
-                SdfgViewerProvider.getInstance()?.handleExternalMessage(
-                    message
-                );
-            } else {
-                this.handleMessage(message);
-            }
+            ComponentMessageHandler.getInstance().handleMessage(
+                message,
+                webviewView.webview
+            );
         });
     }
 
-    private handleMessage(message: any) {
-        switch (message.type) {
-            default:
-                break;
-        }
-    }
-
-    public handleExternalMessage(message: any) {
+    public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
             case 'set_outline':
             case 'clear_outline':
@@ -109,9 +95,7 @@ export class OutlineProvider implements vscode.WebviewViewProvider {
     }
 
     public refresh() {
-        SdfgViewerProvider.getInstance()?.handleExternalMessage({
-            type: 'refresh_outline',
-        });
+        vscode.commands.executeCommand('sdfgOutline.refreshEntry');
     }
 
 }

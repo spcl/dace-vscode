@@ -154,7 +154,7 @@
         function refreshSdfg() {
             if (vscode)
                 vscode.postMessage({
-                    type: 'getCurrentSdfg',
+                    type: 'sdfv.get_current_sdfg',
                 });
         }
 
@@ -221,7 +221,7 @@
                     if (renderer) {
                         let visibleElements = renderer.visible_elements();
                         vscode.postMessage({
-                            type: 'sortTransformations',
+                            type: 'sdfv.sort_transformations',
                             visibleElements: JSON.stringify(visibleElements),
                             selectedElements: JSON.stringify(
                                 renderer.selected_elements
@@ -268,7 +268,7 @@
         // file and location, if it exists.
         function gotoSource(filePath, startRow, startChar, endRow, endChar) {
             vscode.postMessage({
-                type: 'gotoSource',
+                type: 'sdfv.go_to_source',
                 file_path: filePath,
                 startRow: startRow,
                 startChar: startChar,
@@ -297,7 +297,7 @@
         $(document).ready(() => {
             $('#processing-overlay').hide();
             vscode.postMessage({
-                type: 'getCurrentSdfg',
+                type: 'sdfv.get_current_sdfg',
             });
         });
     </script>

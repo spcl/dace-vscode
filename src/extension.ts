@@ -22,7 +22,7 @@ export class DaCeVSCode {
 
     private outputChannel: vscode.OutputChannel | undefined;
 
-    private activeEditor: vscode.WebviewPanel | undefined = undefined;
+    private activeEditor: vscode.Webview | undefined = undefined;
     private activeSdfgFileName: string | undefined = undefined;
 
     private registerCommand(command: string, handler: (...args: any[]) => any) {
@@ -65,12 +65,12 @@ export class DaCeVSCode {
             transformationsProvider.refresh();
         });
         this.registerCommand('symbolResolution.refreshEntry', () => {
-            DaCeVSCode.getInstance().activeEditorSendPost({
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'refresh_symbol_list',
             });
         });
         this.registerCommand('sdfgOutline.refreshEntry', () => {
-            DaCeVSCode.getInstance().activeEditorSendPost({
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'refresh_outline',
             });
         });
@@ -105,16 +105,16 @@ export class DaCeVSCode {
         return this.outputChannel;
     }
 
-    public getActiveEditor() {
+    public getActiveEditor(): vscode.Webview | undefined {
         return this.activeEditor;
     }
 
-    public getActiveSdfgFileName() {
+    public getActiveSdfgFileName(): string | undefined {
         return this.activeSdfgFileName;
     }
 
     public updateActiveSdfg(activeSdfgFileName: string,
-                            activeEditor: vscode.WebviewPanel) {
+                            activeEditor: vscode.Webview | undefined) {
         this.activeSdfgFileName = activeSdfgFileName;
         this.activeEditor = activeEditor;
         TransformationsProvider.getInstance().refresh();
@@ -130,10 +130,6 @@ export class DaCeVSCode {
         else
             sdfgJson = JSON.parse(sdfgJson);
         return sdfgJson;
-    }
-
-    public activeEditorSendPost(message: any) {
-        this.getActiveEditor()?.webview.postMessage(message);
     }
 
 }

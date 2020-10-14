@@ -1,9 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { SdfgViewerProvider } from './sdfgViewer';
+import { BaseComponent } from './baseComponent';
+import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
-export class SymbolResolutionProvider implements vscode.WebviewViewProvider {
+export class SymbolResolutionProvider
+extends BaseComponent
+implements vscode.WebviewViewProvider {
 
     // Identifiers for code placement into the webview's HTML.
     private readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
@@ -13,9 +16,6 @@ export class SymbolResolutionProvider implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
 
     private static INSTANCE: SymbolResolutionProvider | undefined = undefined;
-
-    constructor(private readonly context: vscode.ExtensionContext) {
-    }
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         SymbolResolutionProvider.INSTANCE = new SymbolResolutionProvider(ctx);
@@ -69,28 +69,14 @@ export class SymbolResolutionProvider implements vscode.WebviewViewProvider {
         webviewView.webview.html = baseHtml;
 
         webviewView.webview.onDidReceiveMessage(message => {
-            if (message.type === undefined)
-                return;
-
-            if (message.type.startsWith('sdfv.')) {
-                message.type = message.type.replace(/^(sdfv\.)/, '');
-                SdfgViewerProvider.getInstance()?.handleExternalMessage(
-                    message
-                );
-            } else {
-                this.handleMessage(message);
-            }
+            ComponentMessageHandler.getInstance().handleMessage(
+                message,
+                webviewView.webview
+            );
         });
     }
 
-    private handleMessage(message: any) {
-        switch (message.type) {
-            default:
-                break;
-        }
-    }
-
-    public handleExternalMessage(message: any) {
+    public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
             case 'add_symbol':
             case 'add_symbols':
@@ -114,9 +100,7 @@ export class SymbolResolutionProvider implements vscode.WebviewViewProvider {
     }
 
     public refresh() {
-        SdfgViewerProvider.getInstance()?.handleExternalMessage({
-            type: 'refresh_symbol_list'
-        });
+        vscode.commands.executeCommand('symbolResolution.refreshEntry');
     }
 
 }

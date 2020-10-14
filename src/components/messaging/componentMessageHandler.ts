@@ -1,0 +1,53 @@
+import * as vscode from 'vscode';
+import { DaCeInterface } from '../../daceInterface';
+
+import { OutlineProvider } from "../outline";
+import { SdfgViewerProvider } from "../sdfgViewer";
+import { SymbolResolutionProvider } from "../symbolResolution";
+
+export class ComponentMessageHandler {
+
+    private static INSTANCE: ComponentMessageHandler =
+        new ComponentMessageHandler();
+
+    private constructor() {
+    }
+
+    public static getInstance(): ComponentMessageHandler {
+        return this.INSTANCE;
+    }
+
+    public handleMessage(message: any, origin: vscode.Webview) {
+        if (message.type !== undefined) {
+            const [target, type] = message.type.split('.');
+
+            message.type = type;
+            switch(target) {
+                case 'sdfv':
+                    SdfgViewerProvider.getInstance()?.handleMessage(
+                        message,
+                        origin
+                    );
+                    break;
+                case 'outline':
+                    OutlineProvider.getInstance()?.handleMessage(
+                        message,
+                        origin
+                    );
+                    break;
+                case 'symbol_resolver':
+                    SymbolResolutionProvider.getInstance()?.handleMessage(
+                        message,
+                        origin
+                    );
+                    break;
+                case 'dace':
+                    DaCeInterface.getInstance().handleMessage(message, origin);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+}
