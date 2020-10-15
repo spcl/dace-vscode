@@ -234,7 +234,7 @@ function embedded_outline(renderer, graph) {
     });
 
     vscode.postMessage({
-        type: 'setOutline',
+        type: 'outline.set_outline',
         html: outline_container.html(),
     });
 }

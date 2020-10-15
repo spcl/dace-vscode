@@ -1,0 +1,75 @@
+html {
+    height: 100%;
+    padding: 0;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    font-family: "Segeo UI", Arial, sans-serif;
+}
+
+#contents {
+    width: 100%;
+}
+
+#symbol-table {
+    width: 100%;
+}
+
+#symbol-table .symbol-entry .symbol {
+    padding-right: .5rem;
+}
+
+button {
+    border: none;
+}
+
+.symbol {
+    font-weight: bold;
+}
+
+.symbol-definition-input {
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    max-width: 6rem;
+    padding: .3rem;
+    border: 1px solid var(--vscode-input-border);
+}
+
+.symbol-definition-input::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+}
+
+.symbol-definition-clear {
+    margin: .2rem;
+}
+
+.button {
+    cursor: pointer;
+    padding: .3rem .4rem;
+    border-radius: 5px;
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-button-background);
+}
+
+.button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.horizontal-divider {
+    margin-top: .5rem;
+    margin-bottom: .5rem;
+}
+
+#badness-scale-method-container input {
+    background-color: var(--vscode-checkbox-background);
+    color: var(--vscode-checkbox-foreground);
+    border-color: var(--vscode-checkbox-border);
+}
+
+#badness-scale-method-container input:checked {
+    background-color: var(--vscode-inputOption-activeBackground);
+    color: var(--vscode-inputOption-activeForeground);
+    border-color: var(--vscode-inputOption-activeBorder);
+}

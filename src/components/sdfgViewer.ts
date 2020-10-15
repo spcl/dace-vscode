@@ -11,17 +11,22 @@ import {
 import { DaCeInterface } from '../daceInterface';
 import { OutlineProvider } from './outline';
 import { DaCeVSCode } from '../extension';
+import { SymbolResolutionProvider } from './symbolResolution';
+import { BaseComponent } from './baseComponent';
+import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
 class SdfgViewer {
 
     public constructor(
-        public readonly webviewPanel: vscode.WebviewPanel,
+        public readonly webview: vscode.Webview,
         public readonly document: vscode.TextDocument
     ) {}
 
 }
 
-export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
+export class SdfgViewerProvider
+extends BaseComponent
+implements vscode.CustomTextEditorProvider {
 
     public static INSTANCE: SdfgViewerProvider | undefined = undefined;
 
@@ -35,7 +40,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
     private static readonly viewType = 'sdfgCustom.sdfv';
 
     private activeSdfgFileName: string | undefined = undefined;
-    private activeEditor: vscode.WebviewPanel | undefined  = undefined;
+    private activeEditor: vscode.Webview | undefined  = undefined;
 
     private daceInterface = DaCeInterface.getInstance();
     private transformationsView = TransformationsProvider.getInstance();
@@ -57,9 +62,6 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         );
     }
 
-    constructor(private readonly context: vscode.ExtensionContext) {
-    }
-
     /**
      * Register the current SDFG file and editor to be the last active editor.
      * 
@@ -67,19 +69,22 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      * you to grab the currently active editor unless it's a TextEditor.
      * 
      * @param document      Active SDFG document.
-     * @param webviewPanel  Active SDFG editor webview panel.
+     * @param webview       Active SDFG editor webview.
      */
     private updateActiveEditor(document: vscode.TextDocument,
-                               webviewPanel: vscode.WebviewPanel): void {
+                               webview: vscode.Webview): void {
         OutlineProvider.getInstance()?.clearOutline();
+        SymbolResolutionProvider.getInstance()?.clearSymbols();
         this.trafoHistoryView.clearHistory();
         this.trafoHistoryView.notifyTreeDataChanged();
         this.transformationsView.clearTransformations();
         this.transformationsView.notifyTreeDataChanged();
         this.activeSdfgFileName = document.fileName;
-        this.activeEditor = webviewPanel;
+        this.activeEditor = webview;
         DaCeVSCode.getInstance().updateActiveSdfg(this.activeSdfgFileName,
             this.activeEditor);
+        OutlineProvider.getInstance()?.refresh();
+        SymbolResolutionProvider.getInstance()?.refresh();
     }
 
     /**
@@ -92,8 +97,8 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      * @param webviewPanel  SDFG editor webview panel to update.
      */
     private updateWebview(document: vscode.TextDocument,
-                          webviewPanel: vscode.WebviewPanel): void {
-        webviewPanel.webview.postMessage({
+                          webview: vscode.Webview): void {
+        webview.postMessage({
             type: 'update',
             text: document.getText(),
         });
@@ -107,18 +112,22 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      * attached transformation panel.
      * 
      * @param document      Changed document.
-     * @param webviewPanel  Attached webview panel.
+     * @param webview       Attached webview.
      */
     private documentChanged(document: vscode.TextDocument,
-                            webviewPanel: vscode.WebviewPanel): void {
+                            webview: vscode.Webview): void {
+        OutlineProvider.getInstance()?.clearOutline();
+        SymbolResolutionProvider.getInstance()?.clearSymbols();
         this.trafoHistoryView.clearHistory();
         this.trafoHistoryView.notifyTreeDataChanged();
         this.transformationsView.clearTransformations();
         this.transformationsView.notifyTreeDataChanged();
-        this.updateWebview(document, webviewPanel);
-        if (this.activeEditor === webviewPanel) {
+        this.updateWebview(document, webview);
+        if (this.activeEditor === webview) {
             this.transformationsView.refresh();
             this.trafoHistoryView.refresh();
+            OutlineProvider.getInstance()?.refresh();
+            SymbolResolutionProvider.getInstance()?.refresh();
         }
     }
 
@@ -126,20 +135,88 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         return this.openEditors;
     }
 
-    public findEditorForPanel(
-        webviewPanel: vscode.WebviewPanel
+    public findEditorForWebview(
+        webview: vscode.Webview
     ): SdfgViewer | undefined {
         for (const element of this.openEditors) {
-            if (element.webviewPanel === webviewPanel)
+            if (element.webview === webview)
                 return element;
         }
         return undefined;
     }
 
-    public removeOpenEditor(webviewPanel: vscode.WebviewPanel) {
-        const editor = this.findEditorForPanel(webviewPanel);
+    public removeOpenEditor(webview: vscode.Webview) {
+        const editor = this.findEditorForWebview(webview);
         if (editor)
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
+    }
+
+    public handleMessage(message: any, origin: vscode.Webview): void {
+        switch (message.type) {
+            case 'sort_transformations':
+                const viewElements = JSON.parse(message.visibleElements);
+                const selectedElements = JSON.parse(message.selectedElements);
+                if (viewElements && selectedElements)
+                    TransformationsProvider.getInstance()
+                        .sortTransformations(viewElements, selectedElements);
+                break;
+            case 'get_current_sdfg':
+                const instance = SdfgViewerProvider.getInstance();
+                if (instance && origin) {
+                    const editor: SdfgViewer | undefined =
+                        instance.findEditorForWebview(origin);
+                    if (editor !== undefined)
+                        this.updateWebview(editor.document, origin);
+                }
+                break;
+            case 'go_to_source':
+                // We want to jump to a specific file and location if it
+                // exists.
+                let filePath: string;
+                if (path.isAbsolute(message.file_path))
+                    filePath = message.file_path;
+                else
+                    filePath = path.normalize(
+                        vscode.workspace.rootPath + '/' + message.file_path
+                    );
+                if (fs.existsSync(filePath)) {
+                    // The file exists, load it and show it in a new
+                    // editor, highlighting the indicated range.
+                    const fileUri: vscode.Uri = vscode.Uri.file(filePath);
+                    vscode.workspace.openTextDocument(fileUri).then(
+                        (doc: vscode.TextDocument) => {
+                            const startPos = new vscode.Position(
+                                message.startRow, message.startChar
+                            );
+                            const endPos = new vscode.Position(
+                                message.endRow, message.endChar
+                            );
+                            const range = new vscode.Range(
+                                startPos, endPos
+                            );
+                            vscode.window.showTextDocument(
+                                doc, {
+                                    preview: true,
+                                    selection: range,
+                                }
+                            );
+                        }
+                    );
+                } else {
+                    vscode.window.showInformationMessage(
+                        'Could not find file ' + filePath
+                    );
+                }
+                break;
+            case 'update_badness_scale_method':
+            case 'symbol_value_changed':
+            case 'refresh_outline':
+            case 'refresh_symbol_list':
+                this.activeEditor?.postMessage(message);
+                break;
+            default:
+                break;
+        }
     }
 
     public async resolveCustomTextEditor(
@@ -148,12 +225,14 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         _token: vscode.CancellationToken
     ): Promise<void> {
         // Add this editor to the list of all editors.
-        this.openEditors.push(new SdfgViewer(webviewPanel, document));
+        this.openEditors.push(new SdfgViewer(webviewPanel.webview, document));
 
         // Make sure that if the webview (editor) gets closed again, we remove
         // it from the open editors list.
         webviewPanel.onDidDispose(() => {
-            SdfgViewerProvider.getInstance()?.removeOpenEditor(webviewPanel);
+            SdfgViewerProvider.getInstance()?.removeOpenEditor(
+                webviewPanel.webview
+            );
         });
 
         webviewPanel.webview.options = {
@@ -168,18 +247,18 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
         // We want to track the last active SDFG viewer/file.
         if (webviewPanel.active)
-            this.updateActiveEditor(document, webviewPanel);
+            this.updateActiveEditor(document, webviewPanel.webview);
         // Store a ref to the document if it becomes active.
         webviewPanel.onDidChangeViewState(e => {
             if (e.webviewPanel.active)
-                this.updateActiveEditor(document, webviewPanel);
+                this.updateActiveEditor(document, webviewPanel.webview);
         });
 
         // Register an event listener for when the document changes on disc.
         // We want to update our webview if that happens.
         const docChangeSubs = vscode.workspace.onDidChangeTextDocument(e => {
             if (e.document.uri.toString() === document.uri.toString())
-                this.documentChanged(document, webviewPanel);
+                this.documentChanged(document, webviewPanel.webview);
         });
         // Get rid of it when the editor closes.
         webviewPanel.onDidDispose(() => {
@@ -187,77 +266,14 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         });
 
         // Handle received messages from the webview.
-        webviewPanel.webview.onDidReceiveMessage(e => {
-            switch (e.type) {
-                case 'getFlops':
-                    this.daceInterface.getFlops();
-                    break;
-                case 'setOutline':
-                    const outlineProvider = OutlineProvider.getInstance();
-                    if (outlineProvider)
-                        outlineProvider.updateOutline(
-                            e.html,
-                        );
-                    break;
-                case 'sortTransformations':
-                    const viewElements = JSON.parse(e.visibleElements);
-                    const selectedElements = JSON.parse(e.selectedElements);
-                    if (viewElements && selectedElements)
-                        TransformationsProvider.getInstance()
-                            .sortTransformations(viewElements, selectedElements);
-                    break;
-                case 'getCurrentSdfg':
-                    const instance = SdfgViewerProvider.getInstance();
-                    if (instance) {
-                        const editor: SdfgViewer | undefined =
-                            instance.findEditorForPanel(webviewPanel);
-                        if (editor !== undefined)
-                            this.updateWebview(editor.document, webviewPanel);
-                    }
-                    break;
-                case 'gotoSource':
-                    // We want to jump to a specific file and location if it
-                    // exists.
-                    let filePath: string;
-                    if (path.isAbsolute(e.file_path))
-                        filePath = e.file_path;
-                    else
-                        filePath = path.normalize(
-                            vscode.workspace.rootPath + '/' + e.file_path
-                        );
-                    if (fs.existsSync(filePath)) {
-                        // The file exists, load it and show it in a new
-                        // editor, highlighting the indicated range.
-                        const fileUri: vscode.Uri = vscode.Uri.file(filePath);
-                        vscode.workspace.openTextDocument(fileUri).then(
-                            (doc: vscode.TextDocument) => {
-                                const startPos = new vscode.Position(
-                                    e.startRow, e.startChar
-                                );
-                                const endPos = new vscode.Position(
-                                    e.endRow, e.endChar
-                                );
-                                const range = new vscode.Range(
-                                    startPos, endPos
-                                );
-                                vscode.window.showTextDocument(
-                                    doc, {
-                                        preview: true,
-                                        selection: range,
-                                    }
-                                );
-                            }
-                        );
-                    } else {
-                        vscode.window.showInformationMessage(
-                            'Could not find file ' + filePath
-                        );
-                    }
-                    return;
-            }
+        webviewPanel.webview.onDidReceiveMessage(message => {
+            ComponentMessageHandler.getInstance().handleMessage(
+                message,
+                webviewPanel.webview
+            );
         });
 
-        this.updateWebview(document, webviewPanel);
+        this.updateWebview(document, webviewPanel.webview);
         webviewPanel.reveal();
     }
 

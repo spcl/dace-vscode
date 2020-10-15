@@ -113,6 +113,13 @@
                     "contextualTitle": "SDFG Transformation History"
                 },
                 {
+                    "id": "symbolResolution",
+                    "type": "webview",
+                    "name": "Symbol Definitions",
+                    "icon": "resources/icons/dace-hollow.svg",
+                    "contextualTitle": "Symbol Definitions"
+                },
+                {
                     "id": "sdfgOutline",
                     "type": "webview",
                     "name": "SDFG Outline",
@@ -131,6 +138,10 @@
                 "contents": "No previously applied transformations"
             },
             {
+                "view": "symbolResolution",
+                "contents": "No active SDFG"
+            },
+            {
                 "view": "sdfgOutline",
                 "contents": "No active SDFG"
             }
@@ -139,6 +150,14 @@
             {
                 "command": "transformationView.refreshEntry",
                 "title": "Refresh Transformations",
+                "icon": {
+                    "dark": "resources/icons/dark/refresh.svg",
+                    "light": "resources/icons/light/refresh.svg"
+                }
+            },
+            {
+                "command": "symbolResolution.refreshEntry",
+                "title": "Refresh Symbols",
                 "icon": {
                     "dark": "resources/icons/dark/refresh.svg",
                     "light": "resources/icons/light/refresh.svg"
@@ -192,6 +211,11 @@
                 {
                     "command": "transformationView.refreshEntry",
                     "when": "view == transformationView",
+                    "group": "navigation"
+                },
+                {
+                    "command": "symbolResolution.refreshEntry",
+                    "when": "view == symbolResolution",
                     "group": "navigation"
                 },
                 {

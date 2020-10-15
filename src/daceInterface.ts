@@ -8,18 +8,30 @@ import { Transformation, SubgraphTransformation } from './transformation/transfo
 import { TransformationHistoryProvider } from './transformation/transformationHistory';
 import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
 import { DaCeVSCode } from './extension';
-import { SdfgViewerProvider } from './viewer/sdfgViewer';
+import { SdfgViewerProvider } from './components/sdfgViewer';
+import { MessageReceiverInterface } from './components/messaging/messageReceiverInterface';
 
 enum InteractionMode {
     PREVIEW,
     APPLY,
 }
 
-export class DaCeInterface {
+export class DaCeInterface
+implements MessageReceiverInterface {
 
     private static INSTANCE = new DaCeInterface();
 
     private constructor() { }
+
+    public handleMessage(message: any, origin: vscode.Webview): void {
+        switch (message.type) {
+            case 'get_flops':
+                this.getFlops();
+                break;
+            default:
+                break;
+        }
+    }
 
     public static getInstance(): DaCeInterface {
         return this.INSTANCE;
@@ -388,20 +400,20 @@ export class DaCeInterface {
     }
 
     public previewSdfg(sdfg: any) {
-        DaCeVSCode.getInstance().activeEditorSendPost({
+        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'preview_sdfg',
             text: JSON.stringify(sdfg),
         });
     }
 
     public exitPreview() {
-        DaCeVSCode.getInstance().activeEditorSendPost({
+        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'exit_preview',
         });
     }
 
     public showSpinner(message?: string) {
-        DaCeVSCode.getInstance().activeEditorSendPost({
+        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'processing',
             show: true,
             text: message ?
@@ -410,7 +422,7 @@ export class DaCeInterface {
     }
 
     public hideSpinner() {
-        DaCeVSCode.getInstance().activeEditorSendPost({
+        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'processing',
             show: false,
             text: '',
@@ -467,7 +479,7 @@ export class DaCeInterface {
         const activeEditor = DaCeVSCode.getInstance().getActiveEditor();
         if (activeEditor) {
             const sdfvInstance = SdfgViewerProvider.getInstance();
-            const document = sdfvInstance?.findEditorForPanel(
+            const document = sdfvInstance?.findEditorForWebview(
                 activeEditor
             )?.document;
             if (document) {
@@ -577,7 +589,7 @@ export class DaCeInterface {
         }
 
         function callback(data: any) {
-            DaCeVSCode.getInstance().activeEditorSendPost({
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'flopsCallback',
                 map: data.arith_ops_map,
             });
@@ -634,7 +646,7 @@ export class DaCeInterface {
             // Refresh the tree view to show the new contents.
             tProvider.notifyTreeDataChanged();
 
-            DaCeVSCode.getInstance().activeEditorSendPost({
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'get_viewport_elem',
             });
             DaCeInterface.getInstance().hideSpinner();

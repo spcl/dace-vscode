@@ -1,9 +1,13 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
 import * as fs from 'fs';
-import { DaCeVSCode } from '../extension';
+import * as path from 'path';
+import * as vscode from 'vscode';
 
-export class OutlineProvider implements vscode.WebviewViewProvider {
+import { BaseComponent } from './baseComponent';
+import { ComponentMessageHandler } from './messaging/componentMessageHandler';
+
+export class OutlineProvider
+extends BaseComponent
+implements vscode.WebviewViewProvider {
 
     // Identifiers for code placement into the webview's HTML.
     private readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
@@ -14,9 +18,6 @@ export class OutlineProvider implements vscode.WebviewViewProvider {
 
     private static INSTANCE: OutlineProvider | undefined = undefined;
 
-    constructor(private readonly context: vscode.ExtensionContext) {
-    }
-
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         OutlineProvider.INSTANCE = new OutlineProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
@@ -26,7 +27,7 @@ export class OutlineProvider implements vscode.WebviewViewProvider {
             OutlineProvider.viewType,
             OutlineProvider.INSTANCE,
             {
-                webviewOptions: options
+                webviewOptions: options,
             }
         );
     }
@@ -47,8 +48,8 @@ export class OutlineProvider implements vscode.WebviewViewProvider {
             localResourceRoots: [
                 vscode.Uri.file(path.join(
                     this.context.extensionPath, 'media'
-                ))
-            ]
+                )),
+            ],
         };
 
         const fpBaseHtml: vscode.Uri = vscode.Uri.file(path.join(
@@ -68,33 +69,33 @@ export class OutlineProvider implements vscode.WebviewViewProvider {
         );
         webviewView.webview.html = baseHtml;
 
-        webviewView.webview.onDidReceiveMessage(e => {
-            switch (e.type) {
-                case 'zoomToNode':
-                    DaCeVSCode.getInstance().activeEditorSendPost({
-                        type: 'zoom_to_node',
-                        uuid: e.uuid,
-                    });
-                    break;
-            }
+        webviewView.webview.onDidReceiveMessage(message => {
+            ComponentMessageHandler.getInstance().handleMessage(
+                message,
+                webviewView.webview
+            );
         });
     }
 
-    public makePaneVisible() {
-        this.view?.show();
-    }
-
-    public updateOutline(html: string) {
-        this.view?.webview.postMessage({
-            type: 'setOutline',
-            html: html,
-        });
+    public handleMessage(message: any, origin: vscode.Webview): void {
+        switch (message.type) {
+            case 'set_outline':
+            case 'clear_outline':
+                this.view?.webview.postMessage(message);
+                break;
+            default:
+                break;
+        }
     }
 
     public clearOutline() {
         this.view?.webview.postMessage({
-            type: 'clearOutline',
+            type: 'clear_outline',
         });
+    }
+
+    public refresh() {
+        vscode.commands.executeCommand('sdfgOutline.refreshEntry');
     }
 
 }

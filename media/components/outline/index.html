@@ -5,17 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Outline</title>
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/outline/outline.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/components/outline/outline.css">
 
     <script>
         // Reference to the VSCode API.
         let vscode = undefined;
     </script>
 
-    <script src="{{ CSP_SRC }}/webclient/renderer_dir/dagre.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/sdfg_utils.js"></script>
     <script src="{{ CSP_SRC }}/components/outline/outline.js"></script>
 </head>
 
@@ -30,7 +30,7 @@
         window.addEventListener('message', e => {
             const message = e.data;
             switch (message.type) {
-                case 'setOutline':
+                case 'set_outline':
                     // Update the outline.
                     $('#contents').html(message.html);
 
@@ -40,7 +40,7 @@
                         element.addEventListener('click', (e) => {
                             if (vscode)
                                 vscode.postMessage({
-                                    type: 'zoomToNode',
+                                    type: 'sdfv.zoom_to_node',
                                     uuid: element.getAttribute('sdfg_uuid'),
                                 });
 
@@ -50,12 +50,19 @@
                         })
                     });
                     break;
-                case 'clearOutline':
+                case 'clear_outline':
                     $('#contents').html('');
                     break;
                 default:
                     break;
             }
+            });
+
+        $(document).ready(() => {
+            if (vscode)
+                vscode.postMessage({
+                    type: 'sdfv.refresh_outline',
+                });
         });
     </script>
 </body>

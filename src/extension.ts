@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 
-import { SdfgViewerProvider } from './viewer/sdfgViewer';
+import { SdfgViewerProvider } from './components/sdfgViewer';
 import { DaCeInterface } from './daceInterface';
 import { TransformationsProvider } from './transformation/transformations';
 import { TransformationHistoryProvider } from './transformation/transformationHistory';
-import { OutlineProvider } from './viewer/outline';
+import { OutlineProvider } from './components/outline';
+import { SymbolResolutionProvider } from './components/symbolResolution';
 
 export class DaCeVSCode {
 
@@ -21,8 +22,14 @@ export class DaCeVSCode {
 
     private outputChannel: vscode.OutputChannel | undefined;
 
-    private activeEditor: vscode.WebviewPanel | undefined = undefined;
+    private activeEditor: vscode.Webview | undefined = undefined;
     private activeSdfgFileName: string | undefined = undefined;
+
+    private registerCommand(command: string, handler: (...args: any[]) => any) {
+        this.context?.subscriptions.push(vscode.commands.registerCommand(
+            command, handler
+        ));
+    }
 
     public init(context: vscode.ExtensionContext) {
         this.context = context;
@@ -49,54 +56,41 @@ export class DaCeVSCode {
         // Register the SDFG custom editor.
         context.subscriptions.push(SdfgViewerProvider.register(context));
 
-        // Register the SDFG outline view.
+        // Register all webview view components.
         context.subscriptions.push(OutlineProvider.register(context));
+        context.subscriptions.push(SymbolResolutionProvider.register(context));
 
         // Register necessary commands.
-        context.subscriptions.push(vscode.commands.registerCommand(
-            'transformationView.refreshEntry',
-            () => {
-                transformationsProvider.refresh();
-            }
-        ));
-        context.subscriptions.push(vscode.commands.registerCommand(
-            'sdfgOutline.refreshEntry',
-            () => {
-                DaCeVSCode.getInstance().activeEditorSendPost({
-                    type: 'refresh_outline',
-                });
-            }
-        ));
-        context.subscriptions.push(vscode.commands.registerCommand(
-            'sdfg.applyTransformation',
-            (t) => daceInterface.applyTransformation(t)
-        ));
-        context.subscriptions.push(vscode.commands.registerCommand(
-            'sdfg.previewTransformation',
-            (t) => daceInterface.previewTransformation(t)
-        ));
-        context.subscriptions.push(vscode.commands.registerCommand(
-            'sdfg.previewHistoryPoint',
-            (h) => daceInterface.previewHistoryPoint(h)
-        ));
-        context.subscriptions.push(vscode.commands.registerCommand(
-            'sdfg.applyHistoryPoint',
-            (h) => daceInterface.applyHistoryPoint(h)
-        ));
-        context.subscriptions.push(vscode.commands.registerCommand(
-            'dace.openOptimizerInTerminal',
-            () => daceInterface.startDaemonInTerminal()
-        ));
-        context.subscriptions.push(vscode.commands.registerCommand(
-            'dace.installDace',
-            () => {
-                const term = vscode.window.createTerminal('Install DaCe');
-                term.show();
-                term.sendText(
-                    'pip install dace'
-                );
-            }
-        ));
+        this.registerCommand('transformationView.refreshEntry', () => {
+            transformationsProvider.refresh();
+        });
+        this.registerCommand('symbolResolution.refreshEntry', () => {
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                type: 'refresh_symbol_list',
+            });
+        });
+        this.registerCommand('sdfgOutline.refreshEntry', () => {
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                type: 'refresh_outline',
+            });
+        });
+        this.registerCommand('sdfg.applyTransformation',
+            (t) => daceInterface.applyTransformation(t));
+        this.registerCommand('sdfg.previewTransformation',
+            (t) => daceInterface.previewTransformation(t));
+        this.registerCommand('sdfg.previewHistoryPoint',
+            (h) => daceInterface.previewHistoryPoint(h));
+        this.registerCommand('sdfg.applyHistoryPoint',
+            (h) => daceInterface.applyHistoryPoint(h));
+        this.registerCommand('dace.openOptimizerInTerminal',
+            () => daceInterface.startDaemonInTerminal());
+        this.registerCommand('dace.installDace', () => {
+            const term = vscode.window.createTerminal('Install DaCe');
+            term.show();
+            term.sendText(
+                'pip install dace'
+            );
+        });
     }
 
     public getExtensionContext() {
@@ -111,16 +105,16 @@ export class DaCeVSCode {
         return this.outputChannel;
     }
 
-    public getActiveEditor() {
+    public getActiveEditor(): vscode.Webview | undefined {
         return this.activeEditor;
     }
 
-    public getActiveSdfgFileName() {
+    public getActiveSdfgFileName(): string | undefined {
         return this.activeSdfgFileName;
     }
 
     public updateActiveSdfg(activeSdfgFileName: string,
-                            activeEditor: vscode.WebviewPanel) {
+                            activeEditor: vscode.Webview | undefined) {
         this.activeSdfgFileName = activeSdfgFileName;
         this.activeEditor = activeEditor;
         TransformationsProvider.getInstance().refresh();
@@ -136,10 +130,6 @@ export class DaCeVSCode {
         else
             sdfgJson = JSON.parse(sdfgJson);
         return sdfgJson;
-    }
-
-    public activeEditorSendPost(message: any) {
-        this.getActiveEditor()?.webview.postMessage(message);
     }
 
 }
