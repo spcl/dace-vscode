@@ -98,7 +98,7 @@ class SymbolResolution {
                     });
                 }
             });
-            const clear_button = $('<button>', {
+            $('<button>', {
                 'class': 'symbol-definition-clear button',
                 'text': 'Clear',
                 'click': () => {
