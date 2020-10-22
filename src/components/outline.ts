@@ -95,7 +95,7 @@ implements vscode.WebviewViewProvider {
     }
 
     public refresh() {
-        vscode.commands.executeCommand('sdfgOutline.refreshEntry');
+        vscode.commands.executeCommand('sdfgOutline.refresh');
     }
 
 }

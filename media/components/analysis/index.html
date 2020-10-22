@@ -4,11 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Symbol Definitions</title>
+    <title>SDFG Analysis</title>
     <link rel="stylesheet" type="text/css"
           href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/components/symbol_resolution/symbol_resolution.css">
+          href="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/components/analysis/analysis.css">
 
     <script>
         // Reference to the VSCode API.
@@ -16,16 +18,12 @@
     </script>
 
     <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
-    <script src="{{ CSP_SRC }}/components/symbol_resolution/symbol_resolution.js"></script>
+    <script src="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.bundle.min.js"></script>
+    <script src="{{ CSP_SRC }}/components/analysis/analysis.js"></script>
 </head>
 
 <body>
     <div id="contents">
-        <div id="symbol-list">
-            <table id="symbol-table">
-            </table>
-        </div>
-        <hr class="horizontal-divider">
         <div id="badness-scale-method-container">
             <div>
                 <span>
@@ -53,6 +51,14 @@
                     Mode
                 </label>
             </div>
+        </div>
+        <hr class="horizontal-divider">
+        <div id="symbol-list">
+            <span>
+                Symbol list:
+            </span>
+            <table id="symbol-table">
+            </table>
         </div>
     </div>
 

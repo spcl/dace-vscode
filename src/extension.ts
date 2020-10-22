@@ -6,7 +6,7 @@ import { DaCeInterface } from './daceInterface';
 import { TransformationsProvider } from './transformation/transformations';
 import { TransformationHistoryProvider } from './transformation/transformationHistory';
 import { OutlineProvider } from './components/outline';
-import { SymbolResolutionProvider } from './components/symbolResolution';
+import { AnalysisProvider } from './components/analysis';
 
 export class DaCeVSCode {
 
@@ -58,18 +58,18 @@ export class DaCeVSCode {
 
         // Register all webview view components.
         context.subscriptions.push(OutlineProvider.register(context));
-        context.subscriptions.push(SymbolResolutionProvider.register(context));
+        context.subscriptions.push(AnalysisProvider.register(context));
 
         // Register necessary commands.
         this.registerCommand('transformationView.refreshEntry', () => {
             transformationsProvider.refresh();
         });
-        this.registerCommand('symbolResolution.refreshEntry', () => {
+        this.registerCommand('sdfgAnalysis.sync', () => {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'refresh_symbol_list',
             });
         });
-        this.registerCommand('sdfgOutline.refreshEntry', () => {
+        this.registerCommand('sdfgOutline.refresh', () => {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'refresh_outline',
             });

@@ -113,11 +113,11 @@
                     "contextualTitle": "SDFG Transformation History"
                 },
                 {
-                    "id": "symbolResolution",
+                    "id": "sdfgAnalysis",
                     "type": "webview",
-                    "name": "Symbol Definitions",
+                    "name": "SDFG Analysis",
                     "icon": "resources/icons/dace-hollow.svg",
-                    "contextualTitle": "Symbol Definitions"
+                    "contextualTitle": "SDFG Analysis"
                 },
                 {
                     "id": "sdfgOutline",
@@ -138,7 +138,7 @@
                 "contents": "No previously applied transformations"
             },
             {
-                "view": "symbolResolution",
+                "view": "sdfgAnalysis",
                 "contents": "No active SDFG"
             },
             {
@@ -156,15 +156,15 @@
                 }
             },
             {
-                "command": "symbolResolution.refreshEntry",
-                "title": "Refresh Symbols",
+                "command": "sdfgAnalysis.sync",
+                "title": "Re-Sync Analysis",
                 "icon": {
                     "dark": "resources/icons/dark/refresh.svg",
                     "light": "resources/icons/light/refresh.svg"
                 }
             },
             {
-                "command": "sdfgOutline.refreshEntry",
+                "command": "sdfgOutline.refresh",
                 "title": "Refresh Outline",
                 "icon": {
                     "dark": "resources/icons/dark/refresh.svg",
@@ -214,12 +214,12 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "symbolResolution.refreshEntry",
-                    "when": "view == symbolResolution",
+                    "command": "sdfgAnalysis.sync",
+                    "when": "view == sdfgAnalysis",
                     "group": "navigation"
                 },
                 {
-                    "command": "sdfgOutline.refreshEntry",
+                    "command": "sdfgOutline.refresh",
                     "when": "view == sdfgOutline",
                     "group": "navigation"
                 }

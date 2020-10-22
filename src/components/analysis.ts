@@ -1,37 +1,38 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
-export class SymbolResolutionProvider
+export class AnalysisProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
     // Identifiers for code placement into the webview's HTML.
     private readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
 
-    private static readonly viewType = 'symbolResolution';
+    private static readonly viewType = 'sdfgAnalysis';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: SymbolResolutionProvider | undefined = undefined;
+    private static INSTANCE: AnalysisProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        SymbolResolutionProvider.INSTANCE = new SymbolResolutionProvider(ctx);
+        AnalysisProvider.INSTANCE = new AnalysisProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: true,
         };
         return vscode.window.registerWebviewViewProvider(
-            SymbolResolutionProvider.viewType,
-            SymbolResolutionProvider.INSTANCE,
+            AnalysisProvider.viewType,
+            AnalysisProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): SymbolResolutionProvider | undefined {
+    public static getInstance(): AnalysisProvider | undefined {
         return this.INSTANCE;
     }
 
@@ -55,7 +56,7 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'symbol_resolution',
+            'analysis',
             'index.html'
         ));
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
@@ -100,7 +101,7 @@ implements vscode.WebviewViewProvider {
     }
 
     public refresh() {
-        vscode.commands.executeCommand('symbolResolution.refreshEntry');
+        vscode.commands.executeCommand('sdfgAnalysis.sync');
     }
 
 }

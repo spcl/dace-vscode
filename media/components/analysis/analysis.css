@@ -6,7 +6,10 @@ html {
 body {
     height: 100%;
     margin: 0;
+    padding-top: .3rem;
     font-family: "Segeo UI", Arial, sans-serif;
+    color: var(--vscode-foreground);
+    background-color: inherit;
 }
 
 #contents {
@@ -58,6 +61,7 @@ button {
 }
 
 .horizontal-divider {
+    background-color: var(--vscode-foreground);
     margin-top: .5rem;
     margin-bottom: .5rem;
 }

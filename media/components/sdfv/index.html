@@ -20,7 +20,7 @@
     <script src="{{ CSP_SRC }}/webclient/external_lib/blob-stream.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/lib/split.min.js"></script>
+    <script src="{{ CSP_SRC }}/lib/split.min.js"></script>
 
     <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
     <script src="{{ CSP_SRC }}/webclient/renderer_elements.js"></script>
@@ -105,7 +105,7 @@
             if (renderer === undefined || vscode === undefined)
                 return;
             vscode.postMessage({
-                type: 'symbol_resolver.add_symbols',
+                type: 'analysis.add_symbols',
                 symbols: renderer.sdfg.attributes.symbols,
             });
         }
@@ -120,7 +120,7 @@
                     map[symbol] = '';
             });
             vscode.postMessage({
-                type: 'symbol_resolver.set_symbols',
+                type: 'analysis.set_symbols',
                 symbols: map,
             });
         }

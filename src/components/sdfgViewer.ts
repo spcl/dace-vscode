@@ -11,7 +11,7 @@ import {
 import { DaCeInterface } from '../daceInterface';
 import { OutlineProvider } from './outline';
 import { DaCeVSCode } from '../extension';
-import { SymbolResolutionProvider } from './symbolResolution';
+import { AnalysisProvider } from './analysis';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
@@ -74,7 +74,7 @@ implements vscode.CustomTextEditorProvider {
     private updateActiveEditor(document: vscode.TextDocument,
                                webview: vscode.Webview): void {
         OutlineProvider.getInstance()?.clearOutline();
-        SymbolResolutionProvider.getInstance()?.clearSymbols();
+        AnalysisProvider.getInstance()?.clearSymbols();
         this.trafoHistoryView.clearHistory();
         this.trafoHistoryView.notifyTreeDataChanged();
         this.transformationsView.clearTransformations();
@@ -84,7 +84,7 @@ implements vscode.CustomTextEditorProvider {
         DaCeVSCode.getInstance().updateActiveSdfg(this.activeSdfgFileName,
             this.activeEditor);
         OutlineProvider.getInstance()?.refresh();
-        SymbolResolutionProvider.getInstance()?.refresh();
+        AnalysisProvider.getInstance()?.refresh();
     }
 
     /**
@@ -117,7 +117,7 @@ implements vscode.CustomTextEditorProvider {
     private documentChanged(document: vscode.TextDocument,
                             webview: vscode.Webview): void {
         OutlineProvider.getInstance()?.clearOutline();
-        SymbolResolutionProvider.getInstance()?.clearSymbols();
+        AnalysisProvider.getInstance()?.clearSymbols();
         this.trafoHistoryView.clearHistory();
         this.trafoHistoryView.notifyTreeDataChanged();
         this.transformationsView.clearTransformations();
@@ -127,7 +127,7 @@ implements vscode.CustomTextEditorProvider {
             this.transformationsView.refresh();
             this.trafoHistoryView.refresh();
             OutlineProvider.getInstance()?.refresh();
-            SymbolResolutionProvider.getInstance()?.refresh();
+            AnalysisProvider.getInstance()?.refresh();
         }
     }
 

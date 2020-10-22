@@ -3,7 +3,7 @@ import { DaCeInterface } from '../../daceInterface';
 
 import { OutlineProvider } from "../outline";
 import { SdfgViewerProvider } from "../sdfgViewer";
-import { SymbolResolutionProvider } from "../symbolResolution";
+import { AnalysisProvider } from "../analysis";
 
 export class ComponentMessageHandler {
 
@@ -35,8 +35,8 @@ export class ComponentMessageHandler {
                         origin
                     );
                     break;
-                case 'symbol_resolver':
-                    SymbolResolutionProvider.getInstance()?.handleMessage(
+                case 'analysis':
+                    AnalysisProvider.getInstance()?.handleMessage(
                         message,
                         origin
                     );
