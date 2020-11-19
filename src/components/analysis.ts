@@ -9,10 +9,7 @@ export class AnalysisProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    // Identifiers for code placement into the webview's HTML.
-    private readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
-
-    private static readonly viewType = 'sdfgAnalysis';
+    private static readonly viewType: string = 'sdfgAnalysis';
 
     private view?: vscode.WebviewView;
 

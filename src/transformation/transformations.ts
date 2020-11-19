@@ -72,6 +72,7 @@ export class TransformationsProvider
     public clearTransformations() {
         for (const cat of this.categories)
             cat.clearTransformations();
+        this.notifyTreeDataChanged();
     }
 
     public addUncategorizedTransformation(transformation: Transformation) {
@@ -85,7 +86,7 @@ export class TransformationsProvider
     }
 
     public refresh(element?: BaseTransformationItem): void {
-        DaCeInterface.getInstance().loadTransformations();
+        DaCeInterface.getInstance().loadTransformationsOld();
     }
 
     getTreeItem(element: BaseTransformationItem): vscode.TreeItem | Thenable<vscode.TreeItem> {

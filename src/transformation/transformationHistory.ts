@@ -23,6 +23,7 @@ implements vscode.TreeDataProvider<TransformationHistoryItem> {
 
     public clearHistory() {
         this.transformationHistory = [];
+        this.notifyTreeDataChanged();
     }
 
     public addHistoryItem(item: TransformationHistoryItem) {

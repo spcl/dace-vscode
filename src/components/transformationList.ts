@@ -5,39 +5,39 @@ import * as vscode from 'vscode';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
-export class OutlineProvider
+export class TransformationListProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'sdfgOutline';
+    private static readonly viewType: string = 'transformationList';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: OutlineProvider | undefined = undefined;
+    private static INSTANCE: TransformationListProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        OutlineProvider.INSTANCE = new OutlineProvider(ctx);
+        TransformationListProvider.INSTANCE = new TransformationListProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: true,
         };
         return vscode.window.registerWebviewViewProvider(
-            OutlineProvider.viewType,
-            OutlineProvider.INSTANCE,
+            TransformationListProvider.viewType,
+            TransformationListProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): OutlineProvider | undefined {
+    public static getInstance(): TransformationListProvider | undefined {
         return this.INSTANCE;
     }
 
-    public resolveWebviewView(
+    resolveWebviewView(
         webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext,
-        _token: vscode.CancellationToken
-    ) {
+        context: vscode.WebviewViewResolveContext<unknown>,
+        token: vscode.CancellationToken
+    ): void | Thenable<void> {
         this.view = webviewView;
 
         webviewView.webview.options = {
@@ -53,7 +53,7 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'outline',
+            'transformation_list',
             'index.html'
         ));
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
@@ -74,10 +74,13 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public handleMessage(message: any, origin: vscode.Webview): void {
+    public handleMessage(message: any,
+                         origin: vscode.Webview | undefined = undefined): void {
         switch (message.type) {
-            case 'set_outline':
-            case 'clear_outline':
+            case 'show_loading':
+            case 'hide_loading':
+            case 'clear_transformations':
+            case 'set_transformations':
                 this.view?.webview.postMessage(message);
                 break;
             default:
@@ -85,14 +88,14 @@ implements vscode.WebviewViewProvider {
         }
     }
 
-    public clearOutline() {
-        this.view?.webview.postMessage({
-            type: 'clear_outline',
+    public clearList() {
+        this.handleMessage({
+            type: 'clear_transformations',
         });
     }
 
     public refresh() {
-        vscode.commands.executeCommand('sdfgOutline.sync');
+        vscode.commands.executeCommand('transformationList.sync');
     }
 
 }

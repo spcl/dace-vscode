@@ -10,6 +10,7 @@ import { TransformationHistoryItem } from './transformation/transformationHistor
 import { DaCeVSCode } from './extension';
 import { SdfgViewerProvider } from './components/sdfgViewer';
 import { MessageReceiverInterface } from './components/messaging/messageReceiverInterface';
+import { TransformationListProvider } from './components/transformationList';
 
 enum InteractionMode {
     PREVIEW,
@@ -25,6 +26,14 @@ implements MessageReceiverInterface {
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
+            case 'load_transformations':
+                if (message.sdfg !== undefined &&
+                    message.selectedElements !== undefined)
+                    this.loadTransformations(
+                        message.sdfg,
+                        message.selectedElements
+                    );
+                break;
             case 'get_flops':
                 this.getFlops();
                 break;
@@ -605,13 +614,66 @@ implements MessageReceiverInterface {
         );
     }
 
-    public loadTransformations(): void {
+    public async loadTransformations(sdfg: any, selectedElements: any) {
+        TransformationListProvider.getInstance()?.handleMessage({
+            type: 'show_loading',
+        });
+
         if (!this.daemonRunning) {
             this.promptStartDaemon();
             return;
         }
 
-        this.showSpinner('Loading transformations');
+        async function callback(data: any) {
+            for (const elem of data.transformations) {
+                let docstring = '';
+                if (data.docstrings)
+                    docstring = data.docstrings[
+                        elem.transformation
+                    ];
+                elem.docstring = docstring;
+            }
+
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'get_applicable_transformations_callback',
+                transformations: data.transformations,
+            });
+        }
+
+        const parsedSelected: any = JSON.parse(selectedElements);
+        const cleanedSelected: any[] = [];
+        for (const idx in parsedSelected) {
+            const elem = parsedSelected[idx];
+            let type = 'other';
+            if (elem.data !== undefined && elem.data.node !== undefined)
+                type = 'node';
+            else if (elem.data !== undefined && elem.data.state !== undefined)
+                type = 'state';
+            cleanedSelected.push({
+                'type': type,
+                'state_id': elem.parent_id,
+                'sdfg_id': elem.sdfg.sdfg_list_id,
+                'id': elem.id,
+            });
+        }
+
+        this.sendPostRequest(
+            '/transformations',
+            {
+                'sdfg': JSON.parse(sdfg),
+                'selected_elements': cleanedSelected,
+            },
+            callback
+        );
+    }
+
+    public loadTransformationsOld(): void {
+        if (!this.daemonRunning) {
+            this.promptStartDaemon();
+            return;
+        }
+
+        //this.showSpinner('Loading transformations');
 
         let sdfg = DaCeVSCode.getInstance().getActiveSdfg();
         if (!sdfg) {

@@ -12,7 +12,10 @@
     ],
     "activationEvents": [
         "onCustomEditor:sdfgCustom.sdfv",
-        "onView:transformationView"
+        "onView:transformationList",
+        "onView:transformationHistory",
+        "onView:sdfgAnalysis",
+        "onView:sdfgOutline"
     ],
     "main": "./out/extension.js",
     "publisher": "phschaad",
@@ -101,7 +104,8 @@
         "views": {
             "transformation-explorer": [
                 {
-                    "id": "transformationView",
+                    "id": "transformationList",
+                    "type": "webview",
                     "name": "Transformations",
                     "icon": "resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation Explorer"
@@ -130,8 +134,8 @@
         },
         "viewsWelcome": [
             {
-                "view": "transformationView",
-                "contents": "No possible transformations"
+                "view": "transformationList",
+                "contents": "No active SDFG"
             },
             {
                 "view": "transformationHistory",
@@ -148,7 +152,7 @@
         ],
         "commands": [
             {
-                "command": "transformationView.refreshEntry",
+                "command": "transformationList.sync",
                 "title": "Refresh Transformations",
                 "icon": {
                     "dark": "resources/icons/dark/refresh.svg",
@@ -157,14 +161,14 @@
             },
             {
                 "command": "sdfgAnalysis.sync",
-                "title": "Re-Sync Analysis",
+                "title": "Refresh Analysis",
                 "icon": {
                     "dark": "resources/icons/dark/refresh.svg",
                     "light": "resources/icons/light/refresh.svg"
                 }
             },
             {
-                "command": "sdfgOutline.refresh",
+                "command": "sdfgOutline.sync",
                 "title": "Refresh Outline",
                 "icon": {
                     "dark": "resources/icons/dark/refresh.svg",
@@ -209,8 +213,8 @@
             ],
             "view/title": [
                 {
-                    "command": "transformationView.refreshEntry",
-                    "when": "view == transformationView",
+                    "command": "transformationList.sync",
+                    "when": "view == transformationList",
                     "group": "navigation"
                 },
                 {
@@ -219,17 +223,12 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "sdfgOutline.refresh",
+                    "command": "sdfgOutline.sync",
                     "when": "view == sdfgOutline",
                     "group": "navigation"
                 }
             ],
             "view/item/context": [
-                {
-                    "command": "sdfg.applyTransformation",
-                    "when": "view == transformationView && viewItem == transformation",
-                    "group": "inline"
-                },
                 {
                     "command": "sdfg.applyHistoryPoint",
                     "when": "view == transformationHistory",

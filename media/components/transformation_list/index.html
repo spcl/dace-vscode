@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Transformation List</title>
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/elements/treeview/treeview.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/components/transformation_list/transformation_list.css">
+
+    <script>
+        // Reference to the VSCode API.
+        let vscode = undefined;
+    </script>
+
+    <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
+    <script src="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.bundle.min.js"></script>
+    <script src="{{ CSP_SRC }}/elements/treeview/treeview.js"></script>
+    <script src="{{ CSP_SRC }}/components/transformation_list/transformation_list.js"></script>
+</head>
+
+<body>
+    <div id="transformation-loading-indicator" class="hidden">
+        <div>
+            <div id="transformation-loading-text">
+                Loading&nbsp;
+            </div>
+            <div id="transformation-loading-spinner">
+                <div></div>
+            </div>
+        </div>
+    </div>
+    <div id="contents" class="container-fluid">
+        <div class="row">
+            <div id="transformation-list" class="hidden">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        vscode = acquireVsCodeApi();
+
+        const loading_indicator = $('#transformation-loading-indicator');
+        const transformation_list = new TransformationList(
+            $('#transformation-list')
+        );
+        transformation_list.generate_html();
+        transformation_list.show();
+
+        // Add a listener to receive messages from the extension.
+        window.addEventListener('message', e => {
+            const message = e.data;
+            switch (message.type) {
+                case 'set_transformations':
+                    transformation_list.set_transformations(
+                        message.transformations
+                    );
+                    loading_indicator.hide();
+                    break;
+                case 'clear_transformations':
+                    transformation_list.clear_transformations();
+                    break;
+                case 'show_loading':
+                    loading_indicator.show();
+                    break;
+                case 'hide_loading':
+                    loading_indicator.hide();
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        $(document).ready(() => {
+            if (vscode)
+                vscode.postMessage({
+                    type: 'sdfv.refresh_transformation_list',
+                });
+        });
+    </script>
+</body>
+
+</html>
+

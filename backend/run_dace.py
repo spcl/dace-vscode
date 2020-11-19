@@ -2,6 +2,7 @@
 import ast, astunparse
 import sympy
 import dace
+from dace.sdfg import propagation
 from dace.symbolic import pystr_to_symbolic
 from dace.libraries.blas import MatMul, Transpose
 from dace.libraries.standard import Reduce
@@ -42,6 +43,7 @@ def count_reduce(node, symbols, state):
 bigo = sympy.Function('bigo')
 UUID_SEPARATOR = '/'
 PYFUNC_TO_ARITHMETICS = {
+    'float': 0,
     'math.exp': 1,
     'math.tanh': 1,
     'math.sqrt': 1,
@@ -133,7 +135,7 @@ def count_arithmetic_ops_code(code):
 
 def create_arith_ops_map_state(state, arith_map, symbols):
     scope_tree_root = state.scope_tree()[None]
-    scope_dict = state.scope_dict(node_to_children=True)
+    scope_dict = state.scope_children()
 
     def traverse(scope):
         repetitions = 1
@@ -183,6 +185,14 @@ def create_arith_ops_map_state(state, arith_map, symbols):
             traversal_result += node_result
         return repetitions * traversal_result
     state_result = traverse(scope_tree_root)
+
+    if state.executions is not None:
+        if (state.dynamic_executions is not None and state.dynamic_executions
+            and state.executions == 0):
+            state_result = 0
+        else:
+            state_result *= state.executions
+
     arith_map[get_uuid(state)] = str(state_result)
     return state_result
 
@@ -341,14 +351,12 @@ def sdfg_find_node(sdfg, element):
         return node
 
 def get_arith_ops(sdfg_json):
-    # We lazy import DaCe, not to break cyclic imports, but to avoid any large
-    # delays when booting in daemon mode.
-    from dace import serialize
-
     loaded = load_sdfg_from_json(sdfg_json)
     if loaded['error'] is not None:
         return loaded['error']
     sdfg = loaded['sdfg']
+
+    propagation.propagate_memlets_sdfg(sdfg)
 
     arith_map = {}
     create_arith_ops_map(sdfg, arith_map, {})

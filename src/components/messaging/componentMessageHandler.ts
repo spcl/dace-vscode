@@ -4,6 +4,7 @@ import { DaCeInterface } from '../../daceInterface';
 import { OutlineProvider } from "../outline";
 import { SdfgViewerProvider } from "../sdfgViewer";
 import { AnalysisProvider } from "../analysis";
+import { TransformationListProvider } from '../transformationList';
 
 export class ComponentMessageHandler {
 
@@ -43,6 +44,12 @@ export class ComponentMessageHandler {
                     break;
                 case 'dace':
                     DaCeInterface.getInstance().handleMessage(message, origin);
+                    break;
+                case 'transformation_list':
+                    TransformationListProvider.getInstance()?.handleMessage(
+                        message,
+                        origin
+                    );
                     break;
                 default:
                     break;

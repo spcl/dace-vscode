@@ -94,6 +94,7 @@
 
     <script>
         var sdfg_json = '';
+        var transformations = [[], [], [], []];
     </script>
     <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
@@ -125,6 +126,134 @@
             });
         }
 
+        async function sortTransformations(callback) {
+            setTimeout(() => {
+                const selected_transformations = [];
+                const viewport_transformations = [];
+                const global_transformations = [];
+                const uncat_transformations = [];
+
+                const all_transformations = [];
+                for (const cat of transformations) {
+                    for (const transformation of cat)
+                        all_transformations.push(transformation);
+                }
+
+                const visible_elements = renderer.visible_elements();
+
+                for (const transformation of all_transformations) {
+                    // Subgraph Transformations always apply to the selection.
+                    if (transformation.type === 'SubgraphTransformation') {
+                        selected_transformations.push(transformation);
+                        continue;
+                    }
+
+                    let matched = false;
+                    if (transformation.state_id >= 0) {
+                        // Matching a node.
+                        if (transformation._subgraph) {
+                            for (const node_id of Object.values(transformation._subgraph)) {
+                                if (renderer !== undefined &&
+                                    renderer.selected_elements.filter((e) => {
+                                        return (e.data.node !== undefined) &&
+                                            e.sdfg.sdfg_list_id === transformation.sdfg_id &&
+                                            e.parent_id === transformation.state_id &&
+                                            e.id === Number(node_id);
+                                    }).length > 0) {
+                                    selected_transformations.push(transformation);
+                                    matched = true;
+                                    break;
+                                }
+                            }
+
+                            if (!matched) {
+                                for (const node_id of Object.values(transformation._subgraph)) {
+                                    if (visible_elements.filter((e) => {
+                                            return e.type === 'node' &&
+                                                e.sdfg_id === transformation.sdfg_id &&
+                                                e.state_id === transformation.state_id &&
+                                                e.id === Number(node_id);
+                                        }).length > 0) {
+                                        viewport_transformations.push(transformation);
+                                        matched = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        if (transformation._subgraph) {
+                            for (const node_id of Object.values(transformation._subgraph)) {
+                                if (renderer !== undefined &&
+                                    renderer.selected_elements.filter((e) => {
+                                        return (e.data.state !== undefined) &&
+                                            e.sdfg.sdfg_list_id === transformation.sdfg_id &&
+                                            e.id === Number(node_id);
+                                    }).length > 0) {
+                                    selected_transformations.push(transformation);
+                                    matched = true;
+                                    break;
+                                }
+                            }
+
+                            if (!matched) {
+                                for (const node_id of Object.values(transformation._subgraph)) {
+                                    if (visible_elements.filter((e) => {
+                                            return e.type === 'state' &&
+                                                e.sdfg_id === transformation.sdfg_id &&
+                                                e.id === Number(node_id);
+                                        }).length > 0) {
+                                        viewport_transformations.push(transformation);
+                                        matched = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Sort in global transformations.
+                    if (!matched && transformation.state_id === -1 &&
+                        Object.keys(transformation._subgraph).length === 0) {
+                        global_transformations.push(transformation);
+                        matched = true;
+                    }
+
+                    if (!matched)
+                        uncat_transformations.push(transformation);
+                }
+
+                transformations = [
+                    selected_transformations,
+                    viewport_transformations,
+                    global_transformations,
+                    uncat_transformations,
+                ]
+
+                if (callback !== undefined)
+                    callback();
+            }, 0);
+        }
+
+        function refreshTransformationList() {
+            vscode.postMessage({
+                type: 'transformation_list.set_transformations',
+                transformations: transformations,
+            });
+        }
+
+        function getApplicableTransformations() {
+            if (renderer !== undefined && vscode !== undefined) {
+                vscode.postMessage({
+                    type: 'dace.load_transformations',
+                    sdfg: sdfg_json,
+                    selectedElements: JSON.stringify(
+                        renderer.selected_elements
+                    ),
+                })
+            }
+        }
+
         function setRendererContent(sdfg, previewing = false) {
             parsed_sdfg = parse_sdfg(sdfg);
 
@@ -133,8 +262,10 @@
             else
                 init_sdfv(parsed_sdfg, null, debug_draw);
 
-            if (!previewing)
+            if (!previewing) {
                 sdfg_json = sdfg;
+                getApplicableTransformations();
+            }
 
             outline(renderer, renderer.graph);
             symbolResolverRegisterSymbols();
@@ -169,7 +300,7 @@
                             message.symbol,
                             message.value
                         );
-                    break;
+                    return;
                 case 'update_badness_scale_method':
                     if (message.method !== undefined && renderer)
                         renderer.overlay_manager.update_badness_scale_method(
@@ -178,7 +309,24 @@
                     break;
                 case 'refresh_symbol_list':
                     symbolResolverRefreshSymbols();
-                    break;
+                    return;
+                case 'refresh_outline':
+                    if (renderer)
+                        outline(renderer, renderer.graph);
+                    return;
+                case 'refresh_transformation_list':
+                    refreshTransformationList();
+                    return;
+                case 'get_applicable_transformations':
+                    getApplicableTransformations();
+                    return;
+                case 'get_applicable_transformations_callback':
+                    if (message.transformations !== undefined)
+                        transformations = [[], [], [], message.transformations];
+                    else
+                        transformations = [[], [], [], []];
+                    sortTransformations(refreshTransformationList);
+                    return;
                 case 'flopsCallback':
                     if (renderer && renderer.overlay_manager &&
                         renderer.overlay_manager.static_flops_overlay_active) {
@@ -229,9 +377,66 @@
                         });
                     }
                     return;
-                    case 'refresh_outline':
-                    if (renderer)
-                        outline(renderer, renderer.graph);
+                case 'highlight_elements':
+                    if (renderer && message.elements !== undefined) {
+                        // Make sure no previously shaded elements remain
+                        // shaded.
+                        renderer.draw();
+
+                        for (const key in message.elements) {
+                            const uuid = message.elements[key];
+                            const result = find_graph_element_by_uuid(
+                                renderer.graph, uuid
+                            );
+
+                            let element = undefined
+                            if (result !== undefined)
+                                element = result.element;
+
+                            if (element !== undefined) {
+                                element.shade(renderer, renderer.ctx, 'wheat');
+                                const parent = element.parent;
+                                if (element.type().endsWith('Entry') &&
+                                    parent !== undefined) {
+                                    const state = element.sdfg.nodes[element.parent_id];
+                                    if (state.scope_dict[element.id] !== undefined) {
+                                        for (const n_id of state.scope_dict[element.id])
+                                            parent.node(n_id).shade(renderer, renderer.ctx, 'wheat');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return;
+                case 'zoom_to_elements':
+                    if (renderer && message.elements !== undefined) {
+                        const elements_to_display = [];
+
+                        for (const key in message.elements) {
+                            const uuid = message.elements[key];
+                            const result = find_graph_element_by_uuid(
+                                renderer.graph, uuid
+                            );
+
+                            let element = undefined
+                            if (result !== undefined)
+                                element = result.element;
+
+                            if (element !== undefined) {
+                                elements_to_display.push(element);
+                                const parent = element.parent;
+                                if (element.type().endsWith('Entry') &&
+                                    parent !== undefined) {
+                                    const state = element.sdfg.nodes[element.parent_id];
+                                    if (state.scope_dict[element.id] !== undefined) {
+                                        for (const n_id of state.scope_dict[element.id])
+                                            elements_to_display.push(parent.node(n_id));
+                                    }
+                                }
+                            }
+                        }
+                        renderer.zoom_to_view(elements_to_display);
+                    }
                     return;
                 case 'zoom_to_node':
                     if (renderer) {
