@@ -16,6 +16,18 @@
     width: 100%;
 }
 
+/*
+.tree-view-item-label-nested > .tree-view-item-icon {
+    transform: rotate(0deg);
+    transition: all .1s ease-in-out;
+}
+
+.tree-view-item-label-nested.tree-view-expanded > .tree-view-item-icon {
+    transform: rotate(90deg);
+    transition: all .1s ease-in-out;
+}
+*/
+
 .tree-view-item-label-nested::before {
     font-family: 'Material Icons';
     content: 'keyboard_arrow_right';

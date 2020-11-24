@@ -37,27 +37,13 @@ class TreeViewItem {
         });
         item.append(label_container);
 
+        let label = undefined;
         // If this element has children, draw it as a nested list.
         if (this.children !== undefined) {
             const nested_label = $('<span>', {
                 'class': 'tree-view-item-label tree-view-item-label-nested',
             });
             label_container.append(nested_label);
-
-            if (this.icon !== undefined && this.icon !== '') {
-                const icon_elem = $('<i>', {
-                    'class': 'material-icons',
-                    'style': 'font-size: inherit;',
-                    'text': this.icon,
-                });
-                nested_label.append(icon_elem);
-                nested_label.append("&nbsp;");
-                nested_label.append($('<span>', {
-                    'text': this.label,
-                }));
-            } else {
-                nested_label.text(this.label);
-            }
 
             const nested_list = $('<ul>', {
                 'class': 'tree-view-list',
@@ -84,15 +70,31 @@ class TreeViewItem {
             }
 
             if (!this.collapsed)
-                nested_label.addClass('tree-view-expanded')
+                nested_label.addClass('tree-view-expanded');
 
             item.append(nested_list);
+
+            label = nested_label;
         } else {
-            const label = $('<span>', {
+            label = $('<span>', {
                 'class': 'tree-view-item-label',
-                'text': this.label,
             });
             label_container.append(label);
+        }
+
+        if (this.icon !== undefined && this.icon !== '') {
+            const icon_elem = $('<i>', {
+                'class': 'material-icons tree-view-item-icon',
+                'style': 'font-size: inherit;',
+                'text': this.icon,
+            });
+            label.append(icon_elem);
+            label.append("&nbsp;");
+            label.append($('<span>', {
+                'text': this.label,
+            }));
+        } else {
+            label.text(this.label);
         }
 
         return item;

@@ -18,7 +18,7 @@ implements vscode.WebviewViewProvider {
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         OutlineProvider.INSTANCE = new OutlineProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
-            retainContextWhenHidden: true,
+            retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
             OutlineProvider.viewType,

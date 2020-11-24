@@ -18,7 +18,7 @@ implements vscode.WebviewViewProvider {
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         TransformationListProvider.INSTANCE = new TransformationListProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
-            retainContextWhenHidden: true,
+            retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
             TransformationListProvider.viewType,
