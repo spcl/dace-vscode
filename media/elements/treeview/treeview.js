@@ -1,8 +1,11 @@
 class TreeViewItem {
 
-    constructor(label, tooltip) {
+    constructor(label, tooltip, icon, init_collapsed, unfold_dblclick) {
         this.label = label;
         this.tooltip = tooltip;
+        this.icon = icon;
+        this.collapsed = init_collapsed;
+        this.unfold_dblclick = unfold_dblclick;
         // Parent item, undefined if directly under list root.
         this.parent_item = undefined;
         this.children = undefined;
@@ -37,10 +40,24 @@ class TreeViewItem {
         // If this element has children, draw it as a nested list.
         if (this.children !== undefined) {
             const nested_label = $('<span>', {
-                'class': 'tree-view-item-label tree-view-item-label-nested tree-view-expanded',
-                'text': this.label,
+                'class': 'tree-view-item-label tree-view-item-label-nested',
             });
             label_container.append(nested_label);
+
+            if (this.icon !== undefined && this.icon !== '') {
+                const icon_elem = $('<i>', {
+                    'class': 'material-icons',
+                    'style': 'font-size: inherit;',
+                    'text': this.icon,
+                });
+                nested_label.append(icon_elem);
+                nested_label.append("&nbsp;");
+                nested_label.append($('<span>', {
+                    'text': this.label,
+                }));
+            } else {
+                nested_label.text(this.label);
+            }
 
             const nested_list = $('<ul>', {
                 'class': 'tree-view-list',
@@ -50,12 +67,24 @@ class TreeViewItem {
                 nested_list.append(child.generate_html());
             });
 
-            nested_label.click((event) => {
-                nested_list.toggle();
-                nested_label.toggleClass('tree-view-expanded');
+            if (this.unfold_dblclick) {
+                nested_label.dblclick((event) => {
+                    nested_list.toggle();
+                    nested_label.toggleClass('tree-view-expanded');
 
-                event.stopPropagation();
-            });
+                    event.stopPropagation();
+                });
+            } else {
+                nested_label.click((event) => {
+                    nested_list.toggle();
+                    nested_label.toggleClass('tree-view-expanded');
+
+                    event.stopPropagation();
+                });
+            }
+
+            if (!this.collapsed)
+                nested_label.addClass('tree-view-expanded')
 
             item.append(nested_list);
         } else {
@@ -81,6 +110,10 @@ class TreeView {
     add_item(item) {
         this.items.push(item);
         item.parent_item = undefined;
+    }
+
+    clear() {
+        this.items = [];
     }
 
     hide() {

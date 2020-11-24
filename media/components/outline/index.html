@@ -8,6 +8,10 @@
     <link rel="stylesheet" type="text/css"
           href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/elements/treeview/treeview.css">
+    <link rel="stylesheet" type="text/css"
           href="{{ CSP_SRC }}/components/outline/outline.css">
 
     <script>
@@ -16,47 +20,65 @@
     </script>
 
     <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
+    <script src="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.bundle.min.js"></script>
+    <script src="{{ CSP_SRC }}/elements/treeview/treeview.js"></script>
     <script src="{{ CSP_SRC }}/components/outline/outline.js"></script>
 </head>
 
 <body>
-    <div id="contents">
+    <div id="contents" class="container-fluid">
+        <div class="row">
+            <div id="outline-list" class="hidden">
+            </div>
+        </div>
     </div>
 
     <script>
         vscode = acquireVsCodeApi();
+
+        const outline_list = new OutlineList($('#outline-list'));
+        outline_list.generate_html();
+        outline_list.show();
+
+        function set_outline_list_recursive(list, parent) {
+            for (const item of list) {
+                const outline_item = new OutlineItem(
+                    item['icon'],
+                    item['type'],
+                    item['label'],
+                    item['tooltip'],
+                    item['uuid']
+                );
+
+                if (item['children'] !== undefined && item['children'].length)
+                    set_outline_list_recursive(item['children'], outline_item);
+
+                parent.add_item(outline_item);
+            }
+        }
 
         // Add a listener to receive messages from the extension.
         window.addEventListener('message', e => {
             const message = e.data;
             switch (message.type) {
                 case 'set_outline':
-                    // Update the outline.
-                    $('#contents').html(message.html);
-
-                    // Set the correct click listeners to handle zooming in to
-                    // elements.
-                    $('div[sdfg_uuid]').each((index, element) => {
-                        element.addEventListener('click', (e) => {
-                            if (vscode)
-                                vscode.postMessage({
-                                    type: 'sdfv.zoom_to_node',
-                                    uuid: element.getAttribute('sdfg_uuid'),
-                                });
-
-                            // Make sure the event doesn't also get fired on
-                            // the parent element.
-                            e.stopPropagation();
-                        })
-                    });
+                    if (message.outline_list !== undefined) {
+                        outline_list.clear();
+                        set_outline_list_recursive(
+                            message.outline_list,
+                            outline_list
+                        );
+                        outline_list.notify_data_changed();
+                    }
                     break;
                 case 'clear_outline':
-                    $('#contents').html('');
+                    outline_list.clear();
+                    outline_list.notify_data_changed();
                     break;
                 default:
                     break;
             }
-            });
+        });
 
         $(document).ready(() => {
             if (vscode)

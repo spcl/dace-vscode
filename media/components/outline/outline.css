@@ -6,19 +6,29 @@ html {
 body {
     height: 100%;
     margin: 0;
+    padding: .3rem .5rem;
     font-family: "Segeo UI", Arial, sans-serif;
+    color: var(--vscode-foreground);
+    background-color: inherit;
 }
 
-.outline-item {
-    user-select: none;
-    font-size: 1rem;
-    font-family: "Segoe UI", Arial, sans-serif;
-    padding: .5rem 2rem .5rem .4rem;
+.hidden {
+    display: none;
+}
+
+#contents {
+    padding-top: .3rem;
+}
+
+#outline-list {
+    width: 100%;
+}
+
+.tree-view-list {
+    width: 100%;
+}
+
+.tree-view-item.hover {
     cursor: pointer;
-    /*margin: .2rem 0 -.2rem;*/
-    background-color: var(--vscode-editor-background);
-}
-
-.outline-item:hover {
-    background-color: var(--vscode-inputOption-activeBackground);
+    background-color: var(--vscode-list-hoverBackground);
 }
