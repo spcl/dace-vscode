@@ -3,8 +3,6 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { request } from 'http';
 
-import { TransformationsProvider } from './transformation/transformations';
-import { Transformation, SubgraphTransformation } from './transformation/transformationsItem';
 import { TransformationHistoryProvider } from './transformation/transformationHistory';
 import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
 import { DaCeVSCode } from './extension';
@@ -26,6 +24,14 @@ implements MessageReceiverInterface {
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
+            case 'apply_transformation':
+                if (message.transformation !== undefined)
+                    this.applyTransformation(message.transformation);
+                break;
+            case 'preview_transformation':
+                if (message.transformation !== undefined)
+                    this.previewTransformation(message.transformation);
+                break;
             case 'load_transformations':
                 if (message.sdfg !== undefined &&
                     message.selectedElements !== undefined)
@@ -397,7 +403,7 @@ implements MessageReceiverInterface {
     public start() {
         const callback = () => {
             TransformationHistoryProvider.getInstance().refresh();
-            TransformationsProvider.getInstance().refresh();
+            TransformationListProvider.getInstance()?.refresh();
         };
         if (vscode.workspace.getConfiguration(
                 'dace.interface'
@@ -438,7 +444,7 @@ implements MessageReceiverInterface {
         });
     }
 
-    private sendApplyTransformationRequest(transformation: Transformation,
+    private sendApplyTransformationRequest(transformation: any,
                                            callback: CallableFunction,
                                            processingMessage?: string) {
         if (!this.daemonRunning) {
@@ -455,33 +461,29 @@ implements MessageReceiverInterface {
                 '/apply_transformation',
                 {
                     sdfg: sdfg,
-                    transformation: transformation.json,
+                    transformation: transformation,
                 },
                 callback
             );
         }
     }
 
-    public applyTransformation(transformation: Transformation) {
-        if (transformation.json)
-            this.sendApplyTransformationRequest(transformation, (data: any) => {
-                this.hideSpinner();
-                this.writeToActiveDocument(data.sdfg);
-                TransformationsProvider.getInstance()
-                    .clearLastSelectedElements();
-            });
+    public applyTransformation(transformation: any) {
+        this.sendApplyTransformationRequest(transformation, (data: any) => {
+            this.hideSpinner();
+            this.writeToActiveDocument(data.sdfg);
+        });
     }
 
-    public previewTransformation(transformation: Transformation) {
-        if (transformation.json)
-            this.sendApplyTransformationRequest(
-                transformation,
-                (data: any) => {
-                    this.previewSdfg(data.sdfg);
-                    this.hideSpinner();
-                },
-                'Generating Preview'
-            );
+    public previewTransformation(transformation: any) {
+        this.sendApplyTransformationRequest(
+            transformation,
+            (data: any) => {
+                this.previewSdfg(data.sdfg);
+                this.hideSpinner();
+            },
+            'Generating Preview'
+        );
     }
 
     public writeToActiveDocument(json: any) {
@@ -662,64 +664,6 @@ implements MessageReceiverInterface {
             {
                 'sdfg': JSON.parse(sdfg),
                 'selected_elements': cleanedSelected,
-            },
-            callback
-        );
-    }
-
-    public loadTransformationsOld(): void {
-        if (!this.daemonRunning) {
-            this.promptStartDaemon();
-            return;
-        }
-
-        //this.showSpinner('Loading transformations');
-
-        let sdfg = DaCeVSCode.getInstance().getActiveSdfg();
-        if (!sdfg) {
-            console.log('No active SDFG editor!');
-            return;
-        }
-
-        function callback(data: any) {
-            const tProvider = TransformationsProvider.getInstance();
-            tProvider.clearTransformations();
-
-            for (const elem of data.transformations) {
-                let docstring = '';
-                if (data.docstrings)
-                    docstring = data.docstrings[
-                        elem.transformation
-                    ];
-                if (elem.type && elem.type === 'SubgraphTransformation') {
-                    tProvider.addUncategorizedTransformation(new SubgraphTransformation(
-                        elem.transformation,
-                        elem,
-                        docstring
-                    ));
-                } else {
-                    tProvider.addUncategorizedTransformation(new Transformation(
-                        elem.transformation,
-                        elem,
-                        docstring
-                    ));
-                }
-            }
-            // Refresh the tree view to show the new contents.
-            tProvider.notifyTreeDataChanged();
-
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'get_viewport_elem',
-            });
-            DaCeInterface.getInstance().hideSpinner();
-        }
-
-        this.sendPostRequest(
-            '/transformations',
-            {
-                'sdfg': sdfg,
-                'selected_elements': TransformationsProvider.getInstance()
-                    .getLastSelectedElements(),
             },
             callback
         );

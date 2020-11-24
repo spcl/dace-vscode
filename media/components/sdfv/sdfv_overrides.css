@@ -158,10 +158,18 @@ pre.code {
 /* Info container/box */
 
 #info-container {
-  margin-top: .5rem;
   width: 100%;
   height: 100%;
   overflow-y: scroll;
+}
+
+.split-container-vertical > #info-container {
+  padding-top: .5rem;
+}
+
+.split-container-horizontal > #info-container {
+  padding-left: .5rem;
+  padding-right: .5rem;
 }
 
 #info-header {
@@ -272,3 +280,26 @@ pre.code {
 }
 
 /* End SDFV Toolbar */
+
+#info-contents .transformation-button-container {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-items: left;
+  width: 100%;
+}
+
+#info-contents .transformation-button-container .button {
+  margin-right: .3rem;
+}
+
+#info-contents .transformation-info-container {
+  margin-top: .3rem;
+  border-top: 1px solid var(--vscode-list-hoverBackground);
+  padding-top: .3rem;
+  font-size: 1rem;
+}
+
+#info-contents .transformation-info-container .transformation-image {
+  max-width: 100%;
+}

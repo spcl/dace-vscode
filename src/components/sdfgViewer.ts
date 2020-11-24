@@ -3,9 +3,6 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 
 import {
-    TransformationsProvider
-} from '../transformation/transformations';
-import {
     TransformationHistoryProvider
 } from '../transformation/transformationHistory';
 import { OutlineProvider } from './outline';
@@ -195,7 +192,7 @@ implements vscode.CustomTextEditorProvider {
             case 'get_applicable_transformations_callback':
             case 'highlight_elements':
             case 'zoom_to_node':
-            case 'zoom_to_elements':
+            case 'select_transformation':
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
                 break;
             default:
@@ -296,8 +293,8 @@ implements vscode.CustomTextEditorProvider {
             ).layout === 'vertical'
         ) {
             baseHtml = baseHtml.replace(
-                '<div id="split-container">',
-                '<div id="split-container" style="display: flex;">'
+                '<div id="split-container" class="split-container-vertical">',
+                '<div id="split-container" style="display: flex;" class="split-container-horizontal">'
             );
             baseHtml = baseHtml.replace(
                 'direction: \'vertical\',',

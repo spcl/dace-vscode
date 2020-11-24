@@ -16,13 +16,14 @@ class TransformationCategory extends TransformationListItem {
 
 class Transformation extends TransformationListItem {
 
-    constructor(name, docstring, type, exp_index, sdfg_id, state_id, subgraph) {
-        super(name, docstring);
-        this.type = type;
-        this.exp_index = exp_index;
-        this.sdfg_id = sdfg_id;
-        this.state_id = state_id;
-        this.subgraph = subgraph;
+    constructor(json) {
+        super(json.transformation, json.docstring);
+        this.json = json;
+        this.type = json.type;
+        this.exp_index = json.expr_index;
+        this.sdfg_id = json.sdfg_id;
+        this.state_id = json.state_id;
+        this.subgraph = json._subgraph;
     }
 
     get_affected_element_uuids() {
@@ -48,8 +49,8 @@ class Transformation extends TransformationListItem {
         item.click(() => {
             if (vscode)
                 vscode.postMessage({
-                    type: 'sdfv.zoom_to_elements',
-                    elements: this.get_affected_element_uuids(),
+                    type: 'sdfv.select_transformation',
+                    transformation: this.json,
                 });
         });
 
@@ -128,15 +129,7 @@ class TransformationList extends TreeView {
             const category = transformations[i];
             for (let j = 0; j < category.length; j++) {
                 const transformation = category[j];
-                this.items[i].children.push(new Transformation(
-                    transformation.transformation,
-                    transformation.docstring,
-                    transformation.type,
-                    transformation.expr_index,
-                    transformation.sdfg_id,
-                    transformation.state_id,
-                    transformation._subgraph
-                ));
+                this.items[i].children.push(new Transformation(transformation));
             }
         }
 
