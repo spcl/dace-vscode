@@ -124,7 +124,7 @@
             }
 
             outline(renderer, renderer.graph);
-            analysis_pane_register_symbols();
+            refresh_analysis_pane();
         }
 
         function resetRendererContent() {
@@ -135,7 +135,7 @@
             }
             init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
             outline(renderer, renderer.graph);
-            analysis_pane_register_symbols();
+            refresh_analysis_pane();
         }
 
         function refreshSdfg() {

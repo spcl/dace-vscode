@@ -53,6 +53,16 @@
             </div>
         </div>
         <hr class="horizontal-divider">
+        <div id="overlay-toggle-container">
+            <div>
+                <span>
+                    Overlays:
+                </span>
+            </div>
+            <div id="overlay-toggles">
+            </div>
+        </div>
+        <hr class="horizontal-divider">
         <div id="symbol-list">
             <span>
                 Symbol list:
@@ -99,6 +109,52 @@
                 case 'remove_all_symbol_definitions':
                     symbol_resolution.remove_all_symbol_definitions();
                     break;
+                case 'refresh_analysis_pane':
+                    if (message.badness_scale_method !== undefined)
+                        $('input[type=radio][name=badness-scale-method]').val(
+                            [message.badness_scale_method]
+                        );
+
+                    if (message.available_overlays !== undefined) {
+                        const toggle_container = $('#overlay-toggles');
+                        toggle_container.html('');
+                        for (const overlay in message.available_overlays) {
+                            const overlay_id = message.available_overlays[
+                                overlay
+                            ];
+
+                            const overlay_toggle = $('<input>', {
+                                'type': 'checkbox',
+                                'name': 'overlay-toggle',
+                                'value': overlay_id,
+                            });
+
+                            if (message.active_overlays.includes(overlay_id))
+                                overlay_toggle.prop('checked', true);
+
+                            const toggle_label = $('<label>', {
+                            }).appendTo(toggle_container);
+
+                            toggle_label.append(overlay_toggle);
+                            toggle_label.append('&nbsp;' + overlay);
+                        }
+
+                        $('input[type=checkbox][name=overlay-toggle]').change(
+                            function () {
+                                if (this.checked)
+                                    vscode.postMessage({
+                                        type: 'sdfv.register_overlay',
+                                        overlay: this.value,
+                                    });
+                                else
+                                    vscode.postMessage({
+                                        type: 'sdfv.deregister_overlay',
+                                        overlay: this.value,
+                                    });
+                            }
+                        );
+                    }
+                    // Fall through into the next case to also set the symbols.
                 case 'set_symbols':
                     if (message.symbols !== undefined) {
                         const symbols = {};
@@ -111,8 +167,10 @@
                         symbol_resolution.set_symbols(symbols);
                     }
                     break;
-                case 'clear_symbols':
+                case 'clear':
                     symbol_resolution.clear_symbols();
+                    $('#overlay-toggles').html('');
+                    $('input[type=radio][value=median]').prop('checked', true);
                     break;
                 default:
                     break;
@@ -129,7 +187,7 @@
             });
             if (vscode)
                 vscode.postMessage({
-                    type: 'sdfv.refresh_symbol_list',
+                    type: 'sdfv.refresh_analysis_pane',
                 });
         });
     </script>

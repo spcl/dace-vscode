@@ -18,7 +18,7 @@ implements vscode.WebviewViewProvider {
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         AnalysisProvider.INSTANCE = new AnalysisProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
-            retainContextWhenHidden: true,
+            retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
             AnalysisProvider.viewType,
@@ -76,24 +76,15 @@ implements vscode.WebviewViewProvider {
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
-            case 'add_symbol':
-            case 'add_symbols':
-            case 'define_symbol':
-            case 'remove_symbol_definition':
-            case 'remove_symbol':
-            case 'remove_all_symbol_definitions':
-            case 'set_symbols':
-            case 'clear_symbols':
-                this.view?.webview.postMessage(message);
-                break;
             default:
+                this.view?.webview.postMessage(message);
                 break;
         }
     }
 
-    public clearSymbols() {
+    public clear() {
         this.view?.webview.postMessage({
-            type: 'clear_symbols',
+            type: 'clear',
         });
     }
 

@@ -173,7 +173,6 @@ function fill_info_embedded(elem) {
 }
 
 function embedded_outline(renderer, graph) {
-    console.log(graph);
     if (vscode === undefined)
         return;
 

@@ -18,8 +18,19 @@ class MessageHandler {
                         message.method
                     );
                 break;
+            case 'register_overlay':
+                if (message.overlay !== undefined && renderer)
+                    renderer.overlay_manager.register_overlay(message.overlay);
+                break;
+            case 'deregister_overlay':
+                if (message.overlay !== undefined && renderer)
+                    renderer.overlay_manager.deregister_overlay(message.overlay);
+                break;
             case 'refresh_symbol_list':
                 analysis_pane_refresh_symbols();
+                break;
+            case 'refresh_analysis_pane':
+                refresh_analysis_pane();
                 break;
             case 'refresh_outline':
                 if (renderer)

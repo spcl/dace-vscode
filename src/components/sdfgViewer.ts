@@ -91,7 +91,7 @@ implements vscode.CustomTextEditorProvider {
     private documentChanged(document: vscode.TextDocument,
                             webview: vscode.Webview): void {
         OutlineProvider.getInstance()?.clearOutline();
-        AnalysisProvider.getInstance()?.clearSymbols();
+        AnalysisProvider.getInstance()?.clear();
         TransformationHistoryProvider.getInstance()?.clearList();
         TransformationListProvider.getInstance()?.clearList();
         this.updateWebview(document, webview);
@@ -174,18 +174,8 @@ implements vscode.CustomTextEditorProvider {
                     );
                 }
                 break;
-            case 'update_badness_scale_method':
-            case 'symbol_value_changed':
-            case 'refresh_outline':
-            case 'refresh_transformation_list':
-            case 'refresh_symbol_list':
-            case 'get_applicable_transformations_callback':
-            case 'highlight_elements':
-            case 'zoom_to_node':
-            case 'select_transformation':
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
-                break;
             default:
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
                 break;
         }
     }

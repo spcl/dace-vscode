@@ -29,14 +29,14 @@ function transformation_get_affected_uuids(transformation) {
  * Request a list of applicable transformations from DaCe.
  */
 function get_applicable_transformations() {
-    if (renderer !== undefined && vscode !== undefined) {
+    if (renderer !== undefined && renderer !== null && vscode !== undefined) {
         vscode.postMessage({
             type: 'dace.load_transformations',
             sdfg: sdfg_json,
             selectedElements: JSON.stringify(
                 renderer.selected_elements
             ),
-        })
+        });
     }
 }
 

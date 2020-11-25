@@ -16,6 +16,10 @@ body {
     width: 100%;
 }
 
+#overlay-toggles label {
+    margin-right: .3rem;
+}
+
 #symbol-table {
     width: 100%;
 }

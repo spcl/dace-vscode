@@ -67,7 +67,7 @@ export class DaCeVSCode {
         });
         this.registerCommand('sdfgAnalysis.sync', () => {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'refresh_symbol_list',
+                type: 'refresh_analysis_pane',
             });
         });
         this.registerCommand('sdfgOutline.sync', () => {
@@ -119,7 +119,7 @@ export class DaCeVSCode {
         this.activeEditor = undefined;
 
         this.outlineProvider?.clearOutline();
-        this.analysisProvider?.clearSymbols();
+        this.analysisProvider?.clear();
         this.trafoHistProvider?.clearList();
         this.trafoProvider?.clearList();
     }
