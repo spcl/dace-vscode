@@ -4,6 +4,7 @@ class TreeViewItem {
         this.label = label;
         this.tooltip = tooltip;
         this.icon = icon;
+        // TODO: Make use of collapsed!!..
         this.collapsed = init_collapsed;
         this.unfold_dblclick = unfold_dblclick;
         // Parent item, undefined if directly under list root.
@@ -57,6 +58,7 @@ class TreeViewItem {
                 nested_label.dblclick((event) => {
                     nested_list.toggle();
                     nested_label.toggleClass('tree-view-expanded');
+                    this.collapsed = !this.collapsed;
 
                     event.stopPropagation();
                 });
@@ -64,6 +66,7 @@ class TreeViewItem {
                 nested_label.click((event) => {
                     nested_list.toggle();
                     nested_label.toggleClass('tree-view-expanded');
+                    this.collapsed = !this.collapsed;
 
                     event.stopPropagation();
                 });

@@ -173,6 +173,7 @@ function fill_info_embedded(elem) {
 }
 
 function embedded_outline(renderer, graph) {
+    console.log(graph);
     if (vscode === undefined)
         return;
 
@@ -182,7 +183,7 @@ function embedded_outline(renderer, graph) {
         'icon': 'filter_center_focus',
         'type': 'SDFG',
         'label': `SDFG ${renderer.sdfg.attributes.name}`,
-        'tooltip': '',
+        'collapsed': false,
         'uuid': get_uuid_graph_element(undefined),
         'children': [],
     });
@@ -199,7 +200,6 @@ function embedded_outline(renderer, graph) {
         // Create an entry.
         let is_collapsed = node.attributes().is_collapsed;
         is_collapsed = (is_collapsed === undefined) ? false : is_collapsed;
-        let collapsed_text = is_collapsed ? '(collapsed)' : '';
         let node_label = node.label();
         if (node.type() === 'NestedSDFG')
             node_label = node.data.node.label;
@@ -212,11 +212,34 @@ function embedded_outline(renderer, graph) {
                 node_type = node_type.slice(0, -5);
         }
 
+        let icon;
+        switch (node_type) {
+            case 'Tasklet':
+                icon = 'code';
+                break;
+            case 'Map':
+                icon = 'call_split';
+                break;
+            case 'SDFGState':
+                icon = 'crop_square';
+                break;
+            case 'AccessNode':
+                icon = 'sd_card';
+                break;
+            case 'NestedSDFG':
+                //icon = 'add_to_photos';
+                icon = 'filter_center_focus';
+                break;
+            default:
+                icon = '';
+                break;
+        }
+
         stack.push({
-            'icon': '',
+            'icon': icon,
             'type': node_type,
-            'label': `${node_label} ${collapsed_text}`,
-            'tooltip': collapsed_text,
+            'label': node_label,
+            'collapsed': is_collapsed,
             'uuid': get_uuid_graph_element(node),
             'children': [],
         });

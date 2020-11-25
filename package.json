@@ -112,6 +112,7 @@
                 },
                 {
                     "id": "transformationHistory",
+                    "type": "webview",
                     "name": "Transformation History",
                     "icon": "resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation History"
@@ -154,6 +155,14 @@
             {
                 "command": "transformationList.sync",
                 "title": "Refresh Transformations",
+                "icon": {
+                    "dark": "resources/icons/dark/refresh.svg",
+                    "light": "resources/icons/light/refresh.svg"
+                }
+            },
+            {
+                "command": "transformationHistory.sync",
+                "title": "Refresh Transformation History",
                 "icon": {
                     "dark": "resources/icons/dark/refresh.svg",
                     "light": "resources/icons/light/refresh.svg"
@@ -218,6 +227,11 @@
                     "group": "navigation"
                 },
                 {
+                    "command": "transformationHistory.sync",
+                    "when": "view == transformationHistory",
+                    "group": "navigation"
+                },
+                {
                     "command": "sdfgAnalysis.sync",
                     "when": "view == sdfgAnalysis",
                     "group": "navigation"
@@ -226,13 +240,6 @@
                     "command": "sdfgOutline.sync",
                     "when": "view == sdfgOutline",
                     "group": "navigation"
-                }
-            ],
-            "view/item/context": [
-                {
-                    "command": "sdfg.applyHistoryPoint",
-                    "when": "view == transformationHistory",
-                    "group": "inline"
                 }
             ]
         }

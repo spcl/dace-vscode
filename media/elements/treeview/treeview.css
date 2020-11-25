@@ -14,19 +14,16 @@
 
 .tree-view-item-label-container {
     width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 }
 
-/*
-.tree-view-item-label-nested > .tree-view-item-icon {
-    transform: rotate(0deg);
-    transition: all .1s ease-in-out;
+.tree-view-item-label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 }
-
-.tree-view-item-label-nested.tree-view-expanded > .tree-view-item-icon {
-    transform: rotate(90deg);
-    transition: all .1s ease-in-out;
-}
-*/
 
 .tree-view-item-label-nested::before {
     font-family: 'Material Icons';

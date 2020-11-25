@@ -2,9 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 
-import {
-    TransformationHistoryProvider
-} from '../transformation/transformationHistory';
+import { TransformationHistoryProvider } from './transformationHistory';
 import { OutlineProvider } from './outline';
 import { DaCeVSCode } from '../extension';
 import { AnalysisProvider } from './analysis';
@@ -32,9 +30,6 @@ implements vscode.CustomTextEditorProvider {
     }
 
     private static readonly viewType: string = 'sdfgCustom.sdfv';
-
-    //private transformationsView = TransformationsProvider.getInstance();
-    private trafoHistoryView = TransformationHistoryProvider.getInstance();
 
     private openEditors: SdfgViewer[] = [];
 
@@ -97,17 +92,12 @@ implements vscode.CustomTextEditorProvider {
                             webview: vscode.Webview): void {
         OutlineProvider.getInstance()?.clearOutline();
         AnalysisProvider.getInstance()?.clearSymbols();
-        this.trafoHistoryView.clearHistory();
+        TransformationHistoryProvider.getInstance()?.clearList();
         TransformationListProvider.getInstance()?.clearList();
-        /*
-        this.transformationsView.clearLastSelectedElements();
-        this.transformationsView.clearTransformations();
-        */
         this.updateWebview(document, webview);
         if (DaCeVSCode.getInstance().getActiveEditor() === webview) {
-            //this.transformationsView.refresh();
             TransformationListProvider.getInstance()?.refresh();
-            this.trafoHistoryView.refresh();
+            TransformationHistoryProvider.getInstance()?.refresh();
             OutlineProvider.getInstance()?.refresh();
             AnalysisProvider.getInstance()?.refresh();
         }
@@ -233,6 +223,8 @@ implements vscode.CustomTextEditorProvider {
         webviewPanel.onDidChangeViewState(e => {
             if (e.webviewPanel.active)
                 this.updateActiveEditor(document, webviewPanel.webview);
+            else
+                DaCeVSCode.getInstance().clearActiveSdfg();
         });
 
         // Register an event listener for when the document changes on disc.

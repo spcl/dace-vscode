@@ -1,11 +1,10 @@
 class OutlineItem extends TreeViewItem {
 
-    constructor(icon, type, label, tooltip, element_uuid) {
+    constructor(icon, type, label, collapsed, element_uuid) {
         let item_label = label;
-        if (type !== undefined && type !== '')
-            item_label = type + ' ' + item_label;
-
-        super(item_label, tooltip, icon, false, true);
+        if (collapsed)
+            item_label += ' (collapsed)';
+        super(item_label, type, icon, false, true);
 
         this.element_uuid = element_uuid;
     }

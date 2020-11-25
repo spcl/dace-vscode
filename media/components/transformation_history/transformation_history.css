@@ -1,0 +1,48 @@
+html {
+    height: 100%;
+    padding: 0;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    padding: .3rem .5rem;
+    font-family: "Segeo UI", Arial, sans-serif;
+    color: var(--vscode-foreground);
+    background-color: inherit;
+}
+
+.hidden {
+    display: none;
+}
+
+#content {
+    padding-top: .3rem;
+}
+
+#transformation-list {
+    width: 100%;
+}
+
+.tree-view-item-label {
+    flex-grow: 1;
+}
+
+.transformation-history-apply-button {
+    display: none;
+}
+
+.tree-view-item.hover .transformation-history-apply-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.tree-view-list {
+    width: 100%;
+}
+
+.tree-view-item.hover {
+    cursor: pointer;
+    background-color: var(--vscode-list-hoverBackground);
+}
