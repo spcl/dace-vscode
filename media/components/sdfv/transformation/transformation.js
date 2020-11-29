@@ -158,10 +158,16 @@ async function sort_transformations(callback) {
  */
 function refresh_transformation_list() {
     if (vscode !== undefined && transformations !== undefined)
-        vscode.postMessage({
-            type: 'transformation_list.set_transformations',
-            transformations: transformations,
-        });
+        if (window.viewing_history_state)
+            vscode.postMessage({
+                type: 'transformation_list.clear_transformations',
+                reason: 'Can\'t show transformations while viewing a history state',
+            });
+        else
+            vscode.postMessage({
+                type: 'transformation_list.set_transformations',
+                transformations: transformations,
+            });
 }
 
 function clear_selected_transformation() {

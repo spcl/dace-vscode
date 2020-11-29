@@ -419,10 +419,11 @@ implements MessageReceiverInterface {
             this.startPythonDaemon(callback);
     }
 
-    public previewSdfg(sdfg: any) {
+    public previewSdfg(sdfg: any, history_mode: boolean = false) {
         DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'preview_sdfg',
             text: JSON.stringify(sdfg),
+            hist_state: history_mode,
         });
     }
 
@@ -531,7 +532,7 @@ implements MessageReceiverInterface {
                         break;
                     case InteractionMode.PREVIEW:
                     default:
-                        this.previewSdfg(originalSdfg);
+                        this.previewSdfg(originalSdfg, true);
                         break;
                 }
             }
@@ -555,7 +556,7 @@ implements MessageReceiverInterface {
                 default:
                     callback = function (data: any) {
                         const daceInterface = DaCeInterface.getInstance();
-                        daceInterface.previewSdfg(data.sdfg);
+                        daceInterface.previewSdfg(data.sdfg, true);
                         daceInterface.hideSpinner();
                     };
                     break;

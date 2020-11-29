@@ -85,9 +85,15 @@ class MessageHandler {
                 el = document.getElementById('exit-preview-button');
                 if (el)
                     el.className = 'button';
+
+                if (message.hist_state !== undefined && message.hist_state) {
+                    window.viewing_history_state = true;
+                    refresh_transformation_list();
+                }
                 break;
             case 'exit_preview':
                 resetRendererContent();
+                window.viewing_history_state = false;
                 el = document.getElementById('exit-preview-button');
                 if (el)
                     el.className = 'button hidden';
