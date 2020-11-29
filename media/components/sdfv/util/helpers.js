@@ -54,8 +54,18 @@ function highlight_uuids(uuids, color) {
         if (color === undefined)
             color = 'wheat';
 
-        do_for_all_uuids(uuids, (element) => {
-            element.shade(renderer, renderer.ctx, color);
-        });
+        if (!uuids.length) {
+            renderer.graph.nodes().forEach((state_id) => {
+                renderer.graph.node(state_id).shade(
+                    renderer,
+                    renderer.ctx,
+                    color
+                );
+            });
+        } else {
+            do_for_all_uuids(uuids, (element) => {
+                element.shade(renderer, renderer.ctx, color);
+            });
+        }
     }
 }

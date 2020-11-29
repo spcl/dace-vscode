@@ -27,7 +27,7 @@ function analysis_pane_refresh_symbols() {
 }
 
 function refresh_analysis_pane() {
-    if (renderer !== undefined && vscode !== undefined) {
+    if (renderer !== undefined && renderer !== null && vscode !== undefined) {
         const map = renderer.overlay_manager.symbol_resolver.symbol_value_map;
         Object.keys(map).forEach((symbol) => {
             if (map[symbol] === undefined)

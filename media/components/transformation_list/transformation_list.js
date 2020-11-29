@@ -1,7 +1,9 @@
 class TransformationListItem extends TreeViewItem {
 
-    constructor(label, tooltip, icon, init_collapsed, unfold_dblclck) {
-        super(label, tooltip, icon, init_collapsed, unfold_dblclck);
+    constructor(label, tooltip, icon, init_collapsed, unfold_dblclck,
+                label_style, icon_style) {
+        super(label, tooltip, icon, init_collapsed, unfold_dblclck,
+              label_style, icon_style);
     }
 
 }
@@ -9,7 +11,9 @@ class TransformationListItem extends TreeViewItem {
 class TransformationCategory extends TransformationListItem {
 
     constructor(name, tooltip) {
-        super(name, tooltip, '', false, false);
+        super(name, tooltip, '', false, false,
+              'font-style: italic; font-size: 1.2rem;',
+              '');
     }
 
 }
@@ -17,7 +21,7 @@ class TransformationCategory extends TransformationListItem {
 class Transformation extends TransformationListItem {
 
     constructor(json) {
-        super(json.transformation, json.docstring, '', false, true);
+        super(json.transformation, json.docstring, '', false, true, '', '');
         this.json = json;
         this.type = json.type;
         this.exp_index = json.expr_index;

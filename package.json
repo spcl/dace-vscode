@@ -89,7 +89,7 @@
             {
                 "id": "sdfgicon",
                 "label": "Seti + SDFG Extension",
-                "path": "./resources/icon-theme/sdfg-icon-theme.json"
+                "path": "media/resources/icon-theme/sdfg-icon-theme.json"
             }
         ],
         "viewsContainers": {
@@ -97,7 +97,7 @@
                 {
                     "id": "transformation-explorer",
                     "title": "SDFG Optimization",
-                    "icon": "resources/icons/dace-hollow.svg"
+                    "icon": "media/resources/icons/dace-hollow.svg"
                 }
             ]
         },
@@ -107,28 +107,28 @@
                     "id": "transformationList",
                     "type": "webview",
                     "name": "Transformations",
-                    "icon": "resources/icons/dace-hollow.svg",
+                    "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation Explorer"
                 },
                 {
                     "id": "transformationHistory",
                     "type": "webview",
                     "name": "Transformation History",
-                    "icon": "resources/icons/dace-hollow.svg",
+                    "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation History"
                 },
                 {
                     "id": "sdfgAnalysis",
                     "type": "webview",
                     "name": "SDFG Analysis",
-                    "icon": "resources/icons/dace-hollow.svg",
+                    "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Analysis"
                 },
                 {
                     "id": "sdfgOutline",
                     "type": "webview",
                     "name": "SDFG Outline",
-                    "icon": "resources/icons/dace-hollow.svg",
+                    "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Outline"
                 }
             ]
@@ -156,32 +156,32 @@
                 "command": "transformationList.sync",
                 "title": "Refresh Transformations",
                 "icon": {
-                    "dark": "resources/icons/dark/refresh.svg",
-                    "light": "resources/icons/light/refresh.svg"
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
                 }
             },
             {
                 "command": "transformationHistory.sync",
                 "title": "Refresh Transformation History",
                 "icon": {
-                    "dark": "resources/icons/dark/refresh.svg",
-                    "light": "resources/icons/light/refresh.svg"
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
                 }
             },
             {
                 "command": "sdfgAnalysis.sync",
                 "title": "Refresh Analysis",
                 "icon": {
-                    "dark": "resources/icons/dark/refresh.svg",
-                    "light": "resources/icons/light/refresh.svg"
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
                 }
             },
             {
                 "command": "sdfgOutline.sync",
                 "title": "Refresh Outline",
                 "icon": {
-                    "dark": "resources/icons/dark/refresh.svg",
-                    "light": "resources/icons/light/refresh.svg"
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
                 }
             },
             {
@@ -255,15 +255,15 @@
     "devDependencies": {
         "@types/glob": "^7.1.3",
         "@types/mocha": "^7.0.1",
-        "@types/node": "^12.12.67",
-        "@types/vscode": "^1.50.0",
+        "@types/node": "^12.19.7",
+        "@types/vscode": "^1.51.0",
         "@typescript-eslint/eslint-plugin": "^2.34.0",
         "@typescript-eslint/parser": "^2.34.0",
         "eslint": "^6.8.0",
         "glob": "^7.1.6",
         "mocha": "^7.2.0",
         "typescript": "^3.9.7",
-        "vscode-test": "^1.4.0"
+        "vscode-test": "^1.4.1"
     },
     "dependencies": {}
 }

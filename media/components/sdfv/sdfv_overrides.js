@@ -178,16 +178,17 @@ function embedded_outline(renderer, graph) {
 
     const outline_list = [];
 
-    outline_list.push({
-        'icon': 'filter_center_focus',
+    const top_level_sdfg = {
+        'icon': 'res:icon-theme/sdfg.svg',
         'type': 'SDFG',
         'label': `SDFG ${renderer.sdfg.attributes.name}`,
         'collapsed': false,
         'uuid': get_uuid_graph_element(undefined),
         'children': [],
-    });
+    };
+    outline_list.push(top_level_sdfg);
 
-    const stack = [];
+    const stack = [top_level_sdfg];
 
     traverse_sdfg_scopes(graph, (node, parent) => {
         // Skip exit nodes when scopes are known.
@@ -223,11 +224,10 @@ function embedded_outline(renderer, graph) {
                 icon = 'crop_square';
                 break;
             case 'AccessNode':
-                icon = 'sd_card';
+                icon = 'fiber_manual_record';
                 break;
             case 'NestedSDFG':
-                //icon = 'add_to_photos';
-                icon = 'filter_center_focus';
+                icon = 'res:icon-theme/sdfg.svg';
                 break;
             default:
                 icon = '';
@@ -251,12 +251,8 @@ function embedded_outline(renderer, graph) {
         // outselves to the parent.
         const elem = stack.pop();
         const elem_parent = stack[stack.length - 1];
-        if (elem !== undefined) {
-            if (elem_parent !== undefined)
-                elem_parent['children'].push(elem);
-            else
-                outline_list.push(elem);
-        }
+        if (elem !== undefined && elem_parent !== undefined)
+            elem_parent['children'].push(elem);
     });
 
     vscode.postMessage({

@@ -243,11 +243,13 @@ function show_transformation_details(trafo) {
     $('<div>', {
         'class': 'button',
         'click': () => {
-            if (vscode)
+            if (vscode) {
+                clear_info_box();
                 vscode.postMessage({
                     type: 'dace.apply_transformation',
                     transformation: trafo,
                 });
+            }
         },
         'mouseenter': () => {
             highlight_uuids(transformation_get_affected_uuids(trafo));

@@ -1,15 +1,18 @@
 class TreeViewItem {
 
-    constructor(label, tooltip, icon, init_collapsed, unfold_dblclick) {
+    constructor(label, tooltip, icon, init_collapsed, unfold_dblclick,
+                label_style = undefined, icon_style = undefined) {
         this.label = label;
         this.tooltip = tooltip;
         this.icon = icon;
-        // TODO: Make use of collapsed!!..
         this.collapsed = init_collapsed;
         this.unfold_dblclick = unfold_dblclick;
         // Parent item, undefined if directly under list root.
         this.parent_item = undefined;
         this.children = undefined;
+
+        this.label_style = label_style;
+        this.icon_style = icon_style;
     }
 
     add_item(child) {
@@ -85,20 +88,39 @@ class TreeViewItem {
             label_container.append(label);
         }
 
+        const label_text = $('<span>', {
+            'text': this.label,
+        });
         if (this.icon !== undefined && this.icon !== '') {
-            const icon_elem = $('<i>', {
-                'class': 'material-icons tree-view-item-icon',
-                'style': 'font-size: inherit;',
-                'text': this.icon,
-            });
-            label.append(icon_elem);
+            let icon_elem;
+            if (this.icon.startsWith('res:') && csp_src !== undefined)
+                icon_elem = $('<img>', {
+                    'class': 'tree-view-item-icon',
+                    'style': 'height: 1rem; width: 1rem;',
+                    'src': csp_src + '/resources/' + this.icon.substr(4),
+                }).appendTo(label);
+            else
+                icon_elem = $('<i>', {
+                    'class': 'material-icons tree-view-item-icon',
+                    'style': 'font-size: inherit;',
+                    'text': this.icon,
+                }).appendTo(label);
+
+            if (this.icon_style !== undefined && this.icon_style !== '')
+                icon_elem.attr(
+                    'style',
+                    icon_elem.attr('style') + ';' + this.icon_style
+                );
+
             label.append("&nbsp;");
-            label.append($('<span>', {
-                'text': this.label,
-            }));
-        } else {
-            label.text(this.label);
         }
+
+        label.append(label_text);
+        if (this.label_style !== undefined && this.label_style !== '')
+            label_text.attr(
+                'style',
+                label_text.attr('style') + ';' + this.label_style
+            );
 
         return item;
     }
