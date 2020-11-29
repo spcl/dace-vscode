@@ -513,6 +513,10 @@ implements MessageReceiverInterface {
     }
 
     private gotoHistoryPoint(index: Number | undefined, mode: InteractionMode) {
+        const trafoHistProvider = TransformationHistoryProvider.getInstance();
+        if (trafoHistProvider)
+            trafoHistProvider.activeHistoryItemIndex = index;
+
         if (index === undefined) {
             if (mode === InteractionMode.PREVIEW)
                 this.exitPreview(true);

@@ -50,7 +50,8 @@
             switch (message.type) {
                 case 'set_history':
                     transformation_list.parse_history(
-                        message.history
+                        message.history,
+                        message.active_index
                     );
                     break;
                 case 'clear_history':

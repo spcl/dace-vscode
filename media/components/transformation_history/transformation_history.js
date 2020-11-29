@@ -73,7 +73,7 @@ class TransformationHistoryList extends TreeView {
             this.notify_data_changed();
     }
 
-    parse_history(history) {
+    parse_history(history, active_index = undefined) {
         super.clear();
         for (let i = 0; i < history.length; i++) {
             const item = history[i];
@@ -86,25 +86,32 @@ class TransformationHistoryList extends TreeView {
                     undefined,
                     this
                 );
-                this.selected_item = item_current_state;
+                if (active_index === undefined)
+                    this.selected_item = item_current_state;
                 this.items.unshift(item_current_state);
             } else {
-                this.items.unshift(new TransformationHistoryItem(
+                const history_item = new TransformationHistoryItem(
                     item['transformation'],
                     'Preview',
                     i,
                     this
-                ));
+                );
+                if (active_index === i)
+                    this.selected_item = history_item;
+                this.items.unshift(history_item);
             }
         }
 
         if (history.length) {
-            this.items.push(new TransformationHistoryItem(
+            const item_orig_sdfg = new TransformationHistoryItem(
                 'Original SDFG',
                 'Preview',
                 -1,
                 this
-            ));
+            );
+            if (active_index === -1)
+                this.selected_item = item_orig_sdfg;
+            this.items.push(item_orig_sdfg);
         }
 
         this.notify_data_changed();

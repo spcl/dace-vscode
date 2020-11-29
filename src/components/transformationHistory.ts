@@ -16,6 +16,8 @@ implements vscode.WebviewViewProvider {
 
     private static INSTANCE: TransformationHistoryProvider | undefined = undefined;
 
+    public activeHistoryItemIndex: Number | undefined = undefined;
+
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         TransformationHistoryProvider.INSTANCE = new TransformationHistoryProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
@@ -79,6 +81,8 @@ implements vscode.WebviewViewProvider {
                          origin: vscode.Webview | undefined = undefined): void {
         switch (message.type) {
             case 'refresh':
+                if (message.reset_active)
+                    this.activeHistoryItemIndex = undefined;
                 this.refresh();
                 break;
             default:
@@ -102,6 +106,7 @@ implements vscode.WebviewViewProvider {
             this.view?.webview.postMessage({
                 type: 'set_history',
                 history: history,
+                active_index: this.activeHistoryItemIndex,
             });
         }
     }
