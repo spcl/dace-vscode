@@ -1,45 +1,46 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { DaCeVSCode } from '../extension';
+
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
-export class SymbolResolutionProvider
+export class TransformationHistoryProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    // Identifiers for code placement into the webview's HTML.
-    private readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
-
-    private static readonly viewType = 'symbolResolution';
+    private static readonly viewType: string = 'transformationHistory';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: SymbolResolutionProvider | undefined = undefined;
+    private static INSTANCE: TransformationHistoryProvider | undefined = undefined;
+
+    public activeHistoryItemIndex: Number | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        SymbolResolutionProvider.INSTANCE = new SymbolResolutionProvider(ctx);
+        TransformationHistoryProvider.INSTANCE = new TransformationHistoryProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
-            retainContextWhenHidden: true,
+            retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
-            SymbolResolutionProvider.viewType,
-            SymbolResolutionProvider.INSTANCE,
+            TransformationHistoryProvider.viewType,
+            TransformationHistoryProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): SymbolResolutionProvider | undefined {
+    public static getInstance(): TransformationHistoryProvider | undefined {
         return this.INSTANCE;
     }
 
-    public resolveWebviewView(
+    resolveWebviewView(
         webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext,
-        _token: vscode.CancellationToken
-    ) {
+        context: vscode.WebviewViewResolveContext<unknown>,
+        token: vscode.CancellationToken
+    ): void | Thenable<void> {
         this.view = webviewView;
 
         webviewView.webview.options = {
@@ -55,7 +56,7 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'symbol_resolution',
+            'transformation_history',
             'index.html'
         ));
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
@@ -76,31 +77,38 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public handleMessage(message: any, origin: vscode.Webview): void {
+    public handleMessage(message: any,
+                         origin: vscode.Webview | undefined = undefined): void {
         switch (message.type) {
-            case 'add_symbol':
-            case 'add_symbols':
-            case 'define_symbol':
-            case 'remove_symbol_definition':
-            case 'remove_symbol':
-            case 'remove_all_symbol_definitions':
-            case 'set_symbols':
-            case 'clear_symbols':
-                this.view?.webview.postMessage(message);
+            case 'refresh':
+                if (message.reset_active)
+                    this.activeHistoryItemIndex = undefined;
+                this.refresh();
                 break;
             default:
+                this.view?.webview.postMessage(message);
                 break;
         }
     }
 
-    public clearSymbols() {
+    public clearList(reason: string | undefined) {
         this.view?.webview.postMessage({
-            type: 'clear_symbols',
+            type: 'clear_history',
+            reason: reason,
         });
     }
 
     public refresh() {
-        vscode.commands.executeCommand('symbolResolution.refreshEntry');
+        this.clearList(undefined);
+        const sdfg = DaCeVSCode.getInstance().getActiveSdfg();
+        if (sdfg !== undefined) {
+            const history = sdfg.attributes.transformation_hist;
+            this.view?.webview.postMessage({
+                type: 'set_history',
+                history: history,
+                active_index: this.activeHistoryItemIndex,
+            });
+        }
     }
 
 }

@@ -3,7 +3,9 @@ import { DaCeInterface } from '../../daceInterface';
 
 import { OutlineProvider } from "../outline";
 import { SdfgViewerProvider } from "../sdfgViewer";
-import { SymbolResolutionProvider } from "../symbolResolution";
+import { AnalysisProvider } from "../analysis";
+import { TransformationListProvider } from '../transformationList';
+import { TransformationHistoryProvider } from '../transformationHistory';
 
 export class ComponentMessageHandler {
 
@@ -35,14 +37,26 @@ export class ComponentMessageHandler {
                         origin
                     );
                     break;
-                case 'symbol_resolver':
-                    SymbolResolutionProvider.getInstance()?.handleMessage(
+                case 'analysis':
+                    AnalysisProvider.getInstance()?.handleMessage(
                         message,
                         origin
                     );
                     break;
                 case 'dace':
                     DaCeInterface.getInstance().handleMessage(message, origin);
+                    break;
+                case 'transformation_history':
+                    TransformationHistoryProvider.getInstance()?.handleMessage(
+                        message,
+                        origin
+                    );
+                    break;
+                case 'transformation_list':
+                    TransformationListProvider.getInstance()?.handleMessage(
+                        message,
+                        origin
+                    );
                     break;
                 default:
                     break;

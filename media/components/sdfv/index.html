@@ -12,6 +12,10 @@
     <script>
         // Reference to the VSCode API.
         let vscode = undefined;
+
+        let message_handler = undefined;
+
+        const csp_src = "{{ CSP_SRC }}";
     </script>
 
     <script src="{{ CSP_SRC }}/webclient/renderer_dir/dagre.js"></script>
@@ -20,7 +24,7 @@
     <script src="{{ CSP_SRC }}/webclient/external_lib/blob-stream.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/lib/split.min.js"></script>
+    <script src="{{ CSP_SRC }}/lib/split.min.js"></script>
 
     <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
     <script src="{{ CSP_SRC }}/webclient/renderer_elements.js"></script>
@@ -55,7 +59,7 @@
         </div>
     </div>
 
-    <div id="split-container">
+    <div id="split-container" class="split-container-vertical">
         <div id="contents">
             <div id="processing-overlay">
                 <div id="processing-overlay-box">
@@ -94,38 +98,21 @@
 
     <script>
         var sdfg_json = '';
+        var transformations = [[], [], [], []];
     </script>
     <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
+
+    <script src="{{ CSP_SRC }}/components/sdfv/util/helpers.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/messaging/message_handler.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/analysis/analysis.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/transformation/transformation.js"></script>
     <script>
         vscode = acquireVsCodeApi();
+        message_handler = new MessageHandler();
         var debug_draw = false;
 
-        function symbolResolverRegisterSymbols() {
-            if (renderer === undefined || vscode === undefined)
-                return;
-            vscode.postMessage({
-                type: 'symbol_resolver.add_symbols',
-                symbols: renderer.sdfg.attributes.symbols,
-            });
-        }
-
-        function symbolResolverRefreshSymbols() {
-            if (renderer === undefined || vscode === undefined)
-                return;
-            const map =
-                renderer.overlay_manager.symbol_resolver.symbol_value_map;
-            Object.keys(map).forEach((symbol) => {
-                if (map[symbol] === undefined)
-                    map[symbol] = '';
-            });
-            vscode.postMessage({
-                type: 'symbol_resolver.set_symbols',
-                symbols: map,
-            });
-        }
-
-        function setRendererContent(sdfg, previewing = false) {
+        function setRendererContent(sdfg, previewing = false, prevent_refreshes = false) {
             parsed_sdfg = parse_sdfg(sdfg);
 
             if (renderer)
@@ -133,11 +120,14 @@
             else
                 init_sdfv(parsed_sdfg, null, debug_draw);
 
-            if (!previewing)
+            if (!previewing) {
                 sdfg_json = sdfg;
+                if (!prevent_refreshes)
+                    get_applicable_transformations();
+            }
 
             outline(renderer, renderer.graph);
-            symbolResolverRegisterSymbols();
+            refresh_analysis_pane();
         }
 
         function resetRendererContent() {
@@ -148,7 +138,7 @@
             }
             init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
             outline(renderer, renderer.graph);
-            symbolResolverRegisterSymbols();
+            refresh_analysis_pane();
         }
 
         function refreshSdfg() {
@@ -160,108 +150,7 @@
 
         // Add a listener to update the content when the extension calls for it.
         window.addEventListener('message', e => {
-            const message = e.data;
-            let el = undefined;
-            switch (message.type) {
-                case 'symbol_value_changed':
-                    if (message.symbol !== undefined && renderer)
-                        renderer.overlay_manager.symbol_value_changed(
-                            message.symbol,
-                            message.value
-                        );
-                    break;
-                case 'update_badness_scale_method':
-                    if (message.method !== undefined && renderer)
-                        renderer.overlay_manager.update_badness_scale_method(
-                            message.method
-                        );
-                    break;
-                case 'refresh_symbol_list':
-                    symbolResolverRefreshSymbols();
-                    break;
-                case 'flopsCallback':
-                    if (renderer && renderer.overlay_manager &&
-                        renderer.overlay_manager.static_flops_overlay_active) {
-                        let overlay = undefined;
-                        renderer.overlay_manager.overlays.forEach(ol => {
-                            if (ol.type === GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS) {
-                                overlay = ol;
-                                return;
-                            }
-                        });
-                        if (overlay && message.map)
-                            overlay.update_flops_map(message.map);
-                    }
-                    return;
-                case 'update':
-                    setRendererContent(message.text);
-                    return;
-                case 'processing':
-                    if (message.show && message.show === true) {
-                        $('#processing-overlay').show();
-                        $('#processing-overlay-msg').text(message.text);
-                    } else {
-                        $('#processing-overlay').hide();
-                        $('#processing-overlay-msg').text();
-                    }
-                    return;
-                case 'preview_sdfg':
-                    setRendererContent(message.text, true);
-                    el = document.getElementById('exit-preview-button');
-                    if (el)
-                        el.className = 'button';
-                    return;
-                case 'exit_preview':
-                    resetRendererContent();
-                    el = document.getElementById('exit-preview-button');
-                    if (el)
-                        el.className = 'button hidden';
-                    return;
-                case 'get_viewport_elem':
-                    if (renderer) {
-                        let visibleElements = renderer.visible_elements();
-                        vscode.postMessage({
-                            type: 'sdfv.sort_transformations',
-                            visibleElements: JSON.stringify(visibleElements),
-                            selectedElements: JSON.stringify(
-                                renderer.selected_elements
-                            ),
-                        });
-                    }
-                    return;
-                    case 'refresh_outline':
-                    if (renderer)
-                        outline(renderer, renderer.graph);
-                    return;
-                case 'zoom_to_node':
-                    if (renderer) {
-                        const result = find_graph_element_by_uuid(
-                            renderer.graph, message.uuid
-                        );
-                        if (result === undefined)
-                            return;
-
-                        const element = result.element;
-                        if (element === undefined) {
-                            renderer.zoom_to_view();
-                            return;
-                        }
-                        const parent = result.parent;
-
-                        const elements_to_display = [element];
-                        if (element.type().endsWith('Entry') &&
-                            parent !== undefined) {
-                            const state = element.sdfg.nodes[element.parent_id];
-                            if (state.scope_dict[element.id] !== undefined) {
-                                for (const n_id of state.scope_dict[element.id])
-                                    elements_to_display.push(parent.node(n_id));
-                            }
-                        }
-
-                        renderer.zoom_to_view(elements_to_display);
-                    }
-                    return;
-            }
+            message_handler.handle_message(e.data);
         });
 
         // Send a request to the extension to jump to a specific source code
@@ -291,7 +180,6 @@
             minSize: [0, 0],
             snapOffset: 10,
             direction: 'vertical',
-            //cursor: 'row-resize',
         });
 
         $(document).ready(() => {

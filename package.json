@@ -12,7 +12,10 @@
     ],
     "activationEvents": [
         "onCustomEditor:sdfgCustom.sdfv",
-        "onView:transformationView"
+        "onView:transformationList",
+        "onView:transformationHistory",
+        "onView:sdfgAnalysis",
+        "onView:sdfgOutline"
     ],
     "main": "./out/extension.js",
     "publisher": "phschaad",
@@ -86,7 +89,7 @@
             {
                 "id": "sdfgicon",
                 "label": "Seti + SDFG Extension",
-                "path": "./resources/icon-theme/sdfg-icon-theme.json"
+                "path": "media/resources/icon-theme/sdfg-icon-theme.json"
             }
         ],
         "viewsContainers": {
@@ -94,51 +97,53 @@
                 {
                     "id": "transformation-explorer",
                     "title": "SDFG Optimization",
-                    "icon": "resources/icons/dace-hollow.svg"
+                    "icon": "media/resources/icons/dace-hollow.svg"
                 }
             ]
         },
         "views": {
             "transformation-explorer": [
                 {
-                    "id": "transformationView",
+                    "id": "transformationList",
+                    "type": "webview",
                     "name": "Transformations",
-                    "icon": "resources/icons/dace-hollow.svg",
+                    "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation Explorer"
                 },
                 {
                     "id": "transformationHistory",
+                    "type": "webview",
                     "name": "Transformation History",
-                    "icon": "resources/icons/dace-hollow.svg",
+                    "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Transformation History"
                 },
                 {
-                    "id": "symbolResolution",
+                    "id": "sdfgAnalysis",
                     "type": "webview",
-                    "name": "Symbol Definitions",
-                    "icon": "resources/icons/dace-hollow.svg",
-                    "contextualTitle": "Symbol Definitions"
+                    "name": "SDFG Analysis",
+                    "icon": "media/resources/icons/dace-hollow.svg",
+                    "contextualTitle": "SDFG Analysis"
                 },
                 {
                     "id": "sdfgOutline",
                     "type": "webview",
                     "name": "SDFG Outline",
-                    "icon": "resources/icons/dace-hollow.svg",
+                    "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Outline"
                 }
             ]
         },
         "viewsWelcome": [
             {
-                "view": "transformationView",
-                "contents": "No possible transformations"
+                "view": "transformationList",
+                "contents": "No active SDFG"
             },
             {
                 "view": "transformationHistory",
                 "contents": "No previously applied transformations"
             },
             {
-                "view": "symbolResolution",
+                "view": "sdfgAnalysis",
                 "contents": "No active SDFG"
             },
             {
@@ -148,27 +153,35 @@
         ],
         "commands": [
             {
-                "command": "transformationView.refreshEntry",
+                "command": "transformationList.sync",
                 "title": "Refresh Transformations",
                 "icon": {
-                    "dark": "resources/icons/dark/refresh.svg",
-                    "light": "resources/icons/light/refresh.svg"
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
                 }
             },
             {
-                "command": "symbolResolution.refreshEntry",
-                "title": "Refresh Symbols",
+                "command": "transformationHistory.sync",
+                "title": "Refresh Transformation History",
                 "icon": {
-                    "dark": "resources/icons/dark/refresh.svg",
-                    "light": "resources/icons/light/refresh.svg"
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
                 }
             },
             {
-                "command": "sdfgOutline.refreshEntry",
+                "command": "sdfgAnalysis.sync",
+                "title": "Refresh Analysis",
+                "icon": {
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
+                }
+            },
+            {
+                "command": "sdfgOutline.sync",
                 "title": "Refresh Outline",
                 "icon": {
-                    "dark": "resources/icons/dark/refresh.svg",
-                    "light": "resources/icons/light/refresh.svg"
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
                 }
             },
             {
@@ -209,31 +222,24 @@
             ],
             "view/title": [
                 {
-                    "command": "transformationView.refreshEntry",
-                    "when": "view == transformationView",
+                    "command": "transformationList.sync",
+                    "when": "view == transformationList",
                     "group": "navigation"
                 },
                 {
-                    "command": "symbolResolution.refreshEntry",
-                    "when": "view == symbolResolution",
+                    "command": "transformationHistory.sync",
+                    "when": "view == transformationHistory",
                     "group": "navigation"
                 },
                 {
-                    "command": "sdfgOutline.refreshEntry",
+                    "command": "sdfgAnalysis.sync",
+                    "when": "view == sdfgAnalysis",
+                    "group": "navigation"
+                },
+                {
+                    "command": "sdfgOutline.sync",
                     "when": "view == sdfgOutline",
                     "group": "navigation"
-                }
-            ],
-            "view/item/context": [
-                {
-                    "command": "sdfg.applyTransformation",
-                    "when": "view == transformationView && viewItem == transformation",
-                    "group": "inline"
-                },
-                {
-                    "command": "sdfg.applyHistoryPoint",
-                    "when": "view == transformationHistory",
-                    "group": "inline"
                 }
             ]
         }
@@ -249,15 +255,15 @@
     "devDependencies": {
         "@types/glob": "^7.1.3",
         "@types/mocha": "^7.0.1",
-        "@types/node": "^12.12.67",
-        "@types/vscode": "^1.50.0",
+        "@types/node": "^12.19.7",
+        "@types/vscode": "^1.51.0",
         "@typescript-eslint/eslint-plugin": "^2.34.0",
         "@typescript-eslint/parser": "^2.34.0",
         "eslint": "^6.8.0",
         "glob": "^7.1.6",
         "mocha": "^7.2.0",
         "typescript": "^3.9.7",
-        "vscode-test": "^1.4.0"
+        "vscode-test": "^1.4.1"
     },
     "dependencies": {}
 }

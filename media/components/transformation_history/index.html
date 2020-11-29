@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SDFG Outline</title>
+    <title>Transformation List</title>
     <link rel="stylesheet" type="text/css"
           href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css"
@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css"
           href="{{ CSP_SRC }}/elements/treeview/treeview.css">
     <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/components/outline/outline.css">
+          href="{{ CSP_SRC }}/components/transformation_history/transformation_history.css">
 
     <script>
         // Reference to the VSCode API.
@@ -24,13 +24,13 @@
     <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
     <script src="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.bundle.min.js"></script>
     <script src="{{ CSP_SRC }}/elements/treeview/treeview.js"></script>
-    <script src="{{ CSP_SRC }}/components/outline/outline.js"></script>
+    <script src="{{ CSP_SRC }}/components/transformation_history/transformation_history.js"></script>
 </head>
 
 <body>
     <div id="contents" class="container-fluid">
         <div class="row">
-            <div id="outline-list" class="hidden">
+            <div id="transformation-list" class="hidden">
             </div>
         </div>
     </div>
@@ -38,46 +38,27 @@
     <script>
         vscode = acquireVsCodeApi();
 
-        const outline_list = new OutlineList($('#outline-list'));
-        outline_list.generate_html();
-        outline_list.show();
-
-        function set_outline_list_recursive(list, parent) {
-            for (const item of list) {
-                const outline_item = new OutlineItem(
-                    item['icon'],
-                    item['type'],
-                    item['label'],
-                    item['collapsed'],
-                    item['uuid']
-                );
-
-                if (item['children'] !== undefined && item['children'].length)
-                    set_outline_list_recursive(item['children'], outline_item);
-
-                parent.add_item(outline_item);
-            }
-        }
+        const transformation_list = new TransformationHistoryList(
+            $('#transformation-list')
+        );
+        transformation_list.generate_html();
+        transformation_list.show();
 
         // Add a listener to receive messages from the extension.
         window.addEventListener('message', e => {
             const message = e.data;
             switch (message.type) {
-                case 'set_outline':
-                    if (message.outline_list !== undefined) {
-                        outline_list.clear();
-                        set_outline_list_recursive(
-                            message.outline_list,
-                            outline_list
-                        );
-                        outline_list.notify_data_changed();
-                    }
+                case 'set_history':
+                    transformation_list.parse_history(
+                        message.history,
+                        message.active_index
+                    );
                     break;
-                case 'clear_outline':
+                case 'clear_history':
                     if (message.reason !== undefined)
-                        outline_list.clear(message.reason);
+                        transformation_list.clear(message.reason);
                     else
-                        outline_list.clear();
+                        transformation_list.clear();
                     break;
                 default:
                     break;
@@ -87,10 +68,11 @@
         $(document).ready(() => {
             if (vscode)
                 vscode.postMessage({
-                    type: 'sdfv.refresh_outline',
+                    type: 'transformation_history.refresh',
                 });
         });
     </script>
 </body>
 
 </html>
+

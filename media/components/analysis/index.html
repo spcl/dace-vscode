@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SDFG Analysis</title>
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css"
+          href="{{ CSP_SRC }}/components/analysis/analysis.css">
+
+    <script>
+        // Reference to the VSCode API.
+        let vscode = undefined;
+
+        const csp_src = "{{ CSP_SRC }}";
+    </script>
+
+    <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
+    <script src="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.bundle.min.js"></script>
+    <script src="{{ CSP_SRC }}/components/analysis/analysis.js"></script>
+</head>
+
+<body>
+    <div id="contents-container" class="container-fluid">
+        <div id="none-message" class="hidden row">
+        </div>
+        <div id="contents" class="hidden row">
+            <div>
+                <div id="badness-scale-method-container">
+                    <div>
+                        <span>
+                            Overlay scaling method:
+                        </span>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="radio"
+                                name="badness-scale-method"
+                                value="mean">
+                            Mean
+                        </label>
+                        <label>
+                            <input type="radio"
+                                name="badness-scale-method"
+                                value="median"
+                                checked="checked">
+                            Median
+                        </label>
+                        <label>
+                            <input type="radio"
+                                name="badness-scale-method"
+                                value="mode">
+                            Mode
+                        </label>
+                    </div>
+                </div>
+                <hr class="horizontal-divider">
+                <div id="overlay-toggle-container">
+                    <div>
+                        <span>
+                            Overlays:
+                        </span>
+                    </div>
+                    <div id="overlay-toggles">
+                    </div>
+                </div>
+                <hr class="horizontal-divider">
+                <div id="symbol-list">
+                    <span>
+                        Symbol list:
+                    </span>
+                    <table id="symbol-table">
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        vscode = acquireVsCodeApi();
+
+        symbol_resolution = new SymbolResolution();
+
+        // Add a listener to receive messages from the extension.
+        window.addEventListener('message', e => {
+            const message = e.data;
+            switch (message.type) {
+                case 'add_symbol':
+                    if (message.symbol !== undefined)
+                        symbol_resolution.add_symbol(message.symbol);
+                    break;
+                case 'add_symbols':
+                    if (message.symbols !== undefined)
+                        symbol_resolution.add_symbols(message.symbols);
+                    break;
+                case 'define_symbol':
+                    if (message.symbol !== undefined)
+                        symbol_resolution.define_symbol(
+                            message.symbol,
+                            message.definition
+                        );
+                    break;
+                case 'remove_symbol_definition':
+                    if (message.symbol !== undefined)
+                        symbol_resolution.remove_symbol_definition(
+                            message.symbol
+                        );
+                    break;
+                case 'remove_symbol':
+                    if (message.symbol !== undefined)
+                        symbol_resolution.remove_symbol(message.symbol);
+                    break;
+                case 'remove_all_symbol_definitions':
+                    symbol_resolution.remove_all_symbol_definitions();
+                    break;
+                case 'refresh_analysis_pane':
+                    if (message.badness_scale_method !== undefined)
+                        $('input[type=radio][name=badness-scale-method]').val(
+                            [message.badness_scale_method]
+                        );
+
+                    if (message.available_overlays !== undefined) {
+                        const toggle_container = $('#overlay-toggles');
+                        toggle_container.html('');
+                        for (const overlay in message.available_overlays) {
+                            const overlay_id = message.available_overlays[
+                                overlay
+                            ];
+
+                            const overlay_toggle = $('<input>', {
+                                'type': 'checkbox',
+                                'name': 'overlay-toggle',
+                                'value': overlay_id,
+                            });
+
+                            if (message.active_overlays.includes(overlay_id))
+                                overlay_toggle.prop('checked', true);
+
+                            const toggle_label = $('<label>', {
+                            }).appendTo(toggle_container);
+
+                            toggle_label.append(overlay_toggle);
+                            toggle_label.append('&nbsp;' + overlay);
+                        }
+
+                        $('input[type=checkbox][name=overlay-toggle]').change(
+                            function () {
+                                if (this.checked)
+                                    vscode.postMessage({
+                                        type: 'sdfv.register_overlay',
+                                        overlay: this.value,
+                                    });
+                                else
+                                    vscode.postMessage({
+                                        type: 'sdfv.deregister_overlay',
+                                        overlay: this.value,
+                                    });
+                            }
+                        );
+                    }
+                    // Fall through into the next case to also set the symbols.
+                case 'set_symbols':
+                    if (message.symbols !== undefined) {
+                        const symbols = {};
+                        Object.keys(message.symbols).forEach((symbol) => {
+                            if (message.symbols[symbol] === '')
+                                symbols[symbol] = undefined;
+                            else
+                                symbols[symbol] = message.symbols[symbol];
+                        });
+                        symbol_resolution.set_symbols(symbols);
+                    }
+
+                    $('#none-message').hide();
+                    $('#contents').show();
+                    break;
+                case 'clear':
+                    symbol_resolution.clear_symbols();
+                    $('#overlay-toggles').html('');
+                    $('input[type=radio][value=median]').prop('checked', true);
+                    $('#contents').hide();
+                    const none_message = $('#none-message');
+                    if (message.reason)
+                        none_message.text(message.reason);
+                    else
+                        none_message.text('No analysis available');
+                    none_message.show();
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        $(document).ready(() => {
+            $('input[type=radio][name=badness-scale-method]').change(function() {
+                if (vscode)
+                    vscode.postMessage({
+                        type: 'sdfv.update_badness_scale_method',
+                        method: this.value,
+                    });
+            });
+            if (vscode)
+                vscode.postMessage({
+                    type: 'sdfv.refresh_analysis_pane',
+                });
+        });
+    </script>
+</body>
+
+</html>
+

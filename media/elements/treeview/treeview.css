@@ -1,0 +1,41 @@
+.tree-view-list {
+    list-style-type: none;
+    padding-left: 0;
+    user-select: none;
+}
+
+.tree-view-list .tree-view-list {
+    padding-left: 1rem;
+}
+
+.tree-view-item {
+    width: 100%;
+}
+
+.tree-view-item-label-container {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.tree-view-item-label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.tree-view-item-label-nested::before {
+    font-family: 'Material Icons';
+    content: 'keyboard_arrow_right';
+    display: inline-block;
+    transform: rotate(0deg);
+    transition: all .1s ease-in-out;
+    padding-right: .3rem;
+    vertical-align: middle;
+}
+
+.tree-view-item-label-nested.tree-view-expanded::before {
+    transform: rotate(90deg);
+    transition: all .1s ease-in-out;
+}

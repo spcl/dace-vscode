@@ -29,6 +29,11 @@ function clear_info_box() {
     $('#info-title').text('');
     $('#info-clear-btn').hide();
     $('#goto-source-btn').hide();
+    window.selected_transformation = undefined;
+    if (vscode)
+        vscode.postMessage({
+            'type': 'transformation_list.deselect',
+        });
 }
 
 /**
@@ -176,34 +181,33 @@ function embedded_outline(renderer, graph) {
     if (vscode === undefined)
         return;
 
-    const outline_container = $('<div>', {
-        'id': 'outline-container',
-    });
+    const outline_list = [];
 
-    $('<div>', {
-        'class': 'outline-item',
-        'html': `
-            <i class='material-icons' style='font-size: inherit'>
-                filter_center_focus
-            </i> SDFG ${renderer.sdfg.attributes.name}
-        `,
-        'sdfg_uuid': get_uuid_graph_element(undefined),
-    }).appendTo(outline_container);
+    const top_level_sdfg = {
+        'icon': 'res:icon-theme/sdfg.svg',
+        'type': 'SDFG',
+        'label': `SDFG ${renderer.sdfg.attributes.name}`,
+        'collapsed': false,
+        'uuid': get_uuid_graph_element(undefined),
+        'children': [],
+    };
+    outline_list.push(top_level_sdfg);
 
-    const stack = [outline_container];
+    const stack = [top_level_sdfg];
 
     traverse_sdfg_scopes(graph, (node, parent) => {
         // Skip exit nodes when scopes are known.
         if (node.type().endsWith('Exit') && node.data.node.scope_entry >= 0) {
-            stack.push(null);
+            stack.push(undefined);
             return true;
         }
 
         // Create an entry.
         let is_collapsed = node.attributes().is_collapsed;
         is_collapsed = (is_collapsed === undefined) ? false : is_collapsed;
-        let collapsed_text = is_collapsed ? '(collapsed)' : '';
         let node_label = node.label();
+        if (node.type() === 'NestedSDFG')
+            node_label = node.data.node.label;
 
         // If a scope has children, remove the name "Entry" from the type.
         let node_type = node.type();
@@ -213,13 +217,36 @@ function embedded_outline(renderer, graph) {
                 node_type = node_type.slice(0, -5);
         }
 
-        stack.push($('<div>', {
-            'class': 'outline-item',
-            'html': `
-                ${node_type} ${node_label} ${collapsed_text}
-            `,
-            'sdfg_uuid': get_uuid_graph_element(node),
-        }));
+        let icon;
+        switch (node_type) {
+            case 'Tasklet':
+                icon = 'code';
+                break;
+            case 'Map':
+                icon = 'call_split';
+                break;
+            case 'SDFGState':
+                icon = 'crop_square';
+                break;
+            case 'AccessNode':
+                icon = 'fiber_manual_record';
+                break;
+            case 'NestedSDFG':
+                icon = 'res:icon-theme/sdfg.svg';
+                break;
+            default:
+                icon = '';
+                break;
+        }
+
+        stack.push({
+            'icon': icon,
+            'type': node_type,
+            'label': node_label,
+            'collapsed': is_collapsed,
+            'uuid': get_uuid_graph_element(node),
+            'children': [],
+        });
 
         // If the node's collapsed we don't traverse any further.
         if (is_collapsed)
@@ -229,13 +256,13 @@ function embedded_outline(renderer, graph) {
         // outselves to the parent.
         const elem = stack.pop();
         const elem_parent = stack[stack.length - 1];
-        if (elem && elem_parent)
-            elem.appendTo(elem_parent);
+        if (elem !== undefined && elem_parent !== undefined)
+            elem_parent['children'].push(elem);
     });
 
     vscode.postMessage({
         type: 'outline.set_outline',
-        html: outline_container.html(),
+        outline_list: outline_list,
     });
 }
 

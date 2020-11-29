@@ -2,18 +2,13 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 
-import {
-    TransformationsProvider
-} from '../transformation/transformations';
-import {
-    TransformationHistoryProvider
-} from '../transformation/transformationHistory';
-import { DaCeInterface } from '../daceInterface';
+import { TransformationHistoryProvider } from './transformationHistory';
 import { OutlineProvider } from './outline';
 import { DaCeVSCode } from '../extension';
-import { SymbolResolutionProvider } from './symbolResolution';
+import { AnalysisProvider } from './analysis';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
+import { TransformationListProvider } from './transformationList';
 
 class SdfgViewer {
 
@@ -34,17 +29,7 @@ implements vscode.CustomTextEditorProvider {
         return this.INSTANCE;
     }
 
-    // Identifiers for code placement into the webview's HTML.
-    private readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
-
-    private static readonly viewType = 'sdfgCustom.sdfv';
-
-    private activeSdfgFileName: string | undefined = undefined;
-    private activeEditor: vscode.Webview | undefined  = undefined;
-
-    private daceInterface = DaCeInterface.getInstance();
-    private transformationsView = TransformationsProvider.getInstance();
-    private trafoHistoryView = TransformationHistoryProvider.getInstance();
+    private static readonly viewType: string = 'sdfgCustom.sdfv';
 
     private openEditors: SdfgViewer[] = [];
 
@@ -73,18 +58,7 @@ implements vscode.CustomTextEditorProvider {
      */
     private updateActiveEditor(document: vscode.TextDocument,
                                webview: vscode.Webview): void {
-        OutlineProvider.getInstance()?.clearOutline();
-        SymbolResolutionProvider.getInstance()?.clearSymbols();
-        this.trafoHistoryView.clearHistory();
-        this.trafoHistoryView.notifyTreeDataChanged();
-        this.transformationsView.clearTransformations();
-        this.transformationsView.notifyTreeDataChanged();
-        this.activeSdfgFileName = document.fileName;
-        this.activeEditor = webview;
-        DaCeVSCode.getInstance().updateActiveSdfg(this.activeSdfgFileName,
-            this.activeEditor);
-        OutlineProvider.getInstance()?.refresh();
-        SymbolResolutionProvider.getInstance()?.refresh();
+        DaCeVSCode.getInstance().updateActiveSdfg(document.fileName, webview);
     }
 
     /**
@@ -97,10 +71,12 @@ implements vscode.CustomTextEditorProvider {
      * @param webviewPanel  SDFG editor webview panel to update.
      */
     private updateWebview(document: vscode.TextDocument,
-                          webview: vscode.Webview): void {
+                          webview: vscode.Webview,
+                          preventRefreshes: boolean = false): void {
         webview.postMessage({
             type: 'update',
             text: document.getText(),
+            prevent_refreshes: preventRefreshes,
         });
     }
 
@@ -116,18 +92,12 @@ implements vscode.CustomTextEditorProvider {
      */
     private documentChanged(document: vscode.TextDocument,
                             webview: vscode.Webview): void {
-        OutlineProvider.getInstance()?.clearOutline();
-        SymbolResolutionProvider.getInstance()?.clearSymbols();
-        this.trafoHistoryView.clearHistory();
-        this.trafoHistoryView.notifyTreeDataChanged();
-        this.transformationsView.clearTransformations();
-        this.transformationsView.notifyTreeDataChanged();
         this.updateWebview(document, webview);
-        if (this.activeEditor === webview) {
-            this.transformationsView.refresh();
-            this.trafoHistoryView.refresh();
+        if (DaCeVSCode.getInstance().getActiveEditor() === webview) {
+            TransformationListProvider.getInstance()?.refresh();
+            TransformationHistoryProvider.getInstance()?.refresh();
             OutlineProvider.getInstance()?.refresh();
-            SymbolResolutionProvider.getInstance()?.refresh();
+            AnalysisProvider.getInstance()?.refresh();
         }
     }
 
@@ -151,22 +121,20 @@ implements vscode.CustomTextEditorProvider {
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
     }
 
-    public handleMessage(message: any, origin: vscode.Webview): void {
+    public handleMessage(message: any,
+                         origin: vscode.Webview | undefined = undefined): void {
         switch (message.type) {
-            case 'sort_transformations':
-                const viewElements = JSON.parse(message.visibleElements);
-                const selectedElements = JSON.parse(message.selectedElements);
-                if (viewElements && selectedElements)
-                    TransformationsProvider.getInstance()
-                        .sortTransformations(viewElements, selectedElements);
-                break;
             case 'get_current_sdfg':
                 const instance = SdfgViewerProvider.getInstance();
-                if (instance && origin) {
+                if (instance !== undefined && origin !== undefined) {
                     const editor: SdfgViewer | undefined =
                         instance.findEditorForWebview(origin);
-                    if (editor !== undefined)
-                        this.updateWebview(editor.document, origin);
+                    if (editor !== undefined) {
+                        if (message.prevent_refreshes)
+                            this.updateWebview(editor.document, origin, true);
+                        else
+                            this.updateWebview(editor.document, origin);
+                    }
                 }
                 break;
             case 'go_to_source':
@@ -208,13 +176,8 @@ implements vscode.CustomTextEditorProvider {
                     );
                 }
                 break;
-            case 'update_badness_scale_method':
-            case 'symbol_value_changed':
-            case 'refresh_outline':
-            case 'refresh_symbol_list':
-                this.activeEditor?.postMessage(message);
-                break;
             default:
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
                 break;
         }
     }
@@ -252,6 +215,8 @@ implements vscode.CustomTextEditorProvider {
         webviewPanel.onDidChangeViewState(e => {
             if (e.webviewPanel.active)
                 this.updateActiveEditor(document, webviewPanel.webview);
+            else
+                DaCeVSCode.getInstance().clearActiveSdfg();
         });
 
         // Register an event listener for when the document changes on disc.
@@ -312,8 +277,8 @@ implements vscode.CustomTextEditorProvider {
             ).layout === 'vertical'
         ) {
             baseHtml = baseHtml.replace(
-                '<div id="split-container">',
-                '<div id="split-container" style="display: flex;">'
+                '<div id="split-container" class="split-container-vertical">',
+                '<div id="split-container" style="display: flex;" class="split-container-horizontal">'
             );
             baseHtml = baseHtml.replace(
                 'direction: \'vertical\',',

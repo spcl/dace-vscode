@@ -3,13 +3,11 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { request } from 'http';
 
-import { TransformationsProvider } from './transformation/transformations';
-import { Transformation, SubgraphTransformation } from './transformation/transformationsItem';
-import { TransformationHistoryProvider } from './transformation/transformationHistory';
-import { TransformationHistoryItem } from './transformation/transformationHistoryItem';
 import { DaCeVSCode } from './extension';
 import { SdfgViewerProvider } from './components/sdfgViewer';
 import { MessageReceiverInterface } from './components/messaging/messageReceiverInterface';
+import { TransformationListProvider } from './components/transformationList';
+import { TransformationHistoryProvider } from './components/transformationHistory';
 
 enum InteractionMode {
     PREVIEW,
@@ -25,6 +23,28 @@ implements MessageReceiverInterface {
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
+            case 'apply_transformation':
+                if (message.transformation !== undefined)
+                    this.applyTransformation(message.transformation);
+                break;
+            case 'preview_transformation':
+                if (message.transformation !== undefined)
+                    this.previewTransformation(message.transformation);
+                break;
+            case 'load_transformations':
+                if (message.sdfg !== undefined &&
+                    message.selectedElements !== undefined)
+                    this.loadTransformations(
+                        message.sdfg,
+                        message.selectedElements
+                    );
+                break;
+            case 'preview_history_point':
+                this.previewHistoryPoint(message.index);
+                break;
+            case 'apply_history_point':
+                this.applyHistoryPoint(message.index);
+                break;
             case 'get_flops':
                 this.getFlops();
                 break;
@@ -387,8 +407,8 @@ implements MessageReceiverInterface {
 
     public start() {
         const callback = () => {
-            TransformationHistoryProvider.getInstance().refresh();
-            TransformationsProvider.getInstance().refresh();
+            TransformationHistoryProvider.getInstance()?.refresh();
+            TransformationListProvider.getInstance()?.refresh();
         };
         if (vscode.workspace.getConfiguration(
                 'dace.interface'
@@ -399,16 +419,18 @@ implements MessageReceiverInterface {
             this.startPythonDaemon(callback);
     }
 
-    public previewSdfg(sdfg: any) {
+    public previewSdfg(sdfg: any, history_mode: boolean = false) {
         DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'preview_sdfg',
             text: JSON.stringify(sdfg),
+            hist_state: history_mode,
         });
     }
 
-    public exitPreview() {
+    public exitPreview(refreshTransformations: boolean = false) {
         DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'exit_preview',
+            refresh_transformations: refreshTransformations,
         });
     }
 
@@ -429,7 +451,7 @@ implements MessageReceiverInterface {
         });
     }
 
-    private sendApplyTransformationRequest(transformation: Transformation,
+    private sendApplyTransformationRequest(transformation: any,
                                            callback: CallableFunction,
                                            processingMessage?: string) {
         if (!this.daemonRunning) {
@@ -446,33 +468,29 @@ implements MessageReceiverInterface {
                 '/apply_transformation',
                 {
                     sdfg: sdfg,
-                    transformation: transformation.json,
+                    transformation: transformation,
                 },
                 callback
             );
         }
     }
 
-    public applyTransformation(transformation: Transformation) {
-        if (transformation.json)
-            this.sendApplyTransformationRequest(transformation, (data: any) => {
-                this.hideSpinner();
-                this.writeToActiveDocument(data.sdfg);
-                TransformationsProvider.getInstance()
-                    .clearLastSelectedElements();
-            });
+    public applyTransformation(transformation: any) {
+        this.sendApplyTransformationRequest(transformation, (data: any) => {
+            this.hideSpinner();
+            this.writeToActiveDocument(data.sdfg);
+        });
     }
 
-    public previewTransformation(transformation: Transformation) {
-        if (transformation.json)
-            this.sendApplyTransformationRequest(
-                transformation,
-                (data: any) => {
-                    this.previewSdfg(data.sdfg);
-                    this.hideSpinner();
-                },
-                'Generating Preview'
-            );
+    public previewTransformation(transformation: any) {
+        this.sendApplyTransformationRequest(
+            transformation,
+            (data: any) => {
+                this.previewSdfg(data.sdfg);
+                this.hideSpinner();
+            },
+            'Generating Preview'
+        );
     }
 
     public writeToActiveDocument(json: any) {
@@ -494,11 +512,14 @@ implements MessageReceiverInterface {
         }
     }
 
-    private gotoHistoryPoint(histItem: TransformationHistoryItem,
-                             mode: InteractionMode) {
-        if (histItem.isCurrent) {
+    private gotoHistoryPoint(index: Number | undefined, mode: InteractionMode) {
+        const trafoHistProvider = TransformationHistoryProvider.getInstance();
+        if (trafoHistProvider)
+            trafoHistProvider.activeHistoryItemIndex = index;
+
+        if (index === undefined) {
             if (mode === InteractionMode.PREVIEW)
-                this.exitPreview();
+                this.exitPreview(true);
             return;
         }
 
@@ -506,7 +527,7 @@ implements MessageReceiverInterface {
         if (!sdfg)
             return;
 
-        if (!histItem.json) {
+        if (index < 0) {
             // This item refers to the original SDFG, so we revert to/show that.
             const originalSdfg = sdfg?.attributes?.orig_sdfg;
             if (originalSdfg) {
@@ -516,7 +537,7 @@ implements MessageReceiverInterface {
                         break;
                     case InteractionMode.PREVIEW:
                     default:
-                        this.previewSdfg(originalSdfg);
+                        this.previewSdfg(originalSdfg, true);
                         break;
                 }
             }
@@ -540,38 +561,29 @@ implements MessageReceiverInterface {
                 default:
                     callback = function (data: any) {
                         const daceInterface = DaCeInterface.getInstance();
-                        daceInterface.previewSdfg(data.sdfg);
+                        daceInterface.previewSdfg(data.sdfg, true);
                         daceInterface.hideSpinner();
                     };
                     break;
             }
 
-            const history = sdfg.attributes?.transformation_hist;
-            if (history) {
-                for (let i = 0; i < history.length; i++) {
-                    if (JSON.stringify(history[i]) ===
-                        JSON.stringify(histItem.json)) {
-                        this.sendPostRequest(
-                            '/reapply_history_until',
-                            {
-                                sdfg: sdfg,
-                                index: i,
-                            },
-                            callback
-                        );
-                        return;
-                    }
-                }
-            }
+            this.sendPostRequest(
+                '/reapply_history_until',
+                {
+                    sdfg: sdfg,
+                    index: index,
+                },
+                callback
+            );
         }
     }
 
-    public applyHistoryPoint(histItem: TransformationHistoryItem) {
-        this.gotoHistoryPoint(histItem, InteractionMode.APPLY);
+    public applyHistoryPoint(index: Number | undefined) {
+        this.gotoHistoryPoint(index, InteractionMode.APPLY);
     }
 
-    public previewHistoryPoint(histItem: TransformationHistoryItem) {
-        this.gotoHistoryPoint(histItem, InteractionMode.PREVIEW);
+    public previewHistoryPoint(index: Number | undefined) {
+        this.gotoHistoryPoint(index, InteractionMode.PREVIEW);
     }
 
     public getFlops(): void {
@@ -605,91 +617,57 @@ implements MessageReceiverInterface {
         );
     }
 
-    public loadTransformations(): void {
+    public async loadTransformations(sdfg: any, selectedElements: any) {
+        TransformationListProvider.getInstance()?.handleMessage({
+            type: 'show_loading',
+        });
+
         if (!this.daemonRunning) {
             this.promptStartDaemon();
             return;
         }
 
-        this.showSpinner('Loading transformations');
-
-        let sdfg = DaCeVSCode.getInstance().getActiveSdfg();
-        if (!sdfg) {
-            console.log('No active SDFG editor!');
-            return;
-        }
-
-        function callback(data: any) {
-            const tProvider = TransformationsProvider.getInstance();
-            tProvider.clearTransformations();
-
+        async function callback(data: any) {
             for (const elem of data.transformations) {
                 let docstring = '';
                 if (data.docstrings)
                     docstring = data.docstrings[
                         elem.transformation
                     ];
-                if (elem.type && elem.type === 'SubgraphTransformation') {
-                    tProvider.addUncategorizedTransformation(new SubgraphTransformation(
-                        elem.transformation,
-                        elem,
-                        docstring
-                    ));
-                } else {
-                    tProvider.addUncategorizedTransformation(new Transformation(
-                        elem.transformation,
-                        elem,
-                        docstring
-                    ));
-                }
+                elem.docstring = docstring;
             }
-            // Refresh the tree view to show the new contents.
-            tProvider.notifyTreeDataChanged();
 
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'get_viewport_elem',
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'get_applicable_transformations_callback',
+                transformations: data.transformations,
             });
-            DaCeInterface.getInstance().hideSpinner();
+        }
+
+        const parsedSelected: any = JSON.parse(selectedElements);
+        const cleanedSelected: any[] = [];
+        for (const idx in parsedSelected) {
+            const elem = parsedSelected[idx];
+            let type = 'other';
+            if (elem.data !== undefined && elem.data.node !== undefined)
+                type = 'node';
+            else if (elem.data !== undefined && elem.data.state !== undefined)
+                type = 'state';
+            cleanedSelected.push({
+                'type': type,
+                'state_id': elem.parent_id,
+                'sdfg_id': elem.sdfg.sdfg_list_id,
+                'id': elem.id,
+            });
         }
 
         this.sendPostRequest(
             '/transformations',
             {
-                'sdfg': sdfg,
-                'selected_elements': TransformationsProvider.getInstance()
-                    .getLastSelectedElements(),
+                'sdfg': JSON.parse(sdfg),
+                'selected_elements': cleanedSelected,
             },
             callback
         );
-    }
-
-    public activeSdfgGetHistory() {
-        const trafoProvider = TransformationHistoryProvider.getInstance();
-        trafoProvider.clearHistory();
-        const activeSdfg = DaCeVSCode.getInstance().getActiveSdfg();
-        if (activeSdfg) {
-            const history = activeSdfg?.attributes?.transformation_hist;
-            if (history) {
-                if (history.length > 0)
-                    trafoProvider.addHistoryItem(new TransformationHistoryItem(
-                        'Original SDFG',
-                        undefined,
-                        '',
-                        false
-                    ));
-                for (let i = 0; i < history.length; i++) {
-                    const el = history[i];
-                    const current = (i === history.length - 1) ? true : false;
-                    trafoProvider.addHistoryItem(new TransformationHistoryItem(
-                        el.transformation,
-                        el,
-                        '',
-                        current
-                    ));
-                }
-            }
-        }
-        trafoProvider.notifyTreeDataChanged();
     }
 
 }

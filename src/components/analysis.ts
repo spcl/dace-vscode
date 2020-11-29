@@ -5,31 +5,31 @@ import * as vscode from 'vscode';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
-export class OutlineProvider
+export class AnalysisProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'sdfgOutline';
+    private static readonly viewType: string = 'sdfgAnalysis';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: OutlineProvider | undefined = undefined;
+    private static INSTANCE: AnalysisProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        OutlineProvider.INSTANCE = new OutlineProvider(ctx);
+        AnalysisProvider.INSTANCE = new AnalysisProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
-            OutlineProvider.viewType,
-            OutlineProvider.INSTANCE,
+            AnalysisProvider.viewType,
+            AnalysisProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): OutlineProvider | undefined {
+    public static getInstance(): AnalysisProvider | undefined {
         return this.INSTANCE;
     }
 
@@ -53,7 +53,7 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'outline',
+            'analysis',
             'index.html'
         ));
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
@@ -82,15 +82,15 @@ implements vscode.WebviewViewProvider {
         }
     }
 
-    public clearOutline(reason: string | undefined) {
+    public clear(reason: string | undefined) {
         this.view?.webview.postMessage({
-            type: 'clear_outline',
+            type: 'clear',
             reason: reason,
         });
     }
 
     public refresh() {
-        vscode.commands.executeCommand('sdfgOutline.sync');
+        vscode.commands.executeCommand('sdfgAnalysis.sync');
     }
 
 }

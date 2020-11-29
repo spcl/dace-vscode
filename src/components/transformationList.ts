@@ -1,43 +1,44 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { DaCeVSCode } from '../extension';
 
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
-export class OutlineProvider
+export class TransformationListProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'sdfgOutline';
+    private static readonly viewType: string = 'transformationList';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: OutlineProvider | undefined = undefined;
+    private static INSTANCE: TransformationListProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        OutlineProvider.INSTANCE = new OutlineProvider(ctx);
+        TransformationListProvider.INSTANCE = new TransformationListProvider(ctx);
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
-            OutlineProvider.viewType,
-            OutlineProvider.INSTANCE,
+            TransformationListProvider.viewType,
+            TransformationListProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): OutlineProvider | undefined {
+    public static getInstance(): TransformationListProvider | undefined {
         return this.INSTANCE;
     }
 
-    public resolveWebviewView(
+    resolveWebviewView(
         webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext,
-        _token: vscode.CancellationToken
-    ) {
+        context: vscode.WebviewViewResolveContext<unknown>,
+        token: vscode.CancellationToken
+    ): void | Thenable<void> {
         this.view = webviewView;
 
         webviewView.webview.options = {
@@ -53,7 +54,7 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'outline',
+            'transformation_list',
             'index.html'
         ));
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
@@ -74,7 +75,8 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public handleMessage(message: any, origin: vscode.Webview): void {
+    public handleMessage(message: any,
+                         origin: vscode.Webview | undefined = undefined): void {
         switch (message.type) {
             default:
                 this.view?.webview.postMessage(message);
@@ -82,15 +84,21 @@ implements vscode.WebviewViewProvider {
         }
     }
 
-    public clearOutline(reason: string | undefined) {
-        this.view?.webview.postMessage({
-            type: 'clear_outline',
+    public clearList(reason: string | undefined) {
+        this.handleMessage({
+            type: 'clear_transformations',
             reason: reason,
         });
     }
 
-    public refresh() {
-        vscode.commands.executeCommand('sdfgOutline.sync');
+    public refresh(hard: boolean = false) {
+        this.clearList(undefined);
+        if (hard)
+            vscode.commands.executeCommand('transformationList.sync');
+        else
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                type: 'resync_transformation_list',
+            });
     }
 
 }

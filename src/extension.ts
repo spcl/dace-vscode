@@ -3,10 +3,11 @@ import * as fs from 'fs';
 
 import { SdfgViewerProvider } from './components/sdfgViewer';
 import { DaCeInterface } from './daceInterface';
-import { TransformationsProvider } from './transformation/transformations';
-import { TransformationHistoryProvider } from './transformation/transformationHistory';
+import { TransformationHistoryProvider } from './components/transformationHistory';
 import { OutlineProvider } from './components/outline';
-import { SymbolResolutionProvider } from './components/symbolResolution';
+import { AnalysisProvider } from './components/analysis';
+import { TransformationListProvider } from './components/transformationList';
+import { clear } from 'console';
 
 export class DaCeVSCode {
 
@@ -25,6 +26,11 @@ export class DaCeVSCode {
     private activeEditor: vscode.Webview | undefined = undefined;
     private activeSdfgFileName: string | undefined = undefined;
 
+    private trafoProvider: TransformationListProvider | undefined = undefined;
+    private trafoHistProvider: TransformationHistoryProvider | undefined = undefined;
+    private outlineProvider: OutlineProvider | undefined = undefined;
+    private analysisProvider: AnalysisProvider | undefined = undefined;
+
     private registerCommand(command: string, handler: (...args: any[]) => any) {
         this.context?.subscriptions.push(vscode.commands.registerCommand(
             command, handler
@@ -38,41 +44,41 @@ export class DaCeVSCode {
         const daceInterface = DaCeInterface.getInstance();
         daceInterface.start();
 
-        // Create and register the transformations view.
-        const transformationsProvider = TransformationsProvider.getInstance();
-        context.subscriptions.push(vscode.window.registerTreeDataProvider(
-            'transformationView',
-            transformationsProvider
-        ));
-
-        // Create and register the view for the transformation history.
-        const trafoHistoryProvider =
-            TransformationHistoryProvider.getInstance();
-        context.subscriptions.push(vscode.window.registerTreeDataProvider(
-            'transformationHistory',
-            trafoHistoryProvider
-        ));
-
         // Register the SDFG custom editor.
         context.subscriptions.push(SdfgViewerProvider.register(context));
 
         // Register all webview view components.
+        context.subscriptions.push(TransformationListProvider.register(context));
+        this.trafoProvider = TransformationListProvider.getInstance();
+        context.subscriptions.push(TransformationHistoryProvider.register(context));
+        this.trafoHistProvider = TransformationHistoryProvider.getInstance();
         context.subscriptions.push(OutlineProvider.register(context));
-        context.subscriptions.push(SymbolResolutionProvider.register(context));
+        this.outlineProvider = OutlineProvider.getInstance();
+        context.subscriptions.push(AnalysisProvider.register(context));
+        this.analysisProvider = AnalysisProvider.getInstance();
 
         // Register necessary commands.
-        this.registerCommand('transformationView.refreshEntry', () => {
-            transformationsProvider.refresh();
+        this.registerCommand('transformationList.sync', () => {
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'get_applicable_transformations',
+                });
         });
-        this.registerCommand('symbolResolution.refreshEntry', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'refresh_symbol_list',
-            });
+        this.registerCommand('transformationHistory.sync', () => {
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+                TransformationHistoryProvider.getInstance()?.refresh();
         });
-        this.registerCommand('sdfgOutline.refreshEntry', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'refresh_outline',
-            });
+        this.registerCommand('sdfgAnalysis.sync', () => {
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'refresh_analysis_pane',
+                });
+        });
+        this.registerCommand('sdfgOutline.sync', () => {
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'refresh_outline',
+                });
         });
         this.registerCommand('sdfg.applyTransformation',
             (t) => daceInterface.applyTransformation(t));
@@ -113,12 +119,26 @@ export class DaCeVSCode {
         return this.activeSdfgFileName;
     }
 
+    public clearActiveSdfg() {
+        this.activeSdfgFileName = undefined;
+        this.activeEditor = undefined;
+
+        const clearReason = 'No SDFG selected';
+        this.outlineProvider?.clearOutline(clearReason);
+        this.analysisProvider?.clear(clearReason);
+        this.trafoHistProvider?.clearList(clearReason);
+        this.trafoProvider?.clearList(clearReason);
+    }
+
     public updateActiveSdfg(activeSdfgFileName: string,
-                            activeEditor: vscode.Webview | undefined) {
+                            activeEditor: vscode.Webview) {
         this.activeSdfgFileName = activeSdfgFileName;
         this.activeEditor = activeEditor;
-        TransformationsProvider.getInstance().refresh();
-        TransformationHistoryProvider.getInstance().refresh();
+
+        this.trafoProvider?.refresh();
+        this.trafoHistProvider?.refresh();
+        this.outlineProvider?.refresh();
+        this.analysisProvider?.refresh();
     }
 
     public getActiveSdfg(): any | undefined {
