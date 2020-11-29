@@ -139,7 +139,7 @@ class TransformationList extends TreeView {
     }
 
     set_transformations(transformations) {
-        this.clear_transformations(false);
+        this.clear_transformations('', false);
 
         // Make sure the transformations received are the same length, if not,
         // there must be an internal error somewhere.

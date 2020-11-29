@@ -69,6 +69,10 @@ class MessageHandler {
                 }
                 break;
             case 'update':
+                window.viewing_history_state = false;
+                el = document.getElementById('exit-preview-button');
+                if (el)
+                    el.className = 'button hidden';
                 if (message.prevent_refreshes)
                     setRendererContent(message.text, false, true);
                 else
