@@ -112,7 +112,7 @@
         message_handler = new MessageHandler();
         var debug_draw = false;
 
-        function setRendererContent(sdfg, previewing = false) {
+        function setRendererContent(sdfg, previewing = false, prevent_refreshes = false) {
             parsed_sdfg = parse_sdfg(sdfg);
 
             if (renderer)
@@ -122,7 +122,8 @@
 
             if (!previewing) {
                 sdfg_json = sdfg;
-                get_applicable_transformations();
+                if (!prevent_refreshes)
+                    get_applicable_transformations();
             }
 
             outline(renderer, renderer.graph);

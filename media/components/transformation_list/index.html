@@ -59,6 +59,10 @@
         window.addEventListener('message', e => {
             const message = e.data;
             switch (message.type) {
+                case 'deselect':
+                    transformation_list.selected_item = undefined;
+                    transformation_list.generate_html();
+                    break;
                 case 'set_transformations':
                     transformation_list.set_transformations(
                         message.transformations

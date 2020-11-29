@@ -20,7 +20,7 @@ class TransformationCategory extends TransformationListItem {
 
 class Transformation extends TransformationListItem {
 
-    constructor(json) {
+    constructor(json, list) {
         super(json.transformation, json.docstring, '', false, true, '', '');
         this.json = json;
         this.type = json.type;
@@ -28,6 +28,7 @@ class Transformation extends TransformationListItem {
         this.sdfg_id = json.sdfg_id;
         this.state_id = json.state_id;
         this.subgraph = json._subgraph;
+        this.list = list;
     }
 
     get_affected_element_uuids() {
@@ -51,11 +52,16 @@ class Transformation extends TransformationListItem {
         const item = super.generate_html();
 
         item.click(() => {
-            if (vscode)
+            if (vscode) {
+                if (this.list !== undefined) {
+                    this.list.selected_item = this;
+                    this.list.generate_html();
+                }
                 vscode.postMessage({
                     type: 'sdfv.select_transformation',
                     transformation: this.json,
                 });
+            }
         });
 
         item.mouseover(() => {
@@ -105,6 +111,8 @@ class TransformationList extends TreeView {
         this.items = [cat_selection, cat_viewport, cat_global, cat_uncat];
 
         this.clear_text = 'No applicable transformations';
+
+        this.selected_item = undefined;
     }
 
     // We don't want to mutate the set of items, categories are supposed to
@@ -147,17 +155,13 @@ class TransformationList extends TreeView {
             const category = transformations[i];
             for (let j = 0; j < category.length; j++) {
                 const transformation = category[j];
-                this.items[i].children.push(new Transformation(transformation));
+                this.items[i].children.push(
+                    new Transformation(transformation, this)
+                );
             }
         }
 
         this.notify_data_changed();
-    }
-
-    add_uncat_transformation(transformation) {
-        this.items[TransformationList.CAT_UNCATEGORIZED_IDX].add_item(
-            transformation
-        );
     }
 
     generate_html() {
@@ -170,6 +174,10 @@ class TransformationList extends TreeView {
                 'text': this.clear_text,
             }));
         }
+
+        if (this.selected_item !== undefined &&
+            this.selected_item.element !== undefined)
+            this.selected_item.element.addClass('selected');
     }
 
 }

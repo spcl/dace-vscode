@@ -30,6 +30,10 @@ function clear_info_box() {
     $('#info-clear-btn').hide();
     $('#goto-source-btn').hide();
     window.selected_transformation = undefined;
+    if (vscode)
+        vscode.postMessage({
+            'type': 'transformation_list.deselect',
+        });
 }
 
 /**

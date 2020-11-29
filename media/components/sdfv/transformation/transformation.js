@@ -183,11 +183,12 @@ function clear_selected_transformation() {
  * @param {*} trafo     The transformation to display.
  */
 function show_transformation_details(trafo) {
-    clear_info_box();
+    $('#goto-source-btn').hide();
 
     $('#info-title').text(trafo.transformation);
 
     const info_contents = $('#info-contents');
+    info_contents.html('');
 
     const trafo_button_container = $('<div>', {
         'class': 'transformation-button-container',

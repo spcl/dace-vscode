@@ -69,7 +69,10 @@ class MessageHandler {
                 }
                 break;
             case 'update':
-                setRendererContent(message.text);
+                if (message.prevent_refreshes)
+                    setRendererContent(message.text, false, true);
+                else
+                    setRendererContent(message.text);
                 break;
             case 'processing':
                 if (message.show && message.show === true) {
@@ -87,6 +90,7 @@ class MessageHandler {
                     el.className = 'button';
 
                 if (message.hist_state !== undefined && message.hist_state) {
+                    clear_info_box();
                     window.viewing_history_state = true;
                     refresh_transformation_list();
                 }

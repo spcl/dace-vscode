@@ -78,3 +78,13 @@ body {
     cursor: pointer;
     background-color: var(--vscode-list-hoverBackground);
 }
+
+.tree-view-item {
+    padding-left: .2rem;
+    padding-right: .2rem;
+}
+
+.tree-view-item.selected {
+    color: var(--vscode-list-activeSelectionForeground) !important;
+    background-color: var(--vscode-list-activeSelectionBackground) !important;
+}

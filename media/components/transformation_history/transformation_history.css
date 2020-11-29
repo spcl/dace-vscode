@@ -49,6 +49,7 @@ body {
 
 .tree-view-item {
     padding-left: .2rem;
+    padding-right: .2rem;
 }
 
 .tree-view-item.selected {

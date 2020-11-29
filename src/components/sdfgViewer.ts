@@ -71,10 +71,12 @@ implements vscode.CustomTextEditorProvider {
      * @param webviewPanel  SDFG editor webview panel to update.
      */
     private updateWebview(document: vscode.TextDocument,
-                          webview: vscode.Webview): void {
+                          webview: vscode.Webview,
+                          preventRefreshes: boolean = false): void {
         webview.postMessage({
             type: 'update',
             text: document.getText(),
+            prevent_refreshes: preventRefreshes,
         });
     }
 
@@ -127,8 +129,12 @@ implements vscode.CustomTextEditorProvider {
                 if (instance !== undefined && origin !== undefined) {
                     const editor: SdfgViewer | undefined =
                         instance.findEditorForWebview(origin);
-                    if (editor !== undefined)
-                        this.updateWebview(editor.document, origin);
+                    if (editor !== undefined) {
+                        if (message.prevent_refreshes)
+                            this.updateWebview(editor.document, origin, true);
+                        else
+                            this.updateWebview(editor.document, origin);
+                    }
                 }
                 break;
             case 'go_to_source':
