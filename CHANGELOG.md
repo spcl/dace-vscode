@@ -2,6 +2,12 @@
 
 ## 0.2
 
+### 0.2.8
+
+- Provide a panel for static SDFG analysis.
+- Various UI fixes and overhauls.
+- Improved performance.
+
 ### 0.2.7
 
 - Terminal mode for the DaCe backend.
