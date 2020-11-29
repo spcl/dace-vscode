@@ -97,6 +97,8 @@ class MessageHandler {
                 el = document.getElementById('exit-preview-button');
                 if (el)
                     el.className = 'button hidden';
+                if (message.refresh_transformations)
+                    refresh_transformation_list();
                 break;
             case 'highlight_elements':
                 if (message.elements)

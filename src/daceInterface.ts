@@ -427,9 +427,10 @@ implements MessageReceiverInterface {
         });
     }
 
-    public exitPreview() {
+    public exitPreview(refreshTransformations: boolean = false) {
         DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'exit_preview',
+            refresh_transformations: refreshTransformations,
         });
     }
 
@@ -514,7 +515,7 @@ implements MessageReceiverInterface {
     private gotoHistoryPoint(index: Number | undefined, mode: InteractionMode) {
         if (index === undefined) {
             if (mode === InteractionMode.PREVIEW)
-                this.exitPreview();
+                this.exitPreview(true);
             return;
         }
 

@@ -13,6 +13,8 @@ class TreeViewItem {
 
         this.label_style = label_style;
         this.icon_style = icon_style;
+
+        this.element = undefined;
     }
 
     add_item(child) {
@@ -122,6 +124,7 @@ class TreeViewItem {
                 label_text.attr('style') + ';' + this.label_style
             );
 
+        this.element = item;
         return item;
     }
 
