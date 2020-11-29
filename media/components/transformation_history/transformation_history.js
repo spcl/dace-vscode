@@ -46,9 +46,11 @@ class TransformationHistoryList extends TreeView {
 
     constructor(root_element) {
         super(root_element);
+        this.clear_text = 'No previously applied transformations';
     }
 
-    clear(notify = true) {
+    clear(clear_text = 'No previously applied transformations', notify = true) {
+        this.clear_text = clear_text;
         super.clear();
         if (notify)
             this.notify_data_changed();
@@ -76,6 +78,15 @@ class TransformationHistoryList extends TreeView {
             ));
 
         this.notify_data_changed();
+    }
+
+    generate_html() {
+        super.generate_html();
+        if (this.items.length === 0)
+            this.root_element.append($('<div>', {
+                'class': 'empty-transformation-history-text',
+                'text': this.clear_text,
+            }));
     }
 
 }

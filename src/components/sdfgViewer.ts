@@ -90,10 +90,6 @@ implements vscode.CustomTextEditorProvider {
      */
     private documentChanged(document: vscode.TextDocument,
                             webview: vscode.Webview): void {
-        OutlineProvider.getInstance()?.clearOutline();
-        AnalysisProvider.getInstance()?.clear();
-        TransformationHistoryProvider.getInstance()?.clearList();
-        TransformationListProvider.getInstance()?.clearList();
         this.updateWebview(document, webview);
         if (DaCeVSCode.getInstance().getActiveEditor() === webview) {
             TransformationListProvider.getInstance()?.refresh();

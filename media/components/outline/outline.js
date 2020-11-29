@@ -42,6 +42,29 @@ class OutlineList extends TreeView {
 
     constructor(root_element) {
         super(root_element);
+
+        this.clear_text = 'No SDFG elements';
+    }
+
+    clear(clear_text = 'No SDFG elements', notify = true) {
+        super.clear();
+
+        this.clear_text = clear_text;
+
+        if (notify)
+            this.notify_data_changed();
+    }
+
+    generate_html() {
+        super.generate_html();
+
+        if (this.items.length === 0) {
+            this.root_element.empty();
+            this.root_element.append($('<div>', {
+                'class': 'empty-outline-text',
+                'text': this.clear_text,
+            }));
+        }
     }
 
 }

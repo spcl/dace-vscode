@@ -103,17 +103,31 @@ class TransformationList extends TreeView {
         cat_uncat.children = [];
 
         this.items = [cat_selection, cat_viewport, cat_global, cat_uncat];
+
+        this.clear_text = 'No applicable transformations';
     }
 
     // We don't want to mutate the set of items, categories are supposed to
     // remain constant.
     add_item(item){}
 
-    clear_transformations(notify = true) {
+    clear_transformations(
+        clear_text = 'No applicable transformations',
+        notify = true
+    ) {
+        this.clear_text = clear_text;
         for (const cat of this.items)
             cat.children = [];
         if (notify)
             this.notify_data_changed();
+    }
+
+    n_items() {
+        let count = 0;
+        for (const cat of this.items)
+            if (cat.children !== undefined)
+                count += cat.children.length;
+        return count;
     }
 
     set_transformations(transformations) {
@@ -144,6 +158,18 @@ class TransformationList extends TreeView {
         this.items[TransformationList.CAT_UNCATEGORIZED_IDX].add_item(
             transformation
         );
+    }
+
+    generate_html() {
+        super.generate_html();
+
+        if (this.n_items() === 0) {
+            this.root_element.empty();
+            this.root_element.append($('<div>', {
+                'class': 'empty-transformation-list-text',
+                'text': this.clear_text,
+            }));
+        }
     }
 
 }

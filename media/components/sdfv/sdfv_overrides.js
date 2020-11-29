@@ -29,6 +29,7 @@ function clear_info_box() {
     $('#info-title').text('');
     $('#info-clear-btn').hide();
     $('#goto-source-btn').hide();
+    window.selected_transformation = undefined;
 }
 
 /**

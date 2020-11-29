@@ -164,6 +164,11 @@ function refresh_transformation_list() {
         });
 }
 
+function clear_selected_transformation() {
+    if (window.selected_transformation !== undefined)
+        close_menu();
+}
+
 /**
  * For a given transformation, show its details pane in the information area.
  * 
@@ -245,6 +250,9 @@ function show_transformation_details(trafo) {
         'click': () => {
             if (vscode) {
                 clear_info_box();
+                el = document.getElementById('exit-preview-button');
+                if (el)
+                    el.className = 'button hidden';
                 vscode.postMessage({
                     type: 'dace.apply_transformation',
                     transformation: trafo,

@@ -66,7 +66,12 @@
                     loading_indicator.hide();
                     break;
                 case 'clear_transformations':
-                    transformation_list.clear_transformations();
+                    if (message.reason !== undefined)
+                        transformation_list.clear_transformations(
+                            message.reason
+                        );
+                    else
+                        transformation_list.clear_transformations();
                     break;
                 case 'show_loading':
                     loading_indicator.show();

@@ -25,52 +25,58 @@
 </head>
 
 <body>
-    <div id="contents">
-        <div id="badness-scale-method-container">
-            <div>
-                <span>
-                    Overlay scaling method:
-                </span>
-            </div>
-            <div>
-                <label>
-                    <input type="radio"
-                        name="badness-scale-method"
-                        value="mean">
-                    Mean
-                </label>
-                <label>
-                    <input type="radio"
-                        name="badness-scale-method"
-                        value="median"
-                        checked="checked">
-                    Median
-                </label>
-                <label>
-                    <input type="radio"
-                        name="badness-scale-method"
-                        value="mode">
-                    Mode
-                </label>
-            </div>
+    <div id="contents-container" class="container-fluid">
+        <div id="none-message" class="hidden row">
         </div>
-        <hr class="horizontal-divider">
-        <div id="overlay-toggle-container">
+        <div id="contents" class="hidden row">
             <div>
-                <span>
-                    Overlays:
-                </span>
+                <div id="badness-scale-method-container">
+                    <div>
+                        <span>
+                            Overlay scaling method:
+                        </span>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="radio"
+                                name="badness-scale-method"
+                                value="mean">
+                            Mean
+                        </label>
+                        <label>
+                            <input type="radio"
+                                name="badness-scale-method"
+                                value="median"
+                                checked="checked">
+                            Median
+                        </label>
+                        <label>
+                            <input type="radio"
+                                name="badness-scale-method"
+                                value="mode">
+                            Mode
+                        </label>
+                    </div>
+                </div>
+                <hr class="horizontal-divider">
+                <div id="overlay-toggle-container">
+                    <div>
+                        <span>
+                            Overlays:
+                        </span>
+                    </div>
+                    <div id="overlay-toggles">
+                    </div>
+                </div>
+                <hr class="horizontal-divider">
+                <div id="symbol-list">
+                    <span>
+                        Symbol list:
+                    </span>
+                    <table id="symbol-table">
+                    </table>
+                </div>
             </div>
-            <div id="overlay-toggles">
-            </div>
-        </div>
-        <hr class="horizontal-divider">
-        <div id="symbol-list">
-            <span>
-                Symbol list:
-            </span>
-            <table id="symbol-table">
-            </table>
         </div>
     </div>
 
@@ -168,11 +174,21 @@
                         });
                         symbol_resolution.set_symbols(symbols);
                     }
+
+                    $('#none-message').hide();
+                    $('#contents').show();
                     break;
                 case 'clear':
                     symbol_resolution.clear_symbols();
                     $('#overlay-toggles').html('');
                     $('input[type=radio][value=median]').prop('checked', true);
+                    $('#contents').hide();
+                    const none_message = $('#none-message');
+                    if (message.reason)
+                        none_message.text(message.reason);
+                    else
+                        none_message.text('No analysis available');
+                    none_message.show();
                     break;
                 default:
                     break;

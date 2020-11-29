@@ -74,8 +74,10 @@
                     }
                     break;
                 case 'clear_outline':
-                    outline_list.clear();
-                    outline_list.notify_data_changed();
+                    if (message.reason !== undefined)
+                        outline_list.clear(message.reason);
+                    else
+                        outline_list.clear();
                     break;
                 default:
                     break;

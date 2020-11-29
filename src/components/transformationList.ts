@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { DaCeVSCode } from '../extension';
 
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
@@ -77,25 +78,27 @@ implements vscode.WebviewViewProvider {
     public handleMessage(message: any,
                          origin: vscode.Webview | undefined = undefined): void {
         switch (message.type) {
-            case 'show_loading':
-            case 'hide_loading':
-            case 'clear_transformations':
-            case 'set_transformations':
-                this.view?.webview.postMessage(message);
-                break;
             default:
+                this.view?.webview.postMessage(message);
                 break;
         }
     }
 
-    public clearList() {
+    public clearList(reason: string | undefined) {
         this.handleMessage({
             type: 'clear_transformations',
+            reason: reason,
         });
     }
 
-    public refresh() {
-        vscode.commands.executeCommand('transformationList.sync');
+    public refresh(hard: boolean = false) {
+        this.clearList(undefined);
+        if (hard)
+            vscode.commands.executeCommand('transformationList.sync');
+        else
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                type: 'resync_transformation_list',
+            });
     }
 
 }

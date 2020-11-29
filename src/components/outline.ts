@@ -76,18 +76,16 @@ implements vscode.WebviewViewProvider {
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
-            case 'set_outline':
-            case 'clear_outline':
-                this.view?.webview.postMessage(message);
-                break;
             default:
+                this.view?.webview.postMessage(message);
                 break;
         }
     }
 
-    public clearOutline() {
+    public clearOutline(reason: string | undefined) {
         this.view?.webview.postMessage({
             type: 'clear_outline',
+            reason: reason,
         });
     }
 

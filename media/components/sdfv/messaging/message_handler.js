@@ -39,7 +39,16 @@ class MessageHandler {
             case 'refresh_transformation_list':
                 refresh_transformation_list();
                 break;
+            case 'resync_transformation_list':
+                clear_selected_transformation();
+                if (transformations !== undefined &&
+                    transformations !== [[], [], [], []])
+                    refresh_transformation_list();
+                else
+                    get_applicable_transformations();
+                break;
             case 'get_applicable_transformations':
+                clear_selected_transformation();
                 get_applicable_transformations();
                 break;
             case 'get_applicable_transformations_callback':
@@ -92,8 +101,13 @@ class MessageHandler {
                     zoom_to_uuids([message.uuid]);
                 break;
             case 'select_transformation':
-                if (message.transformation !== undefined)
+                if (message.transformation !== undefined) {
                     show_transformation_details(message.transformation);
+                    window.selected_transformation = message.transformation;
+                }
+                break;
+            case 'clear_selected_transformation':
+                clear_selected_transformation();
                 break;
         }
     }

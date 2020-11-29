@@ -7,6 +7,7 @@ import { TransformationHistoryProvider } from './components/transformationHistor
 import { OutlineProvider } from './components/outline';
 import { AnalysisProvider } from './components/analysis';
 import { TransformationListProvider } from './components/transformationList';
+import { clear } from 'console';
 
 export class DaCeVSCode {
 
@@ -58,22 +59,26 @@ export class DaCeVSCode {
 
         // Register necessary commands.
         this.registerCommand('transformationList.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'get_applicable_transformations',
-            });
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'get_applicable_transformations',
+                });
         });
         this.registerCommand('transformationHistory.sync', () => {
-            TransformationHistoryProvider.getInstance()?.refresh();
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+                TransformationHistoryProvider.getInstance()?.refresh();
         });
         this.registerCommand('sdfgAnalysis.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'refresh_analysis_pane',
-            });
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'refresh_analysis_pane',
+                });
         });
         this.registerCommand('sdfgOutline.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'refresh_outline',
-            });
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'refresh_outline',
+                });
         });
         this.registerCommand('sdfg.applyTransformation',
             (t) => daceInterface.applyTransformation(t));
@@ -118,16 +123,15 @@ export class DaCeVSCode {
         this.activeSdfgFileName = undefined;
         this.activeEditor = undefined;
 
-        this.outlineProvider?.clearOutline();
-        this.analysisProvider?.clear();
-        this.trafoHistProvider?.clearList();
-        this.trafoProvider?.clearList();
+        const clearReason = 'No SDFG selected';
+        this.outlineProvider?.clearOutline(clearReason);
+        this.analysisProvider?.clear(clearReason);
+        this.trafoHistProvider?.clearList(clearReason);
+        this.trafoProvider?.clearList(clearReason);
     }
 
     public updateActiveSdfg(activeSdfgFileName: string,
                             activeEditor: vscode.Webview) {
-        this.clearActiveSdfg();
-
         this.activeSdfgFileName = activeSdfgFileName;
         this.activeEditor = activeEditor;
 

@@ -82,9 +82,10 @@ implements vscode.WebviewViewProvider {
         }
     }
 
-    public clear() {
+    public clear(reason: string | undefined) {
         this.view?.webview.postMessage({
             type: 'clear',
+            reason: reason,
         });
     }
 

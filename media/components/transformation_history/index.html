@@ -54,7 +54,10 @@
                     );
                     break;
                 case 'clear_history':
-                    transformation_list.clear();
+                    if (message.reason !== undefined)
+                        transformation_list.clear(message.reason);
+                    else
+                        transformation_list.clear();
                     break;
                 default:
                     break;

@@ -81,22 +81,21 @@ implements vscode.WebviewViewProvider {
             case 'refresh':
                 this.refresh();
                 break;
-            case 'clear_history':
-            case 'set_history':
-                this.view?.webview.postMessage(message);
-                break;
             default:
+                this.view?.webview.postMessage(message);
                 break;
         }
     }
 
-    public clearList() {
-        this.handleMessage({
+    public clearList(reason: string | undefined) {
+        this.view?.webview.postMessage({
             type: 'clear_history',
+            reason: reason,
         });
     }
 
     public refresh() {
+        this.clearList(undefined);
         const sdfg = DaCeVSCode.getInstance().getActiveSdfg();
         if (sdfg !== undefined) {
             const history = sdfg.attributes.transformation_hist;
