@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Viewer (SDFV)",
     "description": "DaCe SDFG Viewer (SDFV) for VS Code",
-    "version": "0.2.8",
+    "version": "0.2.9",
     "engines": {
         "vscode": "^1.51.0"
     },
@@ -36,6 +36,12 @@
                         "type": "boolean",
                         "default": false,
                         "description": "Run the DaCe backend in a new terminal instead of a subprocess",
+                        "scope": "machine-overridable"
+                    },
+                    "dace.interface.port": {
+                        "type": "integer",
+                        "default": 5000,
+                        "description": "Run the DaCe backend on a different port",
                         "scope": "machine-overridable"
                     },
                     "dace.sdfv.layout": {

@@ -60,6 +60,10 @@ implements MessageReceiverInterface {
     private daemonRunning = false;
     private daemonBooting = false;
 
+    private port: number = vscode.workspace.getConfiguration(
+        'dace.interface'
+    ).port;
+
     private async getPythonPath(document: vscode.TextDocument | null) {
         try {
             let pyExt = vscode.extensions.getExtension('ms-python.python');
@@ -135,7 +139,9 @@ implements MessageReceiverInterface {
             this.genericBackendErrorPopup();
             return undefined;
         }
-        return path.join(extensionPath, 'backend', 'run_dace.py');
+        return path.join(
+            extensionPath, 'backend', 'run_dace.py -p ' + this.port.toString()
+        );
     }
 
     public startDaemonInTerminal(callback?: CallableFunction) {
@@ -155,7 +161,7 @@ implements MessageReceiverInterface {
             console.log('Checking for daemon');
             const req = request({
                 host: 'localhost',
-                port: 5000,
+                port: this.port,
                 path: '/',
                 method: 'GET',
                 timeout: 1000,
@@ -288,7 +294,6 @@ implements MessageReceiverInterface {
         if (!scriptPath)
             return;
 
-        // TODO: Randomize port choice.
         const daemon = cp.spawn(
             pythonPath,
             [scriptPath]
@@ -316,7 +321,7 @@ implements MessageReceiverInterface {
         const postData = JSON.stringify(requestData);
         const req = request({
             host: 'localhost',
-            port: 5000,
+            port: this.port,
             path: url,
             method: 'POST',
             headers: {

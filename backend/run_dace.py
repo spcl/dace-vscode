@@ -425,7 +425,7 @@ def get_transformations(sdfg_json, selected_elements):
         'docstrings': docstrings,
     }
 
-def run_daemon():
+def run_daemon(port):
     from logging.config import dictConfig
     from flask import Flask, request
 
@@ -478,7 +478,7 @@ def run_daemon():
         request_json = request.get_json()
         return get_arith_ops(request_json['sdfg'])
 
-    daemon.run()
+    daemon.run(port=port)
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -490,13 +490,12 @@ if __name__ == '__main__':
                         help='Run as a daemon')
                         '''
 
-    '''
     parser.add_argument('-p',
                         '--port',
                         action='store',
-                        type='int',
+                        default=5000,
+                        type=int,
                         help='The port to listen on')
-                        '''
 
     parser.add_argument('-t',
                         '--transformations',
@@ -508,4 +507,4 @@ if __name__ == '__main__':
     if (args.transformations):
         get_transformations(None)
     else:
-        run_daemon()
+        run_daemon(args.port)

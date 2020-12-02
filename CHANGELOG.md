@@ -2,6 +2,10 @@
 
 ## 0.2
 
+### 0.2.9
+
+- Provide a means to change the port on which the DaCe daemon listens.
+
 ### 0.2.8
 
 - Provide a panel for static SDFG analysis.
