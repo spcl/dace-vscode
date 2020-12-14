@@ -94,31 +94,69 @@ function fill_info_embedded(elem) {
             if (val === null || val === '')
                 continue;
 
-            if (attr[0] === 'debuginfo') {
-                gotoSourceBtn.on('click', function() {
-                    gotoSource(
-                        attr[1].filename,
-                        attr[1].start_line,
-                        attr[1].start_column,
-                        attr[1].end_line,
-                        attr[1].end_column
-                    );
-                });
-                gotoSourceBtn.prop('title',
-                    attr[1].filename + ':' + attr[1].start_line);
-                gotoSourceBtn.show();
-                continue;
-            }
 
-            const row = $('<tr>').appendTo(attr_table_body);
-            $('<th>', {
-                'class': 'key-col',
-                'text': attr[0],
-            }).appendTo(row);
-            $('<td>', {
-                'class': 'val-col',
-                'html': val,
-            }).appendTo(row);
+            if (attr[0] === 'instrument') {
+                vscode.postMessage({
+                    'type': 'dace.get_enum',
+                    'name': 'InstrumentationType',
+                });
+                const row = $('<tr>').appendTo(attr_table_body);
+                $('<th>', {
+                    'class': 'key-col',
+                    'text': attr[0],
+                }).appendTo(row);
+                const cell = $('<td>', {
+                    'class': 'val-col',
+                }).appendTo(row);
+
+                const select = $('<select>', {
+                    'name': 'instrument',
+                    'class': 'sdfv-property-dropdown',
+                }).appendTo(cell);
+
+                select.append($('<option>', {
+                    'value': 'No_Instrumentation',
+                    'text': 'No Instrumentation',
+                }));
+                select.append($('<option>', {
+                    'value': 'Timer',
+                    'text': 'Timer',
+                }));
+                select.append($('<option>', {
+                    'value': 'PAPI_Counters',
+                    'text': 'PAPI Counters',
+                }));
+                select.append($('<option>', {
+                    'value': 'CUDA_Events',
+                    'text': 'CUDA Events',
+                }));
+            } else {
+                if (attr[0] === 'debuginfo') {
+                    gotoSourceBtn.on('click', function() {
+                        gotoSource(
+                            attr[1].filename,
+                            attr[1].start_line,
+                            attr[1].start_column,
+                            attr[1].end_line,
+                            attr[1].end_column
+                        );
+                    });
+                    gotoSourceBtn.prop('title',
+                        attr[1].filename + ':' + attr[1].start_line);
+                    gotoSourceBtn.show();
+                    continue;
+                }
+
+                const row = $('<tr>').appendTo(attr_table_body);
+                $('<th>', {
+                    'class': 'key-col',
+                    'text': attr[0],
+                }).appendTo(row);
+                $('<td>', {
+                    'class': 'val-col',
+                    'html': val,
+                }).appendTo(row);
+            }
         }
 
         // If we're processing an access node, add array information too

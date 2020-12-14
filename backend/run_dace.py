@@ -1,15 +1,24 @@
 # Copyright 2019-2020 ETH Zurich and the DaCe authors. All rights reserved.
+import aenum
+from argparse import ArgumentParser
 import ast, astunparse
-import sympy
 import dace
 from dace.sdfg import propagation
 from dace.symbolic import pystr_to_symbolic
 from dace.libraries.blas import MatMul, Transpose
 from dace.libraries.standard import Reduce
-
-import traceback
+import inspect
+import sympy
 import sys
-from argparse import ArgumentParser
+import traceback
+
+
+# Prepare a whitelist of DaCe enumeration types
+enum_list = [
+    typename
+    for typename, dtype in inspect.getmembers(dace.dtypes, inspect.isclass)
+    if issubclass(dtype, aenum.Enum)
+]
 
 def count_matmul(node, symbols, state):
     A_memlet = next(e for e in state.in_edges(node) if e.dst_conn == '_a')
@@ -425,6 +434,16 @@ def get_transformations(sdfg_json, selected_elements):
         'docstrings': docstrings,
     }
 
+def get_enum(name):
+    if name not in enum_list:
+        return {
+            'error': {
+                'message': 'Failed to get Enum',
+                'details': 'Enum type "' + str(name) + '" is not in whitelist',
+            },
+        }
+    return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
+
 def run_daemon(port):
     from logging.config import dictConfig
     from flask import Flask, request
@@ -477,6 +496,10 @@ def run_daemon(port):
     def _get_arith_ops():
         request_json = request.get_json()
         return get_arith_ops(request_json['sdfg'])
+
+    @daemon.route('/getEnum/<string:name>', methods=['GET'])
+    def _get_enum(name):
+        return get_enum(name)
 
     daemon.run(port=port)
 

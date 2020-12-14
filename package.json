@@ -146,7 +146,7 @@
             },
             {
                 "view": "transformationHistory",
-                "contents": "No previously applied transformations"
+                "contents": "No active SDFG"
             },
             {
                 "view": "sdfgAnalysis",

@@ -16,6 +16,8 @@
         // Reference to the VSCode API.
         let vscode = undefined;
 
+        let fr = undefined;
+
         const csp_src = "{{ CSP_SRC }}";
     </script>
 
@@ -50,12 +52,6 @@
                                 checked="checked">
                             Median
                         </label>
-                        <label>
-                            <input type="radio"
-                                name="badness-scale-method"
-                                value="mode">
-                            Mode
-                        </label>
                     </div>
                 </div>
                 <hr class="horizontal-divider">
@@ -66,6 +62,61 @@
                         </span>
                     </div>
                     <div id="overlay-toggles">
+                    </div>
+                </div>
+                <hr class="horizontal-divider">
+                <div id="runtime-measurement">
+                    <div>
+                        <span>
+                            Runtime Measurements:
+                        </span>
+                    </div>
+                    <div>
+                        <div class="input-group mb-2">
+                            <div class="custom-file mr-1">
+                                <input type="file"
+                                       class="custom-file-input"
+                                       id="runtime-report-file-input">
+                                <label class="custom-file-label placeholder"
+                                       id="runtime-report-filename-label"
+                                       for="runtime-report-file-input">
+                                    Load runtime report
+                                </label>
+                            </div>
+                            <button class="btn btn-secondary"
+                                    onclick="clear_runtime_report();"
+                                    type="button">
+                                Clear
+                            </button>
+                        </div>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <label class="input-group-text"
+                                       for="runtime-time-criterium-select">
+                                    Runtime visualization criterium:
+                                </label>
+                            </div>
+                            <select class="custom-select"
+                                 id="runtime-time-criterium-select">
+                                <option
+                                    value="min">
+                                    Min
+                                </option>
+                                <option
+                                    value="max">
+                                    Max
+                                </option>
+                                <option
+                                    value="mean"
+                                    selected="selected">
+                                    Mean
+                                </option>
+                                <option
+                                    value="med">
+                                    Median
+                                </option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <hr class="horizontal-divider">
@@ -195,6 +246,18 @@
             }
         });
 
+        function clear_runtime_report() {
+            $('#runtime-report-file-input').val('');
+            $('#runtime-report-filename-label').text('Load runtime report');
+            $('input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]').prop(
+                'disabled', false
+            );
+            if (vscode)
+                vscode.postMessage({
+                    type: 'sdfv.clear_instrumentation_report',
+                });
+        }
+
         $(document).ready(() => {
             $('input[type=radio][name=badness-scale-method]').change(function() {
                 if (vscode)
@@ -203,6 +266,37 @@
                         method: this.value,
                     });
             });
+
+            $('#runtime-report-file-input').change(function () {
+                fr = new FileReader();
+                fr.onload = () => {
+                    if (fr && vscode) {
+                        $('#runtime-report-filename-label').text(
+                            this.files[0].name
+                        );
+                        let cb = $(
+                            'input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]'
+                        );
+                        cb.prop('checked', false);
+                        cb.prop('disabled', true);
+                        vscode.postMessage({
+                            type: 'sdfv.load_instrumentation_report',
+                            result: fr.result,
+                            criterium: $('#runtime-time-criterium-select').val(),
+                        })
+                    }
+                };
+                fr.readAsText(this.files[0]);
+            });
+
+            $('#runtime-time-criterium-select').change(() => {
+                if (vscode)
+                    vscode.postMessage({
+                        type: 'sdfv.instrumentation_report_change_criterium',
+                        criterium: $('#runtime-time-criterium-select').val(),
+                    })
+            });
+
             if (vscode)
                 vscode.postMessage({
                     type: 'sdfv.refresh_analysis_pane',

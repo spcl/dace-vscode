@@ -7,7 +7,6 @@ import { TransformationHistoryProvider } from './components/transformationHistor
 import { OutlineProvider } from './components/outline';
 import { AnalysisProvider } from './components/analysis';
 import { TransformationListProvider } from './components/transformationList';
-import { clear } from 'console';
 
 export class DaCeVSCode {
 

@@ -44,7 +44,8 @@ function refresh_analysis_pane() {
             badness_scale_method: renderer.overlay_manager.badness_scale_method,
             available_overlays: {
                 'Memory Volume': GenericSdfgOverlay.OVERLAY_TYPE.MEMORY_VOLUME,
-                'Static FLOPS': GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS,
+                'Static FLOP': GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS,
+                //'Runtime Measurements': GenericSdfgOverlay.OVERLAY_TYPE.RUNTIME_MICROS,
             },
             active_overlays: active_overlays,
         });
