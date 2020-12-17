@@ -74,7 +74,17 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public handleMessage(message: any, origin: vscode.Webview): void {
+    public show() {
+        this.view?.show();
+    }
+
+    public isVisible(): boolean {
+        if (this.view === undefined)
+            return false;
+        return this.view.visible;
+    }
+
+    public handleMessage(message: any, origin?: vscode.Webview): void {
         switch (message.type) {
             default:
                 this.view?.webview.postMessage(message);

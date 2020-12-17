@@ -72,18 +72,23 @@
                         </span>
                     </div>
                     <div>
+                        <input type="file" id="runtime-report-file-input"
+                               class="hidden">
                         <div class="input-group mb-2">
-                            <div class="custom-file mr-1">
-                                <input type="file"
-                                       class="custom-file-input"
-                                       id="runtime-report-file-input">
-                                <label class="custom-file-label placeholder"
-                                       id="runtime-report-filename-label"
-                                       for="runtime-report-file-input">
-                                    Load runtime report
-                                </label>
-                            </div>
+                            <input type="text" class="form-control"
+                                   id="runtime-report-filename-label"
+                                   disabled="disabled"
+                                   placeholder="Load runtime report"
+                                   aria-label="Load runtime report"
+                                   aria-describedby="runtime-report-browse-btn">
+                            <button class="btn btn-primary"
+                                    type="button"
+                                    onclick="$('#runtime-report-file-input').click();"
+                                    id="runtime-report-browse-btn">
+                                Browse
+                            </button>
                             <button class="btn btn-secondary"
+                                    id="runtime-report-clear-btn"
                                     onclick="clear_runtime_report();"
                                     type="button">
                                 Clear
@@ -241,6 +246,21 @@
                         none_message.text('No analysis available');
                     none_message.show();
                     break;
+                case 'autoload_report':
+                    let cb = $(
+                        'input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]'
+                    );
+                    let rtReportLabel = $('#runtime-report-filename-label');
+                    rtReportLabel.val(message.path);
+                    rtReportLabel.prop('title', message.path);
+                    cb.prop('checked', false);
+                    cb.prop('disabled', true);
+                    vscode.postMessage({
+                        type: 'sdfv.load_instrumentation_report',
+                        result: message.json,
+                        criterium: $('#runtime-time-criterium-select').val(),
+                    });
+                    break;
                 default:
                     break;
             }
@@ -248,7 +268,9 @@
 
         function clear_runtime_report() {
             $('#runtime-report-file-input').val('');
-            $('#runtime-report-filename-label').text('Load runtime report');
+            let rtReportLabel = $('#runtime-report-filename-label');
+            rtReportLabel.val('Load runtime report');
+            rtReportLabel.prop('title', '');
             $('input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]').prop(
                 'disabled', false
             );
@@ -271,9 +293,9 @@
                 fr = new FileReader();
                 fr.onload = () => {
                     if (fr && vscode) {
-                        $('#runtime-report-filename-label').text(
-                            this.files[0].name
-                        );
+                        let rtReportLabel = $('#runtime-report-filename-label');
+                        rtReportLabel.val(this.files[0].name);
+                        rtReportLabel.prop('title', this.files[0].path);
                         let cb = $(
                             'input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]'
                         );
@@ -281,9 +303,9 @@
                         cb.prop('disabled', true);
                         vscode.postMessage({
                             type: 'sdfv.load_instrumentation_report',
-                            result: fr.result,
+                            result: JSON.parse(fr.result),
                             criterium: $('#runtime-time-criterium-select').val(),
-                        })
+                        });
                     }
                 };
                 fr.readAsText(this.files[0]);

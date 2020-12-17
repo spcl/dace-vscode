@@ -23,6 +23,12 @@ implements MessageReceiverInterface {
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
+            case 'run_sdfg':
+                if (message.path !== undefined &&
+                    message.filename !== undefined)
+                    this.runSdfgInTerminal(message.path, message.filename);
+                // TODO: print error if undefined!
+                break;
             case 'apply_transformation':
                 if (message.transformation !== undefined)
                     this.applyTransformation(message.transformation);
@@ -60,6 +66,8 @@ implements MessageReceiverInterface {
     public static getInstance(): DaCeInterface {
         return this.INSTANCE;
     }
+
+    private runTerminal?: vscode.Terminal = undefined;
 
     private daemonRunning = false;
     private daemonBooting = false;
@@ -156,6 +164,45 @@ implements MessageReceiverInterface {
             this.daemonBooting = true;
             term.sendText('python ' + scriptPath);
             this.pollDaemon(callback, true);
+        }
+    }
+
+    private runSdfgInTerminal(path: string, filename: string) {
+        if (!this.runTerminal)
+            this.runTerminal = vscode.window.createTerminal('Run SDFG');
+        this.runTerminal.show();
+        this.runTerminal.sendText('python ' + path);
+
+        // Additionally create a launch configuration for VSCode.
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (workspaceFolders) {
+            const launchConfig = vscode.workspace.getConfiguration(
+                'launch', workspaceFolders[0].uri
+            );
+            const runSdfgConfig = {
+                'name': 'SDFG: ' + filename,
+                'type': 'sdfg-python',
+                'request': 'launch',
+                'program': path,
+                'console': 'integratedTerminal',
+            };
+
+            let pathIncluded = false;
+            for (const cfg of launchConfig.configurations) {
+                if (cfg['program'] === path) {
+                    pathIncluded = true;
+                    break;
+                }
+            }
+
+            if (!pathIncluded) {
+                launchConfig.configurations.push(runSdfgConfig);
+                launchConfig.update(
+                    'configurations',
+                    launchConfig.configurations,
+                    false
+                );
+            }
         }
     }
 

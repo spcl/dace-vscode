@@ -57,7 +57,9 @@ PYFUNC_TO_ARITHMETICS = {
     'math.tanh': 1,
     'math.sqrt': 1,
     'min': 0,
-    'max': 0
+    'max': 0,
+    'ceiling': 1,
+    'floor': 1,
 }
 LIBNODES_TO_ARITHMETICS = {
     MatMul: count_matmul,

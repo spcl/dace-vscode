@@ -38,40 +38,20 @@ body {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
-/*
-.custom-file > .custom-file-label {
+#runtime-report-filename-label {
     background-color: var(--vscode-input-background);
     border-color: var(--vscode-input-border);
-    color: var(--vscode-input-foreground);
-}
-
-.custom-file > .custom-file-label.placeholder {
     color: var(--vscode-input-placeholderForeground);
 }
 
-.custom-file > .custom-file-label::after {
-    cursor: pointer;
-    border-color: var(--vscode-input-border);
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
+#runtime-report-browse-btn {
+    border-radius: 0;
 }
 
-.custom-file > .custom-file-label::after:hover {
-    background-color: var(--vscode-button-secondaryHoverBackground);
+#runtime-report-clear-btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
 }
-
-.input-group-text {
-    background-color: var(--vscode-background);
-    border-color: var(--vscode-input-border);
-    color: var(--vscode-input-foreground);
-}
-
-.custom-select {
-    background-color: var(--vscode-input-background);
-    border-color: var(--vscode-input-border);
-    color: var(--vscode-input-foreground);
-}
-*/
 
 #contents > div {
     width: 100%;
@@ -112,20 +92,6 @@ button {
 .symbol-definition-clear {
     margin: .2rem;
 }
-
-/*
-.button {
-    cursor: pointer;
-    padding: .3rem .4rem;
-    border-radius: 5px;
-    color: var(--vscode-button-foreground);
-    background-color: var(--vscode-button-background);
-}
-
-.button:hover {
-    background-color: var(--vscode-button-hoverBackground);
-}
-*/
 
 .horizontal-divider {
     background-color: var(--vscode-foreground);

@@ -35,6 +35,8 @@
 </head>
 
 <body onresize="rendererSendResize();">
+    <input id="wrapper-file-input" class="hidden" type="file"
+           onchange="wrapperFileInputChanged(this);">
     <div id="top-bar">
         <div id="search-bar">
             <div id="search-container">
@@ -49,6 +51,11 @@
             <div id="search-btn" class="button">
                 <span>
                     Search
+                </span>
+            </div>
+            <div id="run-btn" class="button" title="Run SDFG">
+                <span>
+                    <i class="material-icons">play_arrow</i>
                 </span>
             </div>
             <div id="refresh-btn" class="button" onclick="refreshSdfg();">
@@ -98,10 +105,12 @@
 
     <script>
         var sdfg_json = '';
+        var wrapper_file = undefined;
         var transformations = [[], [], [], []];
     </script>
     <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/vscode_sdfv.js"></script>
 
     <script src="{{ CSP_SRC }}/components/sdfv/util/helpers.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/messaging/message_handler.js"></script>
@@ -183,6 +192,12 @@
         });
 
         $(document).ready(() => {
+            $('#run-btn').on('click', () => {
+                if (wrapper_file === undefined)
+                    $('#wrapper-file-input').click();
+                else
+                    runSdfg(wrapper_file);
+            });
             $('#processing-overlay').hide();
             vscode.postMessage({
                 type: 'sdfv.get_current_sdfg',

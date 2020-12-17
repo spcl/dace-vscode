@@ -28,6 +28,10 @@ pre.code {
   border-bottom: 1px solid var(--vscode-scrollbarSlider-background);
 }
 
+.button span .material-icons {
+  font-size: 1rem;
+}
+
 /* View splitter */
 
 #split-container {
@@ -93,7 +97,11 @@ pre.code {
   margin: 0 .5rem;
 }
 
-#search-bar #refresh-btn {
+#search-bar .button {
+  margin-left: .3rem;
+}
+
+#search-bar #run-btn {
   margin-left: auto;
 }
 

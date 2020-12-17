@@ -12,6 +12,7 @@
     ],
     "activationEvents": [
         "onCustomEditor:sdfgCustom.sdfv",
+        "onLanguage:python",
         "onView:transformationList",
         "onView:transformationHistory",
         "onView:sdfgAnalysis",
@@ -28,6 +29,48 @@
     },
     "icon": "icon.png",
     "contributes": {
+        "debuggers": [
+            {
+                "type": "sdfg-python",
+                "label": "SDFG with Python",
+                "program": "python",
+                "languages": [
+                    "sdfg",
+                    "python"
+                ],
+                "configurationAttributes": {
+                    "launch": {
+                        "required": [
+                            "program"
+                        ],
+                        "properties": {
+                            "type": "string",
+                            "description": "The Python SDFG wrapper program to run."
+                        }
+                    }
+                },
+                "initialConfigurations": [
+                    {
+                        "type": "sdfg-python",
+                        "request": "launch",
+                        "name": "Launch SDFG",
+                        "program": "${workspaceFolder}/program.py"
+                    }
+                ],
+                "configurationSnippets": [
+                    {
+                        "label": "SDFG: Run a Python-wrapped SDFG",
+                        "description": "A new configuration for running an SDFG via a Python wrapper",
+                        "body": {
+                            "type": "sdfg-python",
+                            "request": "launch",
+                            "name": "Launch SDFG",
+                            "program": "${workspaceFolder}/program.py"
+                        }
+                    }
+                ]
+            }
+        ],
         "configuration": [
             {
                 "title": "DaCe SDFG Optimizer",

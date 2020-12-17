@@ -18,22 +18,66 @@ export class DaCeVSCode {
         return this.INSTANCE;
     }
 
-    private context: vscode.ExtensionContext | undefined = undefined;
+    private context?: vscode.ExtensionContext = undefined;
 
-    private outputChannel: vscode.OutputChannel | undefined;
+    private outputChannel?: vscode.OutputChannel = undefined;
 
-    private activeEditor: vscode.Webview | undefined = undefined;
-    private activeSdfgFileName: string | undefined = undefined;
+    private activeEditor?: vscode.Webview = undefined;
+    private activeSdfgFileName?: string = undefined;
 
-    private trafoProvider: TransformationListProvider | undefined = undefined;
-    private trafoHistProvider: TransformationHistoryProvider | undefined = undefined;
-    private outlineProvider: OutlineProvider | undefined = undefined;
-    private analysisProvider: AnalysisProvider | undefined = undefined;
+    private trafoProvider?: TransformationListProvider = undefined;
+    private trafoHistProvider?: TransformationHistoryProvider = undefined;
+    private outlineProvider?: OutlineProvider = undefined;
+    private analysisProvider?: AnalysisProvider = undefined;
 
     private registerCommand(command: string, handler: (...args: any[]) => any) {
         this.context?.subscriptions.push(vscode.commands.registerCommand(
             command, handler
         ));
+    }
+
+    private parseSdfgFilelist(raw: string): void {
+        const lines = raw.split(/\r?\n/);
+
+        for (const line of lines) {
+            const elements = line.split(',');
+            if (elements.length === 3) {
+                let name = elements[0];
+                let sdfgPath = elements[1];
+
+                if (fs.existsSync(sdfgPath)) {
+                    vscode.window.showInformationMessage(
+                        'An SDFG with the name ' + name +
+                        ' was generated, do you want to show it?',
+                        'Always',
+                        'Yes',
+                        'No',
+                        'Never'
+                    ).then((opt) => {
+                        switch (opt) {
+                            case 'Always':
+                                // TODO: Save this preference!
+                                // Fall through.
+                            case 'Yes':
+                                const sdfgUri = vscode.Uri.file(
+                                    sdfgPath.replace(/\\/g, '\\\\')
+                                );
+                                vscode.commands.executeCommand(
+                                    'vscode.openWith',
+                                    sdfgUri,
+                                    'sdfgCustom.sdfv'
+                                );
+                                break;
+                            case 'Never':
+                                // TODO: Save this preference!
+                                // Fall through.
+                            case 'No':
+                                break;
+                        }
+                    });
+                }
+            }
+        }
     }
 
     public init(context: vscode.ExtensionContext) {
@@ -47,13 +91,21 @@ export class DaCeVSCode {
         context.subscriptions.push(SdfgViewerProvider.register(context));
 
         // Register all webview view components.
-        context.subscriptions.push(TransformationListProvider.register(context));
+        context.subscriptions.push(
+            TransformationListProvider.register(context)
+        );
         this.trafoProvider = TransformationListProvider.getInstance();
-        context.subscriptions.push(TransformationHistoryProvider.register(context));
+        context.subscriptions.push(
+            TransformationHistoryProvider.register(context)
+        );
         this.trafoHistProvider = TransformationHistoryProvider.getInstance();
-        context.subscriptions.push(OutlineProvider.register(context));
+        context.subscriptions.push(
+            OutlineProvider.register(context)
+        );
         this.outlineProvider = OutlineProvider.getInstance();
-        context.subscriptions.push(AnalysisProvider.register(context));
+        context.subscriptions.push(
+            AnalysisProvider.register(context)
+        );
         this.analysisProvider = AnalysisProvider.getInstance();
 
         // Register necessary commands.
@@ -95,6 +147,84 @@ export class DaCeVSCode {
             term.sendText(
                 'pip install dace'
             );
+        });
+
+        const sdfgWatcher = vscode.workspace.createFileSystemWatcher(
+            '**/.dacecache/**/sdfg_launchfiles.csv'
+        );
+        sdfgWatcher.onDidCreate((e) => {
+            let stringData = '';
+            fs.createReadStream(
+                e.fsPath
+            ).on('data', (data) => {
+                stringData += data.toString('utf-8');
+            }).on('end', () => {
+                this.parseSdfgFilelist(stringData);
+            });
+        });
+        sdfgWatcher.onDidChange((e) => {
+            let stringData = '';
+            fs.createReadStream(
+                e.fsPath
+            ).on('data', (data) => {
+                stringData += data.toString('utf-8');
+            }).on('end', () => {
+                this.parseSdfgFilelist(stringData);
+            });
+        });
+
+        const perfReportWatcher = vscode.workspace.createFileSystemWatcher(
+            '**/.dacecache/**/perf/*.json'
+        );
+        perfReportWatcher.onDidCreate((e) => {
+            let path = e.fsPath;
+            let stringData = '';
+
+            const readStream = fs.createReadStream(path);
+
+            readStream.on('data', (data) => {
+                stringData += data.toString('utf-8');
+            });
+
+            readStream.on('end', () => {
+                let report = JSON.parse(stringData);
+
+                vscode.window.showInformationMessage(
+                    'A report file was just generated, do you want to load it?',
+                    'Always',
+                    'Yes',
+                    'No',
+                    'Never'
+                ).then((opt) => {
+                    switch (opt) {
+                        case 'Always':
+                            // TODO: Save this preference!
+                            // Fall through.
+                        case 'Yes':
+                            // Show the SDFG Analysis panel if it's hidden.
+                            if (!this.analysisProvider)
+                                return;
+                                
+                            // Make the analysis panel visible.
+                            if (!this.analysisProvider.isVisible())
+                                vscode.commands.executeCommand(
+                                    'sdfgAnalysis.focus'
+                                );
+
+                            this.analysisProvider.handleMessage({
+                                type: 'autoload_report',
+                                path: path,
+                                json: report,
+                            }, undefined);
+                            break;
+                        case 'Never':
+                            // TODO: Save this preference!
+                            // Fall through.
+                        case 'No':
+                            break;
+                    }
+                });
+            });
         });
     }
 
