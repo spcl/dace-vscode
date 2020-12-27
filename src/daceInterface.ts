@@ -24,10 +24,8 @@ implements MessageReceiverInterface {
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
             case 'run_sdfg':
-                if (message.path !== undefined &&
-                    message.filename !== undefined)
-                    this.runSdfgInTerminal(message.path, message.filename);
-                // TODO: print error if undefined!
+                if (message.name !== undefined)
+                    this.runSdfgInTerminal(message.name, undefined, origin);
                 break;
             case 'apply_transformation':
                 if (message.transformation !== undefined)
@@ -167,10 +165,21 @@ implements MessageReceiverInterface {
         }
     }
 
-    private runSdfgInTerminal(path: string, filename: string) {
+    private runSdfgInTerminal(name: string, path?: string,
+                              origin?: vscode.Webview) {
         if (!this.runTerminal)
             this.runTerminal = vscode.window.createTerminal('Run SDFG');
         this.runTerminal.show();
+
+        if (path === undefined) {
+            if (origin === undefined)
+                return;
+
+            path = SdfgViewerProvider.getInstance()?.findEditorForWebview(
+                origin
+            )?.wrapperFile;
+        }
+
         this.runTerminal.sendText('python ' + path);
 
         // Additionally create a launch configuration for VSCode.
@@ -180,7 +189,7 @@ implements MessageReceiverInterface {
                 'launch', workspaceFolders[0].uri
             );
             const runSdfgConfig = {
-                'name': 'SDFG: ' + filename,
+                'name': 'SDFG: ' + name,
                 'type': 'sdfg-python',
                 'request': 'launch',
                 'program': path,

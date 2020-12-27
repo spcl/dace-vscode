@@ -12,7 +12,11 @@
     ],
     "activationEvents": [
         "onCustomEditor:sdfgCustom.sdfv",
+        "onDebug",
         "onLanguage:python",
+        "onLanguage:sdfg",
+        "onCommand:sdfg.debug.run",
+        "onCommand:sdfg.debug.profile",
         "onView:transformationList",
         "onView:transformationHistory",
         "onView:sdfgAnalysis",
@@ -33,19 +37,18 @@
             {
                 "type": "sdfg-python",
                 "label": "SDFG with Python",
-                "program": "python",
-                "languages": [
-                    "sdfg",
-                    "python"
-                ],
+                "program": "./out/debugger/sdfgPythonAdapter.js",
+                "runtime": "node",
                 "configurationAttributes": {
                     "launch": {
                         "required": [
                             "program"
                         ],
                         "properties": {
-                            "type": "string",
-                            "description": "The Python SDFG wrapper program to run."
+                            "program": {
+                                "type": "string",
+                                "description": "The Python SDFG wrapper program to run."
+                            }
                         }
                     }
                 },
@@ -202,6 +205,20 @@
         ],
         "commands": [
             {
+                "command": "sdfg.debug.run",
+                "title": "Run the current SDFG",
+                "category": "SDFV",
+                "enablement": "!inDebugMode",
+                "icon": "$(play)"
+            },
+            {
+                "command": "sdfg.debug.profile",
+                "title": "Profile the current SDFG",
+                "category": "SDFV",
+                "enablement": "!inDebugMode",
+                "icon": "$(watch)"
+            },
+            {
                 "command": "transformationList.sync",
                 "title": "Refresh Transformations",
                 "icon": {
@@ -253,6 +270,14 @@
         "menus": {
             "commandPalette": [
                 {
+                    "command": "sdfg.debug.run",
+                    "when": "resourceLangId == sdfg"
+                },
+                {
+                    "command": "sdfg.debug.profile",
+                    "when": "resourceLangId == sdfg"
+                },
+                {
                     "command": "sdfg.previewTransformation",
                     "when": "false"
                 },
@@ -267,6 +292,18 @@
                 {
                     "command": "sdfg.previewHistoryPoint",
                     "when": "false"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "sdfg.debug.run",
+                    "when": "resourceLangId == sdfg",
+                    "group": "1_run@10"
+                },
+                {
+                    "command": "sdfg.debug.profile",
+                    "when": "resourceLangId == sdfg",
+                    "group": "1_run@20"
                 }
             ],
             "view/title": [
@@ -314,5 +351,7 @@
         "typescript": "^3.9.7",
         "vscode-test": "^1.4.1"
     },
-    "dependencies": {}
+    "dependencies": {
+        "vscode-debugadapter": "^1.43.0"
+    }
 }

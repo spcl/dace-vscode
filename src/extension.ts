@@ -7,6 +7,7 @@ import { TransformationHistoryProvider } from './components/transformationHistor
 import { OutlineProvider } from './components/outline';
 import { AnalysisProvider } from './components/analysis';
 import { TransformationListProvider } from './components/transformationList';
+import { activateSdfgPython } from './debugger/sdfgPythonDebugger';
 
 export class DaCeVSCode {
 
@@ -44,6 +45,7 @@ export class DaCeVSCode {
             if (elements.length === 3) {
                 let name = elements[0];
                 let sdfgPath = elements[1];
+                let wrapperPath = elements[2];
 
                 if (fs.existsSync(sdfgPath)) {
                     vscode.window.showInformationMessage(
@@ -59,14 +61,18 @@ export class DaCeVSCode {
                                 // TODO: Save this preference!
                                 // Fall through.
                             case 'Yes':
-                                const sdfgUri = vscode.Uri.file(
-                                    sdfgPath.replace(/\\/g, '\\\\')
-                                );
+                                const sdfgUri = vscode.Uri.file(sdfgPath);
                                 vscode.commands.executeCommand(
                                     'vscode.openWith',
                                     sdfgUri,
                                     'sdfgCustom.sdfv'
-                                );
+                                ).then(() => {
+                                    const webView =
+                                        SdfgViewerProvider.getInstance()
+                                        ?.findEditorForPath(sdfgUri);
+                                    if (webView)
+                                        webView.wrapperFile = wrapperPath;
+                                });
                                 break;
                             case 'Never':
                                 // TODO: Save this preference!
@@ -226,6 +232,8 @@ export class DaCeVSCode {
                 });
             });
         });
+
+        activateSdfgPython(context);
     }
 
     public getExtensionContext() {

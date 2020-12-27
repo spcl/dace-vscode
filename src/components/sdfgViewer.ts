@@ -10,12 +10,14 @@ import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 import { TransformationListProvider } from './transformationList';
 
-class SdfgViewer {
+export class SdfgViewer {
 
     public constructor(
         public readonly webview: vscode.Webview,
         public readonly document: vscode.TextDocument
     ) {}
+
+    public wrapperFile?: string = undefined;
 
 }
 
@@ -108,10 +110,16 @@ implements vscode.CustomTextEditorProvider {
     public findEditorForWebview(
         webview: vscode.Webview
     ): SdfgViewer | undefined {
-        for (const element of this.openEditors) {
+        for (const element of this.openEditors)
             if (element.webview === webview)
                 return element;
-        }
+        return undefined;
+    }
+
+    public findEditorForPath(uri: vscode.Uri): SdfgViewer | undefined {
+        for (const element of this.openEditors)
+            if (element.document.uri.toString() === uri.toString())
+                return element;
         return undefined;
     }
 
@@ -119,6 +127,8 @@ implements vscode.CustomTextEditorProvider {
         const editor = this.findEditorForWebview(webview);
         if (editor)
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
+        console.log('Removed open editor');
+        console.log(this.openEditors);
     }
 
     public handleMessage(message: any,

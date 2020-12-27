@@ -35,8 +35,6 @@
 </head>
 
 <body onresize="rendererSendResize();">
-    <input id="wrapper-file-input" class="hidden" type="file"
-           onchange="wrapperFileInputChanged(this);">
     <div id="top-bar">
         <div id="search-bar">
             <div id="search-container">
@@ -53,7 +51,7 @@
                     Search
                 </span>
             </div>
-            <div id="run-btn" class="button" title="Run SDFG">
+            <div id="run-btn" class="button" title="Run SDFG" onclick="runSdfg();">
                 <span>
                     <i class="material-icons">play_arrow</i>
                 </span>
@@ -105,7 +103,6 @@
 
     <script>
         var sdfg_json = '';
-        var wrapper_file = undefined;
         var transformations = [[], [], [], []];
     </script>
     <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
@@ -192,12 +189,6 @@
         });
 
         $(document).ready(() => {
-            $('#run-btn').on('click', () => {
-                if (wrapper_file === undefined)
-                    $('#wrapper-file-input').click();
-                else
-                    runSdfg(wrapper_file);
-            });
             $('#processing-overlay').hide();
             vscode.postMessage({
                 type: 'sdfv.get_current_sdfg',
