@@ -18,6 +18,8 @@ export class SdfgViewer {
     ) {}
 
     public wrapperFile?: string = undefined;
+    public argv?: string[] = undefined;
+    public linkFile?: string = undefined;
 
 }
 

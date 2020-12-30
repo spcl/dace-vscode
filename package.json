@@ -37,17 +37,16 @@
             {
                 "type": "sdfg-python",
                 "label": "SDFG with Python",
-                "program": "./out/debugger/sdfgPythonAdapter.js",
-                "runtime": "node",
                 "configurationAttributes": {
                     "launch": {
-                        "required": [
-                            "program"
-                        ],
                         "properties": {
                             "program": {
                                 "type": "string",
-                                "description": "The Python SDFG wrapper program to run."
+                                "description": "The specific SDFG to run."
+                            },
+                            "profile": {
+                                "type": "boolean",
+                                "description": "Whether or not to profile with this run."
                             }
                         }
                     }
@@ -56,19 +55,27 @@
                     {
                         "type": "sdfg-python",
                         "request": "launch",
-                        "name": "Launch SDFG",
-                        "program": "${workspaceFolder}/program.py"
+                        "name": "SDFG: Run current file"
                     }
                 ],
                 "configurationSnippets": [
                     {
-                        "label": "SDFG: Run a Python-wrapped SDFG",
-                        "description": "A new configuration for running an SDFG via a Python wrapper",
+                        "label": "SDFG: Run current file",
+                        "description": "A new configuration for running the currently open SDFG.",
                         "body": {
                             "type": "sdfg-python",
                             "request": "launch",
-                            "name": "Launch SDFG",
-                            "program": "${workspaceFolder}/program.py"
+                            "name": "SDFG: Run current file"
+                        }
+                    },
+                    {
+                        "label": "SDFG: Profile current file",
+                        "description": "A new configuration for measuring the runtime of the currently open SDFG.",
+                        "body": {
+                            "type": "sdfg-python",
+                            "request": "launch",
+                            "profile": true,
+                            "name": "SDFG: Profile current file"
                         }
                     }
                 ]

@@ -7,12 +7,12 @@ import {
 } from 'vscode-debugadapter';
 import { FileAccessor, SdfgPythonDebuggerRuntime } from './sdfgPythonRuntime';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { logger } from 'vscode-debugadapter/lib/logger';
 
-interface SdfgPythonLaunchRequestArguments
+export interface SdfgPythonLaunchRequestArguments
 extends DebugProtocol.LaunchRequestArguments {
-    program: string;
+    program?: string;
     noDebug?: boolean;
+    profile?: boolean;
 }
 
 export class SdfgPythonDebugSession extends LoggingDebugSession {
@@ -20,14 +20,16 @@ export class SdfgPythonDebugSession extends LoggingDebugSession {
     private runtime: SdfgPythonDebuggerRuntime;
 
     public constructor(fileAccessor: FileAccessor) {
-        super('sdfg-python.log');
+        super();
 
         this.runtime = new SdfgPythonDebuggerRuntime(fileAccessor);
 
-        this.runtime.on('output', (text, filePath, line, column) => {
-            const event: DebugProtocol.OutputEvent =
-                new OutputEvent(`${text}\n`);
-            this.sendEvent(event);
+        this.initEventListeners();
+    }
+
+    private initEventListeners() {
+        this.runtime.on('output', (text) => {
+            this.sendEvent(new OutputEvent(`${text}\n`));
         });
 
         this.runtime.on('end', () => {
@@ -51,11 +53,9 @@ export class SdfgPythonDebugSession extends LoggingDebugSession {
         response: DebugProtocol.LaunchResponse,
         args: SdfgPythonLaunchRequestArguments
     ) {
-        console.log('Launch request received');
+        Logger.logger.setup(Logger.LogLevel.Verbose, true);
 
-        logger.setup(Logger.LogLevel.Verbose, true);
-
-        this.runtime.start(args.program);
+        this.runtime.start(args);
 
         this.sendResponse(response);
     }

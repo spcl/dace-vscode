@@ -446,6 +446,25 @@ def get_enum(name):
         }
     return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
 
+def compile_sdfg(sdfg_json):
+    # We lazy import DaCe, not to break cyclic imports, but to avoid any large
+    # delays when booting in daemon mode.
+    from dace import serialize
+    old_meta = serialize.JSON_STORE_METADATA
+    serialize.JSON_STORE_METADATA = False
+
+    loaded = load_sdfg_from_json(sdfg_json)
+    if loaded['error'] is not None:
+        return loaded['error']
+    sdfg = loaded['sdfg']
+
+    print(sdfg.compile())
+
+    serialize.JSON_STORE_METADATA = old_meta
+    return {
+        'success': 'success',
+    }
+
 def run_daemon(port):
     from logging.config import dictConfig
     from flask import Flask, request
@@ -502,6 +521,11 @@ def run_daemon(port):
     @daemon.route('/getEnum/<string:name>', methods=['GET'])
     def _get_enum(name):
         return get_enum(name)
+
+    @daemon.route('/compile_sdfg', methods=['POST'])
+    def _compile_sdfg():
+        request_json = request.get_json()
+        return compile_sdfg(request_json['sdfg'])
 
     daemon.run(port=port)
 

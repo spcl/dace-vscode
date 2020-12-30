@@ -31,21 +31,42 @@ export class DaCeVSCode {
     private outlineProvider?: OutlineProvider = undefined;
     private analysisProvider?: AnalysisProvider = undefined;
 
-    private registerCommand(command: string, handler: (...args: any[]) => any) {
+    public registerCommand(command: string, handler: (...args: any[]) => any) {
         this.context?.subscriptions.push(vscode.commands.registerCommand(
             command, handler
         ));
     }
 
-    private parseSdfgFilelist(raw: string): void {
+    private parseSdfgLinkFile(raw: string, path: string): boolean {
         const lines = raw.split(/\r?\n/);
+        if (lines.length < 2)
+            return false;
 
-        for (const line of lines) {
+        // Check that the header defines the correct columns exepcted in this
+        // file.
+        const header = lines[0];
+        const cols = header.split(',');
+        if (cols.length < 4)
+            return false;
+
+        if (cols[0] !== 'name' || cols[1] !== 'SDFG_intermediate' ||
+            cols[2] !== 'SDFG' || cols[3] !== 'source')
+            return false;
+
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i];
+
             const elements = line.split(',');
-            if (elements.length === 3) {
-                let name = elements[0];
-                let sdfgPath = elements[1];
-                let wrapperPath = elements[2];
+
+            if (elements.length !== cols.length)
+                return false;
+
+            if (elements.length >= 4) {
+                const name = elements[0];
+                const intermediateSdfgPath = elements[1];
+                const sdfgPath = elements[2];
+                const sourcePath = elements[3];
+                const argv = elements.slice(4, elements.length - 1);
 
                 if (fs.existsSync(sdfgPath)) {
                     vscode.window.showInformationMessage(
@@ -67,11 +88,14 @@ export class DaCeVSCode {
                                     sdfgUri,
                                     'sdfgCustom.sdfv'
                                 ).then(() => {
-                                    const webView =
+                                    const editor =
                                         SdfgViewerProvider.getInstance()
                                         ?.findEditorForPath(sdfgUri);
-                                    if (webView)
-                                        webView.wrapperFile = wrapperPath;
+                                    if (editor) {
+                                        editor.wrapperFile = sourcePath;
+                                        editor.linkFile = path;
+                                        editor.argv = argv;
+                                    }
                                 });
                                 break;
                             case 'Never':
@@ -84,6 +108,7 @@ export class DaCeVSCode {
                 }
             }
         }
+        return false;
     }
 
     public init(context: vscode.ExtensionContext) {
@@ -156,7 +181,7 @@ export class DaCeVSCode {
         });
 
         const sdfgWatcher = vscode.workspace.createFileSystemWatcher(
-            '**/.dacecache/**/sdfg_launchfiles.csv'
+            '**/.dacecache/**/program.sdfgl'
         );
         sdfgWatcher.onDidCreate((e) => {
             let stringData = '';
@@ -165,7 +190,7 @@ export class DaCeVSCode {
             ).on('data', (data) => {
                 stringData += data.toString('utf-8');
             }).on('end', () => {
-                this.parseSdfgFilelist(stringData);
+                this.parseSdfgLinkFile(stringData, e.fsPath);
             });
         });
         sdfgWatcher.onDidChange((e) => {
@@ -175,7 +200,7 @@ export class DaCeVSCode {
             ).on('data', (data) => {
                 stringData += data.toString('utf-8');
             }).on('end', () => {
-                this.parseSdfgFilelist(stringData);
+                this.parseSdfgLinkFile(stringData, e.fsPath);
             });
         });
 

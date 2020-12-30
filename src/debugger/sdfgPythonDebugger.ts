@@ -1,11 +1,8 @@
 import * as vscode from 'vscode';
-import { SdfgPythonInlineFactory } from './sdfgPythonFactories';
+import { SdfgPythonDebugSession } from './sdfgPythonDebugSession';
 import { FileAccessor } from './sdfgPythonRuntime';
 
-export function activateSdfgPython(
-    context: vscode.ExtensionContext,
-    factory?: vscode.DebugAdapterDescriptorFactory
-) {
+export function activateSdfgPython(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'sdfg.debug.run',
@@ -30,6 +27,7 @@ export function activateSdfgPython(
                         type: 'sdfg-python',
                         name: 'Profile current SDFG',
                         request: 'launch',
+                        profile: true,
                         program: resource.fsPath,
                     }, {
                         noDebug: true,
@@ -44,18 +42,12 @@ export function activateSdfgPython(
         new SdfgPythonDebugConfigProvider()
     ));
 
-    if (!factory)
-        factory = new SdfgPythonInlineFactory();
-
     context.subscriptions.push(
         vscode.debug.registerDebugAdapterDescriptorFactory(
             'sdfg-python',
-            factory
+            new SdfgPythonInlineFactory()
         )
     );
-
-    if ('dispose' in factory)
-        context.subscriptions.push(factory);
 }
 
 class SdfgPythonDebugConfigProvider
@@ -66,18 +58,14 @@ implements vscode.DebugConfigurationProvider {
         config: vscode.DebugConfiguration,
         token?: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.DebugConfiguration> {
-        console.log('Config provider called');
-        
         return config;
     }
 
 }
 
-export const workspaceFileAccessor: FileAccessor = {
+const workspaceFileAccessor: FileAccessor = {
 
     async readFile(path: string): Promise<string> {
-        console.log('reading file from path: ' + path);
-        
         try {
             return Buffer.from(
                 await vscode.workspace.fs.readFile(vscode.Uri.file(path))
@@ -95,3 +83,16 @@ export const workspaceFileAccessor: FileAccessor = {
     }
 
 };
+
+class SdfgPythonInlineFactory
+implements vscode.DebugAdapterDescriptorFactory {
+
+    createDebugAdapterDescriptor(
+        _session: vscode.DebugSession,
+        _executable: vscode.DebugAdapterExecutable | undefined
+    ): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+        return new vscode.DebugAdapterInlineImplementation(
+            new SdfgPythonDebugSession(workspaceFileAccessor)
+        );
+    }
+}

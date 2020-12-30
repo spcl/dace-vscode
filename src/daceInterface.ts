@@ -74,7 +74,9 @@ implements MessageReceiverInterface {
         'dace.interface'
     ).port;
 
-    private async getPythonPath(document: vscode.TextDocument | null) {
+    public async getPythonPath(
+        document: vscode.TextDocument | null
+    ): Promise<string> {
         try {
             let pyExt = vscode.extensions.getExtension('ms-python.python');
             if (!pyExt)
@@ -90,19 +92,23 @@ implements MessageReceiverInterface {
                     pyExt.exports.settings.getExecutionCommand(document?.uri);
                 return pythonPath ? pythonPath.join(' ') : 'python';
             } else {
+                let path = undefined;
                 if (document)
-                    return vscode.workspace.getConfiguration(
+                    path = vscode.workspace.getConfiguration(
                         'python',
                         document.uri
                     ).get<string>('pythonPath');
                 else
-                    return vscode.workspace.getConfiguration(
+                    path = vscode.workspace.getConfiguration(
                         'python'
                     ).get<string>('pythonPath');
+                if (!path)
+                    return 'python';
             }
         } catch (ignored) {
             return 'python';
         }
+        return 'python';
     }
 
     public genericErrorHandler(message: string, details?: string) {
@@ -745,6 +751,20 @@ implements MessageReceiverInterface {
 
         this.sendPostRequest(
             '/get_arith_ops',
+            {
+                'sdfg': sdfg,
+            },
+            callback
+        );
+    }
+
+    public compileSdfg(sdfg: any) {
+        function callback(data: any) {
+            console.log(data);
+        }
+
+        this.sendPostRequest(
+            '/compile_sdfg',
             {
                 'sdfg': sdfg,
             },
