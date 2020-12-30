@@ -69,6 +69,13 @@ export class DaCeVSCode {
                 const argv = elements.slice(4, elements.length - 1);
 
                 if (fs.existsSync(sdfgPath)) {
+                    // Check if the SDFG isn't currently open. If it is, don't
+                    // do anything.
+                    if (this.activeSdfgFileName !== undefined &&
+                        vscode.Uri.file(sdfgPath).fsPath ===
+                        vscode.Uri.file(this.activeSdfgFileName).fsPath)
+                        continue;
+
                     vscode.window.showInformationMessage(
                         'An SDFG with the name ' + name +
                         ' was generated, do you want to show it?',
@@ -108,7 +115,7 @@ export class DaCeVSCode {
                 }
             }
         }
-        return false;
+        return true;
     }
 
     public init(context: vscode.ExtensionContext) {
