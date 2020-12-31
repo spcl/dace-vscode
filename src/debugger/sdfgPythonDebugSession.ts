@@ -28,8 +28,10 @@ export class SdfgPythonDebugSession extends LoggingDebugSession {
     }
 
     private initEventListeners() {
-        this.runtime.on('output', (text) => {
-            this.sendEvent(new OutputEvent(`${text}\n`));
+        this.runtime.on('output', (text, cat) => {
+            if (cat === undefined)
+                cat = 'stdout';
+            this.sendEvent(new OutputEvent(`${text}\n`, cat));
         });
 
         this.runtime.on('end', () => {
@@ -37,12 +39,23 @@ export class SdfgPythonDebugSession extends LoggingDebugSession {
         });
     }
 
-    protected initializeRequest(
+    protected async initializeRequest(
         response: DebugProtocol.InitializeResponse,
-        args: DebugProtocol.InitializeRequestArguments
-    ): void {
+        _args: DebugProtocol.InitializeRequestArguments
+    ) {
         // Build and return the capabilities of this debug adapter.
         response.body = response.body || {};
+
+        // To kill our spawned child processes, we need to manually terminate
+        // them when a terminate request is sent. This means we need to support
+        // and implement it.
+        response.body.supportsTerminateRequest = true;
+
+        // Do not support restart requests, because we want VSCode to emulate
+        // this behavior by killing our DA and restarting it itself, saving us
+        // from having to do that manually.
+        // (https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Restart)
+        response.body.supportsRestartRequest = false;
 
         this.sendResponse(response);
 
@@ -59,4 +72,13 @@ export class SdfgPythonDebugSession extends LoggingDebugSession {
 
         this.sendResponse(response);
     }
+
+    protected async terminateRequest(
+        response: DebugProtocol.TerminateResponse
+    ) {
+        this.runtime.terminateRunning();
+
+        this.sendResponse(response);
+    }
+
 }

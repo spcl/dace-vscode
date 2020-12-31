@@ -1,6 +1,5 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 
 import { TransformationHistoryProvider } from './transformationHistory';
 import { OutlineProvider } from './outline';
@@ -159,34 +158,33 @@ implements vscode.CustomTextEditorProvider {
                     filePath = path.normalize(
                         vscode.workspace.rootPath + '/' + message.file_path
                     );
-                if (fs.existsSync(filePath)) {
-                    // The file exists, load it and show it in a new
-                    // editor, highlighting the indicated range.
-                    const fileUri: vscode.Uri = vscode.Uri.file(filePath);
-                    vscode.workspace.openTextDocument(fileUri).then(
-                        (doc: vscode.TextDocument) => {
-                            const startPos = new vscode.Position(
-                                message.startRow, message.startChar
-                            );
-                            const endPos = new vscode.Position(
-                                message.endRow, message.endChar
-                            );
-                            const range = new vscode.Range(
-                                startPos, endPos
-                            );
-                            vscode.window.showTextDocument(
-                                doc, {
-                                    preview: true,
-                                    selection: range,
-                                }
-                            );
-                        }
-                    );
-                } else {
-                    vscode.window.showInformationMessage(
-                        'Could not find file ' + filePath
-                    );
-                }
+
+                // Load the file and show it in a new editor, highlighting the
+                // indicated range.
+                const fileUri: vscode.Uri = vscode.Uri.file(filePath);
+                vscode.workspace.openTextDocument(fileUri).then(
+                    (doc: vscode.TextDocument) => {
+                        const startPos = new vscode.Position(
+                            message.startRow, message.startChar
+                        );
+                        const endPos = new vscode.Position(
+                            message.endRow, message.endChar
+                        );
+                        const range = new vscode.Range(
+                            startPos, endPos
+                        );
+                        vscode.window.showTextDocument(
+                            doc, {
+                                preview: true,
+                                selection: range,
+                            }
+                        );
+                    }, (_reason) => {
+                        vscode.window.showInformationMessage(
+                            'Could not open file ' + filePath
+                        );
+                    }
+                );
                 break;
             default:
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
@@ -218,40 +216,44 @@ implements vscode.CustomTextEditorProvider {
                 ))
             ],
         };
-        webviewPanel.webview.html = this.getHtml(webviewPanel.webview);
+        this.getHtml(webviewPanel.webview).then((html) => {
+            webviewPanel.webview.html = html;
 
-        // We want to track the last active SDFG viewer/file.
-        if (webviewPanel.active)
-            this.updateActiveEditor(document, webviewPanel.webview);
-        // Store a ref to the document if it becomes active.
-        webviewPanel.onDidChangeViewState(e => {
-            if (e.webviewPanel.active)
+            // We want to track the last active SDFG viewer/file.
+            if (webviewPanel.active)
                 this.updateActiveEditor(document, webviewPanel.webview);
-            else
-                DaCeVSCode.getInstance().clearActiveSdfg();
-        });
+            // Store a ref to the document if it becomes active.
+            webviewPanel.onDidChangeViewState(e => {
+                if (e.webviewPanel.active)
+                    this.updateActiveEditor(document, webviewPanel.webview);
+                else
+                    DaCeVSCode.getInstance().clearActiveSdfg();
+            });
 
-        // Register an event listener for when the document changes on disc.
-        // We want to update our webview if that happens.
-        const docChangeSubs = vscode.workspace.onDidChangeTextDocument(e => {
-            if (e.document.uri.toString() === document.uri.toString())
-                this.documentChanged(document, webviewPanel.webview);
-        });
-        // Get rid of it when the editor closes.
-        webviewPanel.onDidDispose(() => {
-            docChangeSubs.dispose();
-        });
-
-        // Handle received messages from the webview.
-        webviewPanel.webview.onDidReceiveMessage(message => {
-            ComponentMessageHandler.getInstance().handleMessage(
-                message,
-                webviewPanel.webview
+            // Register an event listener for when the document changes on disc.
+            // We want to update our webview if that happens.
+            const docChangeSubs = vscode.workspace.onDidChangeTextDocument(
+                e => {
+                    if (e.document.uri.toString() === document.uri.toString())
+                        this.documentChanged(document, webviewPanel.webview);
+                }
             );
-        });
+            // Get rid of it when the editor closes.
+            webviewPanel.onDidDispose(() => {
+                docChangeSubs.dispose();
+            });
 
-        this.updateWebview(document, webviewPanel.webview);
-        webviewPanel.reveal();
+            // Handle received messages from the webview.
+            webviewPanel.webview.onDidReceiveMessage(message => {
+                ComponentMessageHandler.getInstance().handleMessage(
+                    message,
+                    webviewPanel.webview
+                );
+            });
+
+            this.updateWebview(document, webviewPanel.webview);
+            webviewPanel.reveal();
+        });
     }
 
     /**
@@ -262,7 +264,7 @@ implements vscode.CustomTextEditorProvider {
      * 
      * @returns        HTML to be displayed
      */
-    private getHtml(webview: vscode.Webview): string {
+    private async getHtml(webview: vscode.Webview): Promise<string> {
         // Load the base HTML we want to display in the webview/editor.
         const fpBaseHtml: vscode.Uri = vscode.Uri.file(path.join(
             this.context.extensionPath,
@@ -271,7 +273,9 @@ implements vscode.CustomTextEditorProvider {
             'sdfv',
             'index.html'
         ));
-        let baseHtml = fs.readFileSync(fpBaseHtml.fsPath, 'utf8');
+        let baseHtml = (
+            await vscode.workspace.fs.readFile(fpBaseHtml)
+        ).toString();
 
         // Set the media base-path in the HTML, to load scripts and styles.
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(

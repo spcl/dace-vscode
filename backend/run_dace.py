@@ -222,6 +222,29 @@ def create_arith_ops_map(sdfg, arith_map, symbols):
 def get_exception_message(exception):
     return '%s: %s' % (type(exception).__name__, exception)
 
+def load_sdfg_from_file(path):
+    # We lazy import SDFGs, not to break cyclic imports, but to avoid any large
+    # delays when booting in daemon mode.
+    from dace.sdfg import SDFG
+
+    try:
+        sdfg = SDFG.from_file(path)
+        error = None
+    except Exception as e:
+        print(traceback.format_exc(), file=sys.stderr)
+        sys.stderr.flush()
+        error = {
+            'error': {
+                'message': 'Failed to load the provided SDFG file path',
+                'details': get_exception_message(e),
+            },
+        }
+        sdfg = None
+    return {
+        'error': error,
+        'sdfg': sdfg,
+    }
+
 def load_sdfg_from_json(json):
     # We lazy import SDFGs, not to break cyclic imports, but to avoid any large
     # delays when booting in daemon mode.
@@ -446,23 +469,24 @@ def get_enum(name):
         }
     return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
 
-def compile_sdfg(sdfg_json):
+def compile_sdfg(path):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
     # delays when booting in daemon mode.
     from dace import serialize
+    from dace.codegen.compiled_sdfg import CompiledSDFG;
     old_meta = serialize.JSON_STORE_METADATA
     serialize.JSON_STORE_METADATA = False
 
-    loaded = load_sdfg_from_json(sdfg_json)
+    loaded = load_sdfg_from_file(path)
     if loaded['error'] is not None:
         return loaded['error']
     sdfg = loaded['sdfg']
 
-    print(sdfg.compile())
+    compiled_sdfg: CompiledSDFG = sdfg.compile()
 
     serialize.JSON_STORE_METADATA = old_meta
     return {
-        'success': 'success',
+        'filename': compiled_sdfg.filename,
     }
 
 def run_daemon(port):
@@ -522,10 +546,10 @@ def run_daemon(port):
     def _get_enum(name):
         return get_enum(name)
 
-    @daemon.route('/compile_sdfg', methods=['POST'])
-    def _compile_sdfg():
+    @daemon.route('/compile_sdfg_from_file', methods=['POST'])
+    def _compile_sdfg_from_file():
         request_json = request.get_json()
-        return compile_sdfg(request_json['sdfg'])
+        return compile_sdfg(request_json['path'])
 
     daemon.run(port=port)
 

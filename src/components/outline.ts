@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
@@ -59,18 +58,20 @@ implements vscode.WebviewViewProvider {
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
             this.context.extensionPath, 'media'
         ));
-        let baseHtml = fs.readFileSync(fpBaseHtml.fsPath, 'utf8');
-        baseHtml = baseHtml.replace(
-            this.csrSrcIdentifier,
-            webviewView.webview.asWebviewUri(fpMediaFolder).toString()
-        );
-        webviewView.webview.html = baseHtml;
-
-        webviewView.webview.onDidReceiveMessage(message => {
-            ComponentMessageHandler.getInstance().handleMessage(
-                message,
-                webviewView.webview
+        vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
+            let baseHtml = data.toString();
+            baseHtml = baseHtml.replace(
+                this.csrSrcIdentifier,
+                webviewView.webview.asWebviewUri(fpMediaFolder).toString()
             );
+            webviewView.webview.html = baseHtml;
+
+            webviewView.webview.onDidReceiveMessage(message => {
+                ComponentMessageHandler.getInstance().handleMessage(
+                    message,
+                    webviewView.webview
+                );
+            });
         });
     }
 

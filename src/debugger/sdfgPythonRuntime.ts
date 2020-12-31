@@ -13,6 +13,8 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
     private debug: boolean = false;
     private profile: boolean = false;
 
+    private runningProcesses: cp.ChildProcess[] = [];
+
     public constructor(fileAccessor: FileAccessor) {
         super();
 
@@ -52,7 +54,8 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
             this.sendEvent(
                 'output',
                 'No corresponding SDFG editor could be found for the SDFG: ' +
-                program
+                program,
+                'stderr'
             );
             this.sendEvent('end');
             return;
@@ -102,7 +105,8 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
             });
             this.sendEvent(
                 'output',
-                'No source file found for SDFG: ' + program
+                'No source file found for SDFG: ' + program,
+                'stderr'
             );
             this.sendEvent('end');
             return;
@@ -111,14 +115,14 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
         this.run(editor.wrapperFile, programUri);
     }
 
-    private async run(path: string, _sdfgUri?: vscode.Uri) {
-        this.sendEvent('output', 'Running wrapper: ' + path);
+    private async run(path: string, sdfgUri: vscode.Uri) {
+        this.sendEvent('output', 'Running wrapper: ' + path, 'console');
 
         const pythonPath =
             await DaCeInterface.getInstance().getPythonPath(null);
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
-        let workspaceRoot = undefined;
+        let workspaceRoot: string | undefined = undefined;
         if (workspaceFolders)
             workspaceRoot = workspaceFolders[0].uri.fsPath;
 
@@ -132,54 +136,67 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
             );
             this.sendEvent('end');
         } else {
-            if (this.profile) {
-                const child = cp.spawn(pythonPath, [path], {
-                    cwd: workspaceRoot,
-                    env: {
+            DaCeInterface.getInstance().compileSdfgFromFile(
+                sdfgUri,
+                (data: any) => {
+                    if (data.filename === undefined) {
+                        let errorMsg = 'Failed to compile SDFG.';
+                        if (data.error)
+                            errorMsg += ' Error message: ' +
+                                data.error.message + ' (' + data.error.details +
+                                ')';
+                        vscode.window.showErrorMessage(errorMsg);
+                        console.error(errorMsg);
+                        this.sendEvent('end');
+                        return;
+                    }
+
+                    let env = {
                         ...process.env,
-                        DACE_profiling: '1',
-                    },
-                });
-                child.stderr.on('data', (chunk) => {
-                    this.sendEvent('output', 'ERR: ' + chunk.toString());
-                });
-                child.stdout.on('data', (chunk) => {
-                    this.sendEvent('output', chunk.toString());
-                });
-                child.on('error', (err) => {
-                    this.sendEvent('output', 'Fatal error!');
-                    this.sendEvent('output', err.name);
-                    this.sendEvent('output', err.message);
-                    this.sendEvent('end');
-                });
-                child.on('exit', (_code, _signal) => {
-                    this.sendEvent('end');
-                });
-            } else {
-                const child = cp.spawn(pythonPath, [path], {
-                    cwd: workspaceRoot,
-                    env: {
-                        ...process.env,
+                        DACE_binary_path: data.filename,
                         DACE_profiling: '0',
-                    },
-                });
-                child.stderr.on('data', (chunk) => {
-                    this.sendEvent('output', 'ERR: ' + chunk.toString());
-                });
-                child.stdout.on('data', (chunk) => {
-                    this.sendEvent('output', chunk.toString());
-                });
-                child.on('error', (err) => {
-                    this.sendEvent('output', 'Fatal error!');
-                    this.sendEvent('output', err.name);
-                    this.sendEvent('output', err.message);
-                    this.sendEvent('end');
-                });
-                child.on('exit', (_code, _signal) => {
-                    this.sendEvent('end');
-                });
-            }
+                    };
+
+                    if (this.profile)
+                        env.DACE_profiling = '1';
+
+                    const child = cp.spawn(pythonPath, [path], {
+                        cwd: workspaceRoot,
+                        env: env,
+                    });
+                    this.runningProcesses.push(child);
+                    child.stderr.on('data', (chunk) => {
+                        this.sendEvent('output', chunk.toString(), 'stderr');
+                    });
+                    child.stdout.on('data', (chunk) => {
+                        this.sendEvent('output', chunk.toString(), 'stdout');
+                    });
+                    child.on('error', (err) => {
+                        this.sendEvent('output', 'Fatal error!', 'stderr');
+                        this.sendEvent('output', err.name, 'stderr');
+                        this.sendEvent('output', err.message, 'stderr');
+                        this.removeChild(child);
+                        this.sendEvent('end');
+                    });
+                    child.on('exit', (_code, _signal) => {
+                        this.removeChild(child);
+                        this.sendEvent('end');
+                    });
+                }
+            );
         }
+    }
+
+    private removeChild(child: cp.ChildProcess) {
+        const index: number = this.runningProcesses.indexOf(child, 0);
+        if (index > -1)
+            this.runningProcesses.splice(index, 1);
+    }
+
+    public terminateRunning() {
+        this.runningProcesses.forEach((child) => {
+            child.kill('SIGKILL');
+        });
     }
 
     private sendEvent(event: string, ...args: any[]) {

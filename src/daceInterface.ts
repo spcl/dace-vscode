@@ -360,9 +360,16 @@ implements MessageReceiverInterface {
         if (!scriptPath)
             return;
 
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        let workspaceRoot = undefined;
+        if (workspaceFolders)
+            workspaceRoot = workspaceFolders[0].uri.fsPath;
+
         const daemon = cp.spawn(
             pythonPath,
-            [scriptPath]
+            [scriptPath], {
+                cwd: workspaceRoot,
+            }
         );
 
         daemon.on('exit', (code, signal) => {
@@ -603,17 +610,19 @@ implements MessageReceiverInterface {
         this.showSpinner(
             processingMessage ? processingMessage : 'Applying Transformation'
         );
-        const sdfg = DaCeVSCode.getInstance().getActiveSdfg();
-        if (sdfg) {
-            this.sendPostRequest(
-                '/apply_transformation',
-                {
-                    sdfg: sdfg,
-                    transformation: transformation,
-                },
-                callback
-            );
-        }
+
+        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (sdfg) {
+                this.sendPostRequest(
+                    '/apply_transformation',
+                    {
+                        sdfg: sdfg,
+                        transformation: transformation,
+                    },
+                    callback
+                );
+            }
+        });
     }
 
     public applyTransformation(transformation: any) {
@@ -664,59 +673,60 @@ implements MessageReceiverInterface {
             return;
         }
 
-        const sdfg = DaCeVSCode.getInstance().getActiveSdfg();
-        if (!sdfg)
-            return;
+        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (!sdfg)
+                return;
 
-        if (index < 0) {
-            // This item refers to the original SDFG, so we revert to/show that.
-            const originalSdfg = sdfg?.attributes?.orig_sdfg;
-            if (originalSdfg) {
+            if (index < 0) {
+                // This item refers to the original SDFG, so we revert to that.
+                const originalSdfg = sdfg?.attributes?.orig_sdfg;
+                if (originalSdfg) {
+                    switch (mode) {
+                        case InteractionMode.APPLY:
+                            this.writeToActiveDocument(originalSdfg);
+                            break;
+                        case InteractionMode.PREVIEW:
+                        default:
+                            this.previewSdfg(originalSdfg, true);
+                            break;
+                    }
+                }
+            } else {
+                if (!this.daemonRunning) {
+                    this.promptStartDaemon();
+                    return;
+                }
+
+                this.showSpinner('Loading SDFG');
+                let callback: any;
                 switch (mode) {
                     case InteractionMode.APPLY:
-                        this.writeToActiveDocument(originalSdfg);
+                        callback = function (data: any) {
+                            const daceInterface = DaCeInterface.getInstance();
+                            daceInterface.writeToActiveDocument(data.sdfg);
+                            daceInterface.hideSpinner();
+                        };
                         break;
                     case InteractionMode.PREVIEW:
                     default:
-                        this.previewSdfg(originalSdfg, true);
+                        callback = function (data: any) {
+                            const daceInterface = DaCeInterface.getInstance();
+                            daceInterface.previewSdfg(data.sdfg, true);
+                            daceInterface.hideSpinner();
+                        };
                         break;
                 }
-            }
-        } else {
-            if (!this.daemonRunning) {
-                this.promptStartDaemon();
-                return;
-            }
 
-            this.showSpinner('Loading SDFG');
-            let callback: any;
-            switch (mode) {
-                case InteractionMode.APPLY:
-                    callback = function (data: any) {
-                        const daceInterface = DaCeInterface.getInstance();
-                        daceInterface.writeToActiveDocument(data.sdfg);
-                        daceInterface.hideSpinner();
-                    };
-                    break;
-                case InteractionMode.PREVIEW:
-                default:
-                    callback = function (data: any) {
-                        const daceInterface = DaCeInterface.getInstance();
-                        daceInterface.previewSdfg(data.sdfg, true);
-                        daceInterface.hideSpinner();
-                    };
-                    break;
+                this.sendPostRequest(
+                    '/reapply_history_until',
+                    {
+                        sdfg: sdfg,
+                        index: index,
+                    },
+                    callback
+                );
             }
-
-            this.sendPostRequest(
-                '/reapply_history_until',
-                {
-                    sdfg: sdfg,
-                    index: index,
-                },
-                callback
-            );
-        }
+        });
     }
 
     public applyHistoryPoint(index: Number | undefined) {
@@ -735,38 +745,35 @@ implements MessageReceiverInterface {
 
         this.showSpinner('Calculating FLOP');
 
-        let sdfg = DaCeVSCode.getInstance().getActiveSdfg();
-        if (!sdfg) {
-            console.log('No active SDFG editor!');
-            return;
-        }
+        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (!sdfg) {
+                console.log('No active SDFG editor!');
+                return;
+            }
 
-        function callback(data: any) {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'flopsCallback',
-                map: data.arith_ops_map,
-            });
-            DaCeInterface.getInstance().hideSpinner();
-        }
+            function callback(data: any) {
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'flopsCallback',
+                    map: data.arith_ops_map,
+                });
+                DaCeInterface.getInstance().hideSpinner();
+            }
 
-        this.sendPostRequest(
-            '/get_arith_ops',
-            {
-                'sdfg': sdfg,
-            },
-            callback
-        );
+            this.sendPostRequest(
+                '/get_arith_ops',
+                {
+                    'sdfg': sdfg,
+                },
+                callback
+            );
+        });
     }
 
-    public compileSdfg(sdfg: any) {
-        function callback(data: any) {
-            console.log(data);
-        }
-
+    public compileSdfgFromFile(uri: vscode.Uri, callback: CallableFunction) {
         this.sendPostRequest(
-            '/compile_sdfg',
+            '/compile_sdfg_from_file',
             {
-                'sdfg': sdfg,
+                'path': uri.fsPath,
             },
             callback
         );
