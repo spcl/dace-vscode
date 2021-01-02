@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { EventEmitter } from 'events';
 import { DaCeVSCode } from '../extension';
-import { SdfgViewerProvider } from '../components/sdfgViewer';
+import { SdfgViewer, SdfgViewerProvider } from '../components/sdfgViewer';
 import { SdfgPythonLaunchRequestArguments } from './sdfgPythonDebugSession';
 import { DaCeInterface } from '../daceInterface';
 
@@ -21,7 +21,133 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
         this.fileAccessor = fileAccessor;
     }
 
-    public start(args: SdfgPythonLaunchRequestArguments) {
+    private startDebugging(uri: vscode.Uri) {
+        let name = 'Run current SDFG';
+        if (this.profile)
+            name = 'Profile current SDFG';
+        vscode.debug.startDebugging(undefined, {
+            type: 'sdfg-python',
+            name: name,
+            request: 'launch',
+            profile: this.profile,
+            program: uri.fsPath,
+        }, {
+            noDebug: !this.debug,
+        });
+    }
+
+    private checkSdfgDirty(
+        document: vscode.TextDocument,
+        uri: vscode.Uri
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            // This is a failsafe - VSCode claims to save whenever a DA is
+            // started, but in case that changes, this manually takes care of
+            // that issue.
+            if (document.isDirty) {
+                let autoSave =
+                    DaCeVSCode.getExtensionContext()?.workspaceState.get(
+                        'SDFV_autosave_before_running'
+                    );
+
+                if (autoSave === undefined) {
+                    vscode.window.showWarningMessage(
+                        'There are unsaved changes in your SDFG, ' +
+                        'do you want to save them before running?',
+                        'Always',
+                        'Yes',
+                        'No'
+                    ).then((opt) => {
+                        switch (opt) {
+                            case 'Always':
+                                DaCeVSCode.getExtensionContext()
+                                ?.workspaceState.update(
+                                    'SDFV_autosave_before_running',
+                                    true
+                                );
+                                // Fall through.
+                            case 'Yes':
+                                document.save().then((success) => {
+                                    if (success)
+                                        this.startDebugging(uri);
+                                    else
+                                        vscode.window.showErrorMessage(
+                                            'Failed to save your document!'
+                                        );
+                                });
+                                break;
+                            case 'No':
+                                this.startDebugging(uri);
+                                break;
+                        }
+                    });
+                    this.sendEvent(
+                        'output',
+                        'Unsaved changes in ' + uri.fsPath,
+                        'console'
+                    );
+                    reject();
+                } else {
+                    document.save().then((success) => {
+                        if (success)
+                            resolve();
+                        else
+                            reject();
+                    });
+                }
+            }
+            resolve();
+        });
+    }
+
+    private async checkHasWrapper(
+        editor: SdfgViewer,
+        uri: vscode.Uri
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (!editor.wrapperFile) {
+                vscode.window.showWarningMessage(
+                    'No source file is defined for this SDFG. ' +
+                    'Do you want to manually pick one?',
+                    'Yes',
+                    'No'
+                ).then((opt) => {
+                    switch (opt) {
+                        case 'Yes':
+                            vscode.window.showOpenDialog({
+                                canSelectFiles: true,
+                                canSelectFolders: false,
+                                canSelectMany: false,
+                                defaultUri: uri,
+                                filters: {
+                                    'Python': ['py'],
+                                    'All Files': ['*'],
+                                },
+                                openLabel: 'Select and Run',
+                                title: 'Select & Run SDFG Source',
+                            }).then((pUri) => {
+                                if (pUri) {
+                                    editor.wrapperFile = pUri[0].fsPath;
+                                    this.startDebugging(uri);
+                                }
+                            });
+                            break;
+                        case 'No':
+                            break;
+                    }
+                });
+                this.sendEvent(
+                    'output',
+                    'No source file found for SDFG: ' + uri.fsPath,
+                    'console'
+                );
+                reject();
+            }
+            resolve();
+        });
+    }
+
+    public async start(args: SdfgPythonLaunchRequestArguments) {
         let program = args.program;
 
         if (args.profile !== undefined)
@@ -30,7 +156,7 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
             this.debug = !args.noDebug;
 
         let webview = undefined;
-        if (!program) {
+        if (program === undefined) {
             webview = DaCeVSCode.getInstance().getActiveEditor();
             const fileName = DaCeVSCode.getInstance().getActiveSdfgFileName();
 
@@ -45,77 +171,52 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
             program = fileName;
         }
 
-        const programUri = vscode.Uri.file(program);
-        const editor = SdfgViewerProvider.getInstance()?.findEditorForPath(
-            programUri
-        );
+        const uri = vscode.Uri.file(program);
+        const editor = SdfgViewerProvider.getInstance()?.findEditorForPath(uri);
 
         if (!editor) {
-            this.sendEvent(
-                'output',
-                'No corresponding SDFG editor could be found for the SDFG: ' +
-                program,
-                'stderr'
-            );
-            this.sendEvent('end');
-            return;
-        }
-
-        if (!editor.wrapperFile) {
-            vscode.window.showWarningMessage(
-                'No source file is defined for this SDFG. ' +
-                'Do you want to manually pick one?',
-                'Yes',
-                'No'
-            ).then((opt) => {
-                switch (opt) {
-                    case 'Yes':
-                        vscode.window.showOpenDialog({
-                            canSelectFiles: true,
-                            canSelectFolders: false,
-                            canSelectMany: false,
-                            defaultUri: programUri,
-                            filters: {
-                                'Python': ['py'],
-                                'All Files': ['*'],
-                            },
-                            openLabel: 'Select and Run',
-                            title: 'Select & Run SDFG Source',
-                        }).then((uri) => {
-                            if (uri) {
-                                editor.wrapperFile = uri[0].fsPath;
-                                let name = 'Run current SDFG';
-                                if (this.profile)
-                                    name = 'Profile current SDFG';
-                                vscode.debug.startDebugging(undefined, {
-                                    type: 'sdfg-python',
-                                    name: name,
-                                    request: 'launch',
-                                    profile: this.profile,
-                                    program: program,
-                                }, {
-                                    noDebug: !this.debug,
-                                });
-                            }
-                        });
-                        break;
-                    case 'No':
-                        break;
+            vscode.commands.executeCommand(
+                'vscode.openWith',
+                uri,
+                'sdfgCustom.sdfv'
+            ).then(() => {
+                const editor =
+                    SdfgViewerProvider.getInstance()?.findEditorForPath(uri);
+                if (editor && program) {
+                    this.checkSdfgDirty(editor.document, uri);
+                    this.checkHasWrapper(editor, uri).then(() => {
+                        this.run(editor.wrapperFile, uri);
+                    });
+                } else {
+                    this.sendEvent(
+                        'output',
+                        'No corresponding SDFG editor could be found for ' +
+                        'the SDFG: ' + program,
+                        'stderr'
+                    );
+                    this.sendEvent('end');
                 }
             });
-            this.sendEvent(
-                'output',
-                'No source file found for SDFG: ' + program,
-                'stderr'
-            );
+        } else {
+            this.checkSdfgDirty(editor.document, uri).then(() => {
+                this.checkHasWrapper(editor, uri).then(() => {
+                    this.run(editor.wrapperFile, uri);
+                }, () => {
+                    this.sendEvent('end');
+                });
+            }, () => {
+                this.sendEvent('end');
+            });
+        }
+    }
+
+    private async run(path: string | undefined, sdfgUri: vscode.Uri) {
+        if (path === undefined) {
+            this.sendEvent('output', 'No path to run provided');
             this.sendEvent('end');
             return;
         }
 
-        this.run(editor.wrapperFile, programUri);
-    }
-
-    private async run(path: string, sdfgUri: vscode.Uri) {
         this.sendEvent('output', 'Running wrapper: ' + path, 'console');
 
         const pythonPath =
@@ -153,7 +254,7 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
 
                     let env = {
                         ...process.env,
-                        DACE_binary_path: data.filename,
+                        DACE_compiler_use_cache: '1',
                         DACE_profiling: '0',
                     };
 

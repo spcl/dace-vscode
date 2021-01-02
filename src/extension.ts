@@ -36,6 +36,47 @@ export class DaCeVSCode {
         ));
     }
 
+    private openInstrumentationReport(url: vscode.Uri, report: any) {
+        // Show the SDFG Analysis panel if it's hidden.
+        if (!this.analysisProvider)
+            return;
+
+        // Make the analysis panel visible.
+        if (!this.analysisProvider.isVisible())
+            vscode.commands.executeCommand(
+                'sdfgAnalysis.focus'
+            );
+
+        this.analysisProvider.handleMessage({
+            type: 'autoload_report',
+            path: url.fsPath,
+            json: report,
+        }, undefined);
+    }
+
+    private openGeneratedSdfg(
+        sdfgPath: string,
+        sourcePath: string,
+        linkFile?: string,
+        argv?: string[]
+    ) {
+        const sdfgUri = vscode.Uri.file(sdfgPath);
+        vscode.commands.executeCommand(
+            'vscode.openWith',
+            sdfgUri,
+            'sdfgCustom.sdfv'
+        ).then(() => {
+            const editor =
+                SdfgViewerProvider.getInstance()
+                ?.findEditorForPath(sdfgUri);
+            if (editor) {
+                editor.wrapperFile = sourcePath;
+                editor.linkFile = linkFile;
+                editor.argv = argv;
+            }
+        });
+    }
+
     private parseSdfgLinkFile(raw: string, path: string): boolean {
         const lines = raw.split(/\r?\n/);
         if (lines.length < 2)
@@ -74,6 +115,21 @@ export class DaCeVSCode {
                     vscode.Uri.file(this.activeSdfgFileName).fsPath)
                     continue;
 
+                let autoOpen = this.context?.workspaceState.get(
+                    'SDFV_auto_open_generated_sdfg'
+                );
+
+                if (autoOpen !== undefined) {
+                    if (autoOpen)
+                        this.openGeneratedSdfg(
+                            sdfgPath,
+                            sourcePath,
+                            path,
+                            argv
+                        );
+                    continue;
+                }
+
                 vscode.window.showInformationMessage(
                     'An SDFG with the name ' + name +
                     ' was generated, do you want to show it?',
@@ -84,27 +140,24 @@ export class DaCeVSCode {
                 ).then((opt) => {
                     switch (opt) {
                         case 'Always':
-                            // TODO: Save this preference!
+                            this.context?.workspaceState.update(
+                                'SDFV_auto_open_generated_sdfg',
+                                true
+                            );
                             // Fall through.
                         case 'Yes':
-                            const sdfgUri = vscode.Uri.file(sdfgPath);
-                            vscode.commands.executeCommand(
-                                'vscode.openWith',
-                                sdfgUri,
-                                'sdfgCustom.sdfv'
-                            ).then(() => {
-                                const editor =
-                                    SdfgViewerProvider.getInstance()
-                                    ?.findEditorForPath(sdfgUri);
-                                if (editor) {
-                                    editor.wrapperFile = sourcePath;
-                                    editor.linkFile = path;
-                                    editor.argv = argv;
-                                }
-                            });
+                            this.openGeneratedSdfg(
+                                sdfgPath,
+                                sourcePath,
+                                path,
+                                argv
+                            );
                             break;
                         case 'Never':
-                            // TODO: Save this preference!
+                            this.context?.workspaceState.update(
+                                'SDFV_auto_open_generated_sdfg',
+                                false
+                            );
                             // Fall through.
                         case 'No':
                             break;
@@ -205,6 +258,16 @@ export class DaCeVSCode {
             vscode.workspace.fs.readFile(url).then((data) => {
                 let report = JSON.parse(data.toString());
 
+                let autoOpen = this.context?.workspaceState.get(
+                    'SDFV_auto_open_instrumentation_report'
+                );
+
+                if (autoOpen !== undefined) {
+                    if (autoOpen)
+                        this.openInstrumentationReport(url, report);
+                    return;
+                }
+
                 vscode.window.showInformationMessage(
                     'A report file was just generated, do you want to load it?',
                     'Always',
@@ -214,27 +277,19 @@ export class DaCeVSCode {
                 ).then((opt) => {
                     switch (opt) {
                         case 'Always':
-                            // TODO: Save this preference!
+                            this.context?.workspaceState.update(
+                                'SDFV_auto_open_instrumentation_report',
+                                true
+                            );
                             // Fall through.
                         case 'Yes':
-                            // Show the SDFG Analysis panel if it's hidden.
-                            if (!this.analysisProvider)
-                                return;
-                                
-                            // Make the analysis panel visible.
-                            if (!this.analysisProvider.isVisible())
-                                vscode.commands.executeCommand(
-                                    'sdfgAnalysis.focus'
-                                );
-
-                            this.analysisProvider.handleMessage({
-                                type: 'autoload_report',
-                                path: url.fsPath,
-                                json: report,
-                            }, undefined);
+                            this.openInstrumentationReport(url, report);
                             break;
                         case 'Never':
-                            // TODO: Save this preference!
+                            this.context?.workspaceState.update(
+                                'SDFV_auto_open_instrumentation_report',
+                                false
+                            );
                             // Fall through.
                         case 'No':
                             break;
@@ -248,6 +303,10 @@ export class DaCeVSCode {
 
     public getExtensionContext() {
         return this.context;
+    }
+
+    public static getExtensionContext() {
+        return this.INSTANCE.getExtensionContext();
     }
 
     public getOutputChannel(): vscode.OutputChannel {
