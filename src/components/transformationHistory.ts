@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { DaCeInterface } from '../daceInterface';
 import { DaCeVSCode } from '../extension';
 
 import { BaseComponent } from './baseComponent';
@@ -18,7 +19,8 @@ implements vscode.WebviewViewProvider {
     public activeHistoryItemIndex: Number | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        TransformationHistoryProvider.INSTANCE = new TransformationHistoryProvider(ctx);
+        TransformationHistoryProvider.INSTANCE =
+            new TransformationHistoryProvider(ctx, this.viewType);
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
@@ -37,9 +39,11 @@ implements vscode.WebviewViewProvider {
 
     resolveWebviewView(
         webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext<unknown>,
-        token: vscode.CancellationToken
+        _context: vscode.WebviewViewResolveContext<unknown>,
+        _token: vscode.CancellationToken
     ): void | Thenable<void> {
+        DaCeInterface.getInstance().start();
+
         this.view = webviewView;
 
         webviewView.webview.options = {

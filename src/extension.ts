@@ -171,10 +171,6 @@ export class DaCeVSCode {
     public init(context: vscode.ExtensionContext) {
         this.context = context;
 
-        // Connect to DaCe.
-        const daceInterface = DaCeInterface.getInstance();
-        daceInterface.start();
-
         // Register the SDFG custom editor.
         context.subscriptions.push(SdfgViewerProvider.register(context));
 
@@ -220,15 +216,15 @@ export class DaCeVSCode {
                 });
         });
         this.registerCommand('sdfg.applyTransformation',
-            (t) => daceInterface.applyTransformation(t));
+            (t) => DaCeInterface.getInstance().applyTransformation(t));
         this.registerCommand('sdfg.previewTransformation',
-            (t) => daceInterface.previewTransformation(t));
+            (t) => DaCeInterface.getInstance().previewTransformation(t));
         this.registerCommand('sdfg.previewHistoryPoint',
-            (h) => daceInterface.previewHistoryPoint(h));
+            (h) => DaCeInterface.getInstance().previewHistoryPoint(h));
         this.registerCommand('sdfg.applyHistoryPoint',
-            (h) => daceInterface.applyHistoryPoint(h));
+            (h) => DaCeInterface.getInstance().applyHistoryPoint(h));
         this.registerCommand('dace.openOptimizerInTerminal',
-            () => daceInterface.startDaemonInTerminal());
+            () => DaCeInterface.getInstance().startDaemonInTerminal());
         this.registerCommand('dace.installDace', () => {
             const term = vscode.window.createTerminal('Install DaCe');
             term.show();

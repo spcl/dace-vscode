@@ -165,9 +165,10 @@ implements MessageReceiverInterface {
         term.show();
         const scriptPath = this.getRunDaceScriptPath();
         if (scriptPath) {
-            this.daemonBooting = true;
             term.sendText('python ' + scriptPath);
             this.pollDaemon(callback, true);
+        } else {
+            this.daemonBooting = false;
         }
     }
 
@@ -349,8 +350,6 @@ implements MessageReceiverInterface {
             return;
         }
 
-        this.daemonBooting = true;
-
         vscode.window.setStatusBarMessage(
             'Trying to start and connect to a DaCe daemon', 5000
         );
@@ -372,7 +371,7 @@ implements MessageReceiverInterface {
             }
         );
 
-        daemon.on('exit', (code, signal) => {
+        daemon.on('exit', (_code, _signal) => {
             this.daemonRunning = false;
             this.daemonBooting = false;
         });
@@ -554,6 +553,11 @@ implements MessageReceiverInterface {
     }
 
     public start() {
+        if (this.daemonRunning || this.daemonBooting)
+            return;
+
+        this.daemonBooting = true;
+
         const callback = () => {
             TransformationHistoryProvider.getInstance()?.refresh();
             TransformationListProvider.getInstance()?.refresh();
@@ -836,6 +840,10 @@ implements MessageReceiverInterface {
         this.sendGetRequest('/getEnum/' + name, (response: any) => {
             console.log(response);
         });
+    }
+
+    public isRunning() {
+        return this.daemonRunning;
     }
 
 }

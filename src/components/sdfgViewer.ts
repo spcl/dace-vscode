@@ -37,7 +37,10 @@ implements vscode.CustomTextEditorProvider {
     private openEditors: SdfgViewer[] = [];
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        SdfgViewerProvider.INSTANCE = new SdfgViewerProvider(ctx);
+        SdfgViewerProvider.INSTANCE = new SdfgViewerProvider(
+            ctx,
+            this.viewType
+        );
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: true,
         };

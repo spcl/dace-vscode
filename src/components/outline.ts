@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { DaCeInterface } from '../daceInterface';
 
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
@@ -15,7 +16,7 @@ implements vscode.WebviewViewProvider {
     private static INSTANCE: OutlineProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        OutlineProvider.INSTANCE = new OutlineProvider(ctx);
+        OutlineProvider.INSTANCE = new OutlineProvider(ctx, this.viewType);
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
@@ -34,9 +35,11 @@ implements vscode.WebviewViewProvider {
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext,
+        _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
     ) {
+        DaCeInterface.getInstance().start();
+
         this.view = webviewView;
 
         webviewView.webview.options = {
