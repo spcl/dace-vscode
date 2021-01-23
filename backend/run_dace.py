@@ -58,8 +58,8 @@ PYFUNC_TO_ARITHMETICS = {
     'math.sqrt': 1,
     'min': 0,
     'max': 0,
-    'ceiling': 1,
-    'floor': 1,
+    'ceiling': 0,
+    'floor': 0,
 }
 LIBNODES_TO_ARITHMETICS = {
     MatMul: count_matmul,
@@ -542,7 +542,7 @@ def run_daemon(port):
         request_json = request.get_json()
         return get_arith_ops(request_json['sdfg'])
 
-    @daemon.route('/getEnum/<string:name>', methods=['GET'])
+    @daemon.route('/get_enum/<string:name>', methods=['GET'])
     def _get_enum(name):
         return get_enum(name)
 

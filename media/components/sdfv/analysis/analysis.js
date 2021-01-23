@@ -45,7 +45,6 @@ function refresh_analysis_pane() {
             available_overlays: {
                 'Memory Volume': GenericSdfgOverlay.OVERLAY_TYPE.MEMORY_VOLUME,
                 'Static FLOP': GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS,
-                //'Runtime Measurements': GenericSdfgOverlay.OVERLAY_TYPE.RUNTIME_MICROS,
             },
             active_overlays: active_overlays,
         });

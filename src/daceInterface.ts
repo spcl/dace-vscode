@@ -53,8 +53,8 @@ implements MessageReceiverInterface {
                 this.getFlops();
                 break;
             case 'get_enum':
-                if (message.name !== undefined && message.name !== '')
-                    this.getEnum(message.name);
+                if (message.name)
+                    this.getEnum(message.name, origin);
                 break;
             default:
                 break;
@@ -156,7 +156,7 @@ implements MessageReceiverInterface {
             return undefined;
         }
         return path.join(
-            extensionPath, 'backend', 'run_dace.py -p ' + this.port.toString()
+            extensionPath, 'backend', 'run_dace.py'
         );
     }
 
@@ -165,7 +165,9 @@ implements MessageReceiverInterface {
         term.show();
         const scriptPath = this.getRunDaceScriptPath();
         if (scriptPath) {
-            term.sendText('python ' + scriptPath);
+            term.sendText(
+                'python ' + scriptPath + ' -p ' + this.port.toString()
+            );
             this.pollDaemon(callback, true);
         } else {
             this.daemonBooting = false;
@@ -366,7 +368,7 @@ implements MessageReceiverInterface {
 
         const daemon = cp.spawn(
             pythonPath,
-            [scriptPath], {
+            [scriptPath, '-p', this.port.toString()], {
                 cwd: workspaceRoot,
             }
         );
@@ -391,7 +393,7 @@ implements MessageReceiverInterface {
                            customErrorHandler?: CallableFunction) {
         const req = request({
             host: 'localhost',
-            port: 6000,
+            port: this.port,
             path: url,
             method: 'GET',
         }, response => {
@@ -836,9 +838,14 @@ implements MessageReceiverInterface {
         );
     }
 
-    public getEnum(name: string) {
-        this.sendGetRequest('/getEnum/' + name, (response: any) => {
-            console.log(response);
+    public getEnum(name: string, origin: vscode.Webview) {
+        this.sendGetRequest('/get_enum/' + name, (response: any) => {
+            if (response.enum)
+                origin.postMessage({
+                    'type': 'get_enum_callback',
+                    'name': name,
+                    'enum': response.enum,
+                });
         });
     }
 

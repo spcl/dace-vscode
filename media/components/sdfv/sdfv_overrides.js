@@ -96,40 +96,35 @@ function fill_info_embedded(elem) {
 
 
             if (attr[0] === 'instrument') {
-                vscode.postMessage({
-                    'type': 'dace.get_enum',
-                    'name': 'InstrumentationType',
-                });
-                const row = $('<tr>').appendTo(attr_table_body);
-                $('<th>', {
-                    'class': 'key-col',
-                    'text': attr[0],
-                }).appendTo(row);
-                const cell = $('<td>', {
-                    'class': 'val-col',
-                }).appendTo(row);
+                if (window.instruments) {
+                    const row = $('<tr>').appendTo(attr_table_body);
+                    $('<th>', {
+                        'class': 'key-col',
+                        'text': attr[0],
+                    }).appendTo(row);
+                    const cell = $('<td>', {
+                        'class': 'val-col',
+                    }).appendTo(row);
 
-                const select = $('<select>', {
-                    'name': 'instrument',
-                    'class': 'sdfv-property-dropdown',
-                }).appendTo(cell);
+                    const select = $('<select>', {
+                        'name': 'instrument',
+                        'class': 'sdfv-property-dropdown',
+                    }).appendTo(cell);
 
-                select.append($('<option>', {
-                    'value': 'No_Instrumentation',
-                    'text': 'No Instrumentation',
-                }));
-                select.append($('<option>', {
-                    'value': 'Timer',
-                    'text': 'Timer',
-                }));
-                select.append($('<option>', {
-                    'value': 'PAPI_Counters',
-                    'text': 'PAPI Counters',
-                }));
-                select.append($('<option>', {
-                    'value': 'CUDA_Events',
-                    'text': 'CUDA Events',
-                }));
+                    window.instruments.forEach(el => {
+                        select.append(new Option(
+                            el,
+                            el,
+                            false,
+                            el === attr[1]
+                        ));
+                    });
+                } else {
+                    vscode.postMessage({
+                        type: 'dace.get_enum',
+                        name: 'InstrumentationType',
+                    });
+                }
             } else {
                 if (attr[0] === 'debuginfo') {
                     gotoSourceBtn.on('click', function() {
