@@ -23,6 +23,10 @@ implements MessageReceiverInterface {
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
+            case 'write_edit_to_sdfg':
+                if (message.sdfg)
+                    this.writeToActiveDocument(JSON.parse(message.sdfg));
+                break;
             case 'run_sdfg':
                 if (message.name !== undefined)
                     this.runSdfgInTerminal(message.name, undefined, origin);
