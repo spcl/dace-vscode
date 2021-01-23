@@ -54,9 +54,9 @@ class SdfgPythonDebugConfigProvider
 implements vscode.DebugConfigurationProvider {
 
     resolveDebugConfiguration(
-        folder: vscode.WorkspaceFolder | undefined,
+        _folder: vscode.WorkspaceFolder | undefined,
         config: vscode.DebugConfiguration,
-        token?: vscode.CancellationToken
+        _token?: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.DebugConfiguration> {
         return config;
     }
@@ -95,4 +95,5 @@ implements vscode.DebugAdapterDescriptorFactory {
             new SdfgPythonDebugSession(workspaceFileAccessor)
         );
     }
+
 }

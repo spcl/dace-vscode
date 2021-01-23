@@ -41,9 +41,9 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
         uri: vscode.Uri
     ): Promise<void> {
         return new Promise((resolve, reject) => {
-            // This is a failsafe - VSCode claims to save whenever a DA is
-            // started, but in case that changes, this manually takes care of
-            // that issue.
+            // This is a failsafe - VSCode claims to save whenever a debug
+            // adapter is started, but in case that changes, this manually takes
+            // care of that issue.
             if (document.isDirty) {
                 let autoSave =
                     DaCeVSCode.getExtensionContext()?.workspaceState.get(
@@ -227,13 +227,17 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
         if (workspaceFolders)
             workspaceRoot = workspaceFolders[0].uri.fsPath;
 
+        // If no workspace root could be read (e.g. if the user has opened
+        // only a file or a directory, but no VS Code workspace), then we try
+        // to use the selected run-script's (parent) directory as our workspace
+        // root path.
         const scriptRoot = vscode.Uri.joinPath(vscode.Uri.file(path), '..' );
         if (!workspaceRoot)
             workspaceRoot = scriptRoot.fsPath;
 
         if (this.debug) {
             vscode.window.showWarningMessage(
-                'Debugging SDFGs is not implemented yet, sorry!'
+                'Debugging SDFGs is not implemented'
             );
             this.sendEvent('end');
         } else {

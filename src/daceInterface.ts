@@ -388,15 +388,32 @@ implements MessageReceiverInterface {
         this.pollDaemon(callback, false);
     }
 
-    private sendGetRequest(url: string,
-                           callback?: CallableFunction,
-                           customErrorHandler?: CallableFunction) {
-        const req = request({
+    private sendRequest(url: string,
+                        data?: any,
+                        callback?: CallableFunction,
+                        customErrorHandler?: CallableFunction) {
+        let method = 'GET';
+        let postData = undefined;
+        if (data !== undefined)
+            method = 'POST';
+
+        let parameters = {
             host: 'localhost',
             port: this.port,
             path: url,
-            method: 'GET',
-        }, response => {
+            method: method,
+            headers: {},
+        };
+
+        if (data !== undefined) {
+            postData = JSON.stringify(data);
+            parameters.headers = {
+                'Content-Type': 'application/json',
+                'Content-Length': postData.length,
+            };
+        }
+
+        const req = request(parameters, response => {
             response.setEncoding('utf8');
             // Accumulate all the data, in case data is chunked up.
             let accumulatedData = '';
@@ -455,84 +472,22 @@ implements MessageReceiverInterface {
                 });
             }
         });
+        if (postData !== undefined)
+            req.write(postData);
         req.end();
+    }
+
+    private sendGetRequest(url: string,
+                           callback?: CallableFunction,
+                           customErrorHandler?: CallableFunction) {
+        this.sendRequest(url, undefined, callback, customErrorHandler);
     }
 
     private sendPostRequest(url: string,
                             requestData: any,
                             callback?: CallableFunction,
                             customErrorHandler?: CallableFunction) {
-        const postData = JSON.stringify(requestData);
-        const req = request({
-            host: 'localhost',
-            port: this.port,
-            path: url,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': postData.length,
-            },
-        }, response => {
-            response.setEncoding('utf8');
-            // Accumulate all the data, in case data is chunked up.
-            let accumulatedData = '';
-            if (callback) {
-                response.on('data', (data) => {
-                    if (response.statusCode === 200) {
-                        accumulatedData += data;
-                        // Check if this is all the data we're going to receive,
-                        // or if the data is chunked up into pieces.
-                        const contentLength =
-                            Number(response.headers?.['content-length']);
-                        if (!contentLength ||
-                            accumulatedData.length >= contentLength) {
-                            let error = undefined;
-                            let parsed = undefined;
-                            try {
-                                parsed = JSON.parse(accumulatedData);
-                                if (parsed.error) {
-                                    error = parsed.error;
-                                    parsed = undefined;
-                                }
-                            } catch (e) {
-                                error = {
-                                    message: 'Failed to parse response',
-                                    details: e,
-                                };
-                            }
-
-                            if (parsed) {
-                                callback(parsed);
-                            } else if (error) {
-                                if (customErrorHandler)
-                                    customErrorHandler(error);
-                                else
-                                    DaCeInterface.getInstance()
-                                        .genericErrorHandler(
-                                            error.message, error.details
-                                        );
-                            }
-                        }
-                    } else {
-                        const errorMessage =
-                            'An internal DaCe error was encountered!';
-                        const errorDetails = 'DaCe request failed with code ' +
-                            response.statusCode;
-                        if (customErrorHandler)
-                            customErrorHandler({
-                                message: errorMessage,
-                                details: errorDetails,
-                            });
-                        else
-                            DaCeInterface.getInstance().genericErrorHandler(
-                                errorMessage, errorDetails
-                            );
-                    }
-                });
-            }
-        });
-        req.write(postData);
-        req.end();
+        this.sendRequest(url, requestData, callback, customErrorHandler);
     }
 
     public promptStartDaemon() {
@@ -749,7 +704,7 @@ implements MessageReceiverInterface {
             return;
         }
 
-        this.showSpinner('Calculating FLOP');
+        this.showSpinner('Calculating FLOP count');
 
         DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
             if (!sdfg) {

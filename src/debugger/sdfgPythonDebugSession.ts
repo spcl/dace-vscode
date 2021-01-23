@@ -52,8 +52,8 @@ export class SdfgPythonDebugSession extends LoggingDebugSession {
         response.body.supportsTerminateRequest = true;
 
         // Do not support restart requests, because we want VSCode to emulate
-        // this behavior by killing our DA and restarting it itself, saving us
-        // from having to do that manually.
+        // this behavior by killing our debug adapter and restarting it itself,
+        // saving us from having to do that manually.
         // (https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Restart)
         response.body.supportsRestartRequest = false;
 
