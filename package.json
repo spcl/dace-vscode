@@ -12,6 +12,11 @@
     ],
     "activationEvents": [
         "onCustomEditor:sdfgCustom.sdfv",
+        "onDebug",
+        "onLanguage:python",
+        "onLanguage:sdfg",
+        "onCommand:sdfg.debug.run",
+        "onCommand:sdfg.debug.profile",
         "onView:transformationList",
         "onView:transformationHistory",
         "onView:sdfgAnalysis",
@@ -28,6 +33,54 @@
     },
     "icon": "icon.png",
     "contributes": {
+        "debuggers": [
+            {
+                "type": "sdfg-python",
+                "label": "SDFG with Python",
+                "configurationAttributes": {
+                    "launch": {
+                        "properties": {
+                            "program": {
+                                "type": "string",
+                                "description": "The specific SDFG to run."
+                            },
+                            "profile": {
+                                "type": "boolean",
+                                "description": "Whether or not to profile with this run."
+                            }
+                        }
+                    }
+                },
+                "initialConfigurations": [
+                    {
+                        "type": "sdfg-python",
+                        "request": "launch",
+                        "name": "SDFG: Run current file"
+                    }
+                ],
+                "configurationSnippets": [
+                    {
+                        "label": "SDFG: Run current file",
+                        "description": "A new configuration for running the currently open SDFG.",
+                        "body": {
+                            "type": "sdfg-python",
+                            "request": "launch",
+                            "name": "SDFG: Run current file"
+                        }
+                    },
+                    {
+                        "label": "SDFG: Profile current file",
+                        "description": "A new configuration for measuring the runtime of the currently open SDFG.",
+                        "body": {
+                            "type": "sdfg-python",
+                            "request": "launch",
+                            "profile": true,
+                            "name": "SDFG: Profile current file"
+                        }
+                    }
+                ]
+            }
+        ],
         "configuration": [
             {
                 "title": "DaCe SDFG Optimizer",
@@ -146,7 +199,7 @@
             },
             {
                 "view": "transformationHistory",
-                "contents": "No previously applied transformations"
+                "contents": "No active SDFG"
             },
             {
                 "view": "sdfgAnalysis",
@@ -158,6 +211,20 @@
             }
         ],
         "commands": [
+            {
+                "command": "sdfg.debug.run",
+                "title": "Run the current SDFG",
+                "category": "SDFV",
+                "enablement": "!inDebugMode",
+                "icon": "$(play)"
+            },
+            {
+                "command": "sdfg.debug.profile",
+                "title": "Profile the current SDFG",
+                "category": "SDFV",
+                "enablement": "!inDebugMode",
+                "icon": "$(watch)"
+            },
             {
                 "command": "transformationList.sync",
                 "title": "Refresh Transformations",
@@ -210,6 +277,14 @@
         "menus": {
             "commandPalette": [
                 {
+                    "command": "sdfg.debug.run",
+                    "when": "resourceLangId == sdfg"
+                },
+                {
+                    "command": "sdfg.debug.profile",
+                    "when": "resourceLangId == sdfg"
+                },
+                {
                     "command": "sdfg.previewTransformation",
                     "when": "false"
                 },
@@ -224,6 +299,18 @@
                 {
                     "command": "sdfg.previewHistoryPoint",
                     "when": "false"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "sdfg.debug.run",
+                    "when": "resourceLangId == sdfg",
+                    "group": "1_run@10"
+                },
+                {
+                    "command": "sdfg.debug.profile",
+                    "when": "resourceLangId == sdfg",
+                    "group": "1_run@20"
                 }
             ],
             "view/title": [
@@ -271,5 +358,7 @@
         "typescript": "^3.9.7",
         "vscode-test": "^1.4.1"
     },
-    "dependencies": {}
+    "dependencies": {
+        "vscode-debugadapter": "^1.43.0"
+    }
 }

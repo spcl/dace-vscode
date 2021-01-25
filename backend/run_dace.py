@@ -1,15 +1,24 @@
 # Copyright 2019-2020 ETH Zurich and the DaCe authors. All rights reserved.
+import aenum
+from argparse import ArgumentParser
 import ast, astunparse
-import sympy
 import dace
 from dace.sdfg import propagation
 from dace.symbolic import pystr_to_symbolic
 from dace.libraries.blas import MatMul, Transpose
 from dace.libraries.standard import Reduce
-
-import traceback
+import inspect
+import sympy
 import sys
-from argparse import ArgumentParser
+import traceback
+
+
+# Prepare a whitelist of DaCe enumeration types
+enum_list = [
+    typename
+    for typename, dtype in inspect.getmembers(dace.dtypes, inspect.isclass)
+    if issubclass(dtype, aenum.Enum)
+]
 
 def count_matmul(node, symbols, state):
     A_memlet = next(e for e in state.in_edges(node) if e.dst_conn == '_a')
@@ -48,7 +57,9 @@ PYFUNC_TO_ARITHMETICS = {
     'math.tanh': 1,
     'math.sqrt': 1,
     'min': 0,
-    'max': 0
+    'max': 0,
+    'ceiling': 0,
+    'floor': 0,
 }
 LIBNODES_TO_ARITHMETICS = {
     MatMul: count_matmul,
@@ -210,6 +221,29 @@ def create_arith_ops_map(sdfg, arith_map, symbols):
 
 def get_exception_message(exception):
     return '%s: %s' % (type(exception).__name__, exception)
+
+def load_sdfg_from_file(path):
+    # We lazy import SDFGs, not to break cyclic imports, but to avoid any large
+    # delays when booting in daemon mode.
+    from dace.sdfg import SDFG
+
+    try:
+        sdfg = SDFG.from_file(path)
+        error = None
+    except Exception as e:
+        print(traceback.format_exc(), file=sys.stderr)
+        sys.stderr.flush()
+        error = {
+            'error': {
+                'message': 'Failed to load the provided SDFG file path',
+                'details': get_exception_message(e),
+            },
+        }
+        sdfg = None
+    return {
+        'error': error,
+        'sdfg': sdfg,
+    }
 
 def load_sdfg_from_json(json):
     # We lazy import SDFGs, not to break cyclic imports, but to avoid any large
@@ -425,6 +459,36 @@ def get_transformations(sdfg_json, selected_elements):
         'docstrings': docstrings,
     }
 
+def get_enum(name):
+    if name not in enum_list:
+        return {
+            'error': {
+                'message': 'Failed to get Enum',
+                'details': 'Enum type "' + str(name) + '" is not in whitelist',
+            },
+        }
+    return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
+
+def compile_sdfg(path):
+    # We lazy import DaCe, not to break cyclic imports, but to avoid any large
+    # delays when booting in daemon mode.
+    from dace import serialize
+    from dace.codegen.compiled_sdfg import CompiledSDFG;
+    old_meta = serialize.JSON_STORE_METADATA
+    serialize.JSON_STORE_METADATA = False
+
+    loaded = load_sdfg_from_file(path)
+    if loaded['error'] is not None:
+        return loaded['error']
+    sdfg = loaded['sdfg']
+
+    compiled_sdfg: CompiledSDFG = sdfg.compile()
+
+    serialize.JSON_STORE_METADATA = old_meta
+    return {
+        'filename': compiled_sdfg.filename,
+    }
+
 def run_daemon(port):
     from logging.config import dictConfig
     from flask import Flask, request
@@ -477,6 +541,15 @@ def run_daemon(port):
     def _get_arith_ops():
         request_json = request.get_json()
         return get_arith_ops(request_json['sdfg'])
+
+    @daemon.route('/get_enum/<string:name>', methods=['GET'])
+    def _get_enum(name):
+        return get_enum(name)
+
+    @daemon.route('/compile_sdfg_from_file', methods=['POST'])
+    def _compile_sdfg_from_file():
+        request_json = request.get_json()
+        return compile_sdfg(request_json['path'])
 
     daemon.run(port=port)
 

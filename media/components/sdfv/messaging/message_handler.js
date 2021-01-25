@@ -5,6 +5,28 @@ class MessageHandler {
     handle_message(message) {
         let el = undefined;
         switch (message.type) {
+            case 'load_instrumentation_report':
+                renderer.overlay_manager.deregister_overlay(
+                    GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS
+                );
+                instrumentation_report_read_complete(message.result);
+                // Fall through to set the criterium.
+            case 'instrumentation_report_change_criterium':
+                if (message.criterium) {
+                    const ol = renderer.overlay_manager.get_overlay(
+                        GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS
+                    );
+                    if (ol) {
+                        ol.criterium = message.criterium;
+                        ol.refresh();
+                    }
+                }
+                break;
+            case 'clear_instrumentation_report':
+                renderer.overlay_manager.deregister_overlay(
+                    GenericSdfgOverlay.OVERLAY_TYPE.RUNTIME_MICROS
+                );
+                break;
             case 'symbol_value_changed':
                 if (message.symbol !== undefined && renderer)
                     renderer.overlay_manager.symbol_value_changed(
@@ -124,6 +146,16 @@ class MessageHandler {
                 break;
             case 'clear_selected_transformation':
                 clear_selected_transformation();
+                break;
+            case 'get_enum_callback':
+                if (message.enum)
+                    switch (message.name) {
+                        case 'InstrumentationType':
+                            window.instruments = message.enum;
+                            break;
+                        default:
+                            break;
+                    }
                 break;
         }
     }

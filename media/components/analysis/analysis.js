@@ -99,7 +99,7 @@ class SymbolResolution {
                 }
             });
             $('<button>', {
-                'class': 'symbol-definition-clear button',
+                'class': 'symbol-definition-clear btn btn-secondary btn-sm',
                 'text': 'Clear',
                 'click': () => {
                     input.val('');

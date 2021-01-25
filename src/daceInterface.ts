@@ -23,6 +23,14 @@ implements MessageReceiverInterface {
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
+            case 'write_edit_to_sdfg':
+                if (message.sdfg)
+                    this.writeToActiveDocument(JSON.parse(message.sdfg));
+                break;
+            case 'run_sdfg':
+                if (message.name !== undefined)
+                    this.runSdfgInTerminal(message.name, undefined, origin);
+                break;
             case 'apply_transformation':
                 if (message.transformation !== undefined)
                     this.applyTransformation(message.transformation);
@@ -48,6 +56,10 @@ implements MessageReceiverInterface {
             case 'get_flops':
                 this.getFlops();
                 break;
+            case 'get_enum':
+                if (message.name)
+                    this.getEnum(message.name, origin);
+                break;
             default:
                 break;
         }
@@ -57,6 +69,8 @@ implements MessageReceiverInterface {
         return this.INSTANCE;
     }
 
+    private runTerminal?: vscode.Terminal = undefined;
+
     private daemonRunning = false;
     private daemonBooting = false;
 
@@ -64,7 +78,9 @@ implements MessageReceiverInterface {
         'dace.interface'
     ).port;
 
-    private async getPythonPath(document: vscode.TextDocument | null) {
+    public async getPythonPath(
+        document: vscode.TextDocument | null
+    ): Promise<string> {
         try {
             let pyExt = vscode.extensions.getExtension('ms-python.python');
             if (!pyExt)
@@ -80,19 +96,23 @@ implements MessageReceiverInterface {
                     pyExt.exports.settings.getExecutionCommand(document?.uri);
                 return pythonPath ? pythonPath.join(' ') : 'python';
             } else {
+                let path = undefined;
                 if (document)
-                    return vscode.workspace.getConfiguration(
+                    path = vscode.workspace.getConfiguration(
                         'python',
                         document.uri
                     ).get<string>('pythonPath');
                 else
-                    return vscode.workspace.getConfiguration(
+                    path = vscode.workspace.getConfiguration(
                         'python'
                     ).get<string>('pythonPath');
+                if (!path)
+                    return 'python';
             }
         } catch (ignored) {
             return 'python';
         }
+        return 'python';
     }
 
     public genericErrorHandler(message: string, details?: string) {
@@ -140,7 +160,7 @@ implements MessageReceiverInterface {
             return undefined;
         }
         return path.join(
-            extensionPath, 'backend', 'run_dace.py -p ' + this.port.toString()
+            extensionPath, 'backend', 'run_dace.py'
         );
     }
 
@@ -149,9 +169,62 @@ implements MessageReceiverInterface {
         term.show();
         const scriptPath = this.getRunDaceScriptPath();
         if (scriptPath) {
-            this.daemonBooting = true;
-            term.sendText('python ' + scriptPath);
+            term.sendText(
+                'python ' + scriptPath + ' -p ' + this.port.toString()
+            );
             this.pollDaemon(callback, true);
+        } else {
+            this.daemonBooting = false;
+        }
+    }
+
+    private runSdfgInTerminal(name: string, path?: string,
+                              origin?: vscode.Webview) {
+        if (!this.runTerminal)
+            this.runTerminal = vscode.window.createTerminal('Run SDFG');
+        this.runTerminal.show();
+
+        if (path === undefined) {
+            if (origin === undefined)
+                return;
+
+            path = SdfgViewerProvider.getInstance()?.findEditorForWebview(
+                origin
+            )?.wrapperFile;
+        }
+
+        this.runTerminal.sendText('python ' + path);
+
+        // Additionally create a launch configuration for VSCode.
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (workspaceFolders) {
+            const launchConfig = vscode.workspace.getConfiguration(
+                'launch', workspaceFolders[0].uri
+            );
+            const runSdfgConfig = {
+                'name': 'SDFG: ' + name,
+                'type': 'sdfg-python',
+                'request': 'launch',
+                'program': path,
+                'console': 'integratedTerminal',
+            };
+
+            let pathIncluded = false;
+            for (const cfg of launchConfig.configurations) {
+                if (cfg['program'] === path) {
+                    pathIncluded = true;
+                    break;
+                }
+            }
+
+            if (!pathIncluded) {
+                launchConfig.configurations.push(runSdfgConfig);
+                launchConfig.update(
+                    'configurations',
+                    launchConfig.configurations,
+                    false
+                );
+            }
         }
     }
 
@@ -283,8 +356,6 @@ implements MessageReceiverInterface {
             return;
         }
 
-        this.daemonBooting = true;
-
         vscode.window.setStatusBarMessage(
             'Trying to start and connect to a DaCe daemon', 5000
         );
@@ -294,12 +365,19 @@ implements MessageReceiverInterface {
         if (!scriptPath)
             return;
 
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        let workspaceRoot = undefined;
+        if (workspaceFolders)
+            workspaceRoot = workspaceFolders[0].uri.fsPath;
+
         const daemon = cp.spawn(
             pythonPath,
-            [scriptPath]
+            [scriptPath, '-p', this.port.toString()], {
+                cwd: workspaceRoot,
+            }
         );
 
-        daemon.on('exit', (code, signal) => {
+        daemon.on('exit', (_code, _signal) => {
             this.daemonRunning = false;
             this.daemonBooting = false;
         });
@@ -314,21 +392,32 @@ implements MessageReceiverInterface {
         this.pollDaemon(callback, false);
     }
 
-    private sendPostRequest(url: string,
-                            requestData: any,
-                            callback?: CallableFunction,
-                            customErrorHandler?: CallableFunction) {
-        const postData = JSON.stringify(requestData);
-        const req = request({
+    private sendRequest(url: string,
+                        data?: any,
+                        callback?: CallableFunction,
+                        customErrorHandler?: CallableFunction) {
+        let method = 'GET';
+        let postData = undefined;
+        if (data !== undefined)
+            method = 'POST';
+
+        let parameters = {
             host: 'localhost',
             port: this.port,
             path: url,
-            method: 'POST',
-            headers: {
+            method: method,
+            headers: {},
+        };
+
+        if (data !== undefined) {
+            postData = JSON.stringify(data);
+            parameters.headers = {
                 'Content-Type': 'application/json',
                 'Content-Length': postData.length,
-            },
-        }, response => {
+            };
+        }
+
+        const req = request(parameters, response => {
             response.setEncoding('utf8');
             // Accumulate all the data, in case data is chunked up.
             let accumulatedData = '';
@@ -387,8 +476,22 @@ implements MessageReceiverInterface {
                 });
             }
         });
-        req.write(postData);
+        if (postData !== undefined)
+            req.write(postData);
         req.end();
+    }
+
+    private sendGetRequest(url: string,
+                           callback?: CallableFunction,
+                           customErrorHandler?: CallableFunction) {
+        this.sendRequest(url, undefined, callback, customErrorHandler);
+    }
+
+    private sendPostRequest(url: string,
+                            requestData: any,
+                            callback?: CallableFunction,
+                            customErrorHandler?: CallableFunction) {
+        this.sendRequest(url, requestData, callback, customErrorHandler);
     }
 
     public promptStartDaemon() {
@@ -411,6 +514,11 @@ implements MessageReceiverInterface {
     }
 
     public start() {
+        if (this.daemonRunning || this.daemonBooting)
+            return;
+
+        this.daemonBooting = true;
+
         const callback = () => {
             TransformationHistoryProvider.getInstance()?.refresh();
             TransformationListProvider.getInstance()?.refresh();
@@ -467,17 +575,19 @@ implements MessageReceiverInterface {
         this.showSpinner(
             processingMessage ? processingMessage : 'Applying Transformation'
         );
-        const sdfg = DaCeVSCode.getInstance().getActiveSdfg();
-        if (sdfg) {
-            this.sendPostRequest(
-                '/apply_transformation',
-                {
-                    sdfg: sdfg,
-                    transformation: transformation,
-                },
-                callback
-            );
-        }
+
+        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (sdfg) {
+                this.sendPostRequest(
+                    '/apply_transformation',
+                    {
+                        sdfg: sdfg,
+                        transformation: transformation,
+                    },
+                    callback
+                );
+            }
+        });
     }
 
     public applyTransformation(transformation: any) {
@@ -528,59 +638,60 @@ implements MessageReceiverInterface {
             return;
         }
 
-        const sdfg = DaCeVSCode.getInstance().getActiveSdfg();
-        if (!sdfg)
-            return;
+        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (!sdfg)
+                return;
 
-        if (index < 0) {
-            // This item refers to the original SDFG, so we revert to/show that.
-            const originalSdfg = sdfg?.attributes?.orig_sdfg;
-            if (originalSdfg) {
+            if (index < 0) {
+                // This item refers to the original SDFG, so we revert to that.
+                const originalSdfg = sdfg?.attributes?.orig_sdfg;
+                if (originalSdfg) {
+                    switch (mode) {
+                        case InteractionMode.APPLY:
+                            this.writeToActiveDocument(originalSdfg);
+                            break;
+                        case InteractionMode.PREVIEW:
+                        default:
+                            this.previewSdfg(originalSdfg, true);
+                            break;
+                    }
+                }
+            } else {
+                if (!this.daemonRunning) {
+                    this.promptStartDaemon();
+                    return;
+                }
+
+                this.showSpinner('Loading SDFG');
+                let callback: any;
                 switch (mode) {
                     case InteractionMode.APPLY:
-                        this.writeToActiveDocument(originalSdfg);
+                        callback = function (data: any) {
+                            const daceInterface = DaCeInterface.getInstance();
+                            daceInterface.writeToActiveDocument(data.sdfg);
+                            daceInterface.hideSpinner();
+                        };
                         break;
                     case InteractionMode.PREVIEW:
                     default:
-                        this.previewSdfg(originalSdfg, true);
+                        callback = function (data: any) {
+                            const daceInterface = DaCeInterface.getInstance();
+                            daceInterface.previewSdfg(data.sdfg, true);
+                            daceInterface.hideSpinner();
+                        };
                         break;
                 }
-            }
-        } else {
-            if (!this.daemonRunning) {
-                this.promptStartDaemon();
-                return;
-            }
 
-            this.showSpinner('Loading SDFG');
-            let callback: any;
-            switch (mode) {
-                case InteractionMode.APPLY:
-                    callback = function (data: any) {
-                        const daceInterface = DaCeInterface.getInstance();
-                        daceInterface.writeToActiveDocument(data.sdfg);
-                        daceInterface.hideSpinner();
-                    };
-                    break;
-                case InteractionMode.PREVIEW:
-                default:
-                    callback = function (data: any) {
-                        const daceInterface = DaCeInterface.getInstance();
-                        daceInterface.previewSdfg(data.sdfg, true);
-                        daceInterface.hideSpinner();
-                    };
-                    break;
+                this.sendPostRequest(
+                    '/reapply_history_until',
+                    {
+                        sdfg: sdfg,
+                        index: index,
+                    },
+                    callback
+                );
             }
-
-            this.sendPostRequest(
-                '/reapply_history_until',
-                {
-                    sdfg: sdfg,
-                    index: index,
-                },
-                callback
-            );
-        }
+        });
     }
 
     public applyHistoryPoint(index: Number | undefined) {
@@ -597,26 +708,37 @@ implements MessageReceiverInterface {
             return;
         }
 
-        this.showSpinner('Calculating FLOPS');
+        this.showSpinner('Calculating FLOP count');
 
-        let sdfg = DaCeVSCode.getInstance().getActiveSdfg();
-        if (!sdfg) {
-            console.log('No active SDFG editor!');
-            return;
-        }
+        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (!sdfg) {
+                console.log('No active SDFG editor!');
+                return;
+            }
 
-        function callback(data: any) {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'flopsCallback',
-                map: data.arith_ops_map,
-            });
-            DaCeInterface.getInstance().hideSpinner();
-        }
+            function callback(data: any) {
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'flopsCallback',
+                    map: data.arith_ops_map,
+                });
+                DaCeInterface.getInstance().hideSpinner();
+            }
 
+            this.sendPostRequest(
+                '/get_arith_ops',
+                {
+                    'sdfg': sdfg,
+                },
+                callback
+            );
+        });
+    }
+
+    public compileSdfgFromFile(uri: vscode.Uri, callback: CallableFunction) {
         this.sendPostRequest(
-            '/get_arith_ops',
+            '/compile_sdfg_from_file',
             {
-                'sdfg': sdfg,
+                'path': uri.fsPath,
             },
             callback
         );
@@ -673,6 +795,21 @@ implements MessageReceiverInterface {
             },
             callback
         );
+    }
+
+    public getEnum(name: string, origin: vscode.Webview) {
+        this.sendGetRequest('/get_enum/' + name, (response: any) => {
+            if (response.enum)
+                origin.postMessage({
+                    'type': 'get_enum_callback',
+                    'name': name,
+                    'enum': response.enum,
+                });
+        });
+    }
+
+    public isRunning() {
+        return this.daemonRunning;
     }
 
 }

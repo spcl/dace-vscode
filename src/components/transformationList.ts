@@ -1,6 +1,6 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { DaCeInterface } from '../daceInterface';
 import { DaCeVSCode } from '../extension';
 
 import { BaseComponent } from './baseComponent';
@@ -17,7 +17,10 @@ implements vscode.WebviewViewProvider {
     private static INSTANCE: TransformationListProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        TransformationListProvider.INSTANCE = new TransformationListProvider(ctx);
+        TransformationListProvider.INSTANCE = new TransformationListProvider(
+            ctx,
+            this.viewType
+        );
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
@@ -36,9 +39,11 @@ implements vscode.WebviewViewProvider {
 
     resolveWebviewView(
         webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext<unknown>,
-        token: vscode.CancellationToken
+        _context: vscode.WebviewViewResolveContext<unknown>,
+        _token: vscode.CancellationToken
     ): void | Thenable<void> {
+        DaCeInterface.getInstance().start();
+
         this.view = webviewView;
 
         webviewView.webview.options = {
@@ -60,18 +65,20 @@ implements vscode.WebviewViewProvider {
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
             this.context.extensionPath, 'media'
         ));
-        let baseHtml = fs.readFileSync(fpBaseHtml.fsPath, 'utf8');
-        baseHtml = baseHtml.replace(
-            this.csrSrcIdentifier,
-            webviewView.webview.asWebviewUri(fpMediaFolder).toString()
-        );
-        webviewView.webview.html = baseHtml;
-
-        webviewView.webview.onDidReceiveMessage(message => {
-            ComponentMessageHandler.getInstance().handleMessage(
-                message,
-                webviewView.webview
+        vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
+            let baseHtml = data.toString();
+            baseHtml = baseHtml.replace(
+                this.csrSrcIdentifier,
+                webviewView.webview.asWebviewUri(fpMediaFolder).toString()
             );
+            webviewView.webview.html = baseHtml;
+
+            webviewView.webview.onDidReceiveMessage(message => {
+                ComponentMessageHandler.getInstance().handleMessage(
+                    message,
+                    webviewView.webview
+                );
+            });
         });
     }
 
