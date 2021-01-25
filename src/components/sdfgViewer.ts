@@ -131,8 +131,6 @@ implements vscode.CustomTextEditorProvider {
         const editor = this.findEditorForWebview(webview);
         if (editor)
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
-        console.log('Removed open editor');
-        console.log(this.openEditors);
     }
 
     public handleMessage(message: any,
@@ -182,9 +180,9 @@ implements vscode.CustomTextEditorProvider {
                                 selection: range,
                             }
                         );
-                    }, (_reason) => {
+                    }, (reason) => {
                         vscode.window.showInformationMessage(
-                            'Could not open file ' + filePath
+                            'Could not open file ' + filePath + ', ' + reason
                         );
                     }
                 );
