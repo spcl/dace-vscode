@@ -153,6 +153,9 @@ class MessageHandler {
                         case 'InstrumentationType':
                             window.instruments = message.enum;
                             break;
+                        case 'AccessType':
+                            window.access = message.enum;
+                            break;
                         default:
                             break;
                     }

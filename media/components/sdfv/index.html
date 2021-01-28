@@ -36,20 +36,85 @@
 
 <body onresize="rendererSendResize();">
     <div id="top-bar">
-        <div id="search-bar">
+        <div id="search-bar" class="container">
             <div id="search-container">
                 <input id="search" type="text" placeholder="Search the graph">
             </div>
-            <div id="search-case-container">
-                <label for="search-case">
-                    <input id="search-case" type="checkbox">
-                    Case Sensitive
-                </label>
+            <button id="search-case-sensitive-btn" checke="false"><div id="search-case-text">Aa</div></button>
+            <div id="pan-btn" class="button" title="Pan mode" style="padding-bottom: 0px; user-select: none; background: #22A4FE; vertical-align: middle;">
+                <em class="material-icons">pan_tool</em>
             </div>
-            <div id="search-btn" class="button">
-                <span>
-                    Search
-                </span>
+            <div id="move-btn" class="button" title="Move mode" style="padding-bottom: 0px; user-select: none;">
+                <em class="material-icons">open_with</em>
+            </div>
+            <div id="select-btn" class="button" title="Select mode" style="padding-bottom: 0px; user-select: none;">
+                <em class="material-icons">border_style</em>
+            </div>
+            <div id="elem_map" class="button" title="Add map" type="MapEntry" style="user-select: none;">
+                <svg width="5.2rem" height="1.3rem" viewBox="0 0 800 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="10" x2="190" y1="190" y2="10" />
+                    <line x1="190" x2="600" y1="10" y2="10" />
+                    <line x1="600" x2="790" y1="10" y2="190" />
+                    <line x1="790" x2="10" y1="190" y2="190" />
+            
+                </svg>
+            </div>
+            <div id="elem_consume" class="button" title="Add consume" type="ConsumeEntry" style="user-select: none;">
+                <svg width="5.2rem" height="1.3rem" viewBox="0 0 800 200" stroke="white" stroke-width="10" stroke-dasharray="60,25" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="10"x2="190" y1="190" y2="10"/>
+                    <line x1="190" x2="600" y1="10" y2="10"/>
+                    <line x1="600" x2="790" y1="10" y2="190"/>
+                    <line x1="790" x2="10" y1="190" y2="190"/>
+                </svg>
+            </div>
+            <div class="break"></div>
+            <div id="elem_tasklet" class="button" title="Add tasklet" type="Tasklet" style="user-select: none;">
+                <svg width="2.6rem" height="1.3rem" viewBox="0 0 400 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="10" x2="70" y1="130" y2="190"/>
+                    <line x1="70" x2="330" y1="190" y2="190"/>
+                    <line x1="330" x2="390" y1="190" y2="130"/>
+                    <line x1="390" x2="390" y1="130" y2="70"/>
+                    <line x1="390" x2="330" y1="70" y2="10"/>
+                    <line x1="330" x2="70" y1="10" y2="10"/>
+                    <line x1="70" x2="10" y1="10" y2="70"/>
+                    <line x1="10" x2="10" y1="70" y2="130"/>
+                </svg>
+            </div>
+            <div id="elem_nested_sdfg" class="button" title="Add nested SDFG" type="NestedSDFG" style="user-select: none;">
+                <svg width="2.6rem" height="1.3rem" viewBox="0 0 400 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="40" x2="80" y1="120" y2="160"/>
+                    <line x1="80" x2="320" y1="160" y2="160"/>
+                    <line x1="320" x2="360" y1="160" y2="120"/>
+                    <line x1="360" x2="360" y1="120" y2="80"/>
+                    <line x1="360" x2="320" y1="80" y2="40"/>
+                    <line x1="320" x2="80" y1="40" y2="40"/>
+                    <line x1="80" x2="40" y1="40" y2="80"/>
+                    <line x1="40" x2="40" y1="80" y2="120"/>
+                    
+                    <line x1="10" x2="70" y1="130" y2="190"/>
+                    <line x1="70" x2="330" y1="190" y2="190"/>
+                    <line x1="330" x2="390" y1="190" y2="130"/>
+                    <line x1="390" x2="390" y1="130" y2="70"/>
+                    <line x1="390" x2="330" y1="70" y2="10"/>
+                    <line x1="330" x2="70" y1="10" y2="10"/>
+                    <line x1="70" x2="10" y1="10" y2="70"/>
+                    <line x1="10" x2="10" y1="70" y2="130"/>
+                </svg>
+            </div>
+            <div id="elem_access_node" class="button" title="Add access node" type="AccessNode" style="user-select: none;">
+                <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="90" fill="none"/>
+                </svg>
+            </div>
+            <div id="elem_stream" class="button" title="Add stream" type="Stream" style="user-select: none;">
+                <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="90" fill="none" stroke-dasharray="60,25"/>
+                </svg>
+            </div>
+            <div id="elem_state" class="button" title="Add state" type="SDFGState" style="user-select: none;">
+                <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="20" y="20" width="160" height="160" style="fill:#deebf7;" />
+                </svg>
             </div>
             <div id="refresh-btn" class="button" onclick="refreshSdfg();">
                 <span>
@@ -192,6 +257,10 @@
             vscode.postMessage({
                 type: 'dace.get_enum',
                 name: 'InstrumentationType',
+            });
+            vscode.postMessage({
+                type: 'dace.get_enum',
+                name: 'AccessType',
             });
         });
     </script>

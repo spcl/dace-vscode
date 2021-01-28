@@ -33,7 +33,7 @@ function get_applicable_transformations() {
         vscode.postMessage({
             type: 'dace.load_transformations',
             sdfg: sdfg_json,
-            selectedElements: JSON.stringify(
+            selectedElements: stringify_sdfg(
                 renderer.selected_elements
             ),
         });

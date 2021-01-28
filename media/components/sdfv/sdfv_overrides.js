@@ -277,6 +277,30 @@ function init_info_box() {
     // Pass
 }
 
+$('#search-case-sensitive-btn').click(function(e){
+    let caseBtn = document.getElementById('search-case-sensitive-btn');
+    if (caseBtn.style.backgroundColor == 'transparent') {
+        caseBtn.style.backgroundColor = '#245779';
+        caseBtn.checked = true;
+    } else {
+        caseBtn.style.backgroundColor = 'transparent';
+        caseBtn.checked = false;
+    }
+    if ($('#search').val().length > 0) {
+        start_find_in_graph_vscode();
+    }
+});
+
+$("#search").on('input', function (e) {
+    start_find_in_graph_vscode();
+});
+
+function start_find_in_graph_vscode() {
+    if (renderer)
+        setTimeout(() => {find_in_graph(renderer, renderer.graph, $('#search').val(),
+                                        $('#search-case-sensitive-btn')[0].checked);}, 1);
+}
+
 // Redefine the standard SDFV sidebar interface with the one for the info-box.
 init_menu = init_info_box;
 sidebar_set_title = info_box_set_title;
@@ -287,3 +311,4 @@ outline = embedded_outline;
 // Redefine the standard SDFV element information-display function with the one
 // for the embedded layout.
 fill_info = fill_info_embedded;
+start_find_in_graph = start_find_in_graph_vscode;
