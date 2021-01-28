@@ -95,94 +95,11 @@ function fill_info_embedded(elem) {
                 continue;
 
 
-            if (attr[0] === 'instrument') {
-                if (window.instruments) {
-                    const row = $('<tr>').appendTo(attr_table_body);
-                    $('<th>', {
-                        'class': 'key-col',
-                        'text': attr[0],
-                    }).appendTo(row);
-                    const cell = $('<td>', {
-                        'class': 'val-col',
-                    }).appendTo(row);
+            // Add interactive attribute
+            let added = add_attr_interactive(attr, attr_table_body, elem);
 
-                    const select = $('<select>', {
-                        'name': 'instrument',
-                        'class': 'sdfv-property-dropdown',
-                    }).appendTo(cell);
-
-                    select.change(() => {
-                        if (elem && elem.data) {
-                            if (elem.data.attributes)
-                                elem.data.attributes.instrument = select.val();
-                            else if (elem.data.state)
-                                elem.data.state.attributes.instrument =
-                                    select.val();
-                            else if (elem.data.node)
-                                elem.data.node.attributes.instrument =
-                                    select.val();
-
-                            let g = renderer.sdfg;
-
-                            // The renderer uses a graph representation with
-                            // additional information, and to make sure that
-                            // the classical SDFG representation and that graph
-                            // representation are kept in sync, the SDFG object
-                            // is made cyclical. We use this to break the
-                            // renderer's SDFG representation back down into the
-                            // classical one, removing layout information along
-                            // with it.
-                            function unGraphifySdfg(g) {
-                                g.edges.forEach((e) => {
-                                    if (e.attributes.data.edge)
-                                        delete e.attributes.data.edge;
-                                });
-
-                                g.nodes.forEach((s) => {
-                                    if (s.attributes.layout)
-                                        delete s.attributes.layout;
-
-                                    s.edges.forEach((e) => {
-                                        if (e.attributes.data.edge)
-                                            delete e.attributes.data.edge;
-                                    });
-
-                                    s.nodes.forEach((v) => {
-                                        if (v.attributes.layout)
-                                            delete v.attributes.layout;
-
-                                        if (v.type === 'NestedSDFG')
-                                            unGraphifySdfg(v.attributes.sdfg);
-                                    });
-                                });
-                            }
-
-                            unGraphifySdfg(g);
-
-                            vscode.postMessage({
-                                type: 'dace.write_edit_to_sdfg',
-                                sdfg: JSON.stringify(g),
-                            });
-                        }
-                    });
-
-                    window.instruments.forEach(el => {
-                        select.append(new Option(
-                            el,
-                            el,
-                            false,
-                            el === attr[1]
-                        ));
-                    });
-                } else {
-                    // If the available instruments aren't set yet, try to
-                    // get them from DaCe.
-                    vscode.postMessage({
-                        type: 'dace.get_enum',
-                        name: 'InstrumentationType',
-                    });
-                }
-            } else {
+            // If it hasn't been added then add it without option to edit
+            if (!added) {
                 if (attr[0] === 'debuginfo') {
                     gotoSourceBtn.on('click', function() {
                         gotoSource(
