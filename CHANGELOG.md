@@ -2,6 +2,24 @@
 
 ## 0.2
 
+## 0.2.10
+
+- Provide interactive instrumentation of SDFGs.
+- Provide visualization of instrumentation reports on SDFGs.
+  - If a runtime report is generated, prompt the user to display it ontop of the 
+    currently active SDFG.
+- Provide running of SDFGs.
+  - Run SDFGs normally, or run with profiling - this runs N times and reports
+    the averate run-time (N is specified in the dace configurations).
+  - If no wrapper script (Python) was detected, a popup asks to provide one.
+    - Picked scripts are saved until the editor is disposed of.
+- Prompt the user to auto-open an SDFG if one was generated with a linkfile
+  (.sdfgl file).
+- The DaCe interface now only is automatically started if the optimization
+  pane is opened, not when only an editor is opened.
+- Various smaller UI fixes and overhauls.
+- Performance improvements.
+
 ### 0.2.9
 
 - Provide a means to change the port on which the DaCe daemon listens.
