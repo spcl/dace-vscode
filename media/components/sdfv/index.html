@@ -40,26 +40,28 @@
             <div id="search-container">
                 <input id="search" type="text" placeholder="Search the graph">
             </div>
-            <button id="search-case-sensitive-btn" checke="false"><div id="search-case-text">Aa</div></button>
-            <div id="pan-btn" class="button" title="Pan mode" style="padding-bottom: 0px; user-select: none; background: #22A4FE; vertical-align: middle;">
+            <button id="search-case-sensitive-btn" checked="false" style="background-color: transparent;"><div id="search-case-text">Aa</div></button>
+            <div id="pan-btn" class="button" title="Pan mode" style="padding-bottom: 0px; user-select: none;">
                 <em class="material-icons">pan_tool</em>
             </div>
             <div id="move-btn" class="button" title="Move mode" style="padding-bottom: 0px; user-select: none;">
                 <em class="material-icons">open_with</em>
             </div>
             <div id="select-btn" class="button" title="Select mode" style="padding-bottom: 0px; user-select: none;">
-                <em class="material-icons">border_style</em>
+                <svg width="1.3rem" height="1.3rem" viewBox="0 0 800 800" stroke="white" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="100" y="100" width="500" height="500" fill="transparent" stroke-width="50" />
+                    <path d="M620 620 L800 620 L740 680 L840 780 L780 840 L680 740 L620 800 Z" fill="white"/>
+                </svg>
             </div>
-            <div id="elem_map" class="button" title="Add map" type="MapEntry" style="user-select: none;">
+            <div id="elem_map" class="button" title="Add map" type="Map" style="user-select: none;">
                 <svg width="5.2rem" height="1.3rem" viewBox="0 0 800 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
                     <line x1="10" x2="190" y1="190" y2="10" />
                     <line x1="190" x2="600" y1="10" y2="10" />
                     <line x1="600" x2="790" y1="10" y2="190" />
                     <line x1="790" x2="10" y1="190" y2="190" />
-            
                 </svg>
             </div>
-            <div id="elem_consume" class="button" title="Add consume" type="ConsumeEntry" style="user-select: none;">
+            <div id="elem_consume" class="button" title="Add consume" type="Consume" style="user-select: none;">
                 <svg width="5.2rem" height="1.3rem" viewBox="0 0 800 200" stroke="white" stroke-width="10" stroke-dasharray="60,25" version="1.1" xmlns="http://www.w3.org/2000/svg">
                     <line x1="10"x2="190" y1="190" y2="10"/>
                     <line x1="190" x2="600" y1="10" y2="10"/>

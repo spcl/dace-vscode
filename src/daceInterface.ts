@@ -60,6 +60,9 @@ implements MessageReceiverInterface {
                 if (message.name)
                     this.getEnum(message.name, origin);
                 break;
+            case 'insert_node':
+                this.insertSDFGElement(message.sdfg, message.add_type, message.parent, origin);
+                break;
             default:
                 break;
         }
@@ -806,6 +809,27 @@ implements MessageReceiverInterface {
                     'enum': response.enum,
                 });
         });
+    }
+
+    public insertSDFGElement(sdfg: string, type: string, parent: string, origin: vscode.Webview) {
+        function callback(data: any) {
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                type: 'added_node',
+                sdfg: data.sdfg,
+                uuid: data.uuid,
+            });
+            DaCeInterface.getInstance().hideSpinner();
+        }
+
+        this.sendPostRequest(
+            '/insert_sdfg_element',
+            {
+                'sdfg': JSON.parse(sdfg),
+                'type': type,
+                'parent': parent
+            },
+            callback
+        );
     }
 
     public isRunning() {

@@ -277,7 +277,7 @@ function init_info_box() {
     // Pass
 }
 
-$('#search-case-sensitive-btn').click(function(e){
+$('#search-case-sensitive-btn').click(function (e) {
     let caseBtn = document.getElementById('search-case-sensitive-btn');
     if (caseBtn.style.backgroundColor == 'transparent') {
         caseBtn.style.backgroundColor = '#245779';
@@ -292,7 +292,8 @@ $('#search-case-sensitive-btn').click(function(e){
 });
 
 $("#search").on('input', function (e) {
-    start_find_in_graph_vscode();
+    if ($('#search').val().length > 0)
+        start_find_in_graph_vscode();
 });
 
 function start_find_in_graph_vscode() {

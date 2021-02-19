@@ -160,6 +160,12 @@ class MessageHandler {
                             break;
                     }
                 break;
+            case 'added_node':
+                if (message.uuid == 'error')
+                    break;
+                renderer.set_sdfg(message.sdfg);
+                renderer.update_new_element(message.uuid);
+                break;
         }
     }
 

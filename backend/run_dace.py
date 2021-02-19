@@ -489,6 +489,95 @@ def compile_sdfg(path):
         'filename': compiled_sdfg.filename,
     }
 
+def recursively_find_graph(graph, graph_id):
+    if graph.sdfg_id == graph_id:
+        return graph
+
+    for state in graph.nodes():
+        for node in state.nodes():
+            if isinstance(node, dace.nodes.NestedSDFG):
+                graph_result = recursively_find_graph(node.sdfg, graph_id)
+                if graph_result != None:
+                    return graph_result
+
+    return None
+
+
+def find_graph_element_by_uuid(sdfg, uuid):
+    uuid_split = uuid.split(UUID_SEPARATOR)
+
+    graph_id = int(uuid_split[0])
+    state_id = int(uuid_split[1])
+    node_id = int(uuid_split[2])
+    edge_id = int(uuid_split[3])
+
+    ret = None
+
+    graph = sdfg
+    if graph_id > 0:
+        graph = recursively_find_graph(graph, graph_id)
+        ret = graph
+
+    state = None
+    if state_id != -1 and graph != None:
+        state = graph.node(state_id)
+        ret = state
+
+    if node_id != -1 and state != None:
+        ret = state.data.graph.node(node_id)
+    elif edge_id != -1 and state != None:
+        ret = state.data.graph.edge(edge_id)
+    elif edge_id != -1 and state == None:
+        ret = graph.edge(edge_id)
+
+    return ret
+
+
+def insert_sdfg_element(sdfg_str, type, parent):
+    sdfg_answer = load_sdfg_from_json(sdfg_str)
+    sdfg = sdfg_answer['sdfg']
+    uuid = 'error'
+    parent = find_graph_element_by_uuid(sdfg, parent)
+
+    if type == 'SDFGState':
+        if parent == None:
+            parent = sdfg
+        state = parent.add_state()
+        uuid = [get_uuid(state)]
+    elif type == 'AccessNode' or type == 'Stream':
+        arrays = list(parent.parent.arrays.keys())
+        if len(arrays) == 0:
+            parent.parent.add_array('tmp', [1], dtype=dace.float64)
+            arrays = list(parent.parent.arrays.keys())
+        node = parent.add_access(arrays[0])
+        uuid = [get_uuid(node, parent)]
+    elif type == 'Map':
+        map_entry, map_exit = parent.add_map('map', dict(i='0:1'))
+        uuid = [get_uuid(map_entry, parent), get_uuid(map_exit, parent)]
+    elif type == 'Tasklet':
+        tasklet = parent.add_tasklet(
+            name='placeholder',
+            inputs={'in'},
+            outputs={'out'},
+            code='')
+        uuid = [get_uuid(tasklet, parent)]
+    elif type == 'Consume':
+        raise NotImplementedError()
+    elif type == 'NestedSDFG':
+        sub_sdfg = dace.SDFG('nested_sdfg')
+        sub_sdfg.add_array('in', [1], dace.float32)
+        sub_sdfg.add_array('out', [1], dace.float32)
+        
+        nsdfg = parent.add_nested_sdfg(sub_sdfg, sdfg, {'in'}, {'out'})
+        uuid = [get_uuid(nsdfg, parent)]
+
+    old_meta = dace.serialize.JSON_STORE_METADATA
+    dace.serialize.JSON_STORE_METADATA = False
+    new_sdfg_str = sdfg.to_json()
+    dace.serialize.JSON_STORE_METADATA = old_meta
+
+    return {'sdfg': new_sdfg_str, 'uuid': uuid}
+
 def run_daemon(port):
     from logging.config import dictConfig
     from flask import Flask, request
@@ -550,6 +639,13 @@ def run_daemon(port):
     def _compile_sdfg_from_file():
         request_json = request.get_json()
         return compile_sdfg(request_json['path'])
+
+    @daemon.route('/insert_sdfg_element', methods=['POST'])
+    def _insert_sdfg_element():
+        request_json = request.get_json()
+        return insert_sdfg_element(request_json['sdfg'],
+                                   request_json['type'],
+                                   request_json['parent'])
 
     daemon.run(port=port)
 
