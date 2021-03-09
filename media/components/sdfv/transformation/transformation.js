@@ -25,6 +25,25 @@ function transformation_get_affected_uuids(transformation) {
     return uuids;
 }
 
+function get_cleaned_selected_elements() {
+    const cleaned_selected = [];
+    renderer.selected_elements.forEach(element => {
+        let type = 'other';
+        if (element.data !== undefined && element.data.node !== undefined)
+            type = 'node';
+        else if (element.data !== undefined && element.data.state !== undefined)
+            type = 'state';
+
+        cleaned_selected.push({
+            'type': type,
+            'state_id': element.parent_id,
+            'sdfg_id': element.sdfg.sdfg_list_id,
+            'id': element.id,
+        });
+    });
+    return JSON.stringify(cleaned_selected);
+}
+
 /**
  * Request a list of applicable transformations from DaCe.
  */
@@ -33,9 +52,7 @@ function get_applicable_transformations() {
         vscode.postMessage({
             type: 'dace.load_transformations',
             sdfg: sdfg_json,
-            selectedElements: JSON.stringify(
-                renderer.selected_elements
-            ),
+            selectedElements: get_cleaned_selected_elements(),
         });
     }
 }

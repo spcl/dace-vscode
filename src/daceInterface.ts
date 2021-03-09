@@ -734,11 +734,13 @@ implements MessageReceiverInterface {
         });
     }
 
-    public compileSdfgFromFile(uri: vscode.Uri, callback: CallableFunction) {
+    public compileSdfgFromFile(uri: vscode.Uri, callback: CallableFunction,
+                               suppressInstrumentation: boolean = false) {
         this.sendPostRequest(
             '/compile_sdfg_from_file',
             {
                 'path': uri.fsPath,
+                'suppress_instrumentation': suppressInstrumentation,
             },
             callback
         );
@@ -770,28 +772,11 @@ implements MessageReceiverInterface {
             });
         }
 
-        const parsedSelected: any = JSON.parse(selectedElements);
-        const cleanedSelected: any[] = [];
-        for (const idx in parsedSelected) {
-            const elem = parsedSelected[idx];
-            let type = 'other';
-            if (elem.data !== undefined && elem.data.node !== undefined)
-                type = 'node';
-            else if (elem.data !== undefined && elem.data.state !== undefined)
-                type = 'state';
-            cleanedSelected.push({
-                'type': type,
-                'state_id': elem.parent_id,
-                'sdfg_id': elem.sdfg.sdfg_list_id,
-                'id': elem.id,
-            });
-        }
-
         this.sendPostRequest(
             '/transformations',
             {
                 'sdfg': JSON.parse(sdfg),
-                'selected_elements': cleanedSelected,
+                'selected_elements': JSON.parse(selectedElements),
             },
             callback
         );

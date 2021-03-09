@@ -24,7 +24,7 @@ class MessageHandler {
                 break;
             case 'clear_instrumentation_report':
                 renderer.overlay_manager.deregister_overlay(
-                    GenericSdfgOverlay.OVERLAY_TYPE.RUNTIME_MICROS
+                    GenericSdfgOverlay.OVERLAY_TYPE.RUNTIME_US
                 );
                 break;
             case 'symbol_value_changed':
