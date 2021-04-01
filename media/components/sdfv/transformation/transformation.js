@@ -165,6 +165,8 @@ async function sort_transformations(callback) {
             uncat_transformations,
         ];
 
+        // Call the callback function if one was provided. If additional
+        // arguments are provided, forward them to the callback function.
         if (callback !== undefined) {
             if (arguments.length > 1) {
                 let args = Array.from(arguments);
