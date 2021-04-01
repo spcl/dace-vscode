@@ -165,15 +165,22 @@ async function sort_transformations(callback) {
             uncat_transformations,
         ];
 
-        if (callback !== undefined)
-            callback();
+        if (callback !== undefined) {
+            if (arguments.length > 1) {
+                let args = Array.from(arguments);
+                args.shift();
+                callback(...args);
+            } else {
+                callback();
+            }
+        }
     }, 0);
 }
 
 /**
  * Refresh the list of transformations shown in VSCode's transformation pane.
  */
-function refresh_transformation_list() {
+function refresh_transformation_list(hide_loading = false) {
     if (vscode !== undefined && transformations !== undefined)
         if (window.viewing_history_state)
             vscode.postMessage({
@@ -184,6 +191,7 @@ function refresh_transformation_list() {
             vscode.postMessage({
                 type: 'transformation_list.set_transformations',
                 transformations: transformations,
+                hide_loading: hide_loading,
             });
 }
 

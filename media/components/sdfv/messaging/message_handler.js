@@ -78,7 +78,8 @@ class MessageHandler {
                     transformations = [[], [], [], message.transformations];
                 else
                     transformations = [[], [], [], []];
-                sort_transformations(refresh_transformation_list);
+                const hide_loading = true;
+                sort_transformations(refresh_transformation_list, hide_loading);
                 break;
             case 'flopsCallback':
                 if (renderer && renderer.overlay_manager &&
