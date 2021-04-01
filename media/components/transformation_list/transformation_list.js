@@ -33,7 +33,7 @@ class Transformation extends TransformationListItem {
 
     get_affected_element_uuids() {
         const uuids = [];
-        if (this.subgraph)
+        if (this.subgraph) {
             for (const key in this.subgraph) {
                 const id = this.subgraph[key];
                 if (this.state_id === -1)
@@ -43,8 +43,13 @@ class Transformation extends TransformationListItem {
                         this.sdfg_id + '/' + this.state_id + '/' + id + '/-1'
                     );
             }
-        else
-            uuids.push('-1/-1/-1/-1');
+        }
+
+        if (uuids.length)
+            return uuids;
+
+        uuids.push(this.sdfg_id + '/-1/-1/-1');
+
         return uuids;
     }
 

@@ -2,6 +2,10 @@
 
 ## 0.2
 
+## 0.2.11
+
+- Various bugfixes and minor improvmenets.
+
 ## 0.2.10
 
 - Provide interactive instrumentation of SDFGs.

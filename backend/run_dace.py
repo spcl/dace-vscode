@@ -303,9 +303,14 @@ def reapply_history_until(sdfg_json, index):
     for i in range(index + 1):
         transformation = history[i]
         try:
-            transformation.apply_pattern(
-                original_sdfg.sdfg_list[transformation.sdfg_id]
-            )
+            if isinstance(transformation, dace.transformation.transformation.SubgraphTransformation):
+                transformation.apply(
+                    original_sdfg.sdfg_list[transformation.sdfg_id]
+                )
+            else:
+                transformation.apply_pattern(
+                    original_sdfg.sdfg_list[transformation.sdfg_id]
+                )
         except Exception as e:
             print(traceback.format_exc(), file=sys.stderr)
             sys.stderr.flush()
@@ -322,7 +327,7 @@ def reapply_history_until(sdfg_json, index):
         'sdfg': new_sdfg,
     }
 
-def apply_transformation(sdfg_json, transformation):
+def apply_transformation(sdfg_json, transformation_json):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
     # delays when booting in daemon mode.
     from dace import serialize
@@ -335,7 +340,7 @@ def apply_transformation(sdfg_json, transformation):
     sdfg = loaded['sdfg']
 
     try:
-        revived_transformation = serialize.from_json(transformation)
+        transformation = serialize.from_json(transformation_json)
     except Exception as e:
         print(traceback.format_exc(), file=sys.stderr)
         sys.stderr.flush()
@@ -346,9 +351,12 @@ def apply_transformation(sdfg_json, transformation):
             },
         }
     try:
-        revived_transformation.apply_pattern(
-            sdfg.sdfg_list[revived_transformation.sdfg_id]
-        )
+        target_sdfg = sdfg.sdfg_list[transformation.sdfg_id]
+        if isinstance(transformation, dace.transformation.transformation.SubgraphTransformation):
+            sdfg.append_transformation(transformation)
+            transformation.apply(target_sdfg)
+        else:
+            transformation.apply_pattern(target_sdfg)
     except Exception as e:
         print(traceback.format_exc(), file=sys.stderr)
         sys.stderr.flush()
@@ -469,7 +477,17 @@ def get_enum(name):
         }
     return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
 
-def compile_sdfg(path):
+
+def _sdfg_remove_instrumentations(sdfg: dace.sdfg.SDFG):
+    sdfg.instrument = dace.dtypes.InstrumentationType.No_Instrumentation
+    for state in sdfg.nodes():
+        state.instrument = dace.dtypes.InstrumentationType.No_Instrumentation
+        for node in state.nodes():
+            node.instrument = dace.dtypes.InstrumentationType.No_Instrumentation
+            if isinstance(node, dace.sdfg.nodes.NestedSDFG):
+                _sdfg_remove_instrumentations(node.sdfg)
+
+def compile_sdfg(path, suppress_instrumentation=False):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
     # delays when booting in daemon mode.
     from dace import serialize
@@ -481,6 +499,9 @@ def compile_sdfg(path):
     if loaded['error'] is not None:
         return loaded['error']
     sdfg = loaded['sdfg']
+
+    if suppress_instrumentation:
+        _sdfg_remove_instrumentations(sdfg)
 
     compiled_sdfg: CompiledSDFG = sdfg.compile()
 
@@ -549,7 +570,10 @@ def run_daemon(port):
     @daemon.route('/compile_sdfg_from_file', methods=['POST'])
     def _compile_sdfg_from_file():
         request_json = request.get_json()
-        return compile_sdfg(request_json['path'])
+        return compile_sdfg(
+            request_json['path'],
+            request_json['suppress_instrumentation']
+        )
 
     daemon.run(port=port)
 

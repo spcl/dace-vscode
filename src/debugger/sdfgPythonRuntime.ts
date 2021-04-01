@@ -241,6 +241,7 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
             );
             this.sendEvent('end');
         } else {
+            const suppressInstrumentation = this.profile;
             DaCeInterface.getInstance().compileSdfgFromFile(
                 sdfgUri,
                 (data: any) => {
@@ -287,7 +288,8 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
                         this.removeChild(child);
                         this.sendEvent('end');
                     });
-                }
+                },
+                suppressInstrumentation
             );
         }
     }
