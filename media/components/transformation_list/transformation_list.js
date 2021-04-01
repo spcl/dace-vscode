@@ -48,10 +48,7 @@ class Transformation extends TransformationListItem {
         if (uuids.length)
             return uuids;
 
-        if (this.label === 'NestSDFG' || this.label === 'GPUTransformSDFG')
-            uuids.push(this.sdfg_id + '/-1/-1/-1');
-        else
-            uuids.push('-1/-1/-1/-1');
+        uuids.push(this.sdfg_id + '/-1/-1/-1');
 
         return uuids;
     }
