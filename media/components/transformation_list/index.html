@@ -67,9 +67,11 @@
                     transformation_list.set_transformations(
                         message.transformations
                     );
-                    loading_indicator.hide();
+                    if (message.hide_loading)
+                        loading_indicator.hide();
                     break;
                 case 'clear_transformations':
+                    loading_indicator.hide();
                     if (message.reason !== undefined)
                         transformation_list.clear_transformations(
                             message.reason
