@@ -113,7 +113,8 @@
         message_handler = new MessageHandler();
         var debug_draw = false;
 
-        function setRendererContent(sdfg, previewing = false, prevent_refreshes = false) {
+        function setRendererContent(sdfg, previewing = false,
+                                    prevent_refreshes = false) {
             parsed_sdfg = parse_sdfg(sdfg);
 
             if (renderer)

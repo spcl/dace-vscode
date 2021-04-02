@@ -8,6 +8,7 @@ import { SdfgViewerProvider } from './components/sdfgViewer';
 import { MessageReceiverInterface } from './components/messaging/messageReceiverInterface';
 import { TransformationListProvider } from './components/transformationList';
 import { TransformationHistoryProvider } from './components/transformationHistory';
+import { OptimizationPanel } from './components/OptimizationPanel';
 
 enum InteractionMode {
     PREVIEW,
@@ -19,7 +20,7 @@ implements MessageReceiverInterface {
 
     private static INSTANCE = new DaCeInterface();
 
-    private constructor() { }
+    private constructor() {}
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
@@ -497,6 +498,12 @@ implements MessageReceiverInterface {
     public promptStartDaemon() {
         if (this.daemonBooting)
             return;
+
+        // If the optimization panel isn't open, we don't want to interact
+        // with the daemon. Don't prompt in that case.
+        if (!OptimizationPanel.getInstance().isVisible())
+            return;
+
         vscode.window.showWarningMessage(
             'The DaCe daemon isn\'t running, so this action can\'t be ' +
             'performed. Do you want to start it?',
@@ -783,14 +790,15 @@ implements MessageReceiverInterface {
     }
 
     public getEnum(name: string, origin: vscode.Webview) {
-        this.sendGetRequest('/get_enum/' + name, (response: any) => {
-            if (response.enum)
-                origin.postMessage({
-                    'type': 'get_enum_callback',
-                    'name': name,
-                    'enum': response.enum,
-                });
-        });
+        if (this.daemonRunning)
+            this.sendGetRequest('/get_enum/' + name, (response: any) => {
+                if (response.enum)
+                    origin.postMessage({
+                        'type': 'get_enum_callback',
+                        'name': name,
+                        'enum': response.enum,
+                    });
+            });
     }
 
     public isRunning() {

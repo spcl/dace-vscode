@@ -116,4 +116,14 @@ implements vscode.WebviewViewProvider {
         }
     }
 
+    public show() {
+        this.view?.show();
+    }
+
+    public isVisible(): boolean {
+        if (this.view === undefined)
+            return false;
+        return this.view.visible;
+    }
+
 }

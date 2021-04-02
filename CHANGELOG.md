@@ -2,11 +2,16 @@
 
 ## 0.2
 
-## 0.2.11
+### 0.2.12
+
+- Remove annoying popup notifications if the SDFG optimization panel isn't
+  open while viewing an SDFG.
+
+### 0.2.11
 
 - Various bugfixes and minor improvmenets.
 
-## 0.2.10
+### 0.2.10
 
 - Provide interactive instrumentation of SDFGs.
 - Provide visualization of instrumentation reports on SDFGs.
