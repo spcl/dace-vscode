@@ -521,7 +521,11 @@ implements MessageReceiverInterface {
     }
 
     public start() {
-        if (this.daemonRunning || this.daemonBooting)
+        // The daemon shouldn't start if it's already booting due to being
+        // started from some other source, or if the optimization panel isn't
+        // visible.
+        if (this.daemonRunning || this.daemonBooting ||
+            !OptimizationPanel.getInstance().isVisible())
             return;
 
         this.daemonBooting = true;
