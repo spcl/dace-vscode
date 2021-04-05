@@ -1,4 +1,6 @@
-# Copyright 2019-2020 ETH Zurich and the DaCe authors. All rights reserved.
+# Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+# All rights reserved.
+
 import aenum
 from argparse import ArgumentParser
 import ast, astunparse

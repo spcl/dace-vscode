@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
@@ -8,7 +11,7 @@ import { SdfgViewerProvider } from './components/sdfgViewer';
 import { MessageReceiverInterface } from './components/messaging/messageReceiverInterface';
 import { TransformationListProvider } from './components/transformationList';
 import { TransformationHistoryProvider } from './components/transformationHistory';
-import { OptimizationPanel } from './components/OptimizationPanel';
+import { OptimizationPanel } from './components/optimizationPanel';
 
 enum InteractionMode {
     PREVIEW,

@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 import { AnalysisProvider } from "./analysis";
 import { OutlineProvider } from "./outline";
 import { TransformationHistoryProvider } from "./transformationHistory";

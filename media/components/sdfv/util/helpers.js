@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 /**
  * Perform an action for each element in an array given by their uuids.
  * 
