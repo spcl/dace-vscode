@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
@@ -8,6 +11,7 @@ import { SdfgViewerProvider } from './components/sdfgViewer';
 import { MessageReceiverInterface } from './components/messaging/messageReceiverInterface';
 import { TransformationListProvider } from './components/transformationList';
 import { TransformationHistoryProvider } from './components/transformationHistory';
+import { OptimizationPanel } from './components/optimizationPanel';
 
 enum InteractionMode {
     PREVIEW,
@@ -19,7 +23,7 @@ implements MessageReceiverInterface {
 
     private static INSTANCE = new DaCeInterface();
 
-    private constructor() { }
+    private constructor() {}
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
@@ -500,6 +504,12 @@ implements MessageReceiverInterface {
     public promptStartDaemon() {
         if (this.daemonBooting)
             return;
+
+        // If the optimization panel isn't open, we don't want to interact
+        // with the daemon. Don't prompt in that case.
+        if (!OptimizationPanel.getInstance().isVisible())
+            return;
+
         vscode.window.showWarningMessage(
             'The DaCe daemon isn\'t running, so this action can\'t be ' +
             'performed. Do you want to start it?',
@@ -517,7 +527,11 @@ implements MessageReceiverInterface {
     }
 
     public start() {
-        if (this.daemonRunning || this.daemonBooting)
+        // The daemon shouldn't start if it's already booting due to being
+        // started from some other source, or if the optimization panel isn't
+        // visible.
+        if (this.daemonRunning || this.daemonBooting ||
+            !OptimizationPanel.getInstance().isVisible())
             return;
 
         this.daemonBooting = true;
@@ -737,11 +751,13 @@ implements MessageReceiverInterface {
         });
     }
 
-    public compileSdfgFromFile(uri: vscode.Uri, callback: CallableFunction) {
+    public compileSdfgFromFile(uri: vscode.Uri, callback: CallableFunction,
+                               suppressInstrumentation: boolean = false) {
         this.sendPostRequest(
             '/compile_sdfg_from_file',
             {
                 'path': uri.fsPath,
+                'suppress_instrumentation': suppressInstrumentation,
             },
             callback
         );
@@ -773,42 +789,26 @@ implements MessageReceiverInterface {
             });
         }
 
-        const parsedSelected: any = JSON.parse(selectedElements);
-        const cleanedSelected: any[] = [];
-        for (const idx in parsedSelected) {
-            const elem = parsedSelected[idx];
-            let type = 'other';
-            if (elem.data !== undefined && elem.data.node !== undefined)
-                type = 'node';
-            else if (elem.data !== undefined && elem.data.state !== undefined)
-                type = 'state';
-            cleanedSelected.push({
-                'type': type,
-                'state_id': elem.parent_id,
-                'sdfg_id': elem.sdfg.sdfg_list_id,
-                'id': elem.id,
-            });
-        }
-
         this.sendPostRequest(
             '/transformations',
             {
                 'sdfg': JSON.parse(sdfg),
-                'selected_elements': cleanedSelected,
+                'selected_elements': JSON.parse(selectedElements),
             },
             callback
         );
     }
 
     public getEnum(name: string, origin: vscode.Webview) {
-        this.sendGetRequest('/get_enum/' + name, (response: any) => {
-            if (response.enum)
-                origin.postMessage({
-                    'type': 'get_enum_callback',
-                    'name': name,
-                    'enum': response.enum,
-                });
-        });
+        if (this.daemonRunning)
+            this.sendGetRequest('/get_enum/' + name, (response: any) => {
+                if (response.enum)
+                    origin.postMessage({
+                        'type': 'get_enum_callback',
+                        'name': name,
+                        'enum': response.enum,
+                    });
+            });
     }
 
     public insertSDFGElement(sdfg: string, type: string, parent: string, origin: vscode.Webview) {

@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 class MessageHandler {
 
     constructor() {}
@@ -24,7 +27,7 @@ class MessageHandler {
                 break;
             case 'clear_instrumentation_report':
                 renderer.overlay_manager.deregister_overlay(
-                    GenericSdfgOverlay.OVERLAY_TYPE.RUNTIME_MICROS
+                    GenericSdfgOverlay.OVERLAY_TYPE.RUNTIME_US
                 );
                 break;
             case 'symbol_value_changed':
@@ -78,7 +81,8 @@ class MessageHandler {
                     transformations = [[], [], [], message.transformations];
                 else
                     transformations = [[], [], [], []];
-                sort_transformations(refresh_transformation_list);
+                const hide_loading = true;
+                sort_transformations(refresh_transformation_list, hide_loading);
                 break;
             case 'flopsCallback':
                 if (renderer && renderer.overlay_manager &&

@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeInterface } from '../daceInterface';
@@ -106,6 +109,16 @@ implements vscode.WebviewViewProvider {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'resync_transformation_list',
             });
+    }
+
+    public show() {
+        this.view?.show();
+    }
+
+    public isVisible(): boolean {
+        if (this.view === undefined)
+            return false;
+        return this.view.visible;
     }
 
 }

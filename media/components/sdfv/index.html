@@ -1,3 +1,6 @@
+<!-- Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors. -->
+<!-- All rights reserved. -->
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -181,7 +184,8 @@
         message_handler = new MessageHandler();
         var debug_draw = false;
 
-        function setRendererContent(sdfg, previewing = false, prevent_refreshes = false) {
+        function setRendererContent(sdfg, previewing = false,
+                                    prevent_refreshes = false) {
             parsed_sdfg = parse_sdfg(sdfg);
 
             if (renderer)

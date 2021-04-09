@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 /**
  * Set the header/title of the info-box in the embedded view.
  * @param {*} title Title to set

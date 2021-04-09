@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 /**
  * Get the set of element uuids affected by a given transformation.
  * 
@@ -25,6 +28,25 @@ function transformation_get_affected_uuids(transformation) {
     return uuids;
 }
 
+function get_cleaned_selected_elements() {
+    const cleaned_selected = [];
+    renderer.selected_elements.forEach(element => {
+        let type = 'other';
+        if (element.data !== undefined && element.data.node !== undefined)
+            type = 'node';
+        else if (element.data !== undefined && element.data.state !== undefined)
+            type = 'state';
+
+        cleaned_selected.push({
+            'type': type,
+            'state_id': element.parent_id,
+            'sdfg_id': element.sdfg.sdfg_list_id,
+            'id': element.id,
+        });
+    });
+    return JSON.stringify(cleaned_selected);
+}
+
 /**
  * Request a list of applicable transformations from DaCe.
  */
@@ -33,9 +55,13 @@ function get_applicable_transformations() {
         vscode.postMessage({
             type: 'dace.load_transformations',
             sdfg: sdfg_json,
+            /*
+            TODO: check if this is correct
             selectedElements: stringify_sdfg(
                 renderer.selected_elements
             ),
+            */
+            selectedElements: get_cleaned_selected_elements(),
         });
     }
 }
@@ -148,15 +174,24 @@ async function sort_transformations(callback) {
             uncat_transformations,
         ];
 
-        if (callback !== undefined)
-            callback();
+        // Call the callback function if one was provided. If additional
+        // arguments are provided, forward them to the callback function.
+        if (callback !== undefined) {
+            if (arguments.length > 1) {
+                let args = Array.from(arguments);
+                args.shift();
+                callback(...args);
+            } else {
+                callback();
+            }
+        }
     }, 0);
 }
 
 /**
  * Refresh the list of transformations shown in VSCode's transformation pane.
  */
-function refresh_transformation_list() {
+function refresh_transformation_list(hide_loading = false) {
     if (vscode !== undefined && transformations !== undefined)
         if (window.viewing_history_state)
             vscode.postMessage({
@@ -167,6 +202,7 @@ function refresh_transformation_list() {
             vscode.postMessage({
                 type: 'transformation_list.set_transformations',
                 transformations: transformations,
+                hide_loading: hide_loading,
             });
 }
 
