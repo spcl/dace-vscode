@@ -55,12 +55,6 @@ function get_applicable_transformations() {
         vscode.postMessage({
             type: 'dace.load_transformations',
             sdfg: sdfg_json,
-            /*
-            TODO: check if this is correct
-            selectedElements: stringify_sdfg(
-                renderer.selected_elements
-            ),
-            */
             selectedElements: get_cleaned_selected_elements(),
         });
     }

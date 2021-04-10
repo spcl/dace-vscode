@@ -63,41 +63,33 @@ pre.code {
 
 /* End view splitter */
 
-/* Search bar */
+/* Top bar */
 
-#search-bar {
-  margin: .5rem 0;
+#top-bar {
   display: flex;
   flex-direction: row;
 }
 
-#search-bar #search {
+#top-bar #search-bar-wrapper {
+  height: 100%;
+}
+
+#top-bar #search-bar-wrapper #search-bar {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+#top-bar #search-bar #search {
   padding: .3rem .1rem;
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-placeholderForeground);
 }
 
-#search-bar #search::placeholder {
+#top-bar #search-bar #search::placeholder {
   color: var(--vscode-input-placeholderForeground);
-}
-
-#search-bar #search-case-container {
-  height: 100%;
-  vertical-align: middle;
-}
-
-#search-bar #search-case {
-  height: 1.3rem;
-  width: 1.3rem;
-  vertical-align: middle;
-  background-color: var(--vscode-checkbox-background);
-  color: var(--vscode-checkbox-foreground);
-  border-color: var(--vscode-checkbox-border);
-}
-
-#search-bar #search-btn {
-  margin: 0 .5rem;
 }
 
 #search-case-sensitive-btn {
@@ -113,56 +105,66 @@ pre.code {
 
 #search-case-text {
   margin-left: -0.2rem;
-  color: #acacac;
+  color: var(--vscode-input-placeholderForeground);
 }
 
-#search-bar #pan-btn {
+#top-bar #button-bar-wrapper {
+  flex-grow: 1;
+}
+
+#top-bar #button-bar {
+  margin: .5rem 0;
+  display: flex;
+  flex-direction: row;
+}
+
+#button-bar #pan-btn {
   margin-left: 0.8rem;
   margin-right: 0.1rem;
 }
 
-#search-bar #move-btn {
+#button-bar #move-btn {
   margin: 0 .1rem;
 }
 
-#search-bar #select-btn {
+#button-bar #select-btn {
   margin: 0 .1rem;
 }
 
-#search-bar #elem_map {
+#button-bar #elem_map {
   margin-left: 0.6rem;
   margin-right: 0.1rem;
 }
 
-#search-bar #elem_consume {
+#button-bar #elem_consume {
   margin: 0 .1rem;
 }
 
-#search-bar #elem_tasklet {
+#button-bar #elem_tasklet {
   margin: 0 .1rem;
 }
 
-#search-bar #elem_nested_sdfg {
+#button-bar #elem_nested_sdfg {
   margin: 0 .1rem;
 }
 
-#search-bar #elem_access_node {
+#button-bar #elem_access_node {
   margin: 0 .1rem;
 }
 
-#search-bar #elem_stream {
+#button-bar #elem_stream {
   margin: 0 .1rem;
 }
 
-#search-bar #elem_state {
+#button-bar #elem_state {
   margin: 0 .1rem;
 }
 
-#search-bar #refresh-btn {
+#button-bar #refresh-btn {
   margin-left: auto;
 }
 
-/* End search bar */
+/* End top bar */
 
 /* Processing overlay */
 
