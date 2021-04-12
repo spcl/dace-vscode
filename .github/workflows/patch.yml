@@ -1,0 +1,21 @@
+name: Publish Extension Patch
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the extension under $GITHUB_WORKSPACE.
+      - uses: actions/checkout@v2
+      # Install packages.
+      - name: Install packages
+        run: npm install
+      # Publish the extension.
+      - uses: lannonbr/vsce-action@2.0.0
+        with:
+          args: "publish patch -p $VSCE_TOKEN"
+        env:
+          VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
