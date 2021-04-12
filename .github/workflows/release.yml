@@ -10,6 +10,8 @@ jobs:
     steps:
       # Check out the extension under $GITHUB_WORKSPACE.
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       # Install packages.
       - name: Install packages
         run: npm install
