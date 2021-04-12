@@ -535,7 +535,7 @@ implements MessageReceiverInterface {
 
         const callback = () => {
             TransformationHistoryProvider.getInstance()?.refresh();
-            TransformationListProvider.getInstance()?.refresh();
+            TransformationListProvider.getInstance()?.refresh(true);
         };
         if (vscode.workspace.getConfiguration(
                 'dace.interface'
