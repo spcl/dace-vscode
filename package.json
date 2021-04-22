@@ -13,6 +13,7 @@
     "activationEvents": [
         "onCustomEditor:sdfgCustom.sdfv",
         "onDebug",
+        "onDebugResolve:dace-debug",
         "onLanguage:python",
         "onLanguage:sdfg",
         "onCommand:sdfg.debug.run",
@@ -32,6 +33,9 @@
         "url": "https://github.com/spcl/dace-vscode"
     },
     "icon": "icon.png",
+    "extensionDependencies": [
+        "benjamin-simmonds.pythoncpp-debug"
+    ],
     "contributes": {
         "debuggers": [
             {
@@ -79,6 +83,67 @@
                         }
                     }
                 ]
+            },
+            {
+                "type": "dace-debug",
+                "label": "DaCe debugger",
+                "languages": [
+                    "python"
+                ],
+                "configurationAttributes": {
+                    "launch": {
+                        "properties": {
+                            "pythonLaunchName": {
+                                "type": "string",
+                                "description": "The name of your python launch config if `pythonConfig: manual`",
+                                "default": "Python: Current File"
+                            },
+                            "cppAttachName": {
+                                "type": "string",
+                                "description": "The name of your C++ attach config if `cppConfig: manual`",
+                                "default": "(Windows) Attach"
+                            },
+                            "pythonConfig": {
+                                "enum": [
+                                  "manual",
+                                  "default"
+                                ],
+                                "description": "Pick manual to manaully define the python Attach config, otherwise the default python configuration will be used",
+                                "default": "default"
+                            },
+                            "cppConfig": {
+                                "enum": [
+                                  "manual",
+                                  "default"
+                                ],
+                                "description": "Pick manual to manually define the C++ Attach config, otherwise based on your operating system either (Windows) Attach or (gdb) Attach will be used",
+                                "default": "default"
+                            },
+                            "buildType": {
+                                "enum":[
+                                    "Debug",
+                                    "RelWithDebInfo"
+                                ],
+                                "description": "Setting the build type to RelWithDebInfo will optimize the compilation, however, there is no guaranty that every breakpoint will hit.",
+                                "default": "Debug"
+                            }
+                            
+                        }
+                    }
+                },
+                "configurationSnippets": [
+                    {
+                        "label": "DaCe: Run current Program",
+                        "description": "A new configuration for debugging a DaCe program with mixed debugging",
+                        "body": {
+                            "name": "DaCe: debug",
+                            "type": "dace-debug",
+                            "request": "launch",
+                            "pythonConfig": "default",
+                            "cppConfig": "default"
+                        }
+                    }
+                ]
             }
         ],
         "configuration": [
@@ -110,6 +175,14 @@
                         ]
                     }
                 }
+            }
+        ],
+        "breakpoints": [
+            {
+              "language": "python"
+            },
+            {
+              "language": "cpp"
             }
         ],
         "languages": [
