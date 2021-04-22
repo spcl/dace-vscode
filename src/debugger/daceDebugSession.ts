@@ -55,7 +55,7 @@ export class DaceDebugSession extends LoggingDebugSession {
         /**
          * Default: 
          *   We use the default Python configuration 'Python: Current File' and 
-         *   set the environment variable build_type to 'Debug'
+         *   set the environment variable: build_type
          * Manual:
          *   Otherwise, the user specifies the the configuration manually by passing 
          *   the name of the configuration to pythonLaunchName. We then get that configuration
