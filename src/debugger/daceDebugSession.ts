@@ -105,8 +105,6 @@ export class DaceDebugSession extends LoggingDebugSession {
                 }
             }
         }
- 
-        console.log(entirePythonConfig);
         
         /**
           * Default: 
@@ -148,8 +146,6 @@ export class DaceDebugSession extends LoggingDebugSession {
             "entirePythonConfig": entirePythonConfig,
         }
         pyCppDebuggerConfig[cppAttribute] = cppValue;
- 
-        console.log(pyCppDebuggerConfig);
 
 		vscode.debug.startDebugging(this.folder, pyCppDebuggerConfig, undefined);
 		
