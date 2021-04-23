@@ -3,7 +3,6 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as cp from 'child_process';
 import { request } from 'http';
 
 import { DaCeVSCode } from './extension';
@@ -170,9 +169,11 @@ implements MessageReceiverInterface {
 
     public startDaemonInTerminal(callback?: CallableFunction) {
         const term = vscode.window.createTerminal('SDFG Optimizer');
-        term.show();
         const scriptPath = this.getRunDaceScriptPath();
         if (scriptPath) {
+            vscode.window.setStatusBarMessage(
+                'Trying to start and connect to a DaCe daemon', 5000
+            );
             term.sendText(
                 'python ' + scriptPath + ' -p ' + this.port.toString()
             );
@@ -330,7 +331,7 @@ implements MessageReceiverInterface {
                     switch (opt) {
                         case 'Retry':
                             clearInterval(connectionIntervalId);
-                            this.startPythonDaemon();
+                            this.startDaemonInTerminal();
                             break;
                         case 'Retry in Terminal Mode':
                             vscode.commands.executeCommand(
@@ -351,49 +352,6 @@ implements MessageReceiverInterface {
                 clearInterval(connectionIntervalId);
             }
         }, 10000);
-    }
-
-    private async startPythonDaemon(callback?: CallableFunction) {
-        if (this.daemonRunning) {
-            if (callback)
-                callback();
-            return;
-        }
-
-        vscode.window.setStatusBarMessage(
-            'Trying to start and connect to a DaCe daemon', 5000
-        );
-
-        const pythonPath = await this.getPythonPath(null);
-        const scriptPath = this.getRunDaceScriptPath();
-        if (!scriptPath)
-            return;
-
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        let workspaceRoot = undefined;
-        if (workspaceFolders)
-            workspaceRoot = workspaceFolders[0].uri.fsPath;
-
-        const daemon = cp.spawn(
-            pythonPath,
-            [scriptPath, '-p', this.port.toString()], {
-                cwd: workspaceRoot,
-            }
-        );
-
-        daemon.on('exit', (_code, _signal) => {
-            this.daemonRunning = false;
-            this.daemonBooting = false;
-        });
-
-        daemon.stderr.on('data', data => {
-            DaCeVSCode.getInstance().getOutputChannel().append(
-                data.toString()
-            );
-            this.genericBackendErrorPopup();
-        });
-
-        this.pollDaemon(callback, false);
     }
 
     private sendRequest(url: string,
@@ -515,7 +473,7 @@ implements MessageReceiverInterface {
         ).then(opt => {
             switch (opt) {
                 case 'Yes':
-                    DaCeInterface.getInstance().startPythonDaemon();
+                    DaCeInterface.getInstance().startDaemonInTerminal();
                     break;
                 case 'No':
                     break;
@@ -537,13 +495,7 @@ implements MessageReceiverInterface {
             TransformationHistoryProvider.getInstance()?.refresh();
             TransformationListProvider.getInstance()?.refresh(true);
         };
-        if (vscode.workspace.getConfiguration(
-                'dace.interface'
-            ).terminalMode === true
-        )
-            this.startDaemonInTerminal(callback);
-        else
-            this.startPythonDaemon(callback);
+        this.startDaemonInTerminal(callback);
     }
 
     public previewSdfg(sdfg: any, history_mode: boolean = false) {
