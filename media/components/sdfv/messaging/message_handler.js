@@ -161,6 +161,10 @@ class MessageHandler {
                             break;
                     }
                 break;
+            case 'query_sdfg_metadata_callback':
+                if (message.meta_dict)
+                    window.sdfg_meta_dict = message.meta_dict;
+                break;
         }
     }
 

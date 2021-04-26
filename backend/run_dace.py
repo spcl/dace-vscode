@@ -480,6 +480,36 @@ def get_enum(name):
     return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
 
 
+def get_sdfg_metdata():
+
+    meta_dict = {}
+
+    types = [
+        dace.sdfg.SDFG,
+        dace.sdfg.InterstateEdge,
+        dace.sdfg.SDFGState,
+        dace.sdfg.nodes.Node,
+        dace.sdfg.nodes.AccessNode,
+        dace.sdfg.nodes.CodeNode,
+        dace.sdfg.nodes.Tasklet,
+        dace.sdfg.nodes.RTLTasklet,
+        dace.sdfg.nodes.NestedSDFG,
+        dace.sdfg.nodes.Map,
+        dace.sdfg.nodes.Consume,
+        dace.sdfg.nodes.Pipeline,
+        dace.sdfg.nodes.LibraryNode,
+        dace.Memlet,
+    ]
+    for t in types:
+        meta_dict[t.__name__] = {}
+        for name, prop in t.__properties__.items():
+            meta_dict[t.__name__][name] = prop.meta_to_json(prop)
+
+    return {
+        'meta_dict': meta_dict,
+    }
+
+
 def _sdfg_remove_instrumentations(sdfg: dace.sdfg.SDFG):
     sdfg.instrument = dace.dtypes.InstrumentationType.No_Instrumentation
     for state in sdfg.nodes():
@@ -576,6 +606,10 @@ def run_daemon(port):
             request_json['path'],
             request_json['suppress_instrumentation']
         )
+
+    @daemon.route('/get_metadata', methods=['GET'])
+    def _get_metadata():
+        return get_sdfg_metdata()
 
     daemon.run(port=port)
 

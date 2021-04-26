@@ -53,6 +53,26 @@ function fill_info_embedded(elem) {
     gotoSourceBtn.prop('title', '');
 
     if (elem) {
+        let metadata = undefined;
+        if (window.sdfg_meta_dict) {
+            if (elem.data) {
+                if (elem.data.sdfg)
+                    metadata = window.sdfg_meta_dict[elem.data.sdfg.type];
+                else if (elem.data.state)
+                    metadata = window.sdfg_meta_dict[elem.data.state.type];
+                else if (elem.data.node)
+                    metadata = window.sdfg_meta_dict[elem.data.node.type];
+                else if (elem.data.type)
+                    metadata = window.sdfg_meta_dict[elem.data.type];
+            }
+            console.log(elem, metadata);
+        } else {
+            // If SDFG property metadata isn't available, query it from DaCe.
+            vscode.postMessage({
+                type: 'dace.query_sdfg_metadata',
+            });
+        }
+
         document.getElementById('info-title').innerText =
             elem.type() + ' ' + elem.label();
 
@@ -98,12 +118,18 @@ function fill_info_embedded(elem) {
                 continue;
 
 
+            let datatype = undefined;
+            if (metadata && metadata[attr[0]] && metadata[attr[0]]['metatype'])
+                datatype = metadata[attr[0]]['metatype'];
+
             if (attr[0] === 'instrument') {
                 if (window.instruments) {
                     const row = $('<tr>').appendTo(attr_table_body);
                     $('<th>', {
                         'class': 'key-col',
-                        'text': attr[0],
+                        'text': attr[0] + (
+                            datatype ? ' (' + datatype + ')' : ''
+                        ),
                     }).appendTo(row);
                     const cell = $('<td>', {
                         'class': 'val-col',
@@ -205,12 +231,36 @@ function fill_info_embedded(elem) {
                 const row = $('<tr>').appendTo(attr_table_body);
                 $('<th>', {
                     'class': 'key-col',
-                    'text': attr[0],
+                    'text': attr[0] + (
+                        datatype ? ' (' + datatype + ')' : ''
+                    ),
                 }).appendTo(row);
-                $('<td>', {
-                    'class': 'val-col',
-                    'html': val,
-                }).appendTo(row);
+
+                // TODO: Add change listeners.
+                if (datatype === 'bool') {
+                    const attr_bool_box = $('<input>', {
+                        'type': 'checkbox',
+                        'checked': attr[1],
+                    });
+                    const table_cell = $('<td>', {
+                        'class': 'val-col',
+                    }).appendTo(row);
+                    table_cell.append(attr_bool_box);
+                } else if (datatype === 'str') {
+                    const attr_text_box = $('<input>', {
+                        'type': 'text',
+                        'value': attr[1],
+                    });
+                    const table_cell = $('<td>', {
+                        'class': 'val-col',
+                    }).appendTo(row);
+                    table_cell.append(attr_text_box);
+                } else {
+                    $('<td>', {
+                        'class': 'val-col',
+                        'html': val,
+                    }).appendTo(row);
+                }
             }
         }
 

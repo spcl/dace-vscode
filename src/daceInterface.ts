@@ -64,6 +64,9 @@ implements MessageReceiverInterface {
                 if (message.name)
                     this.getEnum(message.name, origin);
                 break;
+            case 'query_sdfg_metadata':
+                this.querySdfgMetadata();
+                break;
             default:
                 break;
         }
@@ -756,6 +759,20 @@ implements MessageReceiverInterface {
                 'path': uri.fsPath,
                 'suppress_instrumentation': suppressInstrumentation,
             },
+            callback
+        );
+    }
+
+    public async querySdfgMetadata() {
+        async function callback(data: any) {
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'query_sdfg_metadata_callback',
+                meta_dict: data.meta_dict,
+            });
+        };
+
+        this.sendGetRequest(
+            '/get_metadata',
             callback
         );
     }
