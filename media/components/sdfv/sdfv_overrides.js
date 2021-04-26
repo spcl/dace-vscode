@@ -56,16 +56,21 @@ function fill_info_embedded(elem) {
         let metadata = undefined;
         if (window.sdfg_meta_dict) {
             if (elem.data) {
-                if (elem.data.sdfg)
+                if (elem.data.sdfg) {
                     metadata = window.sdfg_meta_dict[elem.data.sdfg.type];
-                else if (elem.data.state)
+                } else if (elem.data.state) {
                     metadata = window.sdfg_meta_dict[elem.data.state.type];
-                else if (elem.data.node)
-                    metadata = window.sdfg_meta_dict[elem.data.node.type];
-                else if (elem.data.type)
+                } else if (elem.data.node) {
+                    const node_type = elem.data.node.type;
+                    if (node_type === 'MapEntry' || node_type === 'MapExit')
+                        metadata = window.sdfg_meta_dict['Map'];
+                    else
+                        metadata = window.sdfg_meta_dict[elem.data.node.type];
+                } else if (elem.data.type) {
                     metadata = window.sdfg_meta_dict[elem.data.type];
+                }
             }
-            console.log(elem, metadata);
+            console.log(elem, metadata, window.sdfg_meta_dict);
         } else {
             // If SDFG property metadata isn't available, query it from DaCe.
             vscode.postMessage({
@@ -107,8 +112,8 @@ function fill_info_embedded(elem) {
         const attr_table_body = $('<tbody>').appendTo(attr_table);
         for (const attr of Object.entries(elem.attributes())) {
             if (attr[0] === 'layout' || attr[0] === 'sdfg' ||
-                attr[0] === 'orig_sdfg' || attr[0] === 'transformation_hist' ||
-                attr[0].startsWith('_'))
+                attr[0] === 'is_collapsed' || attr[0] === 'orig_sdfg' ||
+                attr[0] === 'transformation_hist' || attr[0].startsWith('_'))
                 continue;
             const val = sdfg_property_to_string(
                 attr[1],
@@ -117,86 +122,82 @@ function fill_info_embedded(elem) {
             if (val === null || val === '')
                 continue;
 
-
             let datatype = undefined;
-            if (metadata && metadata[attr[0]] && metadata[attr[0]]['metatype'])
-                datatype = metadata[attr[0]]['metatype'];
+            let choices = undefined;
+            if (metadata && metadata[attr[0]]) {
+                if (metadata[attr[0]]['metatype'])
+                    datatype = metadata[attr[0]]['metatype'];
+                if (metadata[attr[0]]['choices'])
+                    choices = metadata[attr[0]]['choices'];
+            }
 
-            if (attr[0] === 'instrument') {
-                if (window.instruments) {
-                    const row = $('<tr>').appendTo(attr_table_body);
-                    $('<th>', {
-                        'class': 'key-col',
-                        'text': attr[0] + (
-                            datatype ? ' (' + datatype + ')' : ''
-                        ),
-                    }).appendTo(row);
+            if (attr[0] === 'debuginfo') {
+                gotoSourceBtn.on('click', function() {
+                    gotoSource(
+                        attr[1].filename,
+                        attr[1].start_line,
+                        attr[1].start_column,
+                        attr[1].end_line,
+                        attr[1].end_column
+                    );
+                });
+                gotoSourceBtn.prop('title',
+                    attr[1].filename + ':' + attr[1].start_line
+                );
+                gotoSourceBtn.show();
+                continue;
+            }
+
+            const row = $('<tr>').appendTo(attr_table_body);
+            const title_cell = $('<th>', {
+                'class': 'key-col',
+                'text': attr[0],
+            }).appendTo(row);
+
+            let input_element = undefined;
+            if (datatype === 'bool') {
+                const attr_bool_box = $('<input>', {
+                    'type': 'checkbox',
+                    'checked': attr[1],
+                });
+                const table_cell = $('<td>', {
+                    'class': 'val-col',
+                }).appendTo(row);
+                table_cell.append(attr_bool_box);
+                input_element = attr_bool_box;
+            } else if (datatype === 'str') {
+                const attr_text_box = $('<input>', {
+                    'type': 'text',
+                    'value': attr[1],
+                });
+                const table_cell = $('<td>', {
+                    'class': 'val-col',
+                }).appendTo(row);
+                table_cell.append(attr_text_box);
+                input_element = attr_text_box;
+            } else if (datatype === 'int') {
+                const attr_number_box = $('<input>', {
+                    'type': 'number',
+                    'value': attr[1],
+                });
+                const table_cell = $('<td>', {
+                    'class': 'val-col',
+                }).appendTo(row);
+                table_cell.append(attr_number_box);
+                input_element = attr_number_box;
+            } else {
+                if (choices !== undefined) {
                     const cell = $('<td>', {
                         'class': 'val-col',
                     }).appendTo(row);
 
-                    const select = $('<select>', {
-                        'name': 'instrument',
+                    const attr_select_box = $('<select>', {
                         'class': 'sdfv-property-dropdown',
                     }).appendTo(cell);
+                    input_element = attr_select_box;
 
-                    select.change(() => {
-                        if (elem && elem.data) {
-                            if (elem.data.attributes)
-                                elem.data.attributes.instrument = select.val();
-                            else if (elem.data.state)
-                                elem.data.state.attributes.instrument =
-                                    select.val();
-                            else if (elem.data.node)
-                                elem.data.node.attributes.instrument =
-                                    select.val();
-
-                            let g = renderer.sdfg;
-
-                            // The renderer uses a graph representation with
-                            // additional information, and to make sure that
-                            // the classical SDFG representation and that graph
-                            // representation are kept in sync, the SDFG object
-                            // is made cyclical. We use this to break the
-                            // renderer's SDFG representation back down into the
-                            // classical one, removing layout information along
-                            // with it.
-                            function unGraphifySdfg(g) {
-                                g.edges.forEach((e) => {
-                                    if (e.attributes.data.edge)
-                                        delete e.attributes.data.edge;
-                                });
-
-                                g.nodes.forEach((s) => {
-                                    if (s.attributes.layout)
-                                        delete s.attributes.layout;
-
-                                    s.edges.forEach((e) => {
-                                        if (e.attributes.data.edge)
-                                            delete e.attributes.data.edge;
-                                    });
-
-                                    s.nodes.forEach((v) => {
-                                        if (v.attributes.layout)
-                                            delete v.attributes.layout;
-
-                                        if (v.type === 'NestedSDFG')
-                                            unGraphifySdfg(v.attributes.sdfg);
-                                    });
-                                });
-                            }
-
-                            unGraphifySdfg(g);
-
-                            vscode.postMessage({
-                                type: 'dace.write_edit_to_sdfg',
-                                sdfg: JSON.stringify(g),
-                            });
-                        }
-                    });
-
-                    window.instruments.forEach(el => {
-                        select.append(new Option(
+                    choices.forEach(el => {
+                        attr_select_box.append(new Option(
                             el,
                             el,
                             false,
@@ -204,64 +205,76 @@ function fill_info_embedded(elem) {
                         ));
                     });
                 } else {
-                    // If the available instruments aren't set yet, try to
-                    // get them from DaCe.
-                    vscode.postMessage({
-                        type: 'dace.get_enum',
-                        name: 'InstrumentationType',
-                    });
-                }
-            } else {
-                if (attr[0] === 'debuginfo') {
-                    gotoSourceBtn.on('click', function() {
-                        gotoSource(
-                            attr[1].filename,
-                            attr[1].start_line,
-                            attr[1].start_column,
-                            attr[1].end_line,
-                            attr[1].end_column
-                        );
-                    });
-                    gotoSourceBtn.prop('title',
-                        attr[1].filename + ':' + attr[1].start_line);
-                    gotoSourceBtn.show();
-                    continue;
-                }
-
-                const row = $('<tr>').appendTo(attr_table_body);
-                $('<th>', {
-                    'class': 'key-col',
-                    'text': attr[0] + (
-                        datatype ? ' (' + datatype + ')' : ''
-                    ),
-                }).appendTo(row);
-
-                // TODO: Add change listeners.
-                if (datatype === 'bool') {
-                    const attr_bool_box = $('<input>', {
-                        'type': 'checkbox',
-                        'checked': attr[1],
-                    });
-                    const table_cell = $('<td>', {
-                        'class': 'val-col',
-                    }).appendTo(row);
-                    table_cell.append(attr_bool_box);
-                } else if (datatype === 'str') {
-                    const attr_text_box = $('<input>', {
-                        'type': 'text',
-                        'value': attr[1],
-                    });
-                    const table_cell = $('<td>', {
-                        'class': 'val-col',
-                    }).appendTo(row);
-                    table_cell.append(attr_text_box);
-                } else {
                     $('<td>', {
                         'class': 'val-col',
                         'html': val,
                     }).appendTo(row);
+                    if (datatype !== undefined)
+                        title_cell.text(
+                            title_cell.text() + ' (' + datatype + ')'
+                        );
                 }
             }
+
+            if (input_element !== undefined)
+                input_element.change(() => {
+                    if (elem && elem.data) {
+                        if (elem.data.attributes)
+                            elem.data.attributes[
+                                attr[0]
+                            ] = input_element.val();
+                        else if (elem.data.node)
+                            elem.data.node.attributes[
+                                attr[0]
+                            ] = input_element.val();
+                        else if (elem.data.state)
+                            elem.data.state.attributes[
+                                attr[0]
+                            ] = input_element.val();
+
+                        let g = renderer.sdfg;
+
+                        // The renderer uses a graph representation with
+                        // additional information, and to make sure that
+                        // the classical SDFG representation and that graph
+                        // representation are kept in sync, the SDFG object
+                        // is made cyclical. We use this to break the
+                        // renderer's SDFG representation back down into the
+                        // classical one, removing layout information along
+                        // with it.
+                        function unGraphifySdfg(g) {
+                            g.edges.forEach((e) => {
+                                if (e.attributes.data.edge)
+                                    delete e.attributes.data.edge;
+                            });
+
+                            g.nodes.forEach((s) => {
+                                if (s.attributes.layout)
+                                    delete s.attributes.layout;
+
+                                s.edges.forEach((e) => {
+                                    if (e.attributes.data.edge)
+                                        delete e.attributes.data.edge;
+                                });
+
+                                s.nodes.forEach((v) => {
+                                    if (v.attributes.layout)
+                                        delete v.attributes.layout;
+
+                                    if (v.type === 'NestedSDFG')
+                                        unGraphifySdfg(v.attributes.sdfg);
+                                });
+                            });
+                        }
+
+                        unGraphifySdfg(g);
+
+                        vscode.postMessage({
+                            type: 'dace.write_edit_to_sdfg',
+                            sdfg: JSON.stringify(g),
+                        });
+                    }
+                });
         }
 
         // If we're processing an access node, add array information too

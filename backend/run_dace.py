@@ -504,6 +504,17 @@ def get_sdfg_metdata():
         meta_dict[t.__name__] = {}
         for name, prop in t.__properties__.items():
             meta_dict[t.__name__][name] = prop.meta_to_json(prop)
+            if prop.choices is not None:
+                if inspect.isclass(prop.choices):
+                    if issubclass(prop.choices, aenum.Enum):
+                        meta_dict[t.__name__][name]['choices'] = [
+                            str(e).split('.')[-1]
+                            for e in prop.choices
+                        ]
+                    else:
+                        print(prop.choices)
+                else:
+                    print(prop.choices)
 
     return {
         'meta_dict': meta_dict,
