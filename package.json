@@ -105,29 +105,28 @@
                             },
                             "pythonConfig": {
                                 "enum": [
-                                  "manual",
-                                  "default"
+                                    "manual",
+                                    "default"
                                 ],
                                 "description": "Pick manual to manaully define the python Attach config, otherwise the default python configuration will be used",
                                 "default": "default"
                             },
                             "cppConfig": {
                                 "enum": [
-                                  "manual",
-                                  "default"
+                                    "manual",
+                                    "default"
                                 ],
                                 "description": "Pick manual to manually define the C++ Attach config, otherwise based on your operating system either (Windows) Attach or (gdb) Attach will be used",
                                 "default": "default"
                             },
                             "buildType": {
-                                "enum":[
+                                "enum": [
                                     "Debug",
                                     "RelWithDebInfo"
                                 ],
                                 "description": "Setting the build type to RelWithDebInfo will optimize the compilation, however, there is no guaranty that every breakpoint will hit.",
                                 "default": "Debug"
                             }
-                            
                         }
                     }
                 },
@@ -179,10 +178,10 @@
         ],
         "breakpoints": [
             {
-              "language": "python"
+                "language": "python"
             },
             {
-              "language": "cpp"
+                "language": "cpp"
             }
         ],
         "languages": [
