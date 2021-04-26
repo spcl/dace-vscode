@@ -151,7 +151,7 @@ export class DaceDebugSession extends LoggingDebugSession {
             name: "Python C++ Debugger",
             type: "pythoncpp",
             request: "launch",
-            entirePyConfig: entirePyConfig,
+            entirePythonConfig: entirePyConfig,
         };
         pyCppDebuggerConfig[cppAttribute] = cppValue;
 
