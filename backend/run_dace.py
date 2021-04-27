@@ -499,6 +499,11 @@ def get_sdfg_metdata():
         dace.sdfg.nodes.Pipeline,
         dace.sdfg.nodes.LibraryNode,
         dace.Memlet,
+        dace.data.Data,
+        dace.data.Scalar,
+        dace.data.Array,
+        dace.data.Stream,
+        dace.data.View,
     ]
     for t in types:
         meta_dict[t.__name__] = {}

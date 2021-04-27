@@ -185,6 +185,24 @@ function fill_info_embedded(elem) {
                 }).appendTo(row);
                 table_cell.append(attr_number_box);
                 input_element = attr_number_box;
+            } else if (datatype === 'DataProperty') {
+                const cell = $('<td>', {
+                    'class': 'val-col',
+                }).appendTo(row);
+
+                const attr_data_prop_box = $('<select>', {
+                    'class': 'sdfv-property-dropdown',
+                }).appendTo(cell);
+                input_element = attr_data_prop_box;
+
+                Object.keys(elem.sdfg.attributes._arrays).forEach(array => {
+                    attr_data_prop_box.append(new Option(
+                        array,
+                        array,
+                        false,
+                        array === attr[1]
+                    ));
+                });
             } else {
                 if (choices !== undefined) {
                     const cell = $('<td>', {
@@ -285,7 +303,7 @@ function fill_info_embedded(elem) {
             $('<br>').appendTo(contents);
             $('<p>', {
                 'class': 'info-subtitle',
-                'text': 'Array properties:',
+                'text': sdfg_array.type + ' properties:',
             }).appendTo(contents);
 
             const array_table = $('<table>', {
@@ -304,8 +322,19 @@ function fill_info_embedded(elem) {
                 'text': 'Value',
             }).appendTo(array_table_header_row);
 
+            const array_metadata = window.sdfg_meta_dict[sdfg_array.type];
+
             const array_table_body = $('<tbody>').appendTo(array_table);
             for (const attr of Object.entries(sdfg_array.attributes)) {
+                let array_datatype = undefined;
+                let array_choices = undefined;
+                if (array_metadata && array_metadata[attr[0]]) {
+                    if (array_metadata[attr[0]]['metatype'])
+                        array_datatype = array_metadata[attr[0]]['metatype'];
+                    if (array_metadata[attr[0]]['choices'])
+                        array_choices = array_metadata[attr[0]]['choices'];
+                }
+
                 if (attr[0] === 'layout' || attr[0] === 'sdfg' ||
                     attr[0].startsWith('_meta_'))
                     continue;
@@ -315,15 +344,130 @@ function fill_info_embedded(elem) {
                 );
                 if (val === null || val === '')
                     continue;
+
                 const row = $('<tr>').appendTo(array_table_body);
-                $('<th>', {
+                const title_cell = $('<th>', {
                     'class': 'key-col',
                     'text': attr[0],
                 }).appendTo(row);
-                $('<td>', {
-                    'class': 'val-col',
-                    'html': val,
-                }).appendTo(row);
+
+                let array_input_element = undefined;
+                if (array_datatype === 'bool') {
+                    const attr_bool_box = $('<input>', {
+                        'type': 'checkbox',
+                        'checked': attr[1],
+                    });
+                    const table_cell = $('<td>', {
+                        'class': 'val-col',
+                    }).appendTo(row);
+                    table_cell.append(attr_bool_box);
+                    array_input_element = attr_bool_box;
+                } else if (array_datatype === 'str') {
+                    const attr_text_box = $('<input>', {
+                        'type': 'text',
+                        'value': attr[1],
+                    });
+                    const table_cell = $('<td>', {
+                        'class': 'val-col',
+                    }).appendTo(row);
+                    table_cell.append(attr_text_box);
+                    array_input_element = attr_text_box;
+                } else if (array_datatype === 'int') {
+                    const attr_number_box = $('<input>', {
+                        'type': 'number',
+                        'value': attr[1],
+                    });
+                    const table_cell = $('<td>', {
+                        'class': 'val-col',
+                    }).appendTo(row);
+                    table_cell.append(attr_number_box);
+                    array_input_element = attr_number_box;
+                } else {
+                    if (array_choices !== undefined) {
+                        const cell = $('<td>', {
+                            'class': 'val-col',
+                        }).appendTo(row);
+
+                        const attr_select_box = $('<select>', {
+                            'class': 'sdfv-property-dropdown',
+                        }).appendTo(cell);
+                        array_input_element = attr_select_box;
+
+                        array_choices.forEach(el => {
+                            attr_select_box.append(new Option(
+                                el,
+                                el,
+                                false,
+                                el === attr[1]
+                            ));
+                        });
+                    } else {
+                        $('<td>', {
+                            'class': 'val-col',
+                            'html': val,
+                        }).appendTo(row);
+                        if (array_datatype !== undefined)
+                            title_cell.text(
+                                title_cell.text() + ' (' + array_datatype + ')'
+                            );
+                    }
+                }
+
+                if (array_input_element !== undefined)
+                    array_input_element.change(() => {
+                        /*
+                        elem.sdfg.attributes._arrays[
+                            elem.attributes().data
+                        ];
+                        */
+                        if (sdfg_array && sdfg_array.attributes) {
+                            sdfg_array.attributes[
+                                attr[0]
+                            ] = array_input_element.val();
+
+                            let g = renderer.sdfg;
+
+                            // The renderer uses a graph representation with
+                            // additional information, and to make sure that
+                            // the classical SDFG representation and that graph
+                            // representation are kept in sync, the SDFG object
+                            // is made cyclical. We use this to break the
+                            // renderer's SDFG representation back down into the
+                            // classical one, removing layout information along
+                            // with it.
+                            function unGraphifySdfg(g) {
+                                g.edges.forEach((e) => {
+                                    if (e.attributes.data.edge)
+                                        delete e.attributes.data.edge;
+                                });
+
+                                g.nodes.forEach((s) => {
+                                    if (s.attributes.layout)
+                                        delete s.attributes.layout;
+
+                                    s.edges.forEach((e) => {
+                                        if (e.attributes.data.edge)
+                                            delete e.attributes.data.edge;
+                                    });
+
+                                    s.nodes.forEach((v) => {
+                                        if (v.attributes.layout)
+                                            delete v.attributes.layout;
+
+                                        if (v.type === 'NestedSDFG')
+                                            unGraphifySdfg(v.attributes.sdfg);
+                                    });
+                                });
+                            }
+
+                            unGraphifySdfg(g);
+
+                            vscode.postMessage({
+                                type: 'dace.write_edit_to_sdfg',
+                                sdfg: JSON.stringify(g),
+                            });
+                        }
+                    });
             }
         }
 
