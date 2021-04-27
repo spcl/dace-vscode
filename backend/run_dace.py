@@ -480,47 +480,29 @@ def get_enum(name):
     return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
 
 
-def get_sdfg_metdata():
-
+def get_property_metdata():
+    """ Generate a dictionary of class properties and their metadata.
+        This iterates over all classes registered as serializable in DaCe's
+        serialization module, checks whether there are properties present
+        (true for any class registered via the @make.properties decorator), and
+        then assembels their metadata to a dictionary.
+    """
     meta_dict = {}
-
-    types = [
-        dace.sdfg.SDFG,
-        dace.sdfg.InterstateEdge,
-        dace.sdfg.SDFGState,
-        dace.sdfg.nodes.Node,
-        dace.sdfg.nodes.AccessNode,
-        dace.sdfg.nodes.CodeNode,
-        dace.sdfg.nodes.Tasklet,
-        dace.sdfg.nodes.RTLTasklet,
-        dace.sdfg.nodes.NestedSDFG,
-        dace.sdfg.nodes.Map,
-        dace.sdfg.nodes.Consume,
-        dace.sdfg.nodes.Pipeline,
-        dace.sdfg.nodes.LibraryNode,
-        dace.Memlet,
-        dace.data.Data,
-        dace.data.Scalar,
-        dace.data.Array,
-        dace.data.Stream,
-        dace.data.View,
-    ]
-    for t in types:
-        meta_dict[t.__name__] = {}
-        for name, prop in t.__properties__.items():
-            meta_dict[t.__name__][name] = prop.meta_to_json(prop)
-            if prop.choices is not None:
-                if inspect.isclass(prop.choices):
-                    if issubclass(prop.choices, aenum.Enum):
-                        meta_dict[t.__name__][name]['choices'] = [
-                            str(e).split('.')[-1]
-                            for e in prop.choices
-                        ]
-                    else:
-                        print(prop.choices)
-                else:
-                    print(prop.choices)
-
+    for typename in dace.serialize._DACE_SERIALIZE_TYPES:
+        t = dace.serialize._DACE_SERIALIZE_TYPES[typename]
+        if hasattr(t, '__properties__'):
+            meta_dict[typename] = {}
+            for propname, prop in t.__properties__.items():
+                meta_dict[typename][propname] = prop.meta_to_json(prop)
+                # If there are specific choices for this property (i.e. this
+                # property is an enum), list those as metadata as well.
+                if prop.choices is not None:
+                    if inspect.isclass(prop.choices):
+                        if issubclass(prop.choices, aenum.Enum):
+                            meta_dict[typename][propname]['choices'] = [
+                                str(e).split('.')[-1]
+                                for e in prop.choices
+                            ]
     return {
         'meta_dict': meta_dict,
     }
@@ -625,7 +607,7 @@ def run_daemon(port):
 
     @daemon.route('/get_metadata', methods=['GET'])
     def _get_metadata():
-        return get_sdfg_metdata()
+        return get_property_metdata()
 
     daemon.run(port=port)
 

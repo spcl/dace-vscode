@@ -415,11 +415,6 @@ function fill_info_embedded(elem) {
 
                 if (array_input_element !== undefined)
                     array_input_element.change(() => {
-                        /*
-                        elem.sdfg.attributes._arrays[
-                            elem.attributes().data
-                        ];
-                        */
                         if (sdfg_array && sdfg_array.attributes) {
                             sdfg_array.attributes[
                                 attr[0]
