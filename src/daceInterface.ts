@@ -1,7 +1,7 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as path from 'path';
+import * as os from 'os';
 import * as vscode from 'vscode';
 import { request } from 'http';
 
@@ -73,6 +73,7 @@ implements MessageReceiverInterface {
     }
 
     private runTerminal?: vscode.Terminal = undefined;
+    private daemonTerminal?: vscode.Terminal = undefined;
 
     private daemonRunning = false;
     private daemonBooting = false;
@@ -100,7 +101,27 @@ implements MessageReceiverInterface {
                         uri
                     ).execCommand :
                     pyExt.exports.settings.getExecutionCommand(uri);
-                return pyCmd ? pyCmd.join(' ') : 'python';
+                if (pyCmd) {
+                    // Ensure spaces in the python command don't trip up the
+                    // terminal.
+                    switch (os.platform()) {
+                        case 'win32':
+                            for (let i = 0; i < pyCmd.length; i++) {
+                                if (/\s/g.test(pyCmd[i]))
+                                    pyCmd[i] = '& "' + pyCmd[i] + '"';
+                            }
+                            break;
+                        default:
+                            for (let i = 0; i < pyCmd.length; i++) {
+                                if (/\s/g.test(pyCmd[i]))
+                                    pyCmd[i] = '"' + pyCmd[i] + '"';
+                            }
+                            break;
+                    }
+                    return pyCmd.join(' ');
+                } else {
+                    return 'python';
+                }
             } else {
                 let path = undefined;
                 if (uri)
@@ -136,34 +157,24 @@ implements MessageReceiverInterface {
         }
     }
 
-    private genericBackendErrorPopup() {
-        vscode.window.showErrorMessage(
-            'Encountered an error in the DaCe daemon! ',
-            'Show Error Output',
-        ).then((opt) => {
-            switch (opt) {
-                case 'Show Error Output':
-                    DaCeVSCode.getInstance().getOutputChannel().show();
-                    break;
-            }
-        });
-    }
-
     private getRunDaceScriptUri(): vscode.Uri | undefined{
         const extensionUri =
             DaCeVSCode.getInstance().getExtensionContext()?.extensionUri;
         if (!extensionUri) {
-            DaCeVSCode.getInstance().getOutputChannel().append(
+            vscode.window.showErrorMessage(
                 'Failed to load the file path to the extension'
             );
-            this.genericBackendErrorPopup();
             return undefined;
         }
         return vscode.Uri.joinPath(extensionUri, 'backend', 'run_dace.py');
     }
 
     public async startDaemonInTerminal(callback?: CallableFunction) {
-        const term = vscode.window.createTerminal('SDFG Optimizer');
+        if (this.daemonTerminal === undefined)
+            this.daemonTerminal = vscode.window.createTerminal(
+                'SDFG Optimizer'
+            );
+
         const scriptUri = this.getRunDaceScriptUri();
         if (scriptUri) {
             vscode.window.setStatusBarMessage(
@@ -171,9 +182,8 @@ implements MessageReceiverInterface {
             );
             const pyCmd: string = await this.getPythonExecCommand(scriptUri);
 
-            term.sendText(
-                pyCmd + ' ' + scriptUri.fsPath.toString() +
-                ' -p ' + this.port.toString()
+            this.daemonTerminal?.sendText(
+                pyCmd + ' ' + scriptUri.fsPath + ' -p ' + this.port.toString()
             );
             this.pollDaemon(callback, true);
         } else {
