@@ -2,7 +2,7 @@
 // All rights reserved.
 
 import * as vscode from 'vscode';
-import { DaceDebugSession } from './DaceDebugSession';
+import { DaceDebugSession } from './daceDebugSession';
 import { DaCeInterface } from '../daceInterface';
 import * as os from 'os';
 
