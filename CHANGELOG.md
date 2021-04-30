@@ -2,6 +2,11 @@
 
 ## 0.2
 
+### 0.2.16
+
+- Switch to terminal mode by default for the dace daemon. This deprecates the
+  subprocess mode.
+
 ### 0.2.12
 
 - Remove annoying popup notifications if the SDFG optimization panel isn't

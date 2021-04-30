@@ -2,8 +2,8 @@
 // All rights reserved.
 
 import * as vscode from 'vscode';
-import { DaceDebugSession } from './DaceDebugSession';
-import { DaCeInterface } from '../daceInterface'
+import { DaceDebugSession } from './daceDebugSession';
+import { DaCeInterface } from '../daceInterface';
 import * as os from 'os';
 
 export function activateDaceDebug(context: vscode.ExtensionContext) {
@@ -86,7 +86,9 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
             name: "(gdb) Attach",
             type: "cppdbg",
             request: "attach",
-            program: await DaCeInterface.getInstance().getPythonPath(null),
+            program: await DaCeInterface.getInstance().getPythonExecCommand(
+                undefined
+            ),
             processId: "",
             MIMode: "gdb",
             miDebuggerPath: "/path/to/gdb",
