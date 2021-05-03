@@ -3,7 +3,7 @@
 
 import * as vscode from 'vscode';
 import { DaceDebugSession } from './DaceDebugSession';
-import { DaCeInterface } from '../daceInterface'
+import { DaCeInterface } from '../daceInterface';
 import * as os from 'os';
 
 export function activateDaceDebug(context: vscode.ExtensionContext) {
@@ -30,15 +30,15 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
         // if launch.json is missing or empty
         if (!config.type && !config.request && !config.name) {
             let msg =
-                "Please make sure you have a launch.json file with a " +
-                "configuration of the type 'dace-debug' to use this debugger";
+                'Please make sure you have a launch.json file with a ' +
+                'configuration of the type "dace-debug" to use this debugger';
             return vscode.window.showInformationMessage(msg).then((_) => {
                 return undefined; // abort launch
             });
         }
 
         if (!folder) {
-            let msg = "Working folder not found, open a folder and try again";
+            let msg = 'Working folder not found, open a folder and try again';
             return vscode.window.showErrorMessage(msg).then((_) => {
                 return undefined;
             });
@@ -62,13 +62,13 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
 
         const items: MenuItem[] = [
             {
-                label: "DaCe Debugger",
-                description: "Default",
+                label: 'DaCe Debugger',
+                description: 'Default',
                 type: configType.DEFAULT,
             },
             {
-                label: "DaCe Debugger",
-                description: "Manual",
+                label: 'DaCe Debugger',
+                description: 'Manual',
                 type: configType.MANUAL,
             },
         ];
@@ -76,69 +76,69 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
         const selection:
             | MenuItem
             | undefined = await vscode.window.showQuickPick(items, {
-                placeHolder: "Select a configuration",
+                placeHolder: 'Select a configuration',
             });
         if (!selection) {
             return []; // User canceled it.
         }
 
         const gdbConfig: vscode.DebugConfiguration = {
-            name: "(gdb) Attach",
-            type: "cppdbg",
-            request: "attach",
+            name: '(gdb) Attach',
+            type: 'cppdbg',
+            request: 'attach',
             program: await DaCeInterface.getInstance().getPythonPath(null),
-            processId: "",
-            MIMode: "gdb",
-            miDebuggerPath: "/path/to/gdb",
+            processId: '',
+            MIMode: 'gdb',
+            miDebuggerPath: '/path/to/gdb',
             setupCommands: [
                 {
-                    description: "Enable pretty-printing for gdb",
-                    text: "-enable-pretty-printing",
+                    description: 'Enable pretty-printing for gdb',
+                    text: '-enable-pretty-printing',
                     ignoreFailures: true,
                 },
             ],
         };
 
         const winConfig: vscode.DebugConfiguration = {
-            name: "(Windows) Attach",
-            type: "cppvsdbg",
-            request: "attach",
-            processId: "",
+            name: '(Windows) Attach',
+            type: 'cppvsdbg',
+            request: 'attach',
+            processId: '',
         };
 
         const pythonConfig: vscode.DebugConfiguration = {
-            name: "Python: Current File",
-            type: "python",
-            request: "launch",
-            program: "${file}",
-            console: "integratedTerminal",
+            name: 'Python: Current File',
+            type: 'python',
+            request: 'launch',
+            program: '${file}',
+            console: 'integratedTerminal',
         };
 
         let daceConfig: vscode.DebugConfiguration = {
-            name: "DaCe Debugger",
-            type: "dace-debug",
-            request: "launch",
-            pythonConfig: "default",
-            cppConfig: "default",
+            name: 'DaCe Debugger',
+            type: 'dace-debug',
+            request: 'launch',
+            pythonConfig: 'default',
+            cppConfig: 'default',
         };
 
         switch (selection.type) {
             case configType.MANUAL:
-                daceConfig.pythonConfig = "manual";
-                daceConfig.cppConfig = "manual";
-                daceConfig.pythonLaunchName = "Python: Current File";
+                daceConfig.pythonConfig = 'manual';
+                daceConfig.cppConfig = 'manual';
+                daceConfig.pythonLaunchName = 'Python: Current File';
 
-                if (os.platform().startsWith("win")) {
-                    daceConfig.cppAttachName = "(Windows) Attach";
+                if (os.platform().startsWith('win')) {
+                    daceConfig.cppAttachName = '(Windows) Attach';
                     return [daceConfig, pythonConfig, winConfig];
                 } else {
-                    daceConfig.cppAttachName = "(gdb) Attach";
+                    daceConfig.cppAttachName = '(gdb) Attach';
                     return [daceConfig, pythonConfig, winConfig];
                 }
 
             case configType.DEFAULT:
-                daceConfig.pythonConfig = "default";
-                daceConfig.cppConfig = "default";
+                daceConfig.pythonConfig = 'default';
+                daceConfig.cppConfig = 'default';
                 return [daceConfig];
 
             default:

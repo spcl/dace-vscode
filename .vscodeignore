@@ -1,8 +1,12 @@
-.vscode/**
-.vscode-test/**
-out/test/**
-src/**
+.github
+.vscode
+.vscode-test
+out/
+node_modules
+src/
 .gitignore
+.gitmodules
+webpack.config.js
 tslint.json
 *.code-workspace
 vsc-extension-quickstart.md

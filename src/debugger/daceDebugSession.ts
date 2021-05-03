@@ -1,11 +1,10 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { LoggingDebugSession, TerminatedEvent } from "vscode-debugadapter";
-import * as vscode from "vscode";
-import * as os from "os";
-import { DebugProtocol } from "vscode-debugprotocol";
-import { config } from "node:process";
+import { LoggingDebugSession, TerminatedEvent } from 'vscode-debugadapter';
+import * as vscode from 'vscode';
+import * as os from 'os';
+import { DebugProtocol } from 'vscode-debugprotocol';
 
 export interface DaceLaunchRequestArguments
     extends DebugProtocol.LaunchRequestArguments {
@@ -24,7 +23,7 @@ export class DaceDebugSession extends LoggingDebugSession {
         super();
         let folders = vscode.workspace.workspaceFolders;
         if (!folders) {
-            let msg = "Working folder not found, open a folder and try again";
+            let msg = 'Working folder not found, open a folder and try again';
             vscode.window.showErrorMessage(msg).then((_) => {
                 this.sendEvent(new TerminatedEvent());
             });
@@ -38,14 +37,14 @@ export class DaceDebugSession extends LoggingDebugSession {
         args: DaceLaunchRequestArguments
     ): Thenable<void> | void {
         if (!this.folder) {
-            let msg = "Working folder not found, open a folder and try again";
+            let msg = 'Working folder not found, open a folder and try again';
             return vscode.window.showErrorMessage(msg).then((_) => {
                 this.sendEvent(new TerminatedEvent());
                 return; // abort launch
             });
         }
 
-        let buildType = !args.buildType ? "Debug" : args.buildType;
+        let buildType = !args.buildType ? 'Debug' : args.buildType;
 
         /**
          * Default:
@@ -58,13 +57,13 @@ export class DaceDebugSession extends LoggingDebugSession {
          *   pass it to the attribute 'entirePyConfig'
          */
         let entirePyConfig;
-        if (!args.pythonConfig || args.pythonConfig === "default") {
+        if (!args.pythonConfig || args.pythonConfig === 'default') {
             entirePyConfig = {
-                name: "Python: Current File",
-                type: "python",
-                request: "launch",
-                program: "${file}",
-                console: "integratedTerminal",
+                name: 'Python: Current File',
+                type: 'python',
+                request: 'launch',
+                program: '${file}',
+                console: 'integratedTerminal',
                 env: {
                     DACE_compiler_build_type: buildType,
                 },
@@ -72,9 +71,9 @@ export class DaceDebugSession extends LoggingDebugSession {
         } else {
             if (!args.pythonLaunchName) {
                 let msg =
-                    "Please make sure to define 'pythonLaunchName'" +
-                    "for dace-debug in your launch.json file or set" +
-                    "pythonConfig' to default";
+                    'Please make sure to define "pythonLaunchName"' +
+                    'for dace-debug in your launch.json file or set' +
+                    '"pythonConfig" to default';
                 return vscode.window.showInformationMessage(msg).then((_) => {
                     this.sendEvent(new TerminatedEvent());
                     return; // abort launch
@@ -87,10 +86,10 @@ export class DaceDebugSession extends LoggingDebugSession {
 
                 if (!entirePyConfig) {
                     let message =
-                        "Please make sure you have a configurations" +
-                        " with the name '" +
+                        'Please make sure you have a configurations' +
+                        ' with the name "' +
                         args.pythonLaunchName +
-                        "' in your launch.json file.";
+                        '" in your launch.json file.';
                     return vscode.window.showErrorMessage(message).then(_ => {
                         this.sendEvent(new TerminatedEvent());
                         return; // abort launch
@@ -124,33 +123,33 @@ export class DaceDebugSession extends LoggingDebugSession {
          */
         let cppAttribute;
         let cppValue;
-        if (!args.cppConfig || args.cppConfig === "default") {
-            cppAttribute = "cppConfig";
-            if (os.platform().startsWith("win")) {
-                cppValue = "default (win) Attach";
+        if (!args.cppConfig || args.cppConfig === 'default') {
+            cppAttribute = 'cppConfig';
+            if (os.platform().startsWith('win')) {
+                cppValue = 'default (win) Attach';
             } else {
-                cppValue = "default (gdb) Attach";
+                cppValue = 'default (gdb) Attach';
             }
         } else {
             if (!args.cppAttachName) {
                 let msg =
-                    "Please make sure to define 'cppAttachName' for " +
-                    "dace-debug in your launch.json file or set " +
-                    "'cppConfig' to default";
+                    'Please make sure to define "cppAttachName" for ' +
+                    'dace-debug in your launch.json file or set ' +
+                    '"cppConfig" to default';
                 return vscode.window.showInformationMessage(msg).then((_) => {
                     this.sendEvent(new TerminatedEvent());
                     return; // abort launch
                 });
             } else {
-                cppAttribute = "cppAttachName";
+                cppAttribute = 'cppAttachName';
                 cppValue = args.cppAttachName;
             }
         }
 
         let pyCppDebuggerConfig: vscode.DebugConfiguration = {
-            name: "Python C++ Debugger",
-            type: "pythoncpp",
-            request: "launch",
+            name: 'Python C++ Debugger',
+            type: 'pythoncpp',
+            request: 'launch',
             entirePythonConfig: entirePyConfig,
         };
         pyCppDebuggerConfig[cppAttribute] = cppValue;
@@ -180,13 +179,13 @@ export class DaceDebugSession extends LoggingDebugSession {
  */
 function getConfig(name: string, folder: vscode.WorkspaceFolder) {
     const launchConfigs = vscode.workspace.getConfiguration(
-        "launch",
+        'launch',
         folder.uri
     );
 
-    const values = launchConfigs.get("configurations");
+    const values = launchConfigs.get('configurations');
     if (!values) {
-        let message = "Unexpected error with the launch.json file";
+        let message = 'Unexpected error with the launch.json file';
         vscode.window.showErrorMessage(message);
         return undefined;
     }
