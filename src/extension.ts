@@ -10,6 +10,7 @@ import { OutlineProvider } from './components/outline';
 import { AnalysisProvider } from './components/analysis';
 import { TransformationListProvider } from './components/transformationList';
 import { activateSdfgPython } from './debugger/sdfgPythonDebugger';
+import { activateDaceDebug } from './debugger/daceDebugger';
 
 export class DaCeVSCode {
 
@@ -298,6 +299,7 @@ export class DaCeVSCode {
         });
 
         activateSdfgPython(context);
+        activateDaceDebug(context);
     }
 
     public getExtensionContext() {
