@@ -64,6 +64,10 @@ function fill_info_embedded(elem) {
                     const node_type = elem.data.node.type;
                     if (node_type === 'MapEntry' || node_type === 'MapExit')
                         metadata = window.sdfg_meta_dict['Map'];
+                    else if (node_type === 'LibraryNode')
+                        metadata = window.sdfg_meta_dict[
+                            elem.data.node.classpath
+                        ];
                     else
                         metadata = window.sdfg_meta_dict[elem.data.node.type];
                 } else if (elem.data.type) {
@@ -119,8 +123,10 @@ function fill_info_embedded(elem) {
                 attr[1],
                 renderer.view_settings()
             );
+            /*
             if (val === null || val === '')
                 continue;
+                */
 
             let datatype = undefined;
             let choices = undefined;
@@ -132,19 +138,21 @@ function fill_info_embedded(elem) {
             }
 
             if (attr[0] === 'debuginfo') {
-                gotoSourceBtn.on('click', function() {
-                    gotoSource(
-                        attr[1].filename,
-                        attr[1].start_line,
-                        attr[1].start_column,
-                        attr[1].end_line,
-                        attr[1].end_column
+                if (attr[1]) {
+                    gotoSourceBtn.on('click', function() {
+                        gotoSource(
+                            attr[1].filename,
+                            attr[1].start_line,
+                            attr[1].start_column,
+                            attr[1].end_line,
+                            attr[1].end_column
+                        );
+                    });
+                    gotoSourceBtn.prop('title',
+                        attr[1].filename + ':' + attr[1].start_line
                     );
-                });
-                gotoSourceBtn.prop('title',
-                    attr[1].filename + ':' + attr[1].start_line
-                );
-                gotoSourceBtn.show();
+                    gotoSourceBtn.show();
+                }
                 continue;
             }
 
@@ -204,6 +212,7 @@ function fill_info_embedded(elem) {
                     ));
                 });
             } else {
+                console.log(datatype, choices);
                 if (choices !== undefined) {
                     const cell = $('<td>', {
                         'class': 'val-col',
@@ -235,7 +244,7 @@ function fill_info_embedded(elem) {
             }
 
             if (input_element !== undefined)
-                input_element.change(() => {
+                input_element.on('change', () => {
                     if (elem && elem.data) {
                         if (elem.data.attributes)
                             elem.data.attributes[
@@ -342,8 +351,10 @@ function fill_info_embedded(elem) {
                     attr[1],
                     renderer.view_settings()
                 );
+                /*
                 if (val === null || val === '')
                     continue;
+                    */
 
                 const row = $('<tr>').appendTo(array_table_body);
                 const title_cell = $('<th>', {

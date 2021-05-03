@@ -491,18 +491,38 @@ def get_property_metdata():
     for typename in dace.serialize._DACE_SERIALIZE_TYPES:
         t = dace.serialize._DACE_SERIALIZE_TYPES[typename]
         if hasattr(t, '__properties__'):
-            meta_dict[typename] = {}
+            meta_key = typename
+            if (issubclass(t, dace.sdfg.nodes.LibraryNode)
+                and not t == dace.sdfg.nodes.LibraryNode):
+                classpath = None
+                libnode_module = t.__module__
+                if (libnode_module is None
+                    or libnode_module == str.__class__.__module__):
+                    classpath = t.__name__
+                else:
+                    classpath = libnode_module + '.' + t.__name__
+                meta_key = classpath
+
+            meta_dict[meta_key] = {}
+            libnode_implementations = None
+            if hasattr(t, 'implementations'):
+                libnode_implementations = list(t.implementations.keys())
             for propname, prop in t.__properties__.items():
-                meta_dict[typename][propname] = prop.meta_to_json(prop)
+                meta_dict[meta_key][propname] = prop.meta_to_json(prop)
                 # If there are specific choices for this property (i.e. this
                 # property is an enum), list those as metadata as well.
                 if prop.choices is not None:
                     if inspect.isclass(prop.choices):
                         if issubclass(prop.choices, aenum.Enum):
-                            meta_dict[typename][propname]['choices'] = [
+                            meta_dict[meta_key][propname]['choices'] = [
                                 str(e).split('.')[-1]
                                 for e in prop.choices
                             ]
+                elif (propname == 'implementation'
+                    and libnode_implementations is not None):
+                    meta_dict[meta_key][propname][
+                        'choices'
+                    ] = libnode_implementations
     return {
         'meta_dict': meta_dict,
     }
