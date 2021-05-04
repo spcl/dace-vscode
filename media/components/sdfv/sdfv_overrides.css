@@ -4,6 +4,18 @@
 body {
   display: flex;
   flex-direction: column;
+  background-color: inherit;
+  color: var(--vscode-foreground);
+}
+
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+
+.modal-content {
+  z-index: 1100 !important;
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
 }
 
 #contents {
@@ -21,6 +33,11 @@ body {
 
 .button:hover {
   background-color: var(--vscode-button-hoverBackground);
+}
+
+button.close {
+  color: var(--vscode-foreground);
+  text-shadow: none;
 }
 
 pre.code {
@@ -246,12 +263,24 @@ pre.code {
   max-width: 85%;
 }
 
+.info-table .clickable-val-col {
+  cursor: pointer;
+}
+
 .info-table tr {
   border-bottom: 1px solid var(--vscode-editor-foreground);
 }
 
 .info-table tr td {
   padding: .5rem 0;
+}
+
+.range-input-label {
+  user-select: none;
+}
+
+.range-input {
+  width: 100%;
 }
 
 /* End info container/box */

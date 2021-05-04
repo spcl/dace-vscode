@@ -123,10 +123,6 @@ function fill_info_embedded(elem) {
                 attr[1],
                 renderer.view_settings()
             );
-            /*
-            if (val === null || val === '')
-                continue;
-                */
 
             let datatype = undefined;
             let choices = undefined;
@@ -193,6 +189,210 @@ function fill_info_embedded(elem) {
                 }).appendTo(row);
                 table_cell.append(attr_number_box);
                 input_element = attr_number_box;
+            } else if (datatype === 'dict') {
+                const dict_cell = $('<td>', {
+                    'class': 'val-col clickable-val-col',
+                    'title': 'Click to edit',
+                    'html': val,
+                }).appendTo(row);
+                dict_cell.on('click', () => {
+                    reusable_modal_title.text(attr[0]);
+                    const rowbox = $('<div>', {
+                        'class': 'container_fluid',
+                    }).appendTo(reusable_modal_content);
+                    if (attr[1])
+                        Object.keys(attr[1]).forEach(key => {
+                            const val_row = $('<div>', {
+                                'class': 'row',
+                            }).appendTo(rowbox);
+                            $('<div>', {
+                                'class': 'col-4',
+                                'text': key,
+                            }).appendTo(val_row);
+                            $('<input>', {
+                                'type': 'text',
+                                'class': 'col-8',
+                                'value': attr[1][key] ? attr[1][key] : '',
+                            }).appendTo(val_row);
+                        });
+                    reusable_modal.modal('show');
+                });
+                // TODO: apply edits.
+            } else if (datatype === 'set' || datatype === 'list' ||
+                        datatype === 'tuple') {
+                const dict_cell = $('<td>', {
+                    'class': 'val-col clickable-val-col',
+                    'title': 'Click to edit',
+                    'html': val,
+                }).appendTo(row);
+                dict_cell.on('click', () => {
+                    reusable_modal_title.text(attr[0]);
+                    const rowbox = $('<div>', {
+                        'class': 'container_fluid',
+                    }).appendTo(reusable_modal_content);
+                    if (attr[1])
+                        attr[1].forEach(v => {
+                            const val_row = $('<div>', {
+                                'class': 'row',
+                            }).appendTo(rowbox);
+                            $('<input>', {
+                                'type': 'text',
+                                'class': 'col-12',
+                                'value': v ? v : '',
+                            }).appendTo(val_row);
+                        });
+                    reusable_modal.modal('show');
+                });
+                // TODO: apply edits.
+            } else if (datatype === 'Range' || datatype === 'SubsetProperty') {
+                const range_cell = $('<td>', {
+                    'class': 'val-col clickable-val-col',
+                    'title': 'Click to edit',
+                    'html': val,
+                }).appendTo(row);
+                range_cell.on('click', () => {
+                    reusable_modal_title.text(attr[0]);
+
+                    const rowbox = $('<div>', {
+                        'class': 'container_fluid',
+                    }).appendTo(reusable_modal_content);
+                    let ranges_inputs = [];
+                    if (attr[1])
+                        attr[1].ranges.forEach(range => {
+                            const val_row = $('<div>', {
+                                'class': 'row',
+                            }).appendTo(rowbox);
+
+                            const range_start_input = $('<input>', {
+                                'type': 'text',
+                                'class': 'range-input',
+                                'value': range.start
+                            });
+                            $('<div>', {
+                                'class': 'col-3',
+                            }).appendTo(val_row).append($('<span>', {
+                                'class': 'range-input-label',
+                                'text': 'Start:',
+                            })).append(range_start_input);
+
+                            const range_end_input = $('<input>', {
+                                'type': 'text',
+                                'class': 'range-input',
+                                'value': range.end
+                            });
+                            $('<div>', {
+                                'class': 'col-3',
+                            }).appendTo(val_row).append($('<span>', {
+                                'class': 'range-input-label',
+                                'text': 'End:',
+                            })).append(range_end_input);
+
+                            const range_step_input = $('<input>', {
+                                'type': 'text',
+                                'class': 'range-input',
+                                'value': range.step
+                            });
+                            $('<div>', {
+                                'class': 'col-3',
+                            }).appendTo(val_row).append($('<span>', {
+                                'class': 'range-input-label',
+                                'text': 'Step:',
+                            })).append(range_step_input);
+
+                            const range_tile_input = $('<input>', {
+                                'type': 'text',
+                                'class': 'range-input',
+                                'value': range.tile
+                            });
+                            $('<div>', {
+                                'class': 'col-3',
+                            }).appendTo(val_row).append($('<span>', {
+                                'class': 'range-input-label',
+                                'text': 'Tile:',
+                            })).append(range_tile_input);
+
+                            ranges_inputs.push({
+                                start: range_start_input,
+                                end: range_end_input,
+                                step: range_step_input,
+                                tile: range_tile_input,
+                            });
+                        });
+
+                    reusable_modal_btn_confirm.on('click', () => {
+                        if (elem && elem.data) {
+                            let ranges = undefined;
+                            if (elem.data.attributes)
+                                ranges = elem.data.attributes[attr[0]].ranges;
+                            else if (elem.data.node)
+                                ranges = elem.data.node.attributes[
+                                    attr[0]
+                                ].ranges;
+                            else if (elem.data.state)
+                                ranges = elem.data.state.attributes[
+                                    attr[0]
+                                ].ranges;
+
+                            for (
+                                let range_idx = 0;
+                                range_idx < ranges.length;
+                                range_idx++
+                            ) {
+                                let target_range = ranges[range_idx];
+                                let range_input = ranges_inputs[range_idx];
+                                target_range.start = range_input.start.val();
+                                target_range.end = range_input.end.val();
+                                target_range.step = range_input.step.val();
+                                target_range.tile = range_input.tile.val();
+                            }
+
+                            let g = renderer.sdfg;
+
+                            // The renderer uses a graph representation with
+                            // additional information, and to make sure that
+                            // the classical SDFG representation and that graph
+                            // representation are kept in sync, the SDFG object
+                            // is made cyclical. We use this to break the
+                            // renderer's SDFG representation back down into the
+                            // classical one, removing layout information along
+                            // with it.
+                            function unGraphifySdfg(g) {
+                                g.edges.forEach((e) => {
+                                    if (e.attributes.data.edge)
+                                        delete e.attributes.data.edge;
+                                });
+
+                                g.nodes.forEach((s) => {
+                                    if (s.attributes.layout)
+                                        delete s.attributes.layout;
+
+                                    s.edges.forEach((e) => {
+                                        if (e.attributes.data.edge)
+                                            delete e.attributes.data.edge;
+                                    });
+
+                                    s.nodes.forEach((v) => {
+                                        if (v.attributes.layout)
+                                            delete v.attributes.layout;
+
+                                        if (v.type === 'NestedSDFG')
+                                            unGraphifySdfg(v.attributes.sdfg);
+                                    });
+                                });
+                            }
+
+                            unGraphifySdfg(g);
+
+                            vscode.postMessage({
+                                type: 'dace.write_edit_to_sdfg',
+                                sdfg: JSON.stringify(g),
+                            });
+                        }
+                        reusable_modal.modal('hide');
+                    });
+
+                    reusable_modal.modal('show');
+                });
             } else if (datatype === 'DataProperty') {
                 const cell = $('<td>', {
                     'class': 'val-col',
@@ -212,7 +412,6 @@ function fill_info_embedded(elem) {
                     ));
                 });
             } else {
-                console.log(datatype, choices);
                 if (choices !== undefined) {
                     const cell = $('<td>', {
                         'class': 'val-col',
@@ -351,10 +550,6 @@ function fill_info_embedded(elem) {
                     attr[1],
                     renderer.view_settings()
                 );
-                /*
-                if (val === null || val === '')
-                    continue;
-                    */
 
                 const row = $('<tr>').appendTo(array_table_body);
                 const title_cell = $('<th>', {
@@ -425,7 +620,7 @@ function fill_info_embedded(elem) {
                 }
 
                 if (array_input_element !== undefined)
-                    array_input_element.change(() => {
+                    array_input_element.on('change', () => {
                         if (sdfg_array && sdfg_array.attributes) {
                             sdfg_array.attributes[
                                 attr[0]
