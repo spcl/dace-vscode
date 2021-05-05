@@ -501,6 +501,59 @@ function fill_info_embedded(elem) {
                         array === attr[1]
                     ));
                 });
+            } else if (datatype === 'CodeBlock') {
+                const attr_code_box = $('<input>', {
+                    'type': 'text',
+                    'value': attr[1] ? attr[1].string_data : '',
+                });
+                const table_cell = $('<td>', {
+                    'class': 'val-col',
+                }).appendTo(row);
+                table_cell.append(attr_code_box);
+
+                attr_code_box.on('change', () => {
+                    if (elem && elem.data) {
+                        if (elem.data.attributes)
+                            elem.data.attributes[
+                                attr[0]
+                            ].string_data = attr_code_box.val();
+                        else if (elem.data.node)
+                            elem.data.node.attributes[
+                                attr[0]
+                            ].string_data = attr_code_box.val();
+                        else if (elem.data.state)
+                            elem.data.state.attributes[
+                                attr[0]
+                            ].string_data = attr_code_box.val();
+
+                        vscode_write_graph(renderer.sdfg);
+                    }
+                });
+            } else if (datatype === 'LambdaProperty') {
+                const attr_lambda_box = $('<input>', {
+                    'type': 'text',
+                    'value': attr[1],
+                });
+                const table_cell = $('<td>', {
+                    'class': 'val-col',
+                }).appendTo(row);
+                table_cell.append(attr_lambda_box);
+
+                attr_lambda_box.on('change', () => {
+                    if (elem && elem.data) {
+                        let new_val = attr_lambda_box.val();
+                        if (new_val === '' || new_val === undefined)
+                            new_val = null;
+                        if (elem.data.attributes)
+                            elem.data.attributes[attr[0]] = new_val;
+                        else if (elem.data.node)
+                            elem.data.node.attributes[attr[0]] = new_val;
+                        else if (elem.data.state)
+                            elem.data.state.attributes[attr[0]] = new_val;
+
+                        vscode_write_graph(renderer.sdfg);
+                    }
+                });
             } else {
                 if (choices !== undefined) {
                     const cell = $('<td>', {
