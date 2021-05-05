@@ -91,8 +91,8 @@ function fill_info_embedded(elem) {
             attr_table_body
         );
 
-        // If we're processing an access node, add array information too
         if (elem instanceof AccessNode) {
+            // If we're processing an access node, add array information too.
             const sdfg_array = elem.sdfg.attributes._arrays[
                 elem.attributes().data
             ];
@@ -124,6 +124,61 @@ function fill_info_embedded(elem) {
                 Object.entries(sdfg_array.attributes),
                 array_table_body
             );
+        } else if (elem instanceof ScopeNode) {
+            // If we're processing a scope node, we want to append the exit
+            // node's properties when selecting an entry node, and vice versa.
+            let other_element = undefined;
+
+            let other_uuid = undefined;
+            if (elem instanceof EntryNode)
+                other_uuid = elem.sdfg.sdfg_list_id + '/' +
+                    elem.parent_id + '/' +
+                    elem.data.node.scope_exit + '/-1';
+            else if (elem instanceof ExitNode)
+                other_uuid = elem.sdfg.sdfg_list_id + '/' +
+                    elem.parent_id + '/' +
+                    elem.data.node.scope_entry + '/-1';
+
+            if (other_uuid) {
+                const ret_other_elem = find_graph_element_by_uuid(
+                    renderer.graph,
+                    other_uuid
+                );
+                other_element = ret_other_elem.element;
+            }
+
+            if (other_element) {
+                $('<br>').appendTo(contents);
+                $('<p>', {
+                    'class': 'info-subtitle',
+                    'text': other_element.type() + ' ' + other_element.label(),
+                }).appendTo(contents);
+
+                const other_elem_table = $('<table>', {
+                    id: 'sdfg-other-elem-table',
+                    'class': 'info-table',
+                }).appendTo(contents);
+                const other_elem_table_header =
+                    $('<thead>').appendTo(other_elem_table);
+                const other_elem_table_header_row =
+                    $('<tr>').appendTo(other_elem_table_header);
+                $('<th>', {
+                    'class': 'key-col',
+                    'text': 'Property',
+                }).appendTo(other_elem_table_header_row);
+                $('<th>', {
+                    'class': 'val-col',
+                    'text': 'Value',
+                }).appendTo(other_elem_table_header_row);
+
+                const other_elem_table_body =
+                    $('<tbody>').appendTo(other_elem_table);
+                generate_attributes_table(
+                    other_element,
+                    Object.entries(other_element.attributes()),
+                    other_elem_table_body
+                );
+            }
         }
 
         $('#info-clear-btn').show();

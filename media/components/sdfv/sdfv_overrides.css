@@ -283,6 +283,14 @@ pre.code {
   width: 100%;
 }
 
+.custom-control.custom-switch > label::before {
+  cursor: pointer;
+}
+
+.custom-control.custom-switch > label::after {
+  cursor: pointer;
+}
+
 /* End info container/box */
 
 /* Context menu */
