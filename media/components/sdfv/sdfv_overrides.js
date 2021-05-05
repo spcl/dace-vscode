@@ -230,20 +230,114 @@ function fill_info_embedded(elem) {
                     const rowbox = $('<div>', {
                         'class': 'container_fluid',
                     }).appendTo(reusable_modal_content);
+
+                    const list_inputs = [];
+
                     if (attr[1])
                         attr[1].forEach(v => {
                             const val_row = $('<div>', {
                                 'class': 'row',
                             }).appendTo(rowbox);
-                            $('<input>', {
+                            list_inputs.push($('<input>', {
                                 'type': 'text',
                                 'class': 'col-12',
                                 'value': v ? v : '',
-                            }).appendTo(val_row);
+                            }).appendTo(val_row));
                         });
+
+                    const add_item_container = $('<div>', {
+                        'class': 'container_fluid',
+                    }).appendTo(reusable_modal_content);
+                    const add_item_button_row = $('<div>', {
+                        'class': 'row',
+                    }).appendTo(add_item_container);
+                    $('<button>', {
+                        'class': 'btn btn-primary col-2',
+                        'text': '+',
+                        'title': 'Add item',
+                        'click': () => {
+                            const val_row = $('<div>', {
+                                'class': 'row',
+                            }).appendTo(rowbox);
+                            list_inputs.push($('<input>', {
+                                'type': 'text',
+                                'class': 'col-12',
+                                'value': '',
+                            }).appendTo(val_row));
+                        },
+                    }).appendTo(add_item_button_row);
+
+                    reusable_modal_btn_confirm.on('click', () => {
+                        if (elem && elem.data) {
+                            const new_list_attr = [];
+                            for (
+                                let list_input_idx = 0;
+                                list_input_idx < list_inputs.length;
+                                list_input_idx++
+                            ) {
+                                const linput = list_inputs[list_input_idx];
+                                if (linput.val() !== '' && linput !== undefined)
+                                    new_list_attr.push(linput.val());
+                            }
+
+                            if (elem.data.attributes)
+                                elem.data.attributes[attr[0]] = new_list_attr;
+                            else if (elem.data.node)
+                                elem.data.node.attributes[
+                                    attr[0]
+                                ] = new_list_attr;
+                            else if (elem.data.state)
+                                elem.data.state.attributes[
+                                    attr[0]
+                                ] = new_list_attr;
+
+                            let g = renderer.sdfg;
+
+                            // The renderer uses a graph representation with
+                            // additional information, and to make sure that
+                            // the classical SDFG representation and that graph
+                            // representation are kept in sync, the SDFG object
+                            // is made cyclical. We use this to break the
+                            // renderer's SDFG representation back down into the
+                            // classical one, removing layout information along
+                            // with it.
+                            function unGraphifySdfg(g) {
+                                g.edges.forEach((e) => {
+                                    if (e.attributes.data.edge)
+                                        delete e.attributes.data.edge;
+                                });
+
+                                g.nodes.forEach((s) => {
+                                    if (s.attributes.layout)
+                                        delete s.attributes.layout;
+
+                                    s.edges.forEach((e) => {
+                                        if (e.attributes.data.edge)
+                                            delete e.attributes.data.edge;
+                                    });
+
+                                    s.nodes.forEach((v) => {
+                                        if (v.attributes.layout)
+                                            delete v.attributes.layout;
+
+                                        if (v.type === 'NestedSDFG')
+                                            unGraphifySdfg(v.attributes.sdfg);
+                                    });
+                                });
+                            }
+
+                            unGraphifySdfg(g);
+
+                            vscode.postMessage({
+                                type: 'dace.write_edit_to_sdfg',
+                                sdfg: JSON.stringify(g),
+                            });
+                        }
+                        reusable_modal.modal('hide');
+                    });
+
                     reusable_modal.modal('show');
                 });
-                // TODO: apply edits.
             } else if (datatype === 'Range' || datatype === 'SubsetProperty') {
                 const range_cell = $('<td>', {
                     'class': 'val-col clickable-val-col',
