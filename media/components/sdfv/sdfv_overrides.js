@@ -160,16 +160,39 @@ function fill_info_embedded(elem) {
 
             let input_element = undefined;
             if (datatype === 'bool') {
+                const attr_bool_box_container = $('<div>', {
+                    'class': 'custom-control custom-switch',
+                });
                 const attr_bool_box = $('<input>', {
                     'type': 'checkbox',
+                    'id': 'switch_' + attr[0],
+                    'class': 'custom-control-input',
                     'checked': attr[1],
-                });
+                }).appendTo(attr_bool_box_container);
                 const table_cell = $('<td>', {
                     'class': 'val-col',
                 }).appendTo(row);
-                table_cell.append(attr_bool_box);
-                input_element = attr_bool_box;
-            } else if (datatype === 'str') {
+                table_cell.append(attr_bool_box_container);
+                attr_bool_box_container.append($('<label>', {
+                    'class': 'custom-control-label',
+                    'text': ' ',
+                    'for': 'switch_' + attr[0],
+                }));
+
+                attr_bool_box.on('change', () => {
+                    if (elem && elem.data) {
+                        const new_val = attr_bool_box.is(':checked');
+                        if (elem.data.attributes)
+                            elem.data.attributes[attr[0]] = new_val;
+                        else if (elem.data.node)
+                            elem.data.node.attributes[attr[0]] = new_val;
+                        else if (elem.data.state)
+                            elem.data.state.attributes[attr[0]] = new_val;
+
+                        vscode_write_graph(renderer.sdfg);
+                    }
+                });
+            } else if (datatype === 'str' || datatype === 'SymbolicProperty') {
                 const attr_text_box = $('<input>', {
                     'type': 'text',
                     'value': attr[1],
