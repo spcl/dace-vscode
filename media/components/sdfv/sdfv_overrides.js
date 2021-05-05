@@ -200,24 +200,100 @@ function fill_info_embedded(elem) {
                     const rowbox = $('<div>', {
                         'class': 'container_fluid',
                     }).appendTo(reusable_modal_content);
+
+                    const dict_inputs = [];
+
                     if (attr[1])
                         Object.keys(attr[1]).forEach(key => {
                             const val_row = $('<div>', {
                                 'class': 'row',
                             }).appendTo(rowbox);
-                            $('<div>', {
+                            const dict_input_key = $('<input>', {
+                                'type': 'text',
                                 'class': 'col-4',
-                                'text': key,
+                                'value': key,
                             }).appendTo(val_row);
-                            $('<input>', {
+                            const dict_input_val = $('<input>', {
                                 'type': 'text',
                                 'class': 'col-8',
                                 'value': attr[1][key] ? attr[1][key] : '',
                             }).appendTo(val_row);
+                            dict_inputs.push({
+                                key: dict_input_key,
+                                val: dict_input_val,
+                            });
                         });
+
+                    const add_item_container = $('<div>', {
+                        'class': 'container_fluid',
+                    }).appendTo(reusable_modal_content);
+                    const add_item_button_row = $('<div>', {
+                        'class': 'row',
+                    }).appendTo(add_item_container);
+                    $('<button>', {
+                        'class': 'btn btn-primary col-2',
+                        'text': '+',
+                        'title': 'Add item',
+                        'click': () => {
+                            const val_row = $('<div>', {
+                                'class': 'row',
+                            }).appendTo(rowbox);
+                            const dict_input_key = $('<input>', {
+                                'type': 'text',
+                                'class': 'col-4',
+                                'value': '',
+                            }).appendTo(val_row);
+                            const dict_input_val = $('<input>', {
+                                'type': 'text',
+                                'class': 'col-8',
+                                'value': '',
+                            }).appendTo(val_row);
+                            dict_inputs.push({
+                                key: dict_input_key,
+                                val: dict_input_val,
+                            });
+                        },
+                    }).appendTo(add_item_button_row);
+
+                    reusable_modal_btn_confirm.on('click', () => {
+                        if (elem && elem.data) {
+                            const new_dict_attr = {};
+                            for (
+                                let dict_input_idx = 0;
+                                dict_input_idx < dict_inputs.length;
+                                dict_input_idx++
+                            ) {
+                                const dict_input = dict_inputs[dict_input_idx];
+                                if (dict_input.key.val() !== '' &&
+                                    dict_input.key.val() !== undefined) {
+                                    let new_val = null;
+                                    if (dict_input.val.val() !== '' &&
+                                        dict_input.val.val() !== undefined)
+                                        new_val = dict_input.val.val();
+                                    new_dict_attr[
+                                        dict_input.key.val()
+                                    ] = new_val;
+                                }
+                            }
+
+                            if (elem.data.attributes)
+                                elem.data.attributes[attr[0]] = new_dict_attr;
+                            else if (elem.data.node)
+                                elem.data.node.attributes[
+                                    attr[0]
+                                ] = new_dict_attr;
+                            else if (elem.data.state)
+                                elem.data.state.attributes[
+                                    attr[0]
+                                ] = new_dict_attr;
+
+                            vscode_write_graph(renderer.sdfg);
+                        }
+                        reusable_modal.modal('hide');
+                    });
+
                     reusable_modal.modal('show');
                 });
-                // TODO: apply edits.
             } else if (datatype === 'set' || datatype === 'list' ||
                         datatype === 'tuple') {
                 const dict_cell = $('<td>', {
@@ -291,47 +367,7 @@ function fill_info_embedded(elem) {
                                     attr[0]
                                 ] = new_list_attr;
 
-                            let g = renderer.sdfg;
-
-                            // The renderer uses a graph representation with
-                            // additional information, and to make sure that
-                            // the classical SDFG representation and that graph
-                            // representation are kept in sync, the SDFG object
-                            // is made cyclical. We use this to break the
-                            // renderer's SDFG representation back down into the
-                            // classical one, removing layout information along
-                            // with it.
-                            function unGraphifySdfg(g) {
-                                g.edges.forEach((e) => {
-                                    if (e.attributes.data.edge)
-                                        delete e.attributes.data.edge;
-                                });
-
-                                g.nodes.forEach((s) => {
-                                    if (s.attributes.layout)
-                                        delete s.attributes.layout;
-
-                                    s.edges.forEach((e) => {
-                                        if (e.attributes.data.edge)
-                                            delete e.attributes.data.edge;
-                                    });
-
-                                    s.nodes.forEach((v) => {
-                                        if (v.attributes.layout)
-                                            delete v.attributes.layout;
-
-                                        if (v.type === 'NestedSDFG')
-                                            unGraphifySdfg(v.attributes.sdfg);
-                                    });
-                                });
-                            }
-
-                            unGraphifySdfg(g);
-
-                            vscode.postMessage({
-                                type: 'dace.write_edit_to_sdfg',
-                                sdfg: JSON.stringify(g),
-                            });
+                            vscode_write_graph(renderer.sdfg);
                         }
                         reusable_modal.modal('hide');
                     });
@@ -440,47 +476,7 @@ function fill_info_embedded(elem) {
                                 target_range.tile = range_input.tile.val();
                             }
 
-                            let g = renderer.sdfg;
-
-                            // The renderer uses a graph representation with
-                            // additional information, and to make sure that
-                            // the classical SDFG representation and that graph
-                            // representation are kept in sync, the SDFG object
-                            // is made cyclical. We use this to break the
-                            // renderer's SDFG representation back down into the
-                            // classical one, removing layout information along
-                            // with it.
-                            function unGraphifySdfg(g) {
-                                g.edges.forEach((e) => {
-                                    if (e.attributes.data.edge)
-                                        delete e.attributes.data.edge;
-                                });
-
-                                g.nodes.forEach((s) => {
-                                    if (s.attributes.layout)
-                                        delete s.attributes.layout;
-
-                                    s.edges.forEach((e) => {
-                                        if (e.attributes.data.edge)
-                                            delete e.attributes.data.edge;
-                                    });
-
-                                    s.nodes.forEach((v) => {
-                                        if (v.attributes.layout)
-                                            delete v.attributes.layout;
-
-                                        if (v.type === 'NestedSDFG')
-                                            unGraphifySdfg(v.attributes.sdfg);
-                                    });
-                                });
-                            }
-
-                            unGraphifySdfg(g);
-
-                            vscode.postMessage({
-                                type: 'dace.write_edit_to_sdfg',
-                                sdfg: JSON.stringify(g),
-                            });
+                            vscode_write_graph(renderer.sdfg);
                         }
                         reusable_modal.modal('hide');
                     });
@@ -552,47 +548,7 @@ function fill_info_embedded(elem) {
                                 attr[0]
                             ] = input_element.val();
 
-                        let g = renderer.sdfg;
-
-                        // The renderer uses a graph representation with
-                        // additional information, and to make sure that
-                        // the classical SDFG representation and that graph
-                        // representation are kept in sync, the SDFG object
-                        // is made cyclical. We use this to break the
-                        // renderer's SDFG representation back down into the
-                        // classical one, removing layout information along
-                        // with it.
-                        function unGraphifySdfg(g) {
-                            g.edges.forEach((e) => {
-                                if (e.attributes.data.edge)
-                                    delete e.attributes.data.edge;
-                            });
-
-                            g.nodes.forEach((s) => {
-                                if (s.attributes.layout)
-                                    delete s.attributes.layout;
-
-                                s.edges.forEach((e) => {
-                                    if (e.attributes.data.edge)
-                                        delete e.attributes.data.edge;
-                                });
-
-                                s.nodes.forEach((v) => {
-                                    if (v.attributes.layout)
-                                        delete v.attributes.layout;
-
-                                    if (v.type === 'NestedSDFG')
-                                        unGraphifySdfg(v.attributes.sdfg);
-                                });
-                            });
-                        }
-
-                        unGraphifySdfg(g);
-
-                        vscode.postMessage({
-                            type: 'dace.write_edit_to_sdfg',
-                            sdfg: JSON.stringify(g),
-                        });
+                        vscode_write_graph(renderer.sdfg);
                     }
                 });
         }
@@ -720,47 +676,7 @@ function fill_info_embedded(elem) {
                                 attr[0]
                             ] = array_input_element.val();
 
-                            let g = renderer.sdfg;
-
-                            // The renderer uses a graph representation with
-                            // additional information, and to make sure that
-                            // the classical SDFG representation and that graph
-                            // representation are kept in sync, the SDFG object
-                            // is made cyclical. We use this to break the
-                            // renderer's SDFG representation back down into the
-                            // classical one, removing layout information along
-                            // with it.
-                            function unGraphifySdfg(g) {
-                                g.edges.forEach((e) => {
-                                    if (e.attributes.data.edge)
-                                        delete e.attributes.data.edge;
-                                });
-
-                                g.nodes.forEach((s) => {
-                                    if (s.attributes.layout)
-                                        delete s.attributes.layout;
-
-                                    s.edges.forEach((e) => {
-                                        if (e.attributes.data.edge)
-                                            delete e.attributes.data.edge;
-                                    });
-
-                                    s.nodes.forEach((v) => {
-                                        if (v.attributes.layout)
-                                            delete v.attributes.layout;
-
-                                        if (v.type === 'NestedSDFG')
-                                            unGraphifySdfg(v.attributes.sdfg);
-                                    });
-                                });
-                            }
-
-                            unGraphifySdfg(g);
-
-                            vscode.postMessage({
-                                type: 'dace.write_edit_to_sdfg',
-                                sdfg: JSON.stringify(g),
-                            });
+                            vscode_write_graph(renderer.sdfg);
                         }
                     });
             }
