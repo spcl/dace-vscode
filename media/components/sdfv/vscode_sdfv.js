@@ -55,14 +55,36 @@ function get_element_metadata(elem) {
                 metadata = window.sdfg_meta_dict[elem.data.state.type];
             } else if (elem.data.node) {
                 const node_type = elem.data.node.type;
-                if (node_type === 'MapEntry' || node_type === 'MapExit')
-                    metadata = window.sdfg_meta_dict['Map'];
-                else if (node_type === 'LibraryNode')
+                if (elem instanceof ScopeNode) {
+                    let node_meta = window.sdfg_meta_dict[node_type];
+                    let scope_meta = undefined;
+                    let entry_idx = node_type.indexOf('Entry');
+                    let exit_idx = node_type.indexOf('Entry');
+                    if (entry_idx)
+                        scope_meta = window.sdfg_meta_dict[
+                            node_type.substring(0, entry_idx)
+                        ];
+                    else if (exit_idx)
+                        scope_meta = window.sdfg_meta_dict[
+                            node_type.substring(0, exit_idx)
+                        ];
+
+                    metadata = {};
+                    if (node_meta !== undefined)
+                        Object.keys(node_meta).forEach(k => {
+                            metadata[k] = node_meta[k];
+                        });
+                    if (scope_meta !== undefined)
+                        Object.keys(scope_meta).forEach(k => {
+                            metadata[k] = scope_meta[k];
+                        });
+                } else if (node_type === 'LibraryNode') {
                     metadata = window.sdfg_meta_dict[
                         elem.data.node.classpath
                     ];
-                else
-                    metadata = window.sdfg_meta_dict[elem.data.node.type];
+                } else {
+                    metadata = window.sdfg_meta_dict[node_type];
+                }
             } else if (elem.data.type) {
                 metadata = window.sdfg_meta_dict[elem.data.type];
             }
