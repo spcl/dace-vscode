@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.3
+
+### 0.3.0
+
+- Allow editing of SDFG properties.
+
 ## 0.2
 
 ### 0.2.16
