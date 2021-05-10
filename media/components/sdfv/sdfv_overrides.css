@@ -271,10 +271,6 @@ pre.code {
   max-width: 85%;
 }
 
-.info-table .clickable-val-col {
-  cursor: pointer;
-}
-
 .info-table tr {
   border-bottom: 1px solid var(--vscode-editor-foreground);
 }
@@ -283,8 +279,20 @@ pre.code {
   padding: .5rem 0;
 }
 
+.popup-editable-property-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
 .property-add-row-btn {
   font-size: 2rem;
+  cursor: pointer;
+}
+
+.property-edit-btn {
+  margin-left: .8rem;
+  cursor: pointer;
 }
 
 .range-input-label {

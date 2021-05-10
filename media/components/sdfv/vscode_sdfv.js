@@ -205,12 +205,21 @@ function generate_attributes_table(elem, attributes, root) {
             table_cell.append(attr_number_box);
             input_element = attr_number_box;
         } else if (datatype === 'dict') {
-            const dict_cell = $('<td>', {
-                'class': 'val-col clickable-val-col',
-                'title': 'Click to edit',
-                'html': val,
+            const dict_table_cell = $('<td>', {
+                'class': 'val-col',
             }).appendTo(row);
-            dict_cell.on('click', () => {
+            const dict_cell_container = $('<div>', {
+                'class': 'popup-editable-property-container',
+            }).appendTo(dict_table_cell);
+            $('<div>', {
+                'html': val,
+            }).appendTo(dict_cell_container);
+            const dict_edit_btn = $('<i>', {
+                'class': 'material-icons property-edit-btn',
+                'text': 'edit',
+                'title': 'Click to edit',
+            }).appendTo(dict_cell_container);
+            dict_edit_btn.on('click', () => {
                 reusable_modal_title.text(attr[0]);
                 const rowbox = $('<div>', {
                     'class': 'container_fluid',
@@ -250,7 +259,7 @@ function generate_attributes_table(elem, attributes, root) {
                     'class': 'row',
                 }).appendTo(add_item_container);
                 $('<i>', {
-                    'class': 'material-icons clickable property-add-row-btn',
+                    'class': 'material-icons property-add-row-btn',
                     'text': 'playlist_add',
                     'title': 'Add item',
                     'click': () => {
@@ -318,12 +327,21 @@ function generate_attributes_table(elem, attributes, root) {
             });
         } else if (datatype === 'set' || datatype === 'list' ||
                    datatype === 'tuple') {
-            const list_cell = $('<td>', {
-                'class': 'val-col clickable-val-col',
-                'title': 'Click to edit',
-                'html': val,
+            const list_table_cell = $('<td>', {
+                'class': 'val-col',
             }).appendTo(row);
-            list_cell.on('click', () => {
+            const list_cell_container = $('<div>', {
+                'class': 'popup-editable-property-container',
+            }).appendTo(list_table_cell);
+            $('<div>', {
+                'html': val,
+            }).appendTo(list_cell_container);
+            const list_cell_edit_btn = $('<i>', {
+                'class': 'material-icons property-edit-btn',
+                'text': 'edit',
+                'title': 'Click to edit',
+            }).appendTo(list_cell_container);
+            list_cell_edit_btn.on('click', () => {
                 reusable_modal_title.text(attr[0]);
                 const rowbox = $('<div>', {
                     'class': 'container_fluid',
@@ -352,7 +370,7 @@ function generate_attributes_table(elem, attributes, root) {
                     'class': 'row',
                 }).appendTo(add_item_container);
                 $('<i>', {
-                    'class': 'material-icons clickable property-add-row-btn',
+                    'class': 'material-icons property-add-row-btn',
                     'text': 'playlist_add',
                     'title': 'Add item',
                     'click': () => {
@@ -402,12 +420,21 @@ function generate_attributes_table(elem, attributes, root) {
                 reusable_modal.modal('show');
             });
         } else if (datatype === 'Range' || datatype === 'SubsetProperty') {
-            const range_cell = $('<td>', {
-                'class': 'val-col clickable-val-col',
-                'title': 'Click to edit',
-                'html': val,
+            const range_table_cell = $('<td>', {
+                'class': 'val-col',
             }).appendTo(row);
-            range_cell.on('click', () => {
+            const range_cell_container = $('<div>', {
+                'class': 'popup-editable-property-container',
+            }).appendTo(range_table_cell);
+            $('<td>', {
+                'html': val,
+            }).appendTo(range_cell_container);
+            const range_edit_btn = $('<i>', {
+                'class': 'material-icons property-edit-btn',
+                'text': 'edit',
+                'title': 'Click to edit',
+            }).appendTo(range_cell_container);
+            range_edit_btn.on('click', () => {
                 reusable_modal_title.text(attr[0]);
 
                 const rowbox = $('<div>', {
@@ -423,7 +450,7 @@ function generate_attributes_table(elem, attributes, root) {
                         const range_start_input = $('<input>', {
                             'type': 'text',
                             'class': 'range-input',
-                            'value': range.start
+                            'value': range.start,
                         });
                         $('<div>', {
                             'class': 'col-3',
@@ -435,7 +462,7 @@ function generate_attributes_table(elem, attributes, root) {
                         const range_end_input = $('<input>', {
                             'type': 'text',
                             'class': 'range-input',
-                            'value': range.end
+                            'value': range.end,
                         });
                         $('<div>', {
                             'class': 'col-3',
@@ -447,7 +474,7 @@ function generate_attributes_table(elem, attributes, root) {
                         const range_step_input = $('<input>', {
                             'type': 'text',
                             'class': 'range-input',
-                            'value': range.step
+                            'value': range.step,
                         });
                         $('<div>', {
                             'class': 'col-3',
@@ -459,7 +486,7 @@ function generate_attributes_table(elem, attributes, root) {
                         const range_tile_input = $('<input>', {
                             'type': 'text',
                             'class': 'range-input',
-                            'value': range.tile
+                            'value': range.tile,
                         });
                         $('<div>', {
                             'class': 'col-3',
@@ -476,31 +503,112 @@ function generate_attributes_table(elem, attributes, root) {
                         });
                     });
 
+                const add_item_container = $('<div>', {
+                    'class': 'container_fluid',
+                }).appendTo(reusable_modal_content);
+                const add_item_button_row = $('<div>', {
+                    'class': 'row',
+                }).appendTo(add_item_container);
+                $('<i>', {
+                    'class': 'material-icons property-add-row-btn',
+                    'text': 'playlist_add',
+                    'title': 'Add item',
+                    'click': () => {
+                        const val_row = $('<div>', {
+                            'class': 'row',
+                        }).appendTo(rowbox);
+
+                        const range_start_input = $('<input>', {
+                            'type': 'text',
+                            'class': 'range-input',
+                            'value': '',
+                        });
+                        $('<div>', {
+                            'class': 'col-3',
+                        }).appendTo(val_row).append($('<span>', {
+                            'class': 'range-input-label',
+                            'text': 'Start:',
+                        })).append(range_start_input);
+
+                        const range_end_input = $('<input>', {
+                            'type': 'text',
+                            'class': 'range-input',
+                            'value': '',
+                        });
+                        $('<div>', {
+                            'class': 'col-3',
+                        }).appendTo(val_row).append($('<span>', {
+                            'class': 'range-input-label',
+                            'text': 'End:',
+                        })).append(range_end_input);
+
+                        const range_step_input = $('<input>', {
+                            'type': 'text',
+                            'class': 'range-input',
+                            'value': '',
+                        });
+                        $('<div>', {
+                            'class': 'col-3',
+                        }).appendTo(val_row).append($('<span>', {
+                            'class': 'range-input-label',
+                            'text': 'Step:',
+                        })).append(range_step_input);
+
+                        const range_tile_input = $('<input>', {
+                            'type': 'text',
+                            'class': 'range-input',
+                            'value': '',
+                        });
+                        $('<div>', {
+                            'class': 'col-3',
+                        }).appendTo(val_row).append($('<span>', {
+                            'class': 'range-input-label',
+                            'text': 'Tile:',
+                        })).append(range_tile_input);
+
+                        ranges_inputs.push({
+                            start: range_start_input,
+                            end: range_end_input,
+                            step: range_step_input,
+                            tile: range_tile_input,
+                        });
+                    },
+                }).appendTo($('<div>', {
+                    'class': 'col-2',
+                }).appendTo(add_item_button_row));
+
                 reusable_modal_btn_confirm.on('click', () => {
-                    let ranges = undefined;
+                    let attributes = undefined;
                     if (elem.data) {
                         if (elem.data.attributes)
-                            ranges = elem.data.attributes[attr[0]].ranges;
+                            attributes = elem.data.attributes;
                         else if (elem.data.node)
-                            ranges = elem.data.node.attributes[attr[0]].ranges;
+                            attributes = elem.data.node.attributes;
                         else if (elem.data.state)
-                            ranges = elem.data.state.attributes[attr[0]].ranges;
+                            attributes = elem.data.state.attributes;
                     } else if (elem.attributes) {
-                        ranges = elem.attributes[attr[0]].ranges;
+                        attributes = elem.attributes;
                     }
 
+                    ranges = [];
                     for (
                         let range_idx = 0;
-                        range_idx < ranges.length;
+                        range_idx < ranges_inputs.length;
                         range_idx++
                     ) {
-                        let target_range = ranges[range_idx];
+                        let target_range = {};
                         let range_input = ranges_inputs[range_idx];
                         target_range.start = range_input.start.val();
                         target_range.end = range_input.end.val();
                         target_range.step = range_input.step.val();
                         target_range.tile = range_input.tile.val();
+                        ranges.push(target_range);
                     }
+
+                    attributes[attr[0]] = {
+                        type: 'Range',
+                        ranges: ranges,
+                    };
 
                     vscode_write_graph(renderer.sdfg);
 
