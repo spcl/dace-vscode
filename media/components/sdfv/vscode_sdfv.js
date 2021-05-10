@@ -221,18 +221,22 @@ function generate_attributes_table(elem, attributes, root) {
                 if (attr[1])
                     Object.keys(attr[1]).forEach(key => {
                         const val_row = $('<div>', {
-                            'class': 'row',
+                            'class': 'row mb-2',
                         }).appendTo(rowbox);
                         const dict_input_key = $('<input>', {
                             'type': 'text',
-                            'class': 'col-4',
+                            'class': 'form-control',
                             'value': key,
-                        }).appendTo(val_row);
+                        }).appendTo($('<div>', {
+                            'class': 'col-4',
+                        }).appendTo(val_row));
                         const dict_input_val = $('<input>', {
                             'type': 'text',
-                            'class': 'col-8',
+                            'class': 'form-control',
                             'value': attr[1][key] ? attr[1][key] : '',
-                        }).appendTo(val_row);
+                        }).appendTo($('<div>', {
+                            'class': 'col-8',
+                        }).appendTo(val_row));
                         dict_inputs.push({
                             key: dict_input_key,
                             val: dict_input_val,
@@ -245,30 +249,36 @@ function generate_attributes_table(elem, attributes, root) {
                 const add_item_button_row = $('<div>', {
                     'class': 'row',
                 }).appendTo(add_item_container);
-                $('<button>', {
-                    'class': 'btn btn-primary col-2',
-                    'text': '+',
+                $('<i>', {
+                    'class': 'material-icons clickable property-add-row-btn',
+                    'text': 'playlist_add',
                     'title': 'Add item',
                     'click': () => {
                         const val_row = $('<div>', {
-                            'class': 'row',
+                            'class': 'row mb-2',
                         }).appendTo(rowbox);
                         const dict_input_key = $('<input>', {
                             'type': 'text',
-                            'class': 'col-4',
+                            'class': 'form-control',
                             'value': '',
-                        }).appendTo(val_row);
+                        }).appendTo($('<div>', {
+                            'class': 'col-4',
+                        }).appendTo(val_row));
                         const dict_input_val = $('<input>', {
                             'type': 'text',
-                            'class': 'col-8',
+                            'class': 'form-control',
                             'value': '',
-                        }).appendTo(val_row);
+                        }).appendTo($('<div>', {
+                            'class': 'col-8',
+                        }).appendTo(val_row));
                         dict_inputs.push({
                             key: dict_input_key,
                             val: dict_input_val,
                         });
                     },
-                }).appendTo(add_item_button_row);
+                }).appendTo($('<div>', {
+                    'class': 'col-2',
+                }).appendTo(add_item_button_row));
 
                 reusable_modal_btn_confirm.on('click', () => {
                     const new_dict_attr = {};
@@ -307,13 +317,13 @@ function generate_attributes_table(elem, attributes, root) {
                 reusable_modal.modal('show');
             });
         } else if (datatype === 'set' || datatype === 'list' ||
-                    datatype === 'tuple') {
-            const dict_cell = $('<td>', {
+                   datatype === 'tuple') {
+            const list_cell = $('<td>', {
                 'class': 'val-col clickable-val-col',
                 'title': 'Click to edit',
                 'html': val,
             }).appendTo(row);
-            dict_cell.on('click', () => {
+            list_cell.on('click', () => {
                 reusable_modal_title.text(attr[0]);
                 const rowbox = $('<div>', {
                     'class': 'container_fluid',
@@ -324,13 +334,15 @@ function generate_attributes_table(elem, attributes, root) {
                 if (attr[1])
                     attr[1].forEach(v => {
                         const val_row = $('<div>', {
-                            'class': 'row',
+                            'class': 'row mb-2',
                         }).appendTo(rowbox);
                         list_inputs.push($('<input>', {
                             'type': 'text',
-                            'class': 'col-12',
+                            'class': 'form-control',
                             'value': v ? v : '',
-                        }).appendTo(val_row));
+                        }).appendTo($('<div>', {
+                            'class': 'col-12',
+                        }).appendTo(val_row)));
                     });
 
                 const add_item_container = $('<div>', {
@@ -339,21 +351,25 @@ function generate_attributes_table(elem, attributes, root) {
                 const add_item_button_row = $('<div>', {
                     'class': 'row',
                 }).appendTo(add_item_container);
-                $('<button>', {
-                    'class': 'btn btn-primary col-2',
-                    'text': '+',
+                $('<i>', {
+                    'class': 'material-icons clickable property-add-row-btn',
+                    'text': 'playlist_add',
                     'title': 'Add item',
                     'click': () => {
                         const val_row = $('<div>', {
-                            'class': 'row',
+                            'class': 'row mb-2',
                         }).appendTo(rowbox);
                         list_inputs.push($('<input>', {
                             'type': 'text',
-                            'class': 'col-12',
+                            'class': 'form-control',
                             'value': '',
-                        }).appendTo(val_row));
+                        }).appendTo($('<div>', {
+                            'class': 'col-12',
+                        }).appendTo(val_row)));
                     },
-                }).appendTo(add_item_button_row);
+                }).appendTo($('<div>', {
+                    'class': 'col-2',
+                }).appendTo(add_item_button_row));
 
                 reusable_modal_btn_confirm.on('click', () => {
                     const new_list_attr = [];
