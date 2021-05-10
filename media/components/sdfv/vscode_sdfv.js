@@ -1,6 +1,39 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+function compute_scope_label(scope_entry) {
+    const attributes = scope_entry.data.node.attributes;
+    const base_label = attributes.label;
+
+    range_snippets = [];
+    for (let i = 0; i < attributes.range.ranges.length; i++) {
+        let parameter = '_';
+        if (i < attributes.params.length)
+            parameter = attributes.params[i];
+
+        let range = attributes.range.ranges[i];
+        range_snippets.push(
+            parameter + '=' + sdfg_range_elem_to_string(
+                range, renderer.view_settings()
+            )
+        );
+    }
+
+    if (range_snippets.length > 0) {
+        let label = base_label + '[';
+        for (let i = 0; i < range_snippets.length; i++) {
+            label += range_snippets[i];
+            if (i < range_snippets.length - 1)
+                label += ', ';
+        }
+        label += ']';
+        console.log(label);
+        return label;
+    } else {
+        return base_label;
+    }
+}
+
 /**
  * Transform the renderer's graph to a serializable SDFG.
  * The renderer uses a graph representation with additional information, and to
@@ -59,7 +92,7 @@ function get_element_metadata(elem) {
                     let node_meta = window.sdfg_meta_dict[node_type];
                     let scope_meta = undefined;
                     let entry_idx = node_type.indexOf('Entry');
-                    let exit_idx = node_type.indexOf('Entry');
+                    let exit_idx = node_type.indexOf('Exit');
                     if (entry_idx)
                         scope_meta = window.sdfg_meta_dict[
                             node_type.substring(0, entry_idx)
@@ -732,6 +765,49 @@ function generate_attributes_table(elem, attributes, root) {
                             input_element.val();
                 } else if (elem.attributes) {
                     elem.attributes[attr[0]] = input_element.val();
+                }
+
+                if (attr[0] === 'label') {
+                    // If the label was changed, we want to update the renderer
+                    // graph element label as well.
+                    if (elem.data) {
+                        if (elem.data.node) {
+                            elem.data.node.label = input_element.val();
+
+                            if (elem instanceof ScopeNode) {
+                                // In scope nodes the range is attached.
+                                if (elem instanceof EntryNode) {
+                                    let exit_elem = find_graph_element_by_uuid(
+                                        renderer.graph,
+                                        elem.sdfg.sdfg_list_id + '/' +
+                                        elem.parent_id + '/' +
+                                        elem.data.node.scope_exit + '/-1'
+                                    );
+                                    if (exit_elem) {
+                                        elem.data.node.label =
+                                            compute_scope_label(elem);
+                                        exit_elem.element.data.node.label =
+                                            elem.data.node.label;
+                                    }
+                                } else if (elem instanceof ExitNode) {
+                                    let entry_elem = find_graph_element_by_uuid(
+                                        renderer.graph,
+                                        elem.sdfg.sdfg_list_id + '/' +
+                                        elem.parent_id + '/' +
+                                        elem.data.node.scope_entry + '/-1'
+                                    );
+                                    if (entry_elem) {
+                                        elem.data.node.label =
+                                            compute_scope_label(
+                                                entry_elem.element
+                                            );
+                                        entry_elem.element.data.node.label =
+                                            elem.data.node.label;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 vscode_write_graph(renderer.sdfg);
