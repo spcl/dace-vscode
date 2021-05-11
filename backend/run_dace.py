@@ -459,16 +459,10 @@ def get_transformations(sdfg_json, selected_elements):
 
     if subgraph is not None:
         for xform in SubgraphTransformation.extensions():
-            if isinstance(xform.can_be_applied, types.FunctionType):
-                if xform.can_be_applied(sdfg, subgraph):
-                    xform_obj = xform(subgraph)
-                    transformations.append(xform_obj.to_json())
-                    docstrings[xform.__name__] = xform_obj.__doc__
-            else:
-                xform_obj = xform(subgraph)
-                if xform_obj.can_be_applied(sdfg, subgraph):
-                    transformations.append(xform_obj.to_json())
-                    docstrings[xform.__name__] = xform_obj.__doc__
+            xform_obj = xform(subgraph)
+            if xform_obj.can_be_applied(sdfg, subgraph):
+                transformations.append(xform_obj.to_json())
+                docstrings[xform.__name__] = xform_obj.__doc__
 
     serialize.JSON_STORE_METADATA = old_meta
     return {
