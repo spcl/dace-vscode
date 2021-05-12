@@ -251,32 +251,22 @@ pre.code {
 }
 
 .info-table {
-  width: 100%;
-  word-break: break-all;
-  border-collapse: collapse;
-  font-family: "Segoe UI", Arial, sans-serif;
-  font-size: 1rem;
+  padding: 0;
 }
 
-.info-table th {
-  text-align: left;
+.info-table-heading {
+  font-weight: bold;
 }
 
-.info-table .key-col {
-  width: 20%;
-  min-width: 15%;
-}
-
-.info-table .val-col {
-  max-width: 85%;
-}
-
-.info-table tr {
+.info-table-row {
+  padding: .5rem 0;
   border-bottom: 1px solid var(--vscode-editor-foreground);
 }
 
-.info-table tr td {
-  padding: .5rem 0;
+.info-table-cell {
+  text-align: left;
+  display: flex;
+  align-items: center;
 }
 
 .popup-editable-property-container {

@@ -69,26 +69,26 @@ function fill_info_embedded(elem) {
             $('<hr>').appendTo(contents);
         }
 
-        const attr_table = $('<table>', {
-            id: 'sdfg-attribute-table',
-            'class': 'info-table',
+        const attr_table = $('<div>', {
+            'id': 'sdfg-attribute-table',
+            'class': 'container-fluid info-table',
         }).appendTo(contents);
-        const attr_table_header = $('<thead>').appendTo(attr_table);
-        const attr_table_header_row = $('<tr>').appendTo(attr_table_header);
-        $('<th>', {
-            'class': 'key-col',
+        const attr_table_header_row = $('<div>', {
+            'class': 'row info-table-row',
+        }).appendTo(attr_table);
+        $('<div>', {
+            'class': 'col-3 info-table-heading',
             'text': 'Attribute',
         }).appendTo(attr_table_header_row);
-        $('<th>', {
-            'class': 'val-col',
+        $('<div>', {
+            'class': 'col-9 info-table-heading',
             'text': 'Value',
         }).appendTo(attr_table_header_row);
 
-        const attr_table_body = $('<tbody>').appendTo(attr_table);
         generate_attributes_table(
             elem,
             Object.entries(elem.attributes()),
-            attr_table_body
+            attr_table
         );
 
         if (elem instanceof AccessNode) {
@@ -102,27 +102,26 @@ function fill_info_embedded(elem) {
                 'text': sdfg_array.type + ' properties:',
             }).appendTo(contents);
 
-            const array_table = $('<table>', {
-                id: 'sdfg-array-table',
-                'class': 'info-table',
+            const array_table = $('<div>', {
+                'id': 'sdfg-array-table',
+                'class': 'container-fluid info-table',
             }).appendTo(contents);
-            const array_table_header = $('<thead>').appendTo(array_table);
-            const array_table_header_row =
-                $('<tr>').appendTo(array_table_header);
-            $('<th>', {
-                'class': 'key-col',
+            const array_table_header_row = $('<div>', {
+                'class': 'row info-table-row',
+            }).appendTo(array_table);
+            $('<div>', {
+                'class': 'col-3 info-table-heading',
                 'text': 'Property',
             }).appendTo(array_table_header_row);
-            $('<th>', {
-                'class': 'val-col',
+            $('<div>', {
+                'class': 'col-9 info-table-heading',
                 'text': 'Value',
             }).appendTo(array_table_header_row);
 
-            const array_table_body = $('<tbody>').appendTo(array_table);
             generate_attributes_table(
                 sdfg_array,
                 Object.entries(sdfg_array.attributes),
-                array_table_body
+                array_table
             );
         } else if (elem instanceof ScopeNode) {
             // If we're processing a scope node, we want to append the exit
@@ -154,29 +153,26 @@ function fill_info_embedded(elem) {
                     'text': other_element.type() + ' ' + other_element.label(),
                 }).appendTo(contents);
 
-                const other_elem_table = $('<table>', {
-                    id: 'sdfg-other-elem-table',
-                    'class': 'info-table',
+                const other_elem_table = $('<div>', {
+                    'id': 'sdfg-other-elem-table',
+                    'class': 'container-fluid info-table',
                 }).appendTo(contents);
-                const other_elem_table_header =
-                    $('<thead>').appendTo(other_elem_table);
-                const other_elem_table_header_row =
-                    $('<tr>').appendTo(other_elem_table_header);
-                $('<th>', {
-                    'class': 'key-col',
+                const other_elem_table_header_row = $('<div>', {
+                    'class': 'row info-table-row',
+                }).appendTo(other_elem_table);
+                $('<div>', {
+                    'class': 'col-3 info-table-header',
                     'text': 'Property',
                 }).appendTo(other_elem_table_header_row);
-                $('<th>', {
-                    'class': 'val-col',
+                $('<div>', {
+                    'class': 'col-9 info-table-header',
                     'text': 'Value',
                 }).appendTo(other_elem_table_header_row);
 
-                const other_elem_table_body =
-                    $('<tbody>').appendTo(other_elem_table);
                 generate_attributes_table(
                     other_element,
                     Object.entries(other_element.attributes()),
-                    other_elem_table_body
+                    other_elem_table
                 );
             }
         }
