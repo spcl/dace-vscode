@@ -246,14 +246,14 @@ function attr_table_add_dict_input(key, val, elem, cell, val_type, val_meta) {
                     'class': 'form-control',
                     'value': '',
                 }).appendTo($('<div>', {
-                    'class': 'col-4',
+                    'class': 'col-3',
                 }).appendTo(val_row));
                 const dict_input_val = $('<input>', {
                     'type': 'text',
                     'class': 'form-control',
                     'value': '',
                 }).appendTo($('<div>', {
-                    'class': 'col-8',
+                    'class': 'col-9',
                 }).appendTo(val_row));
                 dict_inputs.push({
                     key: dict_input_key,
@@ -315,7 +315,7 @@ function attr_table_add_list_input(key, val, elem, cell) {
         'title': 'Click to edit',
     }).appendTo(list_cell_container);
     list_cell_edit_btn.on('click', () => {
-        reusable_modal_title.text(attr[0]);
+        reusable_modal_title.text(key);
         const rowbox = $('<div>', {
             'class': 'container_fluid',
         }).appendTo(reusable_modal_content);
