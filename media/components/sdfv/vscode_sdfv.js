@@ -27,7 +27,6 @@ function compute_scope_label(scope_entry) {
                 label += ', ';
         }
         label += ']';
-        console.log(label);
         return label;
     } else {
         return base_label;
@@ -690,6 +689,8 @@ function generate_attributes_table_entry(key, val, metadata, elem, root) {
             case 'str':
             case 'LambdaProperty':
             case 'SymbolicProperty':
+                // TODO(later): Treat symbolic expressions with a symbolic
+                // parser, they're not just a regular string.
                 attr_table_add_text_input(key, val, elem, table_cell, datatype);
                 break;
             case 'int':
@@ -764,6 +765,21 @@ function generate_attributes_table_entry(key, val, metadata, elem, root) {
 }
 
 function generate_attributes_table(elem, attributes, root) {
+    const attr_table = $('<div>', {
+        'class': 'container-fluid info-table',
+    }).appendTo(root);
+    const attr_table_header_row = $('<div>', {
+        'class': 'row info-table-row',
+    }).appendTo(attr_table);
+    $('<div>', {
+        'class': 'col-3 info-table-heading',
+        'text': 'Attribute',
+    }).appendTo(attr_table_header_row);
+    $('<div>', {
+        'class': 'col-9 info-table-heading',
+        'text': 'Value',
+    }).appendTo(attr_table_header_row);
+
     let metadata = get_element_metadata(elem);
 
     for (const attr of attributes) {

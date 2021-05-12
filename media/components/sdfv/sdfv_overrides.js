@@ -69,26 +69,10 @@ function fill_info_embedded(elem) {
             $('<hr>').appendTo(contents);
         }
 
-        const attr_table = $('<div>', {
-            'id': 'sdfg-attribute-table',
-            'class': 'container-fluid info-table',
-        }).appendTo(contents);
-        const attr_table_header_row = $('<div>', {
-            'class': 'row info-table-row',
-        }).appendTo(attr_table);
-        $('<div>', {
-            'class': 'col-3 info-table-heading',
-            'text': 'Attribute',
-        }).appendTo(attr_table_header_row);
-        $('<div>', {
-            'class': 'col-9 info-table-heading',
-            'text': 'Value',
-        }).appendTo(attr_table_header_row);
-
         generate_attributes_table(
             elem,
             Object.entries(elem.attributes()),
-            attr_table
+            contents
         );
 
         if (elem instanceof AccessNode) {
@@ -102,26 +86,10 @@ function fill_info_embedded(elem) {
                 'text': sdfg_array.type + ' properties:',
             }).appendTo(contents);
 
-            const array_table = $('<div>', {
-                'id': 'sdfg-array-table',
-                'class': 'container-fluid info-table',
-            }).appendTo(contents);
-            const array_table_header_row = $('<div>', {
-                'class': 'row info-table-row',
-            }).appendTo(array_table);
-            $('<div>', {
-                'class': 'col-3 info-table-heading',
-                'text': 'Property',
-            }).appendTo(array_table_header_row);
-            $('<div>', {
-                'class': 'col-9 info-table-heading',
-                'text': 'Value',
-            }).appendTo(array_table_header_row);
-
             generate_attributes_table(
                 sdfg_array,
                 Object.entries(sdfg_array.attributes),
-                array_table
+                contents
             );
         } else if (elem instanceof ScopeNode) {
             // If we're processing a scope node, we want to append the exit
@@ -153,26 +121,10 @@ function fill_info_embedded(elem) {
                     'text': other_element.type() + ' ' + other_element.label(),
                 }).appendTo(contents);
 
-                const other_elem_table = $('<div>', {
-                    'id': 'sdfg-other-elem-table',
-                    'class': 'container-fluid info-table',
-                }).appendTo(contents);
-                const other_elem_table_header_row = $('<div>', {
-                    'class': 'row info-table-row',
-                }).appendTo(other_elem_table);
-                $('<div>', {
-                    'class': 'col-3 info-table-header',
-                    'text': 'Property',
-                }).appendTo(other_elem_table_header_row);
-                $('<div>', {
-                    'class': 'col-9 info-table-header',
-                    'text': 'Value',
-                }).appendTo(other_elem_table_header_row);
-
                 generate_attributes_table(
                     other_element,
                     Object.entries(other_element.attributes()),
-                    other_elem_table
+                    contents
                 );
             }
         }
