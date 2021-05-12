@@ -182,6 +182,65 @@ function attr_table_add_select_input(key, val, choices, elem, cell) {
     attr_table_generic_change_listener(attr_data_prop_box, elem, key);
 }
 
+function create_and_show_property_edit_modal(title, with_confirm) {
+    const prop_edit_modal = $('<div>', {
+        'class': 'modal fade',
+        'role': 'dialog',
+    }).appendTo('body');
+
+    const modal_document = $('<div>', {
+        'class': 'modal-dialog modal-dialog-centered',
+        'role': 'document',
+    }).appendTo(prop_edit_modal);
+    const modal_content = $('<div>', {
+        'class': 'modal-content',
+    }).appendTo(modal_document);
+    const modal_header = $('<div>', {
+        'class': 'modal-header',
+    }).appendTo(modal_content);
+
+    $('<h5>', {
+        'class': 'modal-title',
+        'text': title,
+    }).appendTo(modal_header);
+    $('<button>', {
+        'class': 'close',
+        'type': 'button',
+        'data-dismiss': 'modal',
+        'html': '<span>&times;</span>',
+    }).appendTo(modal_header);
+
+    const modal_body = $('<div>', {
+        'class': 'modal-body',
+    }).appendTo(modal_content);
+
+    const modal_footer = $('<div>', {
+        'class': 'modal-footer',
+    }).appendTo(modal_content);
+    $('<button>', {
+        'class': 'btn btn-secondary',
+        'type': 'button',
+        'data-dismiss': 'modal',
+        'text': 'Close',
+    }).appendTo(modal_footer);
+
+    let modal_confirm_btn = undefined;
+    if (with_confirm)
+        modal_confirm_btn = $('<button>', {
+            'class': 'btn btn-primary',
+            'type': 'button',
+            'text': 'Ok',
+        }).appendTo(modal_footer);
+
+    prop_edit_modal.on('hidden.bs.modal', () => prop_edit_modal.remove());
+
+    return {
+        modal: prop_edit_modal,
+        body: modal_body,
+        confirm_btn: modal_confirm_btn,
+    };
+}
+
 function attr_table_add_dict_input(key, val, elem, cell, val_type, val_meta) {
     const dict_cell_container = $('<div>', {
         'class': 'popup-editable-property-container',
@@ -195,10 +254,11 @@ function attr_table_add_dict_input(key, val, elem, cell, val_type, val_meta) {
         'title': 'Click to edit',
     }).appendTo(dict_cell_container);
     dict_edit_btn.on('click', () => {
-        reusable_modal_title.text(key);
+        const modal = create_and_show_property_edit_modal(key, true);
+
         const rowbox = $('<div>', {
             'class': 'container_fluid',
-        }).appendTo(reusable_modal_content);
+        }).appendTo(modal.body);
 
         const dict_inputs = [];
 
@@ -229,7 +289,7 @@ function attr_table_add_dict_input(key, val, elem, cell, val_type, val_meta) {
 
         const add_item_container = $('<div>', {
             'class': 'container_fluid',
-        }).appendTo(reusable_modal_content);
+        }).appendTo(modal.body);
         const add_item_button_row = $('<div>', {
             'class': 'row',
         }).appendTo(add_item_container);
@@ -264,41 +324,43 @@ function attr_table_add_dict_input(key, val, elem, cell, val_type, val_meta) {
             'class': 'col-2',
         }).appendTo(add_item_button_row));
 
-        reusable_modal_btn_confirm.on('click', () => {
-            const new_dict_attr = {};
-            for (
-                let dict_input_idx = 0;
-                dict_input_idx < dict_inputs.length;
-                dict_input_idx++
-            ) {
-                const dict_input = dict_inputs[dict_input_idx];
-                if (dict_input.key.val() !== '' &&
-                    dict_input.key.val() !== undefined) {
-                    let new_val = null;
-                    if (dict_input.val.val() !== '' &&
-                        dict_input.val.val() !== undefined)
-                        new_val = dict_input.val.val();
-                    new_dict_attr[dict_input.key.val()] = new_val;
+        if (modal.confirm_btn)
+            modal.confirm_btn.on('click', () => {
+                const new_dict_attr = {};
+                for (
+                    let dict_input_idx = 0;
+                    dict_input_idx < dict_inputs.length;
+                    dict_input_idx++
+                ) {
+                    const dict_input = dict_inputs[dict_input_idx];
+                    if (dict_input.key.val() !== '' &&
+                        dict_input.key.val() !== undefined) {
+                        let new_val = null;
+                        if (dict_input.val.val() !== '' &&
+                            dict_input.val.val() !== undefined)
+                            new_val = dict_input.val.val();
+                        new_dict_attr[dict_input.key.val()] = new_val;
+                    }
                 }
-            }
 
-            if (elem.data) {
-                if (elem.data.attributes)
-                    elem.data.attributes[key] = new_dict_attr;
-                else if (elem.data.node)
-                    elem.data.node.attributes[key] = new_dict_attr;
-                else if (elem.data.state)
-                    elem.data.state.attributes[key] = new_dict_attr;
-            } else if (elem.attributes) {
-                elem.attributes[key] = new_dict_attr;
-            }
+                if (elem.data) {
+                    if (elem.data.attributes)
+                        elem.data.attributes[key] = new_dict_attr;
+                    else if (elem.data.node)
+                        elem.data.node.attributes[key] = new_dict_attr;
+                    else if (elem.data.state)
+                        elem.data.state.attributes[key] = new_dict_attr;
+                } else if (elem.attributes) {
+                    elem.attributes[key] = new_dict_attr;
+                }
 
-            vscode_write_graph(renderer.sdfg);
+                vscode_write_graph(renderer.sdfg);
 
-            reusable_modal.modal('hide');
-        });
+                modal.modal.modal('hide');
+            });
 
-        reusable_modal.modal('show');
+
+        modal.modal.modal('show');
     });
 }
 
@@ -315,10 +377,11 @@ function attr_table_add_list_input(key, val, elem, cell) {
         'title': 'Click to edit',
     }).appendTo(list_cell_container);
     list_cell_edit_btn.on('click', () => {
-        reusable_modal_title.text(key);
+        const modal = create_and_show_property_edit_modal(key, true);
+
         const rowbox = $('<div>', {
             'class': 'container_fluid',
-        }).appendTo(reusable_modal_content);
+        }).appendTo(modal.body);
 
         const list_inputs = [];
 
@@ -338,7 +401,7 @@ function attr_table_add_list_input(key, val, elem, cell) {
 
         const add_item_container = $('<div>', {
             'class': 'container_fluid',
-        }).appendTo(reusable_modal_content);
+        }).appendTo(modal.body);
         const add_item_button_row = $('<div>', {
             'class': 'row',
         }).appendTo(add_item_container);
@@ -362,35 +425,36 @@ function attr_table_add_list_input(key, val, elem, cell) {
             'class': 'col-2',
         }).appendTo(add_item_button_row));
 
-        reusable_modal_btn_confirm.on('click', () => {
-            const new_list_attr = [];
-            for (
-                let list_input_idx = 0;
-                list_input_idx < list_inputs.length;
-                list_input_idx++
-            ) {
-                const linput = list_inputs[list_input_idx];
-                if (linput.val() !== '' && linput !== undefined)
-                    new_list_attr.push(linput.val());
-            }
+        if (modal.confirm_btn)
+            modal.confirm_btn.on('click', () => {
+                const new_list_attr = [];
+                for (
+                    let list_input_idx = 0;
+                    list_input_idx < list_inputs.length;
+                    list_input_idx++
+                ) {
+                    const linput = list_inputs[list_input_idx];
+                    if (linput.val() !== '' && linput !== undefined)
+                        new_list_attr.push(linput.val());
+                }
 
-            if (elem.data) {
-                if (elem.data.attributes)
-                    elem.data.attributes[key] = new_list_attr;
-                else if (elem.data.node)
-                    elem.data.node.attributes[key] = new_list_attr;
-                else if (elem.data.state)
-                    elem.data.state.attributes[key] = new_list_attr;
-            } else if (elem.attributes) {
-                elem.attributes[key] = new_list_attr;
-            }
+                if (elem.data) {
+                    if (elem.data.attributes)
+                        elem.data.attributes[key] = new_list_attr;
+                    else if (elem.data.node)
+                        elem.data.node.attributes[key] = new_list_attr;
+                    else if (elem.data.state)
+                        elem.data.state.attributes[key] = new_list_attr;
+                } else if (elem.attributes) {
+                    elem.attributes[key] = new_list_attr;
+                }
 
-            vscode_write_graph(renderer.sdfg);
+                vscode_write_graph(renderer.sdfg);
 
-            reusable_modal.modal('hide');
-        });
+                modal.modal.modal('hide');
+            });
 
-        reusable_modal.modal('show');
+        modal.modal.modal('show');
     });
 
 }
@@ -408,11 +472,12 @@ function attr_table_add_range_input(key, val, elem, cell) {
         'title': 'Click to edit',
     }).appendTo(range_cell_container);
     range_edit_btn.on('click', () => {
-        reusable_modal_title.text(key);
+        const modal = create_and_show_property_edit_modal(key, true);
 
         const rowbox = $('<div>', {
             'class': 'container_fluid',
-        }).appendTo(reusable_modal_content);
+        }).appendTo(modal.body);
+
         let ranges_inputs = [];
         if (val)
             val.ranges.forEach(range => {
@@ -478,7 +543,7 @@ function attr_table_add_range_input(key, val, elem, cell) {
 
         const add_item_container = $('<div>', {
             'class': 'container_fluid',
-        }).appendTo(reusable_modal_content);
+        }).appendTo(modal.body);
         const add_item_button_row = $('<div>', {
             'class': 'row',
         }).appendTo(add_item_container);
@@ -550,45 +615,46 @@ function attr_table_add_range_input(key, val, elem, cell) {
             'class': 'col-2',
         }).appendTo(add_item_button_row));
 
-        reusable_modal_btn_confirm.on('click', () => {
-            let attributes = undefined;
-            if (elem.data) {
-                if (elem.data.attributes)
-                    attributes = elem.data.attributes;
-                else if (elem.data.node)
-                    attributes = elem.data.node.attributes;
-                else if (elem.data.state)
-                    attributes = elem.data.state.attributes;
-            } else if (elem.attributes) {
-                attributes = elem.attributes;
-            }
+        if (modal.confirm_btn)
+            modal.confirm_btn.on('click', () => {
+                let attributes = undefined;
+                if (elem.data) {
+                    if (elem.data.attributes)
+                        attributes = elem.data.attributes;
+                    else if (elem.data.node)
+                        attributes = elem.data.node.attributes;
+                    else if (elem.data.state)
+                        attributes = elem.data.state.attributes;
+                } else if (elem.attributes) {
+                    attributes = elem.attributes;
+                }
 
-            ranges = [];
-            for (
-                let range_idx = 0;
-                range_idx < ranges_inputs.length;
-                range_idx++
-            ) {
-                let target_range = {};
-                let range_input = ranges_inputs[range_idx];
-                target_range.start = range_input.start.val();
-                target_range.end = range_input.end.val();
-                target_range.step = range_input.step.val();
-                target_range.tile = range_input.tile.val();
-                ranges.push(target_range);
-            }
+                ranges = [];
+                for (
+                    let range_idx = 0;
+                    range_idx < ranges_inputs.length;
+                    range_idx++
+                ) {
+                    let target_range = {};
+                    let range_input = ranges_inputs[range_idx];
+                    target_range.start = range_input.start.val();
+                    target_range.end = range_input.end.val();
+                    target_range.step = range_input.step.val();
+                    target_range.tile = range_input.tile.val();
+                    ranges.push(target_range);
+                }
 
-            attributes[key] = {
-                type: 'Range',
-                ranges: ranges,
-            };
+                attributes[key] = {
+                    type: 'Range',
+                    ranges: ranges,
+                };
 
-            vscode_write_graph(renderer.sdfg);
+                vscode_write_graph(renderer.sdfg);
 
-            reusable_modal.modal('hide');
-        });
+                modal.modal.modal('hide');
+            });
 
-        reusable_modal.modal('show');
+        modal.modal.modal('show');
     });
 }
 
@@ -596,19 +662,31 @@ function attr_table_generic_change_listener(input, elem, key, dtype=undefined) {
     input.on('change', () => {
         let val = input.is(':checkbox') ? input.is(':checked') : input.val();
 
-        if (dtype === 'LambdaProperty')
+        if (dtype === 'LambdaProperty') {
             if (val === '' || val === undefined)
                 val = null;
-
-        if (elem.data) {
-            if (elem.data.attributes)
-                elem.data.attributes[key] = val;
-            else if (elem.data.node)
-                elem.data.node.attributes[key] = val;
-            else if (elem.data.state)
-                elem.data.state.attributes[key] = val;
-        } else if (elem.attributes) {
-            elem.attributes[key] = val;
+        } else if (dtype === 'CodeBlock') {
+            if (elem.data) {
+                if (elem.data.attributes)
+                    elem.data.attributes[key].string_data = val;
+                else if (elem.data.node)
+                    elem.data.node.attributes[key].string_data = val;
+                else if (elem.data.state)
+                    elem.data.state.attributes[key].string_data = val;
+            } else if (elem.attributes) {
+                elem.attributes[key].string_data = val;
+            }
+        } else {
+            if (elem.data) {
+                if (elem.data.attributes)
+                    elem.data.attributes[key] = val;
+                else if (elem.data.node)
+                    elem.data.node.attributes[key] = val;
+                else if (elem.data.state)
+                    elem.data.state.attributes[key] = val;
+            } else if (elem.attributes) {
+                elem.attributes[key] = val;
+            }
         }
 
         if (key === 'label') {
@@ -727,28 +805,9 @@ function generate_attributes_table_entry(key, val, metadata, elem, root) {
                 );
                 break;
             case 'CodeBlock':
-                const attr_code_box = $('<input>', {
-                    'type': 'text',
-                    'value': val ? val.string_data : '',
-                }).appendTo(table_cell);
-
-                attr_code_box.on('change', () => {
-                    if (elem.data) {
-                        if (elem.data.attributes)
-                            elem.data.attributes[key].string_data =
-                                attr_code_box.val();
-                        else if (elem.data.node)
-                            elem.data.node.attributes[key].string_data =
-                                attr_code_box.val();
-                        else if (elem.data.state)
-                            elem.data.state.attributes[key].string_data =
-                                attr_code_box.val();
-                    } else if (elem.attributes) {
-                        elem.attributes[key].string_data = attr_code_box.val();
-                    }
-
-                    vscode_write_graph(renderer.sdfg);
-                });
+                attr_table_add_text_input(
+                    key, val ? val.string_data : '', elem, table_cell, datatype
+                );
                 break;
             default:
                 if (choices !== undefined)

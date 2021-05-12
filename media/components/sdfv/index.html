@@ -104,10 +104,6 @@
     <script>
         var sdfg_json = '';
         var transformations = [[], [], [], []];
-        var reusable_modal = undefined;
-        var reusable_modal_title = undefined;
-        var reusable_modal_content = undefined;
-        var reusable_modal_btn_confirm = undefined;
     </script>
     <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
@@ -202,45 +198,8 @@
                 type: 'dace.get_enum',
                 name: 'InstrumentationType',
             });
-
-            reusable_modal = $('#reusable-modal');
-            reusable_modal_title = $('#reusable-modal-title');
-            reusable_modal_content = $('#reusable-modal-container');
-            reusable_modal_btn_confirm = $('#reusable-modal-btn-confirm');
-            reusable_modal.on('hidden.bs.modal', () => {
-                reusable_modal_title.html('');
-                reusable_modal_content.html('');
-                reusable_modal_btn_confirm.off('click');
-            });
         });
     </script>
 </body>
-
-<div id="reusable-modal" class="modal fade" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="reusable-modal-title"></h5>
-                <button type="button" class="close" data-dismiss="modal"
-                        aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div id="reusable-modal-container"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary"
-                        data-dismiss="modal">
-                    Close
-                </button>
-                <button type="button" id="reusable-modal-btn-confirm"
-                        class="btn btn-primary">
-                    Ok
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 </html>
