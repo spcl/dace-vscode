@@ -13,6 +13,7 @@ import inspect
 import sympy
 import sys
 import traceback
+import types
 
 
 # Prepare a whitelist of DaCe enumeration types
