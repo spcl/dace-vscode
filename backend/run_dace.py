@@ -516,6 +516,10 @@ def get_property_metdata():
                     meta_dict[meta_key][propname][
                         'value_type'
                     ] = prop.value_type.__name__
+                elif hasattr(prop, 'element_type'):
+                    meta_dict[meta_key][propname][
+                        'element_type'
+                    ] = prop.element_type.__name__
 
                 if prop.choices is not None:
                     # If there are specific choices for this property (i.e. this

@@ -69,11 +69,7 @@ function fill_info_embedded(elem) {
             $('<hr>').appendTo(contents);
         }
 
-        generate_attributes_table(
-            elem,
-            Object.entries(elem.attributes()),
-            contents
-        );
+        generate_attributes_table(elem, contents);
 
         if (elem instanceof AccessNode) {
             // If we're processing an access node, add array information too.
@@ -86,11 +82,7 @@ function fill_info_embedded(elem) {
                 'text': sdfg_array.type + ' properties:',
             }).appendTo(contents);
 
-            generate_attributes_table(
-                sdfg_array,
-                Object.entries(sdfg_array.attributes),
-                contents
-            );
+            generate_attributes_table(sdfg_array, contents);
         } else if (elem instanceof ScopeNode) {
             // If we're processing a scope node, we want to append the exit
             // node's properties when selecting an entry node, and vice versa.
@@ -121,11 +113,7 @@ function fill_info_embedded(elem) {
                     'text': other_element.type() + ' ' + other_element.label(),
                 }).appendTo(contents);
 
-                generate_attributes_table(
-                    other_element,
-                    Object.entries(other_element.attributes()),
-                    contents
-                );
+                generate_attributes_table(other_element, contents);
             }
         }
 

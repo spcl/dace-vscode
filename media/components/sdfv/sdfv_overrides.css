@@ -285,6 +285,14 @@ pre.code {
   cursor: pointer;
 }
 
+.property-key-input {
+  width: 100%;
+}
+
+.property-edit-modal-body {
+  padding: 0;
+}
+
 .range-input-label {
   user-select: none;
 }

@@ -133,53 +133,55 @@ function get_element_metadata(elem) {
     return metadata;
 }
 
-function attr_table_add_bool_input(key, val, elem, cell) {
-    const attr_bool_box_container = $('<div>', {
+function attr_table_put_bool(key, subkey, val, elem, target, cell, dtype) {
+    const bool_input_container = $('<div>', {
         'class': 'custom-control custom-switch',
     }).appendTo(cell);
-    const attr_bool_box = $('<input>', {
+    const input = $('<input>', {
         'type': 'checkbox',
         'id': 'switch_' + key,
         'class': 'custom-control-input',
         'checked': val,
-    }).appendTo(attr_bool_box_container);
-    attr_bool_box_container.append($('<label>', {
+    }).appendTo(bool_input_container);
+    bool_input_container.append($('<label>', {
         'class': 'custom-control-label',
         'text': ' ',
         'for': 'switch_' + key,
     }));
-    attr_table_generic_change_listener(attr_bool_box, elem, key);
+    return new ValueProperty(elem, target, key, subkey, dtype, input);
 }
 
-function attr_table_add_text_input(key, val, elem, cell, dtype) {
-    const attr_text_box = $('<input>', {
+function attr_table_put_text(key, subkey, val, elem, target, cell, dtype) {
+    const input = $('<input>', {
         'type': 'text',
         'value': val,
     }).appendTo(cell);
-    attr_table_generic_change_listener(attr_text_box, elem, key, dtype);
+    return new ValueProperty(elem, target, key, subkey, dtype, input);
 }
 
-function attr_table_add_number_input(key, val, elem, cell) {
-    const attr_number_box = $('<input>', {
+function attr_table_put_number(key, subkey, val, elem, target, cell, dtype) {
+    const input = $('<input>', {
         'type': 'number',
         'value': val,
     }).appendTo(cell);
-    attr_table_generic_change_listener(attr_number_box, elem, key);
+    return new ValueProperty(elem, target, key, subkey, dtype, input);
 }
 
-function attr_table_add_select_input(key, val, choices, elem, cell) {
-    const attr_data_prop_box = $('<select>', {
+function attr_table_put_select(
+    key, subkey, val, elem, target, cell, dtype, choices
+) {
+    const input = $('<select>', {
         'class': 'sdfv-property-dropdown',
     }).appendTo(cell);
     choices.forEach(array => {
-        attr_data_prop_box.append(new Option(
+        input.append(new Option(
             array,
             array,
             false,
             array === val
         ));
     });
-    attr_table_generic_change_listener(attr_data_prop_box, elem, key);
+    return new ValueProperty(elem, target, key, subkey, dtype, input);
 }
 
 function create_and_show_property_edit_modal(title, with_confirm) {
@@ -211,7 +213,7 @@ function create_and_show_property_edit_modal(title, with_confirm) {
     }).appendTo(modal_header);
 
     const modal_body = $('<div>', {
-        'class': 'modal-body',
+        'class': 'modal-body property-edit-modal-body',
     }).appendTo(modal_content);
 
     const modal_footer = $('<div>', {
@@ -241,7 +243,9 @@ function create_and_show_property_edit_modal(title, with_confirm) {
     };
 }
 
-function attr_table_add_dict_input(key, val, elem, cell, val_type, val_meta) {
+function attr_table_put_dict(
+    key, subkey, val, elem, target, cell, dtype, val_meta
+) {
     const dict_cell_container = $('<div>', {
         'class': 'popup-editable-property-container',
     }).appendTo(cell);
@@ -257,7 +261,104 @@ function attr_table_add_dict_input(key, val, elem, cell, val_type, val_meta) {
         const modal = create_and_show_property_edit_modal(key, true);
 
         const rowbox = $('<div>', {
-            'class': 'container_fluid',
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+
+        const attribute_properties = [];
+        Object.keys(val).forEach(k => {
+            let v = val[k];
+            const prop = attribute_table_put_entry(
+                k, v, val_meta, val, elem, rowbox, true, false
+            );
+
+            if (prop)
+                attribute_properties.push(prop);
+        });
+
+        if (modal.confirm_btn)
+            modal.confirm_btn.on('click', () => {
+                attribute_properties.forEach(prop => prop.update());
+                if (attribute_properties.length)
+                    vscode_write_graph(renderer.sdfg);
+                modal.modal.modal('hide');
+            });
+
+        modal.modal.modal('show');
+    });
+}
+
+function attr_table_put_list(
+    key, subkey, val, elem, target, cell, dtype, elem_meta
+) {
+    // If a list's element type is unknown, i.e. there is no element metadata,
+    // treat it as a string so it can be edited properly.
+    if (elem_meta === undefined)
+        elem_meta = {
+            metatype: 'str',
+        };
+
+    const list_cell_container = $('<div>', {
+        'class': 'popup-editable-property-container',
+    }).appendTo(cell);
+    $('<div>', {
+        'html': sdfg_property_to_string(val, renderer.view_settings()),
+    }).appendTo(list_cell_container);
+    const list_cell_edit_btn = $('<i>', {
+        'class': 'material-icons property-edit-btn',
+        'text': 'edit',
+        'title': 'Click to edit',
+    }).appendTo(list_cell_container);
+    list_cell_edit_btn.on('click', () => {
+        const modal = create_and_show_property_edit_modal(key, true);
+
+        const rowbox = $('<div>', {
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+
+        const elements_properties = [];
+        if (val)
+            for (let i = 0; i < val.length; i++) {
+                const v = val[i];
+                const prop = attribute_table_put_entry(
+                    i, v, elem_meta, val, elem, rowbox, false, false
+                );
+
+                if (prop)
+                    elements_properties.push(prop);
+            }
+
+        if (modal.confirm_btn)
+            modal.confirm_btn.on('click', () => {
+                elements_properties.forEach(prop => prop.update());
+                if (elements_properties.length)
+                    vscode_write_graph(renderer.sdfg);
+                modal.modal.modal('hide');
+            });
+
+        modal.modal.modal('show');
+    });
+}
+
+/*
+function attr_table_add_dict_input(
+    key, val, elem, cell, dtype, val_type, val_meta
+) {
+    const dict_cell_container = $('<div>', {
+        'class': 'popup-editable-property-container',
+    }).appendTo(cell);
+    $('<div>', {
+        'html': sdfg_property_to_string(val, renderer.view_settings()),
+    }).appendTo(dict_cell_container);
+    const dict_edit_btn = $('<i>', {
+        'class': 'material-icons property-edit-btn',
+        'text': 'edit',
+        'title': 'Click to edit',
+    }).appendTo(dict_cell_container);
+    dict_edit_btn.on('click', () => {
+        const modal = create_and_show_property_edit_modal(key, true);
+
+        const rowbox = $('<div>', {
+            'class': 'container-fluid',
         }).appendTo(modal.body);
 
         const dict_inputs = [];
@@ -324,47 +425,19 @@ function attr_table_add_dict_input(key, val, elem, cell, val_type, val_meta) {
             'class': 'col-2',
         }).appendTo(add_item_button_row));
 
+        const prop = new DictProperty(elem, key, undefined, dtype, dict_inputs);
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
-                const new_dict_attr = {};
-                for (
-                    let dict_input_idx = 0;
-                    dict_input_idx < dict_inputs.length;
-                    dict_input_idx++
-                ) {
-                    const dict_input = dict_inputs[dict_input_idx];
-                    if (dict_input.key.val() !== '' &&
-                        dict_input.key.val() !== undefined) {
-                        let new_val = null;
-                        if (dict_input.val.val() !== '' &&
-                            dict_input.val.val() !== undefined)
-                            new_val = dict_input.val.val();
-                        new_dict_attr[dict_input.key.val()] = new_val;
-                    }
-                }
-
-                if (elem.data) {
-                    if (elem.data.attributes)
-                        elem.data.attributes[key] = new_dict_attr;
-                    else if (elem.data.node)
-                        elem.data.node.attributes[key] = new_dict_attr;
-                    else if (elem.data.state)
-                        elem.data.state.attributes[key] = new_dict_attr;
-                } else if (elem.attributes) {
-                    elem.attributes[key] = new_dict_attr;
-                }
-
-                vscode_write_graph(renderer.sdfg);
-
+                prop.update();
                 modal.modal.modal('hide');
             });
-
 
         modal.modal.modal('show');
     });
 }
+*/
 
-function attr_table_add_list_input(key, val, elem, cell) {
+function attr_table_add_list_input(key, val, elem, cell, dtype) {
     const list_cell_container = $('<div>', {
         'class': 'popup-editable-property-container',
     }).appendTo(cell);
@@ -425,32 +498,11 @@ function attr_table_add_list_input(key, val, elem, cell) {
             'class': 'col-2',
         }).appendTo(add_item_button_row));
 
+        const prop = new ListProperty(elem, key, undefined, dtype, list_inputs);
+
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
-                const new_list_attr = [];
-                for (
-                    let list_input_idx = 0;
-                    list_input_idx < list_inputs.length;
-                    list_input_idx++
-                ) {
-                    const linput = list_inputs[list_input_idx];
-                    if (linput.val() !== '' && linput !== undefined)
-                        new_list_attr.push(linput.val());
-                }
-
-                if (elem.data) {
-                    if (elem.data.attributes)
-                        elem.data.attributes[key] = new_list_attr;
-                    else if (elem.data.node)
-                        elem.data.node.attributes[key] = new_list_attr;
-                    else if (elem.data.state)
-                        elem.data.state.attributes[key] = new_list_attr;
-                } else if (elem.attributes) {
-                    elem.attributes[key] = new_list_attr;
-                }
-
-                vscode_write_graph(renderer.sdfg);
-
+                prop.update();
                 modal.modal.modal('hide');
             });
 
@@ -459,7 +511,7 @@ function attr_table_add_list_input(key, val, elem, cell) {
 
 }
 
-function attr_table_add_range_input(key, val, elem, cell) {
+function attr_table_add_range_input(key, val, elem, cell, dtype) {
     const range_cell_container = $('<div>', {
         'class': 'popup-editable-property-container',
     }).appendTo(cell);
@@ -615,42 +667,11 @@ function attr_table_add_range_input(key, val, elem, cell) {
             'class': 'col-2',
         }).appendTo(add_item_button_row));
 
+        const prop = new RangeProperty(elem, key, 'ranges', dtype, ranges_inputs);
+
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
-                let attributes = undefined;
-                if (elem.data) {
-                    if (elem.data.attributes)
-                        attributes = elem.data.attributes;
-                    else if (elem.data.node)
-                        attributes = elem.data.node.attributes;
-                    else if (elem.data.state)
-                        attributes = elem.data.state.attributes;
-                } else if (elem.attributes) {
-                    attributes = elem.attributes;
-                }
-
-                ranges = [];
-                for (
-                    let range_idx = 0;
-                    range_idx < ranges_inputs.length;
-                    range_idx++
-                ) {
-                    let target_range = {};
-                    let range_input = ranges_inputs[range_idx];
-                    target_range.start = range_input.start.val();
-                    target_range.end = range_input.end.val();
-                    target_range.step = range_input.step.val();
-                    target_range.tile = range_input.tile.val();
-                    ranges.push(target_range);
-                }
-
-                attributes[key] = {
-                    type: 'Range',
-                    ranges: ranges,
-                };
-
-                vscode_write_graph(renderer.sdfg);
-
+                prop.update();
                 modal.modal.modal('hide');
             });
 
@@ -658,172 +679,164 @@ function attr_table_add_range_input(key, val, elem, cell) {
     });
 }
 
-function attr_table_generic_change_listener(input, elem, key, dtype=undefined) {
-    input.on('change', () => {
-        let val = input.is(':checkbox') ? input.is(':checked') : input.val();
+function attribute_table_put_entry(
+    key, val, meta, target, elem, root, editable_key, update_on_change
+) {
+    let prop = undefined;
 
-        if (dtype === 'LambdaProperty') {
-            if (val === '' || val === undefined)
-                val = null;
-        } else if (dtype === 'CodeBlock') {
-            if (elem.data) {
-                if (elem.data.attributes)
-                    elem.data.attributes[key].string_data = val;
-                else if (elem.data.node)
-                    elem.data.node.attributes[key].string_data = val;
-                else if (elem.data.state)
-                    elem.data.state.attributes[key].string_data = val;
-            } else if (elem.attributes) {
-                elem.attributes[key].string_data = val;
-            }
-        } else {
-            if (elem.data) {
-                if (elem.data.attributes)
-                    elem.data.attributes[key] = val;
-                else if (elem.data.node)
-                    elem.data.node.attributes[key] = val;
-                else if (elem.data.state)
-                    elem.data.state.attributes[key] = val;
-            } else if (elem.attributes) {
-                elem.attributes[key] = val;
-            }
-        }
-
-        if (key === 'label') {
-            // If the label was changed, we want to update the renderer graph
-            // element label as well.
-            if (elem.data) {
-                if (elem.data.node) {
-                    elem.data.node.label = val;
-
-                    if (elem instanceof ScopeNode) {
-                        // In scope nodes the range is attached.
-                        if (elem instanceof EntryNode) {
-                            let exit_elem = find_graph_element_by_uuid(
-                                renderer.graph,
-                                elem.sdfg.sdfg_list_id + '/' +
-                                elem.parent_id + '/' +
-                                elem.data.node.scope_exit + '/-1'
-                            );
-                            if (exit_elem) {
-                                elem.data.node.label = compute_scope_label(
-                                    elem
-                                );
-                                exit_elem.element.data.node.label =
-                                    elem.data.node.label;
-                            }
-                        } else if (elem instanceof ExitNode) {
-                            let entry_elem = find_graph_element_by_uuid(
-                                renderer.graph,
-                                elem.sdfg.sdfg_list_id + '/' +
-                                elem.parent_id + '/' +
-                                elem.data.node.scope_entry + '/-1'
-                            );
-                            if (entry_elem) {
-                                elem.data.node.label = compute_scope_label(
-                                    entry_elem.element
-                                );
-                                entry_elem.element.data.node.label =
-                                    elem.data.node.label;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        vscode_write_graph(renderer.sdfg);
-    });
-}
-
-function generate_attributes_table_entry(key, val, metadata, elem, root) {
-    let datatype = undefined;
+    let dtype = undefined;
     let choices = undefined;
-    if (metadata) {
-        if (metadata['metatype'])
-            datatype = metadata['metatype'];
-        if (metadata['choices'])
-            choices = metadata['choices'];
+    if (meta) {
+        if (meta['metatype'])
+            dtype = meta['metatype'];
+        if (meta['choices'])
+            choices = meta['choices'];
     }
 
     const row = $('<div>', {
         'class': 'row info-table-row',
     }).appendTo(root);
-    $('<div>', {
-        'class': 'col-3 info-table-heading info-table-cell',
-        'text': key,
-    }).appendTo(row);
-    const table_cell = $('<div>', {
+    if (editable_key) {
+        const key_cell = $('<div>', {
+            'class': 'col-3 info-table-cell',
+        }).appendTo(row);
+        const key_input = $('<input>', {
+            'type': 'text',
+            'class': 'property-key-input',
+            'value': key,
+        }).appendTo(key_cell);
+        key_input.on('change', () => {
+            const new_key = key_input.val();
+            if (new_key !== key) {
+                Object.defineProperty(
+                    target,
+                    new_key,
+                    Object.getOwnPropertyDescriptor(target, key)
+                );
+                delete target[key];
+
+                vscode_write_graph(renderer.sdfg);
+            }
+        });
+    } else {
+        $('<div>', {
+            'class': 'col-3 info-table-heading info-table-cell',
+            'text': key,
+        }).appendTo(row);
+    }
+    const value_cell = $('<div>', {
         'class': 'col-9 info-table-cell',
     }).appendTo(row);
 
-    if (datatype === undefined) {
-        table_cell.html(sdfg_property_to_string(val, renderer.view_settings()));
+    if (dtype === undefined) {
+        value_cell.html(sdfg_property_to_string(val, renderer.view_settings()));
     } else {
-        switch (datatype) {
+        switch (dtype) {
             case 'bool':
-                attr_table_add_bool_input(key, val, elem, table_cell);
+                prop = attr_table_put_bool(
+                    key, undefined, val, elem, target, value_cell, dtype, false
+                );
                 break;
             case 'str':
             case 'LambdaProperty':
             case 'SymbolicProperty':
                 // TODO(later): Treat symbolic expressions with a symbolic
                 // parser, they're not just a regular string.
-                attr_table_add_text_input(key, val, elem, table_cell, datatype);
+                prop = attr_table_put_text(
+                    key, undefined, val, elem, target, value_cell, dtype
+                );
                 break;
             case 'int':
-                attr_table_add_number_input(key, val, elem, table_cell);
+                prop = attr_table_put_number(
+                    key, undefined, val, elem, target, value_cell, dtype
+                );
                 break;
             case 'dict':
                 let val_type = undefined;
                 let val_meta = undefined;
-                if (metadata !== undefined && metadata['value_type'])
-                    val_type = metadata['value_type'];
+                if (meta !== undefined && meta['value_type'])
+                    val_type = meta['value_type'];
                 if (window.sdfg_meta_dict && val_type &&
                     window.sdfg_meta_dict['__reverse_type_lookup__'] &&
                     window.sdfg_meta_dict['__reverse_type_lookup__'][val_type])
                     val_meta = window.sdfg_meta_dict[
                         '__reverse_type_lookup__'
                     ][val_type];
-                attr_table_add_dict_input(
-                    key, val, elem, table_cell, val_type, val_meta
+                attr_table_put_dict(
+                    key, undefined, val, elem, target, value_cell, dtype,
+                    val_meta
                 );
                 break;
             case 'set':
             case 'list':
             case 'tuple':
-                attr_table_add_list_input(key, val, elem, table_cell);
+                let elem_type = undefined;
+                let elem_meta = undefined;
+                if (meta !== undefined && meta['element_type'])
+                    elem_type = meta['element_type'];
+                if (window.sdfg_meta_dict && elem_type &&
+                    window.sdfg_meta_dict['__reverse_type_lookup__'] &&
+                    window.sdfg_meta_dict['__reverse_type_lookup__'][elem_type])
+                    elem_meta = window.sdfg_meta_dict[
+                        '__reverse_type_lookup__'
+                    ][elem_type];
+                attr_table_put_list(
+                    key, undefined, val, elem, target, value_cell, dtype,
+                    elem_meta
+                );
                 break;
             case 'Range':
             case 'SubsetProperty':
-                attr_table_add_range_input(key, val, elem, table_cell);
+                attr_table_add_range_input(key, val, target, value_cell, dtype);
                 break;
             case 'DataProperty':
-                attr_table_add_select_input(
-                    key, val, Object.keys(elem.sdfg.attributes._arrays), elem,
-                    table_cell
+                prop = attr_table_put_select(
+                    key, undefined, val, elem, target, value_cell, dtype,
+                    Object.keys(elem.sdfg.attributes._arrays)
                 );
                 break;
             case 'CodeBlock':
-                attr_table_add_text_input(
-                    key, val ? val.string_data : '', elem, table_cell, datatype
+                prop = attr_table_put_text(
+                    key, 'string_data', val ? val.string_data : '', elem,
+                    target, value_cell, dtype
                 );
                 break;
             default:
                 if (choices !== undefined)
-                    attr_table_add_select_input(
-                        key, val, choices, elem, table_cell
+                    prop = attr_table_put_select(
+                        key, undefined, val, elem, target, value_cell, dtype,
+                        choices
                     );
                 else
-                    table_cell.html(sdfg_property_to_string(
+                    value_cell.html(sdfg_property_to_string(
                         val, renderer.view_settings()
                     ));
                 break;
         }
     }
+
+    if (update_on_change && prop !== undefined && prop.input !== undefined)
+        prop.input.on('change', () => {
+            prop.update();
+            vscode_write_graph(renderer.sdfg);
+        });
+
+    return prop;
 }
 
-function generate_attributes_table(elem, attributes, root) {
+function generate_attributes_table(elem, root) {
+    let attributes = undefined;
+    if (elem.data) {
+        if (elem.data.attributes)
+            attributes = elem.data.attributes;
+        else if (elem.data.node)
+            attributes = elem.data.node.attributes;
+        else if (elem.data.state)
+            attributes = elem.data.state.attributes;
+    } else {
+        attributes = elem.attributes;
+    }
+
     const attr_table = $('<div>', {
         'class': 'container-fluid info-table',
     }).appendTo(root);
@@ -841,41 +854,42 @@ function generate_attributes_table(elem, attributes, root) {
 
     let metadata = get_element_metadata(elem);
 
-    for (const attr of attributes) {
-        if (attr[0] === 'layout' || attr[0] === 'sdfg' ||
-            attr[0] === 'is_collapsed' || attr[0] === 'orig_sdfg' ||
-            attr[0] === 'transformation_hist' || attr[0].startsWith('_'))
-            continue;
+    Object.keys(attributes).forEach(k => {
+        const val = attributes[k];
+        if (k === 'layout' || k === 'sdfg' ||
+            k === 'is_collapsed' || k === 'orig_sdfg' ||
+            k === 'transformation_hist' || k.startsWith('_'))
+            return;
 
         // Debug info isn't printed in the attributes table, but instead we
         // show a button to jump to the referenced code location.
-        if (attr[0] === 'debuginfo') {
-            if (attr[1]) {
+        if (k === 'debuginfo') {
+            if (val) {
                 const gotoSourceBtn = $('#goto-source-btn');
                 gotoSourceBtn.on('click', function() {
                     gotoSource(
-                        attr[1].filename,
-                        attr[1].start_line,
-                        attr[1].start_column,
-                        attr[1].end_line,
-                        attr[1].end_column
+                        val.filename,
+                        val.start_line,
+                        val.start_column,
+                        val.end_line,
+                        val.end_column
                     );
                 });
                 gotoSourceBtn.prop(
                     'title',
-                    attr[1].filename + ':' + attr[1].start_line
+                    val.filename + ':' + val.start_line
                 );
                 gotoSourceBtn.show();
             }
-            continue;
+            return;
         }
 
         let attr_meta = undefined;
-        if (metadata && metadata[attr[0]])
-            attr_meta = metadata[attr[0]];
+        if (metadata && metadata[k])
+            attr_meta = metadata[k];
 
-        generate_attributes_table_entry(
-            attr[0], attr[1], attr_meta, elem, root
+        attribute_table_put_entry(
+            k, val, attr_meta, attributes, elem, root, false, true
         );
-    }
+    });
 }
