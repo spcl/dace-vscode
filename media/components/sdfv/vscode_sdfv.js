@@ -258,50 +258,53 @@ function attr_table_put_dict(
         'title': 'Click to edit',
     }).appendTo(dict_cell_container);
 
-    const rowbox = $('<div>', {
-        'class': 'container-fluid',
-    });
-    const dict_properties = [];
-    Object.keys(val).forEach(k => {
-        let v = val[k];
-        const prop = attribute_table_put_entry(
-            k, v, val_meta, val, elem, rowbox, true, false
-        );
-
-        if (prop)
-            dict_properties.push(prop);
-    });
-
-    const prop = new DictProperty(
-        elem, target, key, subkey, dtype, dict_properties
-    );
-
-    const add_item_container = $('<div>', {
-        'class': 'container-fluid',
-    });
-    const add_item_button_row = $('<div>', {
-        'class': 'row',
-    }).appendTo(add_item_container);
-    $('<i>', {
-        'class': 'material-icons property-add-row-btn',
-        'text': 'playlist_add',
-        'title': 'Add item',
-        'click': () => {
-            const new_prop = attribute_table_put_entry(
-                '', '', val_meta, val, elem, rowbox, true, false
-            );
-            if (new_prop)
-                prop.properties.push(new_prop);
-        },
-    }).appendTo($('<div>', {
-        'class': 'col-2',
-    }).appendTo(add_item_button_row));
+    const prop = new DictProperty(elem, target, key, subkey, dtype, []);
 
     dict_edit_btn.on('click', () => {
+        prop.properties = [];
+
         const modal = create_and_show_property_edit_modal(key, true);
 
-        rowbox.appendTo(modal.body);
-        add_item_container.appendTo(modal.body);
+        const rowbox = $('<div>', {
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+        Object.keys(val).forEach(k => {
+            let v = val[k];
+            const attr_prop = attribute_table_put_entry(
+                k, v, val_meta, val, elem, rowbox, true, false
+            );
+
+            if (attr_prop)
+                prop.properties.push(attr_prop);
+        });
+
+        const add_item_container = $('<div>', {
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+        const add_item_button_row = $('<div>', {
+            'class': 'row',
+        }).appendTo(add_item_container);
+        $('<i>', {
+            'class': 'material-icons property-add-row-btn',
+            'text': 'playlist_add',
+            'title': 'Add item',
+            'click': () => {
+                let new_prop = undefined;
+                if (val_meta)
+                    new_prop = attribute_table_put_entry(
+                        '', '', val_meta, val, elem, rowbox, true, false
+                    );
+                else
+                    new_prop = attribute_table_put_entry(
+                        '', '', { metatype: 'str' }, val, elem, rowbox, true,
+                        false
+                    );
+                if (new_prop)
+                    prop.properties.push(new_prop);
+            },
+        }).appendTo($('<div>', {
+            'class': 'col-2',
+        }).appendTo(add_item_button_row));
 
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
@@ -338,53 +341,48 @@ function attr_table_put_list(
         'title': 'Click to edit',
     }).appendTo(list_cell_container);
 
-    const rowbox = $('<div>', {
-        'class': 'container-fluid',
-    });
-
-    const elements_properties = [];
-    if (val)
-        for (let i = 0; i < val.length; i++) {
-            const v = val[i];
-            const prop = attribute_table_put_entry(
-                i, v, elem_meta, val, elem, rowbox, false, false
-            );
-
-            if (prop && prop.val_prop)
-                elements_properties.push(prop.val_prop);
-        }
-
-    const prop = new ListProperty(
-        elem, target, key, subkey, dtype, elements_properties
-    );
-
-    const add_item_container = $('<div>', {
-        'class': 'container-fluid',
-    });
-    const add_item_button_row = $('<div>', {
-        'class': 'row',
-    }).appendTo(add_item_container);
-    $('<i>', {
-        'class': 'material-icons property-add-row-btn',
-        'text': 'playlist_add',
-        'title': 'Add item',
-        'click': () => {
-            let i = prop.properties_list.length;
-            let new_prop = attribute_table_put_entry(
-                i, '', elem_meta, val, elem, rowbox, false, false
-            );
-            if (new_prop && new_prop.val_prop)
-                prop.properties_list.push(new_prop.val_prop);
-        },
-    }).appendTo($('<div>', {
-        'class': 'col-2',
-    }).appendTo(add_item_button_row));
+    const prop = new ListProperty(elem, target, key, subkey, dtype, []);
 
     list_cell_edit_btn.on('click', () => {
+        prop.properties_list = [];
+
         const modal = create_and_show_property_edit_modal(key, true);
 
-        rowbox.appendTo(modal.body);
-        add_item_container.appendTo(modal.body);
+        const rowbox = $('<div>', {
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+        if (val)
+            for (let i = 0; i < val.length; i++) {
+                const v = val[i];
+                const attr_prop = attribute_table_put_entry(
+                    i, v, elem_meta, val, elem, rowbox, false, false
+                );
+
+                if (attr_prop && attr_prop.val_prop)
+                    prop.properties_list.push(attr_prop.val_prop);
+            }
+
+        const add_item_container = $('<div>', {
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+        const add_item_button_row = $('<div>', {
+            'class': 'row',
+        }).appendTo(add_item_container);
+        $('<i>', {
+            'class': 'material-icons property-add-row-btn',
+            'text': 'playlist_add',
+            'title': 'Add item',
+            'click': () => {
+                let i = prop.properties_list.length;
+                let new_prop = attribute_table_put_entry(
+                    i, '', elem_meta, val, elem, rowbox, false, false
+                );
+                if (new_prop && new_prop.val_prop)
+                    prop.properties_list.push(new_prop.val_prop);
+            },
+        }).appendTo($('<div>', {
+            'class': 'col-2',
+        }).appendTo(add_item_button_row));
 
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
@@ -413,156 +411,151 @@ function attr_table_put_range(key, subkey, val, elem, target, cell, dtype) {
         'title': 'Click to edit',
     }).appendTo(range_cell_container);
 
-    const rowbox = $('<div>', {
-        'class': 'container-fluid',
-    });
-
-    let ranges_inputs = [];
-    if (val)
-        val.ranges.forEach(range => {
-            const val_row = $('<div>', {
-                'class': 'row',
-            }).appendTo(rowbox);
-
-            const range_start_input = $('<input>', {
-                'type': 'text',
-                'class': 'range-input',
-                'value': range.start,
-            });
-            $('<div>', {
-                'class': 'col-3',
-            }).appendTo(val_row).append($('<span>', {
-                'class': 'range-input-label',
-                'text': 'Start:',
-            })).append(range_start_input);
-
-            const range_end_input = $('<input>', {
-                'type': 'text',
-                'class': 'range-input',
-                'value': range.end,
-            });
-            $('<div>', {
-                'class': 'col-3',
-            }).appendTo(val_row).append($('<span>', {
-                'class': 'range-input-label',
-                'text': 'End:',
-            })).append(range_end_input);
-
-            const range_step_input = $('<input>', {
-                'type': 'text',
-                'class': 'range-input',
-                'value': range.step,
-            });
-            $('<div>', {
-                'class': 'col-3',
-            }).appendTo(val_row).append($('<span>', {
-                'class': 'range-input-label',
-                'text': 'Step:',
-            })).append(range_step_input);
-
-            const range_tile_input = $('<input>', {
-                'type': 'text',
-                'class': 'range-input',
-                'value': range.tile,
-            });
-            $('<div>', {
-                'class': 'col-3',
-            }).appendTo(val_row).append($('<span>', {
-                'class': 'range-input-label',
-                'text': 'Tile:',
-            })).append(range_tile_input);
-
-            ranges_inputs.push({
-                start: range_start_input,
-                end: range_end_input,
-                step: range_step_input,
-                tile: range_tile_input,
-            });
-        });
-
-    const prop = new RangeProperty(
-        elem, target, key, 'ranges', dtype, ranges_inputs
-    );
-
-    const add_item_container = $('<div>', {
-        'class': 'container-fluid',
-    });
-    const add_item_button_row = $('<div>', {
-        'class': 'row',
-    }).appendTo(add_item_container);
-    $('<i>', {
-        'class': 'material-icons property-add-row-btn',
-        'text': 'playlist_add',
-        'title': 'Add item',
-        'click': () => {
-            const val_row = $('<div>', {
-                'class': 'row',
-            }).appendTo(rowbox);
-
-            const range_start_input = $('<input>', {
-                'type': 'text',
-                'class': 'range-input',
-                'value': '',
-            });
-            $('<div>', {
-                'class': 'col-3',
-            }).appendTo(val_row).append($('<span>', {
-                'class': 'range-input-label',
-                'text': 'Start:',
-            })).append(range_start_input);
-
-            const range_end_input = $('<input>', {
-                'type': 'text',
-                'class': 'range-input',
-                'value': '',
-            });
-            $('<div>', {
-                'class': 'col-3',
-            }).appendTo(val_row).append($('<span>', {
-                'class': 'range-input-label',
-                'text': 'End:',
-            })).append(range_end_input);
-
-            const range_step_input = $('<input>', {
-                'type': 'text',
-                'class': 'range-input',
-                'value': '',
-            });
-            $('<div>', {
-                'class': 'col-3',
-            }).appendTo(val_row).append($('<span>', {
-                'class': 'range-input-label',
-                'text': 'Step:',
-            })).append(range_step_input);
-
-            const range_tile_input = $('<input>', {
-                'type': 'text',
-                'class': 'range-input',
-                'value': '',
-            });
-            $('<div>', {
-                'class': 'col-3',
-            }).appendTo(val_row).append($('<span>', {
-                'class': 'range-input-label',
-                'text': 'Tile:',
-            })).append(range_tile_input);
-
-            prop.range_input_list.push({
-                start: range_start_input,
-                end: range_end_input,
-                step: range_step_input,
-                tile: range_tile_input,
-            });
-        },
-    }).appendTo($('<div>', {
-        'class': 'col-2',
-    }).appendTo(add_item_button_row));
+    const prop = new RangeProperty(elem, target, key, 'ranges', dtype, []);
 
     range_edit_btn.on('click', () => {
+        prop.range_input_list = [];
+
         const modal = create_and_show_property_edit_modal(key, true);
 
-        rowbox.appendTo(modal.body);
-        add_item_container.appendTo(modal.body);
+        const rowbox = $('<div>', {
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+        if (val)
+            val.ranges.forEach(range => {
+                const val_row = $('<div>', {
+                    'class': 'row',
+                }).appendTo(rowbox);
+
+                const range_start_input = $('<input>', {
+                    'type': 'text',
+                    'class': 'range-input',
+                    'value': range.start,
+                });
+                $('<div>', {
+                    'class': 'col-3',
+                }).appendTo(val_row).append($('<span>', {
+                    'class': 'range-input-label',
+                    'text': 'Start:',
+                })).append(range_start_input);
+
+                const range_end_input = $('<input>', {
+                    'type': 'text',
+                    'class': 'range-input',
+                    'value': range.end,
+                });
+                $('<div>', {
+                    'class': 'col-3',
+                }).appendTo(val_row).append($('<span>', {
+                    'class': 'range-input-label',
+                    'text': 'End:',
+                })).append(range_end_input);
+
+                const range_step_input = $('<input>', {
+                    'type': 'text',
+                    'class': 'range-input',
+                    'value': range.step,
+                });
+                $('<div>', {
+                    'class': 'col-3',
+                }).appendTo(val_row).append($('<span>', {
+                    'class': 'range-input-label',
+                    'text': 'Step:',
+                })).append(range_step_input);
+
+                const range_tile_input = $('<input>', {
+                    'type': 'text',
+                    'class': 'range-input',
+                    'value': range.tile,
+                });
+                $('<div>', {
+                    'class': 'col-3',
+                }).appendTo(val_row).append($('<span>', {
+                    'class': 'range-input-label',
+                    'text': 'Tile:',
+                })).append(range_tile_input);
+
+                prop.range_input_list.push({
+                    start: range_start_input,
+                    end: range_end_input,
+                    step: range_step_input,
+                    tile: range_tile_input,
+                });
+            });
+
+        const add_item_container = $('<div>', {
+            'class': 'container-fluid',
+        });
+        const add_item_button_row = $('<div>', {
+            'class': 'row',
+        }).appendTo(add_item_container);
+        $('<i>', {
+            'class': 'material-icons property-add-row-btn',
+            'text': 'playlist_add',
+            'title': 'Add item',
+            'click': () => {
+                const val_row = $('<div>', {
+                    'class': 'row',
+                }).appendTo(rowbox);
+
+                const range_start_input = $('<input>', {
+                    'type': 'text',
+                    'class': 'range-input',
+                    'value': '',
+                });
+                $('<div>', {
+                    'class': 'col-3',
+                }).appendTo(val_row).append($('<span>', {
+                    'class': 'range-input-label',
+                    'text': 'Start:',
+                })).append(range_start_input);
+
+                const range_end_input = $('<input>', {
+                    'type': 'text',
+                    'class': 'range-input',
+                    'value': '',
+                });
+                $('<div>', {
+                    'class': 'col-3',
+                }).appendTo(val_row).append($('<span>', {
+                    'class': 'range-input-label',
+                    'text': 'End:',
+                })).append(range_end_input);
+
+                const range_step_input = $('<input>', {
+                    'type': 'text',
+                    'class': 'range-input',
+                    'value': '',
+                });
+                $('<div>', {
+                    'class': 'col-3',
+                }).appendTo(val_row).append($('<span>', {
+                    'class': 'range-input-label',
+                    'text': 'Step:',
+                })).append(range_step_input);
+
+                const range_tile_input = $('<input>', {
+                    'type': 'text',
+                    'class': 'range-input',
+                    'value': '',
+                });
+                $('<div>', {
+                    'class': 'col-3',
+                }).appendTo(val_row).append($('<span>', {
+                    'class': 'range-input-label',
+                    'text': 'Tile:',
+                })).append(range_tile_input);
+
+                prop.range_input_list.push({
+                    start: range_start_input,
+                    end: range_end_input,
+                    step: range_step_input,
+                    tile: range_tile_input,
+                });
+            },
+        }).appendTo($('<div>', {
+            'class': 'col-2',
+        }).appendTo(add_item_button_row));
 
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
