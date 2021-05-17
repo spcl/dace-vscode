@@ -12,10 +12,22 @@ class Property {
     }
 
     write_back(value) {
-        if (this.subkey !== undefined)
-            this.target[this.key][this.subkey] = value;
-        else
+        if (this.subkey !== undefined) {
+            if (this.datatype === 'Range' ||
+                this.datatype === 'SubsetProperty') {
+                if (this.target[this.key])
+                    this.target[this.key][this.subkey] = value;
+                else
+                    this.target[this.key] = {
+                        type: 'Range',
+                        ranges: value,
+                    };
+            } else {
+                this.target[this.key][this.subkey] = value;
+            }
+        } else {
             this.target[this.key] = value;
+        }
 
         if (this.key === 'label') {
             // If the label was changed, we want to update the renderer graph
@@ -57,10 +69,38 @@ class Property {
                 }
             }
         }
-        //vscode_write_graph(renderer.sdfg);
     }
 
     update() {}
+
+}
+
+class KeyProperty {
+
+    constructor(element, target, key, input) {
+        this.element = element;
+        this.target = target;
+        this.key = key;
+        this.input = input;
+    }
+
+    get_value() {
+        return this.input.val();
+    }
+
+    update() {
+        const new_key = this.get_value();
+        if (new_key !== this.key) {
+            Object.defineProperty(
+                this.target,
+                new_key,
+                Object.getOwnPropertyDescriptor(this.target, this.key)
+            );
+            delete this.target[this.key];
+            return true;
+        }
+        return false;
+    }
 
 }
 
@@ -72,7 +112,7 @@ class ValueProperty extends Property {
         this.input = input;
     }
 
-    update() {
+    get_value() {
         let value = this.input.is(':checkbox') ?
             this.input.is(':checked') : this.input.val();
 
@@ -81,6 +121,12 @@ class ValueProperty extends Property {
                 value = null;
         }
 
+        return value;
+    }
+
+    update() {
+        const value = this.get_value();
+
         super.write_back(value);
     }
 
@@ -88,20 +134,19 @@ class ValueProperty extends Property {
 
 class ListProperty extends Property {
 
-    constructor(element, target, key, subkey, datatype, input_list) {
+    constructor(element, target, key, subkey, datatype, properties_list) {
         super(element, target, key, subkey, datatype);
 
-        this.input_list = input_list;
+        this.properties_list = properties_list;
     }
 
     update() {
         const new_list = [];
-        for (let i = 0; i < this.input_list.length; i++) {
-            const list_input = this.input_list[i];
-            if (list_input.val() !== '' && list_input !== undefined)
-                new_list.push(list_input.val());
+        for (let i = 0; i < this.properties_list.length; i++) {
+            const val = this.properties_list[i].get_value();
+            if (val !== undefined && val !== '')
+                new_list.push(val);
         }
-
         super.write_back(new_list);
     }
 
@@ -109,27 +154,27 @@ class ListProperty extends Property {
 
 class DictProperty extends Property {
 
-    constructor(element, target, key, subkey, datatype, input_dicts) {
+    constructor(element, target, key, subkey, datatype, properties) {
         super(element, target, key, subkey, datatype);
 
-        this.input_dicts = input_dicts;
+        this.properties = properties;
     }
 
     update() {
         const new_dict = {};
-        for (let i = 0; i < this.input_dicts.length; i++) {
-            const dict_input = this.input_dicts[i];
-            if (dict_input.key.val() !== '' &&
-                dict_input.key.val() !== undefined) {
-                let new_val = null;
-                if (dict_input.val.val() !== '' &&
-                    dict_input.val.val() !== undefined)
-                    new_val = dict_input.val.val();
-                new_dict[dict_input.key.val()] = new_val;
+        let did_update = false;
+        this.properties.forEach(prop => {
+            if (prop.key_prop && prop.val_prop) {
+                const key = prop.key_prop.get_value();
+                const val = prop.val_prop.get_value();
+                if (key !== undefined && key !== '') {
+                    new_dict[key] = val;
+                    did_update = true;
+                }
             }
-        }
-
+        });
         super.write_back(new_dict);
+        return did_update;
     }
 
 }
@@ -151,6 +196,9 @@ class RangeProperty extends Property {
             target_range.end = range_input.end.val();
             target_range.step = range_input.step.val();
             target_range.tile = range_input.tile.val();
+            if (target_range.start === '' && target_range.end === '' &&
+                target_range.step === '' && target_range.tile === '')
+                continue;
             new_ranges.push(target_range);
         }
 
