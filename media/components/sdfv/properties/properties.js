@@ -71,6 +71,8 @@ class Property {
         }
     }
 
+    get_value() {}
+
     update() {}
 
 }
@@ -85,21 +87,24 @@ class KeyProperty {
     }
 
     get_value() {
-        return this.input.val();
+        const new_key = this.input.val();
+        return {
+            value: new_key,
+            value_changed: new_key !== this.key,
+        };
     }
 
     update() {
-        const new_key = this.get_value();
-        if (new_key !== this.key) {
+        const res = this.get_value();
+        if (res.value_changed) {
             Object.defineProperty(
                 this.target,
-                new_key,
+                res.value,
                 Object.getOwnPropertyDescriptor(this.target, this.key)
             );
             delete this.target[this.key];
-            return true;
         }
-        return false;
+        return res.value_changed;
     }
 
 }
@@ -121,13 +126,16 @@ class ValueProperty extends Property {
                 value = null;
         }
 
-        return value;
+        return {
+            value: value,
+            value_changed: true,
+        };
     }
 
     update() {
-        const value = this.get_value();
-
-        super.write_back(value);
+        const res = this.get_value();
+        super.write_back(res.value);
+        return res.value_changed;
     }
 
 }
@@ -140,14 +148,24 @@ class ListProperty extends Property {
         this.properties_list = properties_list;
     }
 
-    update() {
+    get_value() {
         const new_list = [];
         for (let i = 0; i < this.properties_list.length; i++) {
-            const val = this.properties_list[i].get_value();
-            if (val !== undefined && val !== '')
-                new_list.push(val);
+            const res = this.properties_list[i].get_value();
+            if (res !== undefined && res.value !== undefined &&
+                res.value !== '')
+                new_list.push(res.value);
         }
-        super.write_back(new_list);
+        return {
+            value: new_list,
+            value_changed: true,
+        };
+    }
+
+    update() {
+        const res = this.get_value();
+        super.write_back(res.value);
+        return res.value_changed;
     }
 
 }
@@ -160,21 +178,30 @@ class DictProperty extends Property {
         this.properties = properties;
     }
 
-    update() {
+    get_value() {
         const new_dict = {};
-        let did_update = false;
+        let value_changed = false;
         this.properties.forEach(prop => {
             if (prop.key_prop && prop.val_prop) {
-                const key = prop.key_prop.get_value();
-                const val = prop.val_prop.get_value();
-                if (key !== undefined && key !== '') {
-                    new_dict[key] = val;
-                    did_update = true;
+                const key_res = prop.key_prop.get_value();
+                const val_res = prop.val_prop.get_value();
+                if (key_res !== undefined && key_res.value !== undefined &&
+                    key_res.value !== '') {
+                    new_dict[key_res.value] = val_res.value;
+                    value_changed = true;
                 }
             }
         });
-        super.write_back(new_dict);
-        return did_update;
+        return {
+            value: new_dict,
+            value_changed: value_changed,
+        };
+    }
+
+    update() {
+        const res = this.get_value();
+        super.write_back(res.value);
+        return res.value_changed;
     }
 
 }
@@ -187,7 +214,7 @@ class RangeProperty extends Property {
         this.range_input_list = range_input_list;
     }
 
-    update() {
+    get_value() {
         let new_ranges = [];
         for (let i = 0; i < this.range_input_list.length; i++) {
             let target_range = {};
@@ -201,8 +228,21 @@ class RangeProperty extends Property {
                 continue;
             new_ranges.push(target_range);
         }
+        let value = null;
+        if (new_ranges.length === 1)
+            value = new_ranges[0];
+        else if (new_ranges.length > 1)
+            value = new_ranges;
+        return {
+            value: value,
+            value_changed: true,
+        };
+    }
 
-        super.write_back(new_ranges);
+    update() {
+        const res = this.get_value();
+        super.write_back(res.value);
+        return res.value_changed;
     }
 
 }

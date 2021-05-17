@@ -421,7 +421,7 @@ function attr_table_put_range(key, subkey, val, elem, target, cell, dtype) {
         const rowbox = $('<div>', {
             'class': 'container-fluid',
         }).appendTo(modal.body);
-        if (val)
+        if (val && val.ranges)
             val.ranges.forEach(range => {
                 const val_row = $('<div>', {
                     'class': 'row',
@@ -485,7 +485,7 @@ function attr_table_put_range(key, subkey, val, elem, target, cell, dtype) {
 
         const add_item_container = $('<div>', {
             'class': 'container-fluid',
-        });
+        }).appendTo(modal.body);
         const add_item_button_row = $('<div>', {
             'class': 'row',
         }).appendTo(add_item_container);
