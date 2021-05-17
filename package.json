@@ -95,28 +95,28 @@
                         "properties": {
                             "pythonLaunchName": {
                                 "type": "string",
-                                "description": "The name of your python launch config if `pythonConfig: manual`",
+                                "description": "The name of your python launch config if `pythonConfig: custom`",
                                 "default": "Python: Current File"
                             },
                             "cppAttachName": {
                                 "type": "string",
-                                "description": "The name of your C++ attach config if `cppConfig: manual`",
+                                "description": "The name of your C++ attach config if `cppConfig: custom`",
                                 "default": "(Windows) Attach"
                             },
                             "pythonConfig": {
                                 "enum": [
-                                    "manual",
+                                    "custom",
                                     "default"
                                 ],
-                                "description": "Pick manual to manaully define the python Attach config, otherwise the default python configuration will be used",
+                                "description": "Pick custom to manually define the python Attach config, otherwise the default python configuration will be used",
                                 "default": "default"
                             },
                             "cppConfig": {
                                 "enum": [
-                                    "manual",
+                                    "custom",
                                     "default"
                                 ],
-                                "description": "Pick manual to manually define the C++ Attach config, otherwise based on your operating system either (Windows) Attach or (gdb) Attach will be used",
+                                "description": "Pick custom to manually define the C++ Attach config, otherwise based on your operating system either (Windows) Attach or (gdb) Attach will be used",
                                 "default": "default"
                             },
                             "buildType": {
