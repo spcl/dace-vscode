@@ -228,11 +228,7 @@ class RangeProperty extends Property {
                 continue;
             new_ranges.push(target_range);
         }
-        let value = null;
-        if (new_ranges.length === 1)
-            value = new_ranges[0];
-        else if (new_ranges.length > 1)
-            value = new_ranges;
+        let value = new_ranges;
         return {
             value: value,
             value_changed: true,
