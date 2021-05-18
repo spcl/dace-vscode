@@ -135,16 +135,16 @@ function get_element_metadata(elem) {
 
 function attr_table_put_bool(key, subkey, val, elem, target, cell, dtype) {
     const bool_input_container = $('<div>', {
-        'class': 'custom-control custom-switch',
+        'class': 'form-check form-switch',
     }).appendTo(cell);
     const input = $('<input>', {
         'type': 'checkbox',
         'id': 'switch_' + key,
-        'class': 'custom-control-input',
+        'class': 'form-check-input',
         'checked': val,
     }).appendTo(bool_input_container);
     bool_input_container.append($('<label>', {
-        'class': 'custom-control-label',
+        'class': 'form-check-label',
         'text': ' ',
         'for': 'switch_' + key,
     }));
@@ -184,6 +184,32 @@ function attr_table_put_select(
     return new ValueProperty(elem, target, key, subkey, dtype, input);
 }
 
+function attr_table_put_typeclass(
+    key, subkey, val, elem, target, cell, dtype, choices
+) {
+    const container = $('<div>', {
+        'style': 'position: relative;',
+    }).appendTo(cell);
+    const input = $('<input>', {
+        'list': key + '-native-typeclasses',
+        'value': sdfg_typeclass_to_string(val),
+    }).appendTo(container);
+    if (choices) {
+        const datalist = $('<datalist>', {
+            'id': key + '-native-typeclasses',
+        }).appendTo(container);
+        choices.forEach(array => {
+            datalist.append(new Option(
+                array,
+                array,
+                false,
+                false
+            ));
+        });
+    }
+    return new TypeclassProperty(elem, target, key, subkey, dtype, input);
+}
+
 function create_and_show_property_edit_modal(title, with_confirm) {
     const prop_edit_modal = $('<div>', {
         'class': 'modal fade',
@@ -205,12 +231,6 @@ function create_and_show_property_edit_modal(title, with_confirm) {
         'class': 'modal-title',
         'text': title,
     }).appendTo(modal_header);
-    $('<button>', {
-        'class': 'close',
-        'type': 'button',
-        'data-dismiss': 'modal',
-        'html': '<span>&times;</span>',
-    }).appendTo(modal_header);
 
     const modal_body = $('<div>', {
         'class': 'modal-body property-edit-modal-body',
@@ -222,7 +242,7 @@ function create_and_show_property_edit_modal(title, with_confirm) {
     $('<button>', {
         'class': 'btn btn-secondary',
         'type': 'button',
-        'data-dismiss': 'modal',
+        'data-bs-dismiss': 'modal',
         'text': 'Close',
     }).appendTo(modal_footer);
 
@@ -612,12 +632,12 @@ function attribute_table_put_entry(
         value_cell.html(sdfg_property_to_string(val, renderer.view_settings()));
     } else {
         switch (dtype) {
-            /*
-            // TODO
             case 'typeclass':
-                value_cell.html('no.');
+                val_prop = attr_table_put_typeclass(
+                    key, undefined, val, elem, target, value_cell, dtype,
+                    choices
+                );
                 break;
-                */
             case 'bool':
                 val_prop = attr_table_put_bool(
                     key, undefined, val, elem, target, value_cell, dtype, false
@@ -782,8 +802,8 @@ function generate_attributes_table(elem, root) {
             'class': 'attr-cat-toggle-btn active',
             'type': 'button',
             'text': category,
-            'data-toggle': 'collapse',
-            'data-target': '#info-table-' + category + '-' + identifier,
+            'data-bs-toggle': 'collapse',
+            'data-bs-target': '#info-table-' + category + '-' + identifier,
             'aria-expanded': 'false',
             'aria-controls': 'info-table-' + category + '-' + identifier,
         }).appendTo(cat_container);
@@ -803,18 +823,6 @@ function generate_attributes_table(elem, root) {
         attr_table.on('show.bs.collapse', () => {
             cat_toggle_btn.addClass('active');
         });
-
-        const attr_table_header_row = $('<div>', {
-            'class': 'row attr-table-row',
-        }).appendTo(attr_table);
-        $('<div>', {
-            'class': 'col-3 attr-table-heading',
-            'text': 'Attribute',
-        }).appendTo(attr_table_header_row);
-        $('<div>', {
-            'class': 'col-9 attr-table-heading',
-            'text': 'Value',
-        }).appendTo(attr_table_header_row);
 
         Object.keys(sorted_attributes[category]).forEach(k => {
             const val = attributes[k];

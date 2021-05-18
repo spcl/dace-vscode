@@ -140,6 +140,29 @@ class ValueProperty extends Property {
 
 }
 
+class TypeclassProperty extends Property {
+
+    constructor(element, target, key, subkey, datatype, input) {
+        super(element, target, key, subkey, datatype);
+
+        this.input = input;
+    }
+
+    get_value() {
+        return {
+            value: string_to_sdfg_typeclass(this.input.val()),
+            value_changed: true,
+        };
+    }
+
+    update() {
+        const res = this.get_value();
+        super.write_back(res.value);
+        return res.value_changed;
+    }
+
+}
+
 class ListProperty extends Property {
 
     constructor(element, target, key, subkey, datatype, properties_list) {

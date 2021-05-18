@@ -275,6 +275,8 @@ pre.code {
 
 .attr-table {
   border: 1px solid var(--vscode-list-inactiveSelectionBackground);
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .attr-table-cat-container {
@@ -284,6 +286,8 @@ pre.code {
 .attr-table-row {
   padding: .5rem 0;
   border-bottom: 1px solid var(--vscode-list-inactiveSelectionBackground);
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .attr-table-cell {
@@ -295,56 +299,6 @@ pre.code {
 .attr-table-heading {
   font-weight: bold;
 }
-
-/*
-.info-table {
-  padding: 0;
-}
-
-.info-table-heading {
-  font-weight: bold;
-}
-
-.info-table-row {
-  padding: .5rem 0;
-  border-bottom: 1px solid var(--vscode-editor-foreground);
-}
-
-.info-table-toggle-btn-row {
-  padding: .5rem 0;
-}
-
-.info-table-toggle-btn-container {
-  padding: 0;
-}
-
-.attr-toggle-btn {
-  width: 100%;
-  text-align: left;
-  background-color: var(--vscode-list-inactiveSelectionBackground);
-  color: var(--vscode-list-inactiveSelectionForeground);
-}
-
-.attr-toggle-btn:hover {
-  background-color: var(--vscode-list-hoverBackground);
-  color: var(--vscode-list-hoverForeground);
-}
-
-.attr-toggle-btn > .attr-toggle-btn-indicator {
-  float: right;
-  transition: all .5s;
-}
-
-.attr-toggle-btn.active > .attr-toggle-btn-indicator {
-  transform: rotate(180deg);
-}
-
-.info-table-cell {
-  text-align: left;
-  display: flex;
-  align-items: center;
-}
-*/
 
 .popup-editable-property-container {
   width: 100%;
@@ -378,11 +332,11 @@ pre.code {
   width: 100%;
 }
 
-.custom-control.custom-switch > label::before {
+.form-check.form-switch > label::before {
   cursor: pointer;
 }
 
-.custom-control.custom-switch > label::after {
+.form-check.form-switch > label::after {
   cursor: pointer;
 }
 
