@@ -386,8 +386,7 @@ function attr_table_put_list(
 
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
-                prop.update();
-                if (elements_properties.length)
+                if (prop.update())
                     vscode_write_graph(renderer.sdfg);
                 modal.modal.modal('hide');
             });
@@ -559,8 +558,8 @@ function attr_table_put_range(key, subkey, val, elem, target, cell, dtype) {
 
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
-                prop.update();
-                vscode_write_graph(renderer.sdfg);
+                if (prop.update())
+                    vscode_write_graph(renderer.sdfg);
                 modal.modal.modal('hide');
             });
 
@@ -726,34 +725,26 @@ function attribute_table_put_entry(
 
 function generate_attributes_table(elem, root) {
     let attributes = undefined;
+    let identifier = '';
     if (elem.data) {
-        if (elem.data.attributes)
+        if (elem.data.attributes) {
             attributes = elem.data.attributes;
-        else if (elem.data.node)
+            identifier = elem.data.type;
+        } else if (elem.data.node) {
             attributes = elem.data.node.attributes;
-        else if (elem.data.state)
+            identifier = elem.data.node.type;
+        } else if (elem.data.state) {
             attributes = elem.data.state.attributes;
+            identifier = elem.data.state.type;
+        }
     } else {
         attributes = elem.attributes;
+        identifer = elem.type;
     }
-
-    const attr_table = $('<div>', {
-        'class': 'container-fluid info-table',
-    }).appendTo(root);
-    const attr_table_header_row = $('<div>', {
-        'class': 'row info-table-row',
-    }).appendTo(attr_table);
-    $('<div>', {
-        'class': 'col-3 info-table-heading',
-        'text': 'Attribute',
-    }).appendTo(attr_table_header_row);
-    $('<div>', {
-        'class': 'col-9 info-table-heading',
-        'text': 'Value',
-    }).appendTo(attr_table_header_row);
 
     let metadata = get_element_metadata(elem);
 
+    let sorted_attributes = {};
     Object.keys(attributes).forEach(k => {
         const val = attributes[k];
         if (k === 'layout' || k === 'sdfg' ||
@@ -761,35 +752,100 @@ function generate_attributes_table(elem, root) {
             k === 'transformation_hist' || k.startsWith('_'))
             return;
 
-        // Debug info isn't printed in the attributes table, but instead we
-        // show a button to jump to the referenced code location.
-        if (k === 'debuginfo') {
-            if (val) {
-                const gotoSourceBtn = $('#goto-source-btn');
-                gotoSourceBtn.on('click', function() {
-                    gotoSource(
-                        val.filename,
-                        val.start_line,
-                        val.start_column,
-                        val.end_line,
-                        val.end_column
-                    );
-                });
-                gotoSourceBtn.prop(
-                    'title',
-                    val.filename + ':' + val.start_line
-                );
-                gotoSourceBtn.show();
-            }
-            return;
+        if (metadata && metadata[k]) {
+            if (!sorted_attributes[metadata[k]['category']])
+                sorted_attributes[metadata[k]['category']] = {};
+            sorted_attributes[metadata[k]['category']][k] = val;
+        } else {
+            if (!sorted_attributes['Uncategorized'])
+                sorted_attributes['Uncategorized'] = {};
+            sorted_attributes['Uncategorized'][k] = val;
         }
+    });
 
-        let attr_meta = undefined;
-        if (metadata && metadata[k])
-            attr_meta = metadata[k];
+    Object.keys(sorted_attributes).forEach(category => {
+        if (!Object.keys(sorted_attributes[category]).length)
+            return;
 
-        attribute_table_put_entry(
-            k, val, attr_meta, attributes, elem, root, false, true
-        );
+        const cat_toggle_btn_container = $('<div>', {
+            'class': 'container-fluid info-table-toggle-btn-container',
+        }).appendTo(root);
+        const cat_toggle_btn_row = $('<div>', {
+            'class': 'row info-table-toggle-btn-row',
+        }).appendTo(cat_toggle_btn_container);
+        const cat_toggle_btn = $('<button>', {
+            'class': 'attr-toggle-btn active',
+            'type': 'button',
+            'text': category,
+            'data-toggle': 'collapse',
+            'data-target': '#info-table-' + category + '-' + identifier,
+            'aria-expanded': 'false',
+            'aria-controls': 'info-table-' + category + '-' + identifier,
+        }).appendTo($('<div>', {
+            'class': 'col-12',
+        }).appendTo(cat_toggle_btn_row));
+        $('<i>', {
+            'class': 'attr-toggle-btn-indicator material-icons',
+            'text': 'expand_less'
+        }).appendTo(cat_toggle_btn);
+
+        const attr_table = $('<div>', {
+            'class': 'container-fluid info-table collapse show',
+            'id': 'info-table-' + category + '-' + identifier,
+        }).appendTo(root);
+
+        attr_table.on('hide.bs.collapse', () => {
+            cat_toggle_btn.removeClass('active');
+        });
+        attr_table.on('show.bs.collapse', () => {
+            cat_toggle_btn.addClass('active');
+        });
+
+        const attr_table_header_row = $('<div>', {
+            'class': 'row info-table-row',
+        }).appendTo(attr_table);
+        $('<div>', {
+            'class': 'col-3 info-table-heading',
+            'text': 'Attribute',
+        }).appendTo(attr_table_header_row);
+        $('<div>', {
+            'class': 'col-9 info-table-heading',
+            'text': 'Value',
+        }).appendTo(attr_table_header_row);
+
+        Object.keys(sorted_attributes[category]).forEach(k => {
+            const val = attributes[k];
+
+            // Debug info isn't printed in the attributes table, but instead we
+            // show a button to jump to the referenced code location.
+            if (k === 'debuginfo') {
+                if (val) {
+                    const gotoSourceBtn = $('#goto-source-btn');
+                    gotoSourceBtn.on('click', function() {
+                        gotoSource(
+                            val.filename,
+                            val.start_line,
+                            val.start_column,
+                            val.end_line,
+                            val.end_column
+                        );
+                    });
+                    gotoSourceBtn.prop(
+                        'title',
+                        val.filename + ':' + val.start_line
+                    );
+                    gotoSourceBtn.show();
+                }
+                return;
+            }
+
+            let attr_meta = undefined;
+            if (metadata && metadata[k])
+                attr_meta = metadata[k];
+
+            attribute_table_put_entry(
+                k, val, attr_meta, attributes, elem, attr_table, false, true
+            );
+        });
     });
 }

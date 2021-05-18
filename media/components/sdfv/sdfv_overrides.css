@@ -263,6 +263,35 @@ pre.code {
   border-bottom: 1px solid var(--vscode-editor-foreground);
 }
 
+.info-table-toggle-btn-row {
+  padding: .5rem 0;
+}
+
+.info-table-toggle-btn-container {
+  padding: 0;
+}
+
+.attr-toggle-btn {
+  width: 100%;
+  text-align: left;
+  background-color: var(--vscode-list-inactiveSelectionBackground);
+  color: var(--vscode-list-inactiveSelectionForeground);
+}
+
+.attr-toggle-btn:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground);
+}
+
+.attr-toggle-btn > .attr-toggle-btn-indicator {
+  float: right;
+  transition: all .5s;
+}
+
+.attr-toggle-btn.active > .attr-toggle-btn-indicator {
+  transform: rotate(180deg);
+}
+
 .info-table-cell {
   text-align: left;
   display: flex;
