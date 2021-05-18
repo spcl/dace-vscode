@@ -250,6 +250,53 @@ pre.code {
   vertical-align: middle;
 }
 
+.attr-cat-toggle-btn {
+  width: 100%;
+  text-align: left;
+  background-color: var(--vscode-list-inactiveSelectionBackground);
+  color: var(--vscode-list-inactiveSelectionForeground);
+  padding: .3rem;
+  border: 1px solid var(--vscode-list-inactiveSelectionBackground);
+}
+
+.attr-cat-toggle-btn:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground);
+}
+
+.attr-cat-toggle-btn > .attr-cat-toggle-btn-indicator {
+  float: right;
+  transition: all .5s;
+}
+
+.attr-cat-toggle-btn.active > .attr-cat-toggle-btn-indicator {
+  transform: rotate(180deg);
+}
+
+.attr-table {
+  border: 1px solid var(--vscode-list-inactiveSelectionBackground);
+}
+
+.attr-table-cat-container {
+  padding: 0;
+}
+
+.attr-table-row {
+  padding: .5rem 0;
+  border-bottom: 1px solid var(--vscode-list-inactiveSelectionBackground);
+}
+
+.attr-table-cell {
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+
+.attr-table-heading {
+  font-weight: bold;
+}
+
+/*
 .info-table {
   padding: 0;
 }
@@ -297,6 +344,7 @@ pre.code {
   display: flex;
   align-items: center;
 }
+*/
 
 .popup-editable-property-container {
   width: 100%;

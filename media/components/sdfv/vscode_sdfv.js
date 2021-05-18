@@ -585,11 +585,11 @@ function attribute_table_put_entry(
     }
 
     const row = $('<div>', {
-        'class': 'row info-table-row',
+        'class': 'row attr-table-row',
     }).appendTo(root);
     if (editable_key) {
         const key_cell = $('<div>', {
-            'class': 'col-3 info-table-cell',
+            'class': 'col-3 attr-table-cell',
         }).appendTo(row);
         const key_input = $('<input>', {
             'type': 'text',
@@ -600,12 +600,12 @@ function attribute_table_put_entry(
         key_prop = new KeyProperty(elem, target, key, key_input);
     } else {
         $('<div>', {
-            'class': 'col-3 info-table-heading info-table-cell',
+            'class': 'col-3 attr-table-heading attr-table-cell',
             'text': key,
         }).appendTo(row);
     }
     const value_cell = $('<div>', {
-        'class': 'col-9 info-table-cell',
+        'class': 'col-9 attr-table-cell',
     }).appendTo(row);
 
     if (dtype === undefined) {
@@ -763,36 +763,39 @@ function generate_attributes_table(elem, root) {
         }
     });
 
+    const attr_table_base_container = $('<div>', {
+        'class': 'container-fluid attr-table-base-container',
+    }).appendTo(root);
+
     Object.keys(sorted_attributes).forEach(category => {
         if (!Object.keys(sorted_attributes[category]).length)
             return;
 
-        const cat_toggle_btn_container = $('<div>', {
-            'class': 'container-fluid info-table-toggle-btn-container',
-        }).appendTo(root);
-        const cat_toggle_btn_row = $('<div>', {
-            'class': 'row info-table-toggle-btn-row',
-        }).appendTo(cat_toggle_btn_container);
+        const cat_row = $('<div>', {
+            'class': 'row attr-table-cat-row',
+        }).appendTo(attr_table_base_container);
+        const cat_container = $('<div>', {
+            'class': 'col-12 attr-table-cat-container',
+        }).appendTo(cat_row);
+
         const cat_toggle_btn = $('<button>', {
-            'class': 'attr-toggle-btn active',
+            'class': 'attr-cat-toggle-btn active',
             'type': 'button',
             'text': category,
             'data-toggle': 'collapse',
             'data-target': '#info-table-' + category + '-' + identifier,
             'aria-expanded': 'false',
             'aria-controls': 'info-table-' + category + '-' + identifier,
-        }).appendTo($('<div>', {
-            'class': 'col-12',
-        }).appendTo(cat_toggle_btn_row));
+        }).appendTo(cat_container);
         $('<i>', {
-            'class': 'attr-toggle-btn-indicator material-icons',
+            'class': 'attr-cat-toggle-btn-indicator material-icons',
             'text': 'expand_less'
         }).appendTo(cat_toggle_btn);
 
         const attr_table = $('<div>', {
-            'class': 'container-fluid info-table collapse show',
+            'class': 'container-fluid attr-table collapse show',
             'id': 'info-table-' + category + '-' + identifier,
-        }).appendTo(root);
+        }).appendTo(cat_container);
 
         attr_table.on('hide.bs.collapse', () => {
             cat_toggle_btn.removeClass('active');
@@ -802,14 +805,14 @@ function generate_attributes_table(elem, root) {
         });
 
         const attr_table_header_row = $('<div>', {
-            'class': 'row info-table-row',
+            'class': 'row attr-table-row',
         }).appendTo(attr_table);
         $('<div>', {
-            'class': 'col-3 info-table-heading',
+            'class': 'col-3 attr-table-heading',
             'text': 'Attribute',
         }).appendTo(attr_table_header_row);
         $('<div>', {
-            'class': 'col-9 info-table-heading',
+            'class': 'col-9 attr-table-heading',
             'text': 'Value',
         }).appendTo(attr_table_header_row);
 
