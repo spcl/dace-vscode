@@ -63,6 +63,9 @@ implements MessageReceiverInterface {
                 if (message.name)
                     this.getEnum(message.name, origin);
                 break;
+            case 'query_sdfg_metadata':
+                this.querySdfgMetadata();
+                break;
             default:
                 break;
         }
@@ -492,6 +495,7 @@ implements MessageReceiverInterface {
         const callback = () => {
             TransformationHistoryProvider.getInstance()?.refresh();
             TransformationListProvider.getInstance()?.refresh(true);
+            this.querySdfgMetadata();
         };
         this.startDaemonInTerminal(callback);
     }
@@ -708,6 +712,21 @@ implements MessageReceiverInterface {
             },
             callback
         );
+    }
+
+    public async querySdfgMetadata() {
+        async function callback(data: any) {
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'set_sdfg_metadata',
+                meta_dict: data.meta_dict,
+            });
+        };
+
+        if (this.daemonRunning)
+            this.sendGetRequest(
+                '/get_metadata',
+                callback
+            );
     }
 
     public async loadTransformations(sdfg: any, selectedElements: any) {

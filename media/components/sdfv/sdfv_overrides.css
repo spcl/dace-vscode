@@ -4,6 +4,22 @@
 body {
   display: flex;
   flex-direction: column;
+  background-color: inherit;
+  color: var(--vscode-foreground);
+}
+
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+
+.modal-content {
+  z-index: 1100 !important;
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+}
+
+.clickable {
+  cursor: pointer;
 }
 
 #contents {
@@ -21,6 +37,11 @@ body {
 
 .button:hover {
   background-color: var(--vscode-button-hoverBackground);
+}
+
+button.close {
+  color: var(--vscode-foreground);
+  text-shadow: none;
 }
 
 pre.code {
@@ -69,10 +90,12 @@ pre.code {
   margin: .5rem 0;
   display: flex;
   flex-direction: row;
+  font-size: .9rem;
 }
 
 #search-bar #search {
-  padding: .3rem .1rem;
+  padding: .2rem .1rem;
+  margin-right: .2rem;
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-placeholderForeground);
@@ -194,11 +217,13 @@ pre.code {
 }
 
 #goto-source-btn {
-  margin: 0 1rem;
+  font-size: .9rem;
+  margin: .2rem 1rem;
 }
 
 #info-clear-btn {
-  margin: 0 1rem;
+  font-size: .9rem;
+  margin: .2rem 1rem;
 }
 
 #info-clear-btn span {
@@ -225,33 +250,94 @@ pre.code {
   vertical-align: middle;
 }
 
-.info-table {
+.attr-cat-toggle-btn {
   width: 100%;
-  word-break: break-all;
-  border-collapse: collapse;
-  font-family: "Segoe UI", Arial, sans-serif;
-  font-size: 1rem;
-}
-
-.info-table th {
   text-align: left;
+  background-color: var(--vscode-list-inactiveSelectionBackground);
+  color: var(--vscode-list-inactiveSelectionForeground);
+  padding: .3rem;
+  border: 1px solid var(--vscode-list-inactiveSelectionBackground);
 }
 
-.info-table .key-col {
-  width: 20%;
-  min-width: 15%;
+.attr-cat-toggle-btn:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground);
 }
 
-.info-table .val-col {
-  max-width: 85%;
+.attr-cat-toggle-btn > .attr-cat-toggle-btn-indicator {
+  float: right;
+  transition: all .5s;
 }
 
-.info-table tr {
-  border-bottom: 1px solid var(--vscode-editor-foreground);
+.attr-cat-toggle-btn.active > .attr-cat-toggle-btn-indicator {
+  transform: rotate(180deg);
 }
 
-.info-table tr td {
+.attr-table {
+  border: 1px solid var(--vscode-list-inactiveSelectionBackground);
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.attr-table-cat-container {
+  padding: 0;
+}
+
+.attr-table-row {
   padding: .5rem 0;
+  border-bottom: 1px solid var(--vscode-list-inactiveSelectionBackground);
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.attr-table-cell {
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+
+.attr-table-heading {
+  font-weight: bold;
+}
+
+.popup-editable-property-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.property-add-row-btn {
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+.property-edit-btn {
+  margin-left: .8rem;
+  cursor: pointer;
+}
+
+.property-key-input {
+  width: 100%;
+}
+
+.property-edit-modal-body {
+  padding: 0;
+}
+
+.range-input-label {
+  user-select: none;
+}
+
+.range-input {
+  width: 100%;
+}
+
+.form-check.form-switch > label::before {
+  cursor: pointer;
+}
+
+.form-check.form-switch > label::after {
+  cursor: pointer;
 }
 
 /* End info container/box */
