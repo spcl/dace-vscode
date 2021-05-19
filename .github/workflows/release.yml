@@ -1,8 +1,12 @@
 name: Publish Extension Release
 
 on:
-  release:
-    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The new version'
+        required: true
+        default: '0.4.0'
 
 jobs:
   publish:
@@ -18,6 +22,6 @@ jobs:
       # Publish the extension.
       - uses: lannonbr/vsce-action@2.0.0
         with:
-          args: "publish $github.event.release.tag_name -p $VSCE_TOKEN"
+          args: "publish ${{ github.event.inputs.version }} -p $VSCE_TOKEN"
         env:
           VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
