@@ -238,7 +238,8 @@ implements vscode.CustomTextEditorProvider {
             // We want to update our webview if that happens.
             const docChangeSubs = vscode.workspace.onDidChangeTextDocument(
                 e => {
-                    if (e.document.uri.toString() === document.uri.toString())
+                    if (e.document.uri.toString() === document.uri.toString() &&
+                        e.contentChanges.length > 0)
                         this.documentChanged(document, webviewPanel.webview);
                 }
             );
