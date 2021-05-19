@@ -495,6 +495,7 @@ implements MessageReceiverInterface {
         const callback = () => {
             TransformationHistoryProvider.getInstance()?.refresh();
             TransformationListProvider.getInstance()?.refresh(true);
+            this.querySdfgMetadata();
         };
         this.startDaemonInTerminal(callback);
     }
@@ -716,15 +717,16 @@ implements MessageReceiverInterface {
     public async querySdfgMetadata() {
         async function callback(data: any) {
             SdfgViewerProvider.getInstance()?.handleMessage({
-                type: 'query_sdfg_metadata_callback',
+                type: 'set_sdfg_metadata',
                 meta_dict: data.meta_dict,
             });
         };
 
-        this.sendGetRequest(
-            '/get_metadata',
-            callback
-        );
+        if (this.daemonRunning)
+            this.sendGetRequest(
+                '/get_metadata',
+                callback
+            );
     }
 
     public async loadTransformations(sdfg: any, selectedElements: any) {

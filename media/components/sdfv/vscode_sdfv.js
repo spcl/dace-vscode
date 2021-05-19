@@ -139,7 +139,6 @@ function get_element_metadata(elem) {
         vscode.postMessage({
             type: 'dace.query_sdfg_metadata',
         });
-        // TODO: This needs to be handled more gracefully.
     }
     return metadata;
 }
