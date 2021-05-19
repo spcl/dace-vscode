@@ -78,6 +78,12 @@ class Property {
 }
 
 class KeyProperty {
+    /* 
+     * Note: This does not extend the Property class by design, because it
+     * behaves slightly differently.
+     * TODO(later): Adapt this in such a way, that it can be made a coherent
+     * subclass of Property.
+     */
 
     constructor(element, target, key, input) {
         this.element = element;
