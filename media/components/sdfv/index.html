@@ -136,6 +136,15 @@
 
             outline(renderer, renderer.graph);
             refresh_analysis_pane();
+
+            if (renderer) {
+                if (renderer.selected_elements &&
+                    renderer.selected_elements.length === 1)
+                    reselect_renderer_element(renderer.selected_elements[0]);
+                else if ((!renderer.selected_elements) ||
+                         renderer.selected_elements.length === 0)
+                    fill_info_embedded(new SDFG(renderer.sdfg));
+            }
         }
 
         function resetRendererContent() {

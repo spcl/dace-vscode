@@ -77,6 +77,17 @@ function vscode_write_graph(g) {
         });
 }
 
+function reselect_renderer_element(elem) {
+    if (renderer && renderer.graph) {
+        const uuid = get_uuid_graph_element(elem);
+        const new_elem_res = find_graph_element_by_uuid(renderer.graph, uuid);
+        if (new_elem_res && new_elem_res.element) {
+            const new_elem = new_elem_res.element;
+            fill_info_embedded(new_elem);
+        }
+    }
+}
+
 function get_element_metadata(elem) {
     let metadata = undefined;
     if (window.sdfg_meta_dict) {
