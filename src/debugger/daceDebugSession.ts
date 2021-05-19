@@ -5,7 +5,6 @@ import { LoggingDebugSession, TerminatedEvent } from "vscode-debugadapter";
 import * as vscode from "vscode";
 import * as os from "os";
 import { DebugProtocol } from "vscode-debugprotocol";
-import { config } from "node:process";
 
 export interface DaceLaunchRequestArguments
     extends DebugProtocol.LaunchRequestArguments {
