@@ -4,12 +4,13 @@ import { BreakpointHandler } from './breakpointHandler';
 
 export var PORT: number = 0;
 
-export class DaceListener {
+export class DaceListener extends vscode.Disposable{
 
     server: Net.Server
     BPHandler: BreakpointHandler
 
     constructor(BPHandler: BreakpointHandler) {
+        super(() => {console.log("closing server");this.server.close()})
         this.BPHandler = BPHandler;
         this.server = this.startListening();
     }

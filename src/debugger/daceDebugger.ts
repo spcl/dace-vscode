@@ -23,12 +23,16 @@ export function activateDaceDebug(context: vscode.ExtensionContext) {
     );
 
     const BPHandler = new BreakpointHandler();
+    const daceListener = new DaceListener(BPHandler)
 
     vscode.debug.onDidChangeBreakpoints(changes => {
         BPHandler.changedBps(changes);
     });
-    
-    new DaceListener(BPHandler);
+
+    context.subscriptions.push(
+        BPHandler,
+        daceListener
+    )
 
 }
 

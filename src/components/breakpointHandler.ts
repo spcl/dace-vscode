@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import fs = require("fs");
+import path = require("path");
 
 class Node {
     sdfg_id: number;
@@ -16,7 +17,7 @@ class Node {
 interface IFunction {
     name: string,
     cache: string,
-    target_name:string
+    target_name: string
 }
 
 interface IHashFiles {
@@ -27,13 +28,23 @@ interface IHashBreakpoint {
     [key: string] : vscode.SourceBreakpoint;
 } 
 
-export class BreakpointHandler {
+const SAVE_DIR = "/.vscode/";
+const SAVE_FILE = "daceDebugState.json";
+
+export class BreakpointHandler extends vscode.Disposable {
 
     // file path -> array of functions
-    files: IHashFiles = {};
+    files: IHashFiles;
 
     // Save all Breakpoints set in the C++ code for later removal
-    setBreakpoints: IHashBreakpoint = {};
+    setBreakpoints: IHashBreakpoint;
+
+    constructor(){
+        super((() => this.saveState()) as Function);
+        this.files = {};
+        this.setBreakpoints = {};
+        this.retrieveState()
+    }
 
     public registerFunction(data: any) {
         let filePath = data['path_file'];
@@ -267,6 +278,78 @@ export class BreakpointHandler {
     private pyFilter(bp: vscode.Breakpoint) {
         let sourceBP = bp as vscode.SourceBreakpoint;
         return sourceBP.location.uri.fsPath.endsWith(".py");
+    }
+
+    private saveState(){
+        // Don't save if there is nothing to save or
+        // the user doesn't have a Folder open
+        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath
+        if (
+            Object.keys(this.setBreakpoints).length === 0 &&
+            Object.keys(this.files).length === 0 ||
+            !workspace
+        ){
+            return;
+        }
+
+        let saveLocation = workspace + SAVE_DIR
+        if (!fs.existsSync(saveLocation)){
+            fs.mkdirSync(saveLocation);
+        }
+        saveLocation = saveLocation + SAVE_FILE;
+
+        let data = JSON.stringify({
+            "files": this.files,
+            "setBreakpoints": this.setBreakpoints
+        });
+        try {
+            fs.writeFile(
+                saveLocation,
+                data,
+                () => {console.log(saveLocation)}
+            )
+            console.log("Saving file")
+        } catch (error) {
+            console.log("Failed to save to file");
+        }
+        
+
+    }
+
+    private retrieveState(){
+        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath
+        if(!workspace){
+            console.error("not saveing no workspace");
+            return;
+        }
+        let saveLocation = workspace + SAVE_DIR + SAVE_FILE;
+
+        if (!fs.existsSync(saveLocation)){
+            console.error("not saving no location found");
+            return;
+        }
+
+        let dataBuffer;
+        try {
+            dataBuffer = fs.readFileSync(saveLocation);
+        } catch (error) {
+            console.log("Data Buffer error")
+            return
+        }
+        
+        let dataStr = String.fromCharCode(...dataBuffer);
+        let dataJson = JSON.parse(dataStr);
+        console.log(dataJson)
+        let dataFiles = dataJson.files;
+        if(dataFiles){
+            this.files = dataFiles;
+        }
+
+        let dataSetBreakpoints = dataJson.setBreakpoints;
+        if(dataSetBreakpoints){
+            this.setBreakpoints = dataSetBreakpoints;
+        }
+        
     }
 
 }

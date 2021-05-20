@@ -384,4 +384,9 @@ export function activate(context: vscode.ExtensionContext) {
  * Called when the extension gets deactivated, ie. when VSCode is shut down.
  */
 export function deactivate() {
+    console.log("deactivating DaCe");
+    let context = DaCeVSCode.getInstance().getExtensionContext();
+    if(context){
+        context.subscriptions.forEach(item => item.dispose());
+    } 
 }
