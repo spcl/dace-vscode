@@ -81,6 +81,8 @@ class TransformationHistoryList extends TreeView {
         for (let i = 0; i < history.length; i++) {
             const item = history[i];
             const current = (i === history.length - 1);
+            if (!item)
+                continue;
 
             if (current) {
                 const item_current_state = new TransformationHistoryItem(
