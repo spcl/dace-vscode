@@ -103,7 +103,7 @@ class TransformationHistoryList extends TreeView {
                 let disabled = false;
                 let tooltip = 'Preview';
 
-                if (item['dummy_transformation']) {
+                if (item['dace_unregistered']) {
                     disabled = true;
                     encountered_dummy = true;
                     tooltip = 'This transformation is not available in your ' +
