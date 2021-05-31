@@ -59,3 +59,7 @@ body {
     color: var(--vscode-list-activeSelectionForeground) !important;
     background-color: var(--vscode-list-activeSelectionBackground) !important;
 }
+
+.tree-view-item.disabled {
+    color: var(--vscode-titleBar-inactiveForeground) !important;
+}
