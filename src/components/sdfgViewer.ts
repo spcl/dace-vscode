@@ -178,8 +178,8 @@ export class SdfgViewerProvider
             case 'go_to_cpp':
                 // We want to jump to a specific cpp file
                 let cachePath = path.normalize(
-                    vscode.workspace.rootPath + 
-                    '/.dacecache/' + 
+                    vscode.workspace.rootPath +
+                    '/.dacecache/' +
                     message.sdfg_name
                 );
 
@@ -201,22 +201,22 @@ export class SdfgViewerProvider
                     message.state_id,
                     message.node_id,
                 );
-                let lineRange = getCppRange(node , mapPath);
+                let lineRange = getCppRange(node, mapPath);
 
                 // If there is no matching location we just goto the file
                 // without highlighting and indicte it with a message
-                if (!lineRange || !lineRange.from){
+                if (!lineRange || !lineRange.from) {
                     lineRange = {};
                     lineRange.from = 1;
                     vscode.window.showInformationMessage(
                         'Could not find a specific line for Node:' +
-                        node.printer() 
+                        node.printer()
                     );
                 }
 
                 // Subtract 1 as we don't want to heighlight the first line
                 // as the 'to' value is inclusive 
-                if (!lineRange.to){
+                if (!lineRange.to) {
                     lineRange.to = lineRange.from - 1;
                 }
 
@@ -224,11 +224,11 @@ export class SdfgViewerProvider
                     cppUri,
                     lineRange.from - 1,
                     0,
-                    lineRange.to ,
+                    lineRange.to,
                     0
                 );
                 break;
-                
+
             default:
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
                 break;
@@ -236,12 +236,12 @@ export class SdfgViewerProvider
     }
 
     public goToFileLocation(
-        fileUri : vscode.Uri,
-        startLine : number,
-        startCol : number,
+        fileUri: vscode.Uri,
+        startLine: number,
+        startCol: number,
         endLine: number,
-        endCol : number
-    ){
+        endCol: number
+    ) {
         /* Load the file and show it in a new editor, highlighting the
         indicated range. */
         vscode.workspace.openTextDocument(fileUri).then(
@@ -312,7 +312,8 @@ export class SdfgViewerProvider
             // We want to update our webview if that happens.
             const docChangeSubs = vscode.workspace.onDidChangeTextDocument(
                 e => {
-                    if (e.document.uri.toString() === document.uri.toString())
+                    if (e.document.uri.toString() === document.uri.toString() &&
+                        e.contentChanges.length > 0)
                         this.documentChanged(document, webviewPanel.webview);
                 }
             );

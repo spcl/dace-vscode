@@ -8,6 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
@@ -28,6 +29,7 @@
     <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>
     <script src="{{ CSP_SRC }}/lib/split.min.js"></script>
+    <script src="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.bundle.min.js"></script>
 
     <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
     <script src="{{ CSP_SRC }}/webclient/renderer_elements.js"></script>
@@ -80,7 +82,7 @@
         <div id="info-container">
             <div id="info-header">
                 <div id="info-title-container">
-                    <h3 id="info-title"></h3>
+                    <h5 id="info-title"></h5>
                 </div>
                 <div id="goto-source-btn" class="hidden button">
                     <span>
@@ -115,6 +117,7 @@
     <script src="{{ CSP_SRC }}/components/sdfv/util/helpers.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/messaging/message_handler.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/analysis/analysis.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/properties/properties.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/transformation/transformation.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/breakpoints/breakpoints.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/util/vscode_renderer.js"></script>
@@ -124,7 +127,7 @@
         var debug_draw = false;
 
         function setRendererContent(sdfg, previewing = false,
-            prevent_refreshes = false) {
+                prevent_refreshes = false) {
             parsed_sdfg = parse_sdfg(sdfg);
 
             if (renderer)

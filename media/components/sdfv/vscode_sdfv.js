@@ -1,8 +1,6 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-const { notDeepStrictEqual } = require("assert/strict");
-
 function compute_scope_label(scope_entry) {
     const attributes = scope_entry.data.node.attributes;
     const base_label = attributes.label;
@@ -844,7 +842,7 @@ function generate_attributes_table(elem, root) {
             if (k === 'debuginfo') {
                 if (val) {
                     const gotoSourceBtn = $('#goto-source-btn');
-                    gotoSourceBtn.on('click', function () {
+                    gotoSourceBtn.on('click', function() {
                         gotoSource(
                             val.filename,
                             val.start_line,

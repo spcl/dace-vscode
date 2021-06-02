@@ -11,7 +11,7 @@
     <link rel="stylesheet" type="text/css"
           href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.min.css">
+          href="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.min.css">
     <link rel="stylesheet" type="text/css"
           href="{{ CSP_SRC }}/components/analysis/analysis.css">
 
@@ -25,7 +25,7 @@
     </script>
 
     <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
-    <script src="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.bundle.min.js"></script>
+    <script src="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.bundle.min.js"></script>
     <script src="{{ CSP_SRC }}/components/analysis/analysis.js"></script>
 </head>
 
@@ -98,13 +98,11 @@
                             </button>
                         </div>
                         <div class="input-group">
-                            <div class="input-group-prepend">
-                                <label class="input-group-text"
-                                       for="runtime-time-criterium-select">
-                                    Runtime visualization criterium:
-                                </label>
-                            </div>
-                            <select class="custom-select"
+                            <label class="input-group-text"
+                                    for="runtime-time-criterium-select">
+                                Runtime visualization criterium:
+                            </label>
+                            <select class="form-select"
                                  id="runtime-time-criterium-select">
                                 <option
                                     value="min">
