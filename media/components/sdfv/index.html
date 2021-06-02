@@ -8,7 +8,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
@@ -29,7 +28,6 @@
     <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>
     <script src="{{ CSP_SRC }}/lib/split.min.js"></script>
-    <script src="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.bundle.min.js"></script>
 
     <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
     <script src="{{ CSP_SRC }}/webclient/renderer_elements.js"></script>
@@ -82,7 +80,7 @@
         <div id="info-container">
             <div id="info-header">
                 <div id="info-title-container">
-                    <h5 id="info-title"></h5>
+                    <h3 id="info-title"></h3>
                 </div>
                 <div id="goto-source-btn" class="hidden button">
                     <span>
@@ -112,7 +110,6 @@
     <script src="{{ CSP_SRC }}/components/sdfv/util/helpers.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/messaging/message_handler.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/analysis/analysis.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/properties/properties.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/transformation/transformation.js"></script>
     <script>
         vscode = acquireVsCodeApi();
@@ -136,15 +133,6 @@
 
             outline(renderer, renderer.graph);
             refresh_analysis_pane();
-
-            if (renderer) {
-                if (renderer.selected_elements &&
-                    renderer.selected_elements.length === 1)
-                    reselect_renderer_element(renderer.selected_elements[0]);
-                else if ((!renderer.selected_elements) ||
-                         renderer.selected_elements.length === 0)
-                    fill_info_embedded(new SDFG(renderer.sdfg));
-            }
         }
 
         function resetRendererContent() {

@@ -13,7 +13,6 @@ import inspect
 import sympy
 import sys
 import traceback
-import types
 
 
 # Prepare a whitelist of DaCe enumeration types
@@ -459,8 +458,8 @@ def get_transformations(sdfg_json, selected_elements):
 
     if subgraph is not None:
         for xform in SubgraphTransformation.extensions():
-            xform_obj = xform(subgraph)
-            if xform_obj.can_be_applied(sdfg, subgraph):
+            if xform.can_be_applied(sdfg, subgraph):
+                xform_obj = xform(subgraph)
                 transformations.append(xform_obj.to_json())
                 docstrings[xform.__name__] = xform_obj.__doc__
 
@@ -479,76 +478,6 @@ def get_enum(name):
             },
         }
     return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
-
-
-def get_property_metdata():
-    """ Generate a dictionary of class properties and their metadata.
-        This iterates over all classes registered as serializable in DaCe's
-        serialization module, checks whether there are properties present
-        (true for any class registered via the @make.properties decorator), and
-        then assembels their metadata to a dictionary.
-    """
-    # Lazy import to cut down on module load time.
-    from dace.sdfg.nodes import full_class_path
-
-    meta_dict = {}
-    meta_dict['__reverse_type_lookup__'] = {}
-    for typename in dace.serialize._DACE_SERIALIZE_TYPES:
-        t = dace.serialize._DACE_SERIALIZE_TYPES[typename]
-        if hasattr(t, '__properties__'):
-            meta_key = typename
-            if (issubclass(t, dace.sdfg.nodes.LibraryNode)
-                and not t == dace.sdfg.nodes.LibraryNode):
-                meta_key = full_class_path(t)
-
-            meta_dict[meta_key] = {}
-            libnode_implementations = None
-            if hasattr(t, 'implementations'):
-                libnode_implementations = list(t.implementations.keys())
-            for propname, prop in t.__properties__.items():
-                meta_dict[meta_key][propname] = prop.meta_to_json(prop)
-
-                if hasattr(prop, 'key_type') and hasattr(prop, 'value_type'):
-                    # For dictionary properties, add their key and value types.
-                    meta_dict[meta_key][propname][
-                        'key_type'
-                    ] = prop.key_type.__name__
-                    meta_dict[meta_key][propname][
-                        'value_type'
-                    ] = prop.value_type.__name__
-                elif hasattr(prop, 'element_type'):
-                    meta_dict[meta_key][propname][
-                        'element_type'
-                    ] = prop.element_type.__name__
-
-                if prop.choices is not None:
-                    # If there are specific choices for this property (i.e. this
-                    # property is an enum), list those as metadata as well.
-                    if inspect.isclass(prop.choices):
-                        if issubclass(prop.choices, aenum.Enum):
-                            meta_dict[meta_key][propname]['choices'] = [
-                                str(e).split('.')[-1] for e in prop.choices
-                            ]
-                elif (propname == 'implementation'
-                    and libnode_implementations is not None):
-                    # For implementation properties, add all library
-                    # implementations as choices.
-                    meta_dict[meta_key][propname][
-                        'choices'
-                    ] = libnode_implementations
-
-                # Create a reverse lookup method for each meta type. This allows
-                # us to get meta information about things other than properties
-                # contained in some SDFG properties (types, CodeBlocks, etc.).
-                if meta_dict[meta_key][propname]['metatype']:
-                    meta_type = meta_dict[meta_key][propname]['metatype']
-                    if not meta_type in meta_dict['__reverse_type_lookup__']:
-                        meta_dict['__reverse_type_lookup__'][
-                            meta_type
-                        ] = meta_dict[meta_key][propname]
-    return {
-        'meta_dict': meta_dict,
-    }
 
 
 def _sdfg_remove_instrumentations(sdfg: dace.sdfg.SDFG):
@@ -647,10 +576,6 @@ def run_daemon(port):
             request_json['path'],
             request_json['suppress_instrumentation']
         )
-
-    @daemon.route('/get_metadata', methods=['GET'])
-    def _get_metadata():
-        return get_property_metdata()
 
     daemon.run(port=port)
 

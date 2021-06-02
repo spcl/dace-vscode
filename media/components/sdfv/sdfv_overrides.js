@@ -69,51 +69,198 @@ function fill_info_embedded(elem) {
             $('<hr>').appendTo(contents);
         }
 
-        generate_attributes_table(elem, contents);
+        const attr_table = $('<table>', {
+            id: 'sdfg-attribute-table',
+            'class': 'info-table',
+        }).appendTo(contents);
+        const attr_table_header = $('<thead>').appendTo(attr_table);
+        const attr_table_header_row = $('<tr>').appendTo(attr_table_header);
+        $('<th>', {
+            'class': 'key-col',
+            'text': 'Attribute',
+        }).appendTo(attr_table_header_row);
+        $('<th>', {
+            'class': 'val-col',
+            'text': 'Value',
+        }).appendTo(attr_table_header_row);
 
+        const attr_table_body = $('<tbody>').appendTo(attr_table);
+        for (const attr of Object.entries(elem.attributes())) {
+            if (attr[0] === 'layout' || attr[0] === 'sdfg' ||
+                attr[0] === 'orig_sdfg' || attr[0] === 'transformation_hist' ||
+                attr[0].startsWith('_'))
+                continue;
+            const val = sdfg_property_to_string(
+                attr[1],
+                renderer.view_settings()
+            );
+            if (val === null || val === '')
+                continue;
+
+
+            if (attr[0] === 'instrument') {
+                if (window.instruments) {
+                    const row = $('<tr>').appendTo(attr_table_body);
+                    $('<th>', {
+                        'class': 'key-col',
+                        'text': attr[0],
+                    }).appendTo(row);
+                    const cell = $('<td>', {
+                        'class': 'val-col',
+                    }).appendTo(row);
+
+                    const select = $('<select>', {
+                        'name': 'instrument',
+                        'class': 'sdfv-property-dropdown',
+                    }).appendTo(cell);
+
+                    select.change(() => {
+                        if (elem && elem.data) {
+                            if (elem.data.attributes)
+                                elem.data.attributes.instrument = select.val();
+                            else if (elem.data.state)
+                                elem.data.state.attributes.instrument =
+                                    select.val();
+                            else if (elem.data.node)
+                                elem.data.node.attributes.instrument =
+                                    select.val();
+
+                            let g = renderer.sdfg;
+
+                            // The renderer uses a graph representation with
+                            // additional information, and to make sure that
+                            // the classical SDFG representation and that graph
+                            // representation are kept in sync, the SDFG object
+                            // is made cyclical. We use this to break the
+                            // renderer's SDFG representation back down into the
+                            // classical one, removing layout information along
+                            // with it.
+                            function unGraphifySdfg(g) {
+                                g.edges.forEach((e) => {
+                                    if (e.attributes.data.edge)
+                                        delete e.attributes.data.edge;
+                                });
+
+                                g.nodes.forEach((s) => {
+                                    if (s.attributes.layout)
+                                        delete s.attributes.layout;
+
+                                    s.edges.forEach((e) => {
+                                        if (e.attributes.data.edge)
+                                            delete e.attributes.data.edge;
+                                    });
+
+                                    s.nodes.forEach((v) => {
+                                        if (v.attributes.layout)
+                                            delete v.attributes.layout;
+
+                                        if (v.type === 'NestedSDFG')
+                                            unGraphifySdfg(v.attributes.sdfg);
+                                    });
+                                });
+                            }
+
+                            unGraphifySdfg(g);
+
+                            vscode.postMessage({
+                                type: 'dace.write_edit_to_sdfg',
+                                sdfg: JSON.stringify(g),
+                            });
+                        }
+                    });
+
+                    window.instruments.forEach(el => {
+                        select.append(new Option(
+                            el,
+                            el,
+                            false,
+                            el === attr[1]
+                        ));
+                    });
+                } else {
+                    // If the available instruments aren't set yet, try to
+                    // get them from DaCe.
+                    vscode.postMessage({
+                        type: 'dace.get_enum',
+                        name: 'InstrumentationType',
+                    });
+                }
+            } else {
+                if (attr[0] === 'debuginfo') {
+                    gotoSourceBtn.on('click', function() {
+                        gotoSource(
+                            attr[1].filename,
+                            attr[1].start_line,
+                            attr[1].start_column,
+                            attr[1].end_line,
+                            attr[1].end_column
+                        );
+                    });
+                    gotoSourceBtn.prop('title',
+                        attr[1].filename + ':' + attr[1].start_line);
+                    gotoSourceBtn.show();
+                    continue;
+                }
+
+                const row = $('<tr>').appendTo(attr_table_body);
+                $('<th>', {
+                    'class': 'key-col',
+                    'text': attr[0],
+                }).appendTo(row);
+                $('<td>', {
+                    'class': 'val-col',
+                    'html': val,
+                }).appendTo(row);
+            }
+        }
+
+        // If we're processing an access node, add array information too
         if (elem instanceof AccessNode) {
-            // If we're processing an access node, add array information too.
             const sdfg_array = elem.sdfg.attributes._arrays[
                 elem.attributes().data
             ];
             $('<br>').appendTo(contents);
             $('<p>', {
                 'class': 'info-subtitle',
-                'text': sdfg_array.type + ' properties:',
+                'text': 'Array properties:',
             }).appendTo(contents);
 
-            generate_attributes_table(sdfg_array, contents);
-        } else if (elem instanceof ScopeNode) {
-            // If we're processing a scope node, we want to append the exit
-            // node's properties when selecting an entry node, and vice versa.
-            let other_element = undefined;
+            const array_table = $('<table>', {
+                id: 'sdfg-array-table',
+                'class': 'info-table',
+            }).appendTo(contents);
+            const array_table_header = $('<thead>').appendTo(array_table);
+            const array_table_header_row =
+                $('<tr>').appendTo(array_table_header);
+            $('<th>', {
+                'class': 'key-col',
+                'text': 'Property',
+            }).appendTo(array_table_header_row);
+            $('<th>', {
+                'class': 'val-col',
+                'text': 'Value',
+            }).appendTo(array_table_header_row);
 
-            let other_uuid = undefined;
-            if (elem instanceof EntryNode)
-                other_uuid = elem.sdfg.sdfg_list_id + '/' +
-                    elem.parent_id + '/' +
-                    elem.data.node.scope_exit + '/-1';
-            else if (elem instanceof ExitNode)
-                other_uuid = elem.sdfg.sdfg_list_id + '/' +
-                    elem.parent_id + '/' +
-                    elem.data.node.scope_entry + '/-1';
-
-            if (other_uuid) {
-                const ret_other_elem = find_graph_element_by_uuid(
-                    renderer.graph,
-                    other_uuid
+            const array_table_body = $('<tbody>').appendTo(array_table);
+            for (const attr of Object.entries(sdfg_array.attributes)) {
+                if (attr[0] === 'layout' || attr[0] === 'sdfg' ||
+                    attr[0].startsWith('_meta_'))
+                    continue;
+                const val = sdfg_property_to_string(
+                    attr[1],
+                    renderer.view_settings()
                 );
-                other_element = ret_other_elem.element;
-            }
-
-            if (other_element) {
-                $('<br>').appendTo(contents);
-                $('<p>', {
-                    'class': 'info-subtitle',
-                    'text': other_element.type() + ' ' + other_element.label(),
-                }).appendTo(contents);
-
-                generate_attributes_table(other_element, contents);
+                if (val === null || val === '')
+                    continue;
+                const row = $('<tr>').appendTo(array_table_body);
+                $('<th>', {
+                    'class': 'key-col',
+                    'text': attr[0],
+                }).appendTo(row);
+                $('<td>', {
+                    'class': 'val-col',
+                    'html': val,
+                }).appendTo(row);
             }
         }
 

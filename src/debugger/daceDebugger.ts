@@ -101,9 +101,7 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
             name: "(gdb) Attach",
             type: "cppdbg",
             request: "attach",
-            program: await DaCeInterface.getInstance().getPythonExecCommand(
-                undefined
-            ),
+            program: await DaCeInterface.getInstance().getPythonPath(null),
             processId: "",
             MIMode: "gdb",
             miDebuggerPath: "/path/to/gdb",

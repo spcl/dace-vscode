@@ -1,17 +1,6 @@
 # Change Log
 
-## 0.3
-
-### 0.3.0
-
-- Allow editing of SDFG properties.
-
 ## 0.2
-
-### 0.2.16
-
-- Switch to terminal mode by default for the dace daemon. This deprecates the
-  subprocess mode.
 
 ### 0.2.12
 
