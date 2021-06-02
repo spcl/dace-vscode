@@ -21,6 +21,7 @@
         "onView:transformationList",
         "onView:transformationHistory",
         "onView:sdfgAnalysis",
+        "onView:breakpoints",
         "onView:sdfgOutline"
     ],
     "main": "./out/extension.js",
@@ -256,6 +257,13 @@
                     "contextualTitle": "SDFG Analysis"
                 },
                 {
+                    "id": "breakpoints",
+                    "type": "webview",
+                    "name": "Breakpoints",
+                    "icon": "media/resources/icons/dace-hollow.svg",
+                    "contextualTitle": "Breakpoints"
+                },
+                {
                     "id": "sdfgOutline",
                     "type": "webview",
                     "name": "SDFG Outline",
@@ -275,6 +283,10 @@
             },
             {
                 "view": "sdfgAnalysis",
+                "contents": "No active SDFG"
+            },
+            {
+                "view": "breakpoints",
                 "contents": "No active SDFG"
             },
             {
@@ -316,6 +328,14 @@
             {
                 "command": "sdfgAnalysis.sync",
                 "title": "Refresh Analysis",
+                "icon": {
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
+                }
+            },
+            {
+                "command": "breakpoints.sync",
+                "title": "Refresh Breakpoints",
                 "icon": {
                     "dark": "media/resources/icons/dark/refresh.svg",
                     "light": "media/resources/icons/light/refresh.svg"
@@ -399,6 +419,11 @@
                 {
                     "command": "sdfgAnalysis.sync",
                     "when": "view == sdfgAnalysis",
+                    "group": "navigation"
+                },
+                {
+                    "command": "breakpoints.sync",
+                    "when": "view == breakpoints",
                     "group": "navigation"
                 },
                 {

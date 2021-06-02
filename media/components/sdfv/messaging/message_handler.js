@@ -3,7 +3,7 @@
 
 class MessageHandler {
 
-    constructor() {}
+    constructor() { }
 
     handle_message(message) {
         let el = undefined;
@@ -13,7 +13,7 @@ class MessageHandler {
                     GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS
                 );
                 instrumentation_report_read_complete(message.result);
-                // Fall through to set the criterium.
+            // Fall through to set the criterium.
             case 'instrumentation_report_change_criterium':
                 if (message.criterium) {
                     const ol = renderer.overlay_manager.get_overlay(
@@ -56,6 +56,9 @@ class MessageHandler {
                 break;
             case 'refresh_analysis_pane':
                 refresh_analysis_pane();
+                break;
+            case 'refresh_breakpoints':
+                refresh_breakpoints();
                 break;
             case 'refresh_outline':
                 if (renderer)
@@ -160,6 +163,16 @@ class MessageHandler {
                         default:
                             break;
                     }
+                break;
+            case 'set_sdfg_metadata':
+                if (message.meta_dict)
+                    window.sdfg_meta_dict = message.meta_dict;
+                break;
+            case 'show_breakpoints':
+                renderer.bpIndicator.display_breakpoints();
+                break;
+            case 'hide_breakpoints':
+                renderer.bpIndicator.hide_breakpoints();
                 break;
         }
     }

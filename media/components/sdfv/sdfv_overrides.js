@@ -32,6 +32,7 @@ function clear_info_box() {
     $('#info-title').text('');
     $('#info-clear-btn').hide();
     $('#goto-source-btn').hide();
+    $('#goto-cpp-btn').hide();
     window.selected_transformation = undefined;
     if (vscode)
         vscode.postMessage({
@@ -46,11 +47,16 @@ function clear_info_box() {
  * @param {*} elem  The element to display info about
  */
 function fill_info_embedded(elem) {
-    const gotoSourceBtn = $('#goto-source-btn');
-    // Clear and hide the go to source button.
-    gotoSourceBtn.hide();
-    gotoSourceBtn.off('click');
-    gotoSourceBtn.prop('title', '');
+    const buttons = [
+        $('#goto-source-btn'),
+        $('#goto-cpp-btn')
+    ]
+    // Clear and hide the buttons.
+    buttons.forEach(btn => {
+        btn.hide();
+        btn.off('click');
+        btn.prop('title', '');
+    });
 
     if (elem) {
         document.getElementById('info-title').innerText =

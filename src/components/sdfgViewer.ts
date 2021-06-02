@@ -11,13 +11,15 @@ import { AnalysisProvider } from './analysis';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 import { TransformationListProvider } from './transformationList';
+import { BreakpointProvider } from './breakpoints';
+import { getCppRange, Node } from './breakpointHandler';
 
 export class SdfgViewer {
 
     public constructor(
         public readonly webview: vscode.Webview,
         public readonly document: vscode.TextDocument
-    ) {}
+    ) { }
 
     public wrapperFile?: string = undefined;
     public argv?: string[] = undefined;
@@ -26,8 +28,8 @@ export class SdfgViewer {
 }
 
 export class SdfgViewerProvider
-extends BaseComponent
-implements vscode.CustomTextEditorProvider {
+    extends BaseComponent
+    implements vscode.CustomTextEditorProvider {
 
     public static INSTANCE: SdfgViewerProvider | undefined = undefined;
 
@@ -66,7 +68,7 @@ implements vscode.CustomTextEditorProvider {
      * @param webview       Active SDFG editor webview.
      */
     private updateActiveEditor(document: vscode.TextDocument,
-                               webview: vscode.Webview): void {
+        webview: vscode.Webview): void {
         DaCeVSCode.getInstance().updateActiveSdfg(document.fileName, webview);
     }
 
@@ -80,8 +82,8 @@ implements vscode.CustomTextEditorProvider {
      * @param webviewPanel  SDFG editor webview panel to update.
      */
     private updateWebview(document: vscode.TextDocument,
-                          webview: vscode.Webview,
-                          preventRefreshes: boolean = false): void {
+        webview: vscode.Webview,
+        preventRefreshes: boolean = false): void {
         webview.postMessage({
             type: 'update',
             text: document.getText(),
@@ -100,13 +102,14 @@ implements vscode.CustomTextEditorProvider {
      * @param webview       Attached webview.
      */
     private documentChanged(document: vscode.TextDocument,
-                            webview: vscode.Webview): void {
+        webview: vscode.Webview): void {
         this.updateWebview(document, webview);
         if (DaCeVSCode.getInstance().getActiveEditor() === webview) {
             TransformationListProvider.getInstance()?.refresh();
             TransformationHistoryProvider.getInstance()?.refresh();
             OutlineProvider.getInstance()?.refresh();
             AnalysisProvider.getInstance()?.refresh();
+            BreakpointProvider.getInstance()?.refresh();
         }
     }
 
@@ -137,7 +140,7 @@ implements vscode.CustomTextEditorProvider {
     }
 
     public handleMessage(message: any,
-                         origin: vscode.Webview | undefined = undefined): void {
+        origin: vscode.Webview | undefined = undefined): void {
         switch (message.type) {
             case 'get_current_sdfg':
                 const instance = SdfgViewerProvider.getInstance();
@@ -163,37 +166,108 @@ implements vscode.CustomTextEditorProvider {
                         vscode.workspace.rootPath + '/' + message.file_path
                     );
 
-                // Load the file and show it in a new editor, highlighting the
-                // indicated range.
                 const fileUri: vscode.Uri = vscode.Uri.file(filePath);
-                vscode.workspace.openTextDocument(fileUri).then(
-                    (doc: vscode.TextDocument) => {
-                        const startPos = new vscode.Position(
-                            message.startRow, message.startChar
-                        );
-                        const endPos = new vscode.Position(
-                            message.endRow, message.endChar
-                        );
-                        const range = new vscode.Range(
-                            startPos, endPos
-                        );
-                        vscode.window.showTextDocument(
-                            doc, {
-                                preview: true,
-                                selection: range,
-                            }
-                        );
-                    }, (reason) => {
-                        vscode.window.showInformationMessage(
-                            'Could not open file ' + filePath + ', ' + reason
-                        );
-                    }
+                this.goToFileLocation(
+                    fileUri,
+                    message.startRow,
+                    message.startChar,
+                    message.endRow,
+                    message.endChar
                 );
                 break;
+            case 'go_to_cpp':
+                // We want to jump to a specific cpp file
+                let cachePath = path.normalize(
+                    vscode.workspace.rootPath + 
+                    '/.dacecache/' + 
+                    message.sdfg_name
+                );
+
+                let mapPath = path.normalize(
+                    cachePath +
+                    '/map/map_cpp.json'
+                );
+
+                let cppPath = path.normalize(
+                    cachePath +
+                    '/src/cpu/' +
+                    message.sdfg_name +
+                    '.cpp'
+                );
+
+                const cppUri: vscode.Uri = vscode.Uri.file(cppPath);
+                const node = new Node(
+                    message.sdfg_id,
+                    message.state_id,
+                    message.node_id,
+                );
+                let lineRange = getCppRange(node , mapPath);
+
+                // If there is no matching location we just goto the file
+                // without highlighting and indicte it with a message
+                if (!lineRange || !lineRange.from){
+                    lineRange = {};
+                    lineRange.from = 1;
+                    vscode.window.showInformationMessage(
+                        'Could not find a specific line for Node:' +
+                        node.printer() 
+                    );
+                }
+
+                // Subtract 1 as we don't want to heighlight the first line
+                // as the 'to' value is inclusive 
+                if (!lineRange.to){
+                    lineRange.to = lineRange.from - 1;
+                }
+
+                this.goToFileLocation(
+                    cppUri,
+                    lineRange.from - 1,
+                    0,
+                    lineRange.to ,
+                    0
+                );
+                break;
+                
             default:
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
                 break;
         }
+    }
+
+    public goToFileLocation(
+        fileUri : vscode.Uri,
+        startLine : number,
+        startCol : number,
+        endLine: number,
+        endCol : number
+    ){
+        /* Load the file and show it in a new editor, highlighting the
+        indicated range. */
+        vscode.workspace.openTextDocument(fileUri).then(
+            (doc: vscode.TextDocument) => {
+
+                const startPos = new vscode.Position(
+                    startLine, startCol
+                );
+                const endPos = new vscode.Position(
+                    endLine, endCol
+                );
+                const range = new vscode.Range(
+                    startPos, endPos
+                );
+                vscode.window.showTextDocument(
+                    doc, {
+                    preview: false,
+                    selection: range,
+                }
+                );
+            }, (reason) => {
+                vscode.window.showInformationMessage(
+                    'Could not open file ' + fileUri.fsPath + ', ' + reason
+                );
+            }
+        );
     }
 
     public async resolveCustomTextEditor(
@@ -293,8 +367,8 @@ implements vscode.CustomTextEditorProvider {
         // If the settings indicate it, split the webview vertically and put
         // the info container to the right instead of at the bottom.
         if (vscode.workspace.getConfiguration(
-                'dace.sdfv'
-            ).layout === 'vertical'
+            'dace.sdfv'
+        ).layout === 'vertical'
         ) {
             baseHtml = baseHtml.replace(
                 '<div id="split-container" class="split-container-vertical">',

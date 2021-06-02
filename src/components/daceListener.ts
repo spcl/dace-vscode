@@ -7,11 +7,9 @@ export var PORT: number = 0;
 export class DaceListener extends vscode.Disposable{
 
     server: Net.Server
-    BPHandler: BreakpointHandler
 
-    constructor(BPHandler: BreakpointHandler) {
-        super(() => {console.log("closing server");this.server.close()})
-        this.BPHandler = BPHandler;
+    constructor() {
+        super(() => {this.server.close()});
         this.server = this.startListening();
     }
 
@@ -49,7 +47,7 @@ export class DaceListener extends vscode.Disposable{
         }
         switch (data.type) {
             case "registerFunction":
-                this.BPHandler.registerFunction(data);
+                BreakpointHandler.getInstance()?.registerFunction(data);
                 break;
             default:
                 break;
