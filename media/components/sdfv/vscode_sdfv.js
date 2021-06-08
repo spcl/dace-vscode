@@ -194,6 +194,13 @@ function attr_table_put_select(
     const input = $('<select>', {
         'class': 'sdfv-property-dropdown',
     }).appendTo(cell);
+    if (!choices.includes(val))
+        input.append(new Option(
+            val,
+            val,
+            false,
+            true
+        ));
     choices.forEach(array => {
         input.append(new Option(
             array,

@@ -526,9 +526,12 @@ def get_property_metdata():
                     # property is an enum), list those as metadata as well.
                     if inspect.isclass(prop.choices):
                         if issubclass(prop.choices, aenum.Enum):
-                            meta_dict[meta_key][propname]['choices'] = [
-                                str(e).split('.')[-1] for e in prop.choices
-                            ]
+                            choices = []
+                            for choice in prop.choices:
+                                choice_short = str(choice).split('.')[-1]
+                                if choice_short != 'Undefined':
+                                    choices.append(choice_short)
+                            meta_dict[meta_key][propname]['choices'] = choices
                 elif (propname == 'implementation'
                     and libnode_implementations is not None):
                     # For implementation properties, add all library
