@@ -72,6 +72,8 @@ async function sort_transformations(callback) {
         const global_transformations = [];
         const uncat_transformations = [];
 
+        const clear_subgraph_trafos = renderer.selected_elements.length <= 1;
+
         const all_transformations = [];
         for (const cat of transformations)
             for (const transformation of cat)
@@ -82,7 +84,8 @@ async function sort_transformations(callback) {
         for (const trafo of all_transformations) {
             // Subgraph Transformations always apply to the selection.
             if (trafo.type === 'SubgraphTransformation') {
-                selected_transformations.push(trafo);
+                if (!clear_subgraph_trafos)
+                    selected_transformations.push(trafo);
                 continue;
             }
 
