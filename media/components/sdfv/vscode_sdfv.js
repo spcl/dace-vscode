@@ -1,6 +1,17 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+function vscode_handle_event(event, data) {
+    switch (event) {
+        case 'on_renderer_selection_changed':
+            if (renderer && renderer.selected_elements.length > 1)
+                get_applicable_transformations();
+            else
+                sort_transformations(refresh_transformation_list);
+            break;
+    }
+}
+
 function compute_scope_label(scope_entry) {
     const attributes = scope_entry.data.node.attributes;
     const base_label = attributes.label;
