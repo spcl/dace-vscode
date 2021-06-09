@@ -213,7 +213,16 @@ class DictProperty extends Property {
                 const val_res = prop.val_prop.get_value();
                 if (key_res !== undefined && key_res.value !== undefined &&
                     key_res.value !== '') {
-                    new_dict[key_res.value] = val_res.value;
+                    if (prop.val_prop.datatype === 'CodeBlock' &&
+                        prop.val_prop.subkey !== undefined) {
+                        // For code properties, we need to write back the entire
+                        // code property structure, including language info.
+                        let code_val = prop.val_prop.target[prop.val_prop.key];
+                        code_val[prop.val_prop.subkey] = val_res.value;
+                        new_dict[key_res.value] = code_val;
+                    } else {
+                        new_dict[key_res.value] = val_res.value;
+                    }
                     value_changed = true;
                 }
             }

@@ -2,6 +2,12 @@
 
 ## 0.3
 
+### 0.3.1
+
+- Support custom transformations in transformation history
+- Support custom library nodes
+- Support custom enum properties (Schedules, Instrumentation, ...)
+
 ### 0.3.0
 
 - Allow editing of SDFG properties.

@@ -180,6 +180,15 @@ function attr_table_put_text(key, subkey, val, elem, target, cell, dtype) {
     return new ValueProperty(elem, target, key, subkey, dtype, input);
 }
 
+function attr_table_put_code(key, subkey, val, elem, target, cell, dtype) {
+    // TODO: add language selection
+    const input = $('<input>', {
+        'type': 'text',
+        'value': val,
+    }).appendTo(cell);
+    return new ValueProperty(elem, target, key, subkey, dtype, input);
+}
+
 function attr_table_put_number(key, subkey, val, elem, target, cell, dtype) {
     const input = $('<input>', {
         'type': 'number',
@@ -732,7 +741,7 @@ function attribute_table_put_entry(
                 );
                 break;
             case 'CodeBlock':
-                val_prop = attr_table_put_text(
+                val_prop = attr_table_put_code(
                     key, 'string_data', val ? val.string_data : '', elem,
                     target, value_cell, dtype
                 );
