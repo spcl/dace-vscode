@@ -108,6 +108,36 @@ class ValueProperty extends Property {
 
 }
 
+class CodeProperty extends Property {
+
+    constructor(element, target, key, subkey, dtype, code_input, lang_input) {
+        super(element, target, key, subkey, dtype);
+
+        this.code_input = code_input;
+        this.lang_input = lang_input;
+    }
+
+    get_value() {
+        let code_val = this.code_input.val();
+        let lang_val = this.lang_input.val();
+
+        return {
+            value: {
+                string_data: code_val,
+                language: lang_val,
+            },
+            value_changed: true,
+        };
+    }
+
+    update() {
+        const res = this.get_value();
+        super.write_back(res.value);
+        return res.value_changed;
+    }
+
+}
+
 class TypeclassProperty extends Property {
 
     constructor(element, target, key, subkey, datatype, input) {

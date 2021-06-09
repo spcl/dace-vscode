@@ -219,12 +219,42 @@ function attr_table_put_text(key, subkey, val, elem, target, cell, dtype) {
 }
 
 function attr_table_put_code(key, subkey, val, elem, target, cell, dtype) {
-    // TODO: add language selection
-    const input = $('<input>', {
-        'type': 'text',
-        'value': val,
+    const input = $('<textarea>', {
+        'class': 'sdfv-property-code',
+        'wrap': 'soft',
+        'rows': 3,
+        'cols': 81,
+        'text': val,
     }).appendTo(cell);
-    return new ValueProperty(elem, target, key, subkey, dtype, input);
+    /*
+    //TODO: Switch to monaco editor.
+    const input = $('<div>', {
+        width: '300px',
+        height: '50px',
+    }).appendTo(cell);
+    window.monaco.editor.create(input.get(0), {
+        value: val,
+        language: "python",
+        theme: 'vs-dark',
+    });
+    */
+    const languages = window.sdfg_meta_dict['__reverse_type_lookup__'][
+        'Language'
+    ].choices;
+    const language_input = $('<select>', {
+        'class': 'sdfv-property-dropdown',
+    }).appendTo(cell);
+    languages.forEach(lang => {
+        language_input.append(new Option(
+            lang,
+            lang,
+            false,
+            lang === target[key]['language']
+        ));
+    });
+    return new CodeProperty(
+        elem, target, key, subkey, dtype, input, language_input
+    );
 }
 
 function attr_table_put_number(key, subkey, val, elem, target, cell, dtype) {
@@ -780,7 +810,7 @@ function attribute_table_put_entry(
                 break;
             case 'CodeBlock':
                 val_prop = attr_table_put_code(
-                    key, 'string_data', val ? val.string_data : '', elem,
+                    key, undefined, val ? val.string_data : '', elem,
                     target, value_cell, dtype
                 );
                 break;
@@ -798,12 +828,24 @@ function attribute_table_put_entry(
         }
     }
 
-    if (update_on_change && val_prop !== undefined &&
-        val_prop.input !== undefined)
-        val_prop.input.on('change', () => {
-            val_prop.update();
-            vscode_write_graph(renderer.sdfg);
-        });
+    if (update_on_change && val_prop !== undefined) {
+        if (val_prop.input !== undefined) {
+            val_prop.input.on('change', () => {
+                val_prop.update();
+                vscode_write_graph(renderer.sdfg);
+            });
+        } else if (val_prop.code_input !== undefined &&
+                   val_prop.lang_input !== undefined) {
+            val_prop.code_input.on('change', () => {
+                val_prop.update();
+                vscode_write_graph(renderer.sdfg);
+            });
+            val_prop.lang_input.on('change', () => {
+                val_prop.update();
+                vscode_write_graph(renderer.sdfg);
+            });
+        }
+    }
 
     if (update_on_change && key_prop !== undefined &&
         key_prop.input !== undefined)
