@@ -44,6 +44,44 @@ function compute_scope_label(scope_entry) {
     }
 }
 
+function element_update_label(element, attributes) {
+    if (element.data && attributes.label) {
+        if (element.data.node) {
+            element.data.node.label = attributes.label;
+
+            if (element instanceof ScopeNode) {
+                // In scope nodes the range is attached.
+                if (element instanceof EntryNode) {
+                    let exit_elem = find_graph_element_by_uuid(
+                        renderer.graph,
+                        element.sdfg.sdfg_list_id + '/' +
+                        element.parent_id + '/' +
+                        element.data.node.scope_exit + '/-1'
+                    );
+                    if (exit_elem) {
+                        element.data.node.label = compute_scope_label(element);
+                        exit_elem.element.data.node.label =
+                            element.data.node.label;
+                    }
+                } else if (element instanceof ExitNode) {
+                    let entry_elem = find_graph_element_by_uuid(
+                        renderer.graph,
+                        element.sdfg.sdfg_list_id + '/' +
+                        element.parent_id + '/' +
+                        element.data.node.scope_entry + '/-1'
+                    );
+                    if (entry_elem) {
+                        element.data.node.label =
+                            compute_scope_label(entry_elem.element);
+                        entry_elem.element.data.node.label =
+                            element.data.node.label;
+                    }
+                }
+            }
+        }
+    }
+}
+
 /**
  * Transform the renderer's graph to a serializable SDFG.
  * The renderer uses a graph representation with additional information, and to

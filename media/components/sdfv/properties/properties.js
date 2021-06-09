@@ -30,42 +30,7 @@ class Property {
         }
 
         // Update the element label if it has one.
-        if (this.element.data) {
-            if (this.element.data.node) {
-                this.element.data.node.label = value;
-
-                if (this.element instanceof ScopeNode) {
-                    // In scope nodes the range is attached.
-                    if (this.element instanceof EntryNode) {
-                        let exit_elem = find_graph_element_by_uuid(
-                            renderer.graph,
-                            this.element.sdfg.sdfg_list_id + '/' +
-                            this.element.parent_id + '/' +
-                            this.element.data.node.scope_exit + '/-1'
-                        );
-                        if (exit_elem) {
-                            this.element.data.node.label =
-                                compute_scope_label(this.element);
-                            exit_elem.element.data.node.label =
-                                this.element.data.node.label;
-                        }
-                    } else if (this.element instanceof ExitNode) {
-                        let entry_elem = find_graph_element_by_uuid(
-                            renderer.graph,
-                            this.element.sdfg.sdfg_list_id + '/' +
-                            this.element.parent_id + '/' +
-                            this.element.data.node.scope_entry + '/-1'
-                        );
-                        if (entry_elem) {
-                            this.element.data.node.label =
-                                compute_scope_label(entry_elem.element);
-                            entry_elem.element.data.node.label =
-                                this.element.data.node.label;
-                        }
-                    }
-                }
-            }
-        }
+        element_update_label(this.element, this.target);
     }
 
     get_value() {}
