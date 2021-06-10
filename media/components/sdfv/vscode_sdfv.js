@@ -1,6 +1,17 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+function vscode_handle_event(event, data) {
+    switch (event) {
+        case 'on_renderer_selection_changed':
+            if (renderer && renderer.selected_elements.length > 1)
+                get_applicable_transformations();
+            else
+                sort_transformations(refresh_transformation_list);
+            break;
+    }
+}
+
 function compute_scope_label(scope_entry) {
     const attributes = scope_entry.data.node.attributes;
     const base_label = attributes.label;
@@ -30,6 +41,44 @@ function compute_scope_label(scope_entry) {
         return label;
     } else {
         return base_label;
+    }
+}
+
+function element_update_label(element, attributes) {
+    if (element.data && attributes.label) {
+        if (element.data.node) {
+            element.data.node.label = attributes.label;
+
+            if (element instanceof ScopeNode) {
+                // In scope nodes the range is attached.
+                if (element instanceof EntryNode) {
+                    let exit_elem = find_graph_element_by_uuid(
+                        renderer.graph,
+                        element.sdfg.sdfg_list_id + '/' +
+                        element.parent_id + '/' +
+                        element.data.node.scope_exit + '/-1'
+                    );
+                    if (exit_elem) {
+                        element.data.node.label = compute_scope_label(element);
+                        exit_elem.element.data.node.label =
+                            element.data.node.label;
+                    }
+                } else if (element instanceof ExitNode) {
+                    let entry_elem = find_graph_element_by_uuid(
+                        renderer.graph,
+                        element.sdfg.sdfg_list_id + '/' +
+                        element.parent_id + '/' +
+                        element.data.node.scope_entry + '/-1'
+                    );
+                    if (entry_elem) {
+                        element.data.node.label =
+                            compute_scope_label(entry_elem.element);
+                        entry_elem.element.data.node.label =
+                            element.data.node.label;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -169,6 +218,45 @@ function attr_table_put_text(key, subkey, val, elem, target, cell, dtype) {
     return new ValueProperty(elem, target, key, subkey, dtype, input);
 }
 
+function attr_table_put_code(key, subkey, val, elem, target, cell, dtype) {
+    const input = $('<textarea>', {
+        'class': 'sdfv-property-code',
+        'wrap': 'soft',
+        'rows': 3,
+        'cols': 81,
+        'text': val,
+    }).appendTo(cell);
+    /*
+    //TODO: Switch to monaco editor.
+    const input = $('<div>', {
+        width: '300px',
+        height: '50px',
+    }).appendTo(cell);
+    window.monaco.editor.create(input.get(0), {
+        value: val,
+        language: "python",
+        theme: 'vs-dark',
+    });
+    */
+    const languages = window.sdfg_meta_dict['__reverse_type_lookup__'][
+        'Language'
+    ].choices;
+    const language_input = $('<select>', {
+        'class': 'sdfv-property-dropdown',
+    }).appendTo(cell);
+    languages.forEach(lang => {
+        language_input.append(new Option(
+            lang,
+            lang,
+            false,
+            lang === target[key]['language']
+        ));
+    });
+    return new CodeProperty(
+        elem, target, key, subkey, dtype, input, language_input
+    );
+}
+
 function attr_table_put_number(key, subkey, val, elem, target, cell, dtype) {
     const input = $('<input>', {
         'type': 'number',
@@ -183,6 +271,13 @@ function attr_table_put_select(
     const input = $('<select>', {
         'class': 'sdfv-property-dropdown',
     }).appendTo(cell);
+    if (!choices.includes(val))
+        input.append(new Option(
+            val,
+            val,
+            false,
+            true
+        ));
     choices.forEach(array => {
         input.append(new Option(
             array,
@@ -714,8 +809,8 @@ function attribute_table_put_entry(
                 );
                 break;
             case 'CodeBlock':
-                val_prop = attr_table_put_text(
-                    key, 'string_data', val ? val.string_data : '', elem,
+                val_prop = attr_table_put_code(
+                    key, undefined, val ? val.string_data : '', elem,
                     target, value_cell, dtype
                 );
                 break;
@@ -733,12 +828,24 @@ function attribute_table_put_entry(
         }
     }
 
-    if (update_on_change && val_prop !== undefined &&
-        val_prop.input !== undefined)
-        val_prop.input.on('change', () => {
-            val_prop.update();
-            vscode_write_graph(renderer.sdfg);
-        });
+    if (update_on_change && val_prop !== undefined) {
+        if (val_prop.input !== undefined) {
+            val_prop.input.on('change', () => {
+                val_prop.update();
+                vscode_write_graph(renderer.sdfg);
+            });
+        } else if (val_prop.code_input !== undefined &&
+                   val_prop.lang_input !== undefined) {
+            val_prop.code_input.on('change', () => {
+                val_prop.update();
+                vscode_write_graph(renderer.sdfg);
+            });
+            val_prop.lang_input.on('change', () => {
+                val_prop.update();
+                vscode_write_graph(renderer.sdfg);
+            });
+        }
+    }
 
     if (update_on_change && key_prop !== undefined &&
         key_prop.input !== undefined)

@@ -2,6 +2,18 @@
 
 ## 0.3
 
+### 0.3.2
+
+- Fix various bugs regarding the editing of code properties.
+- Allow language selection in code properties.
+- Fix bugs regarding label updates upon property changes.
+
+### 0.3.1
+
+- Support custom transformations in transformation history.
+- Support custom library nodes.
+- Support custom enum properties (Schedules, Instrumentation, ...).
+
 ### 0.3.0
 
 - Allow editing of SDFG properties.

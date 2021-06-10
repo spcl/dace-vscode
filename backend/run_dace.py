@@ -525,9 +525,12 @@ def get_property_metdata():
                     # property is an enum), list those as metadata as well.
                     if inspect.isclass(prop.choices):
                         if issubclass(prop.choices, aenum.Enum):
-                            meta_dict[meta_key][propname]['choices'] = [
-                                str(e).split('.')[-1] for e in prop.choices
-                            ]
+                            choices = []
+                            for choice in prop.choices:
+                                choice_short = str(choice).split('.')[-1]
+                                if choice_short != 'Undefined':
+                                    choices.append(choice_short)
+                            meta_dict[meta_key][propname]['choices'] = choices
                 elif (propname == 'implementation'
                     and libnode_implementations is not None):
                     # For implementation properties, add all library
@@ -545,6 +548,21 @@ def get_property_metdata():
                         meta_dict['__reverse_type_lookup__'][
                             meta_type
                         ] = meta_dict[meta_key][propname]
+
+    # Save a lookup for enum values not present yet.
+    for enum_name in enum_list:
+        if not enum_name in meta_dict['__reverse_type_lookup__']:
+            choices = []
+            for choice in getattr(dace.dtypes, enum_name):
+                choice_short = str(choice).split('.')[-1]
+                if choice_short != 'Undefined':
+                    choices.append(choice_short)
+            meta_dict['__reverse_type_lookup__'][enum_name] = {
+                'category': 'General',
+                'metatype': enum_name,
+                'choices': choices,
+            }
+
     return {
         'meta_dict': meta_dict,
     }

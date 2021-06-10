@@ -402,3 +402,7 @@ pre.code {
 #info-contents .transformation-info-container .transformation-image {
   max-width: 100%;
 }
+
+.sdfv-property-code {
+  resize: none;
+}

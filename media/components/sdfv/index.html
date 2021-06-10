@@ -121,6 +121,29 @@
     <script src="{{ CSP_SRC }}/components/sdfv/transformation/transformation.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/breakpoints/breakpoints.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/util/vscode_renderer.js"></script>
+
+    <!-- Load in the monaco editor. -->
+    <script>
+        var require = { paths: { 'vs': '{{ CSP_SRC }}/lib/vs' } };
+    </script>
+    <script src="{{ CSP_SRC }}/lib/vs/loader.js"></script>
+    <script src="{{ CSP_SRC }}/lib/vs/editor/editor.main.nls.js"></script>
+    <script src="{{ CSP_SRC }}/lib/vs/editor/editor.main.js"></script>
+    <script>
+        window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+
+        let proxy = URL.createObjectURL(new Blob([`
+            self.MonacoEnvironment = {
+                baseUrl: '{{ CSP_SRC }}/lib/vs'
+            };
+            importScripts('{{ CSP_SRC }}/lib/vs/base/worker/workerMain.js');
+        `], { type: 'text/javascript' }));
+
+        require(["vs/editor/editor.main"], function () {
+            window.monaco = monaco;
+        });
+    </script>
+    
     <script>
         vscode = acquireVsCodeApi();
         message_handler = new MessageHandler();
