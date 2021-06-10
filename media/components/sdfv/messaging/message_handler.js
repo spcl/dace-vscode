@@ -174,6 +174,9 @@ class MessageHandler {
             case 'hide_breakpoints':
                 renderer.bpIndicator.hide_breakpoints();
                 break;
+            case 'unbound_breakpoint':
+                renderer.bpIndicator.unbound_breakpoint(message.node);
+                break;
         }
     }
 

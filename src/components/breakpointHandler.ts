@@ -206,7 +206,14 @@ export class BreakpointHandler extends vscode.Disposable {
     }
 
     public handleNodeAdded(node: Node){
-        console.log(node);
+        let uri = vscode.Uri.parse(
+            'C:/Users/Benjamin/Documents/Code/Bachelor/dace/.dacecache/myprogram/program.sdfg'
+        );
+
+        let pos = new vscode.Position(5, 0);
+        let location = new vscode.Location(uri, pos);
+        let new_bp = new vscode.SourceBreakpoint(location);
+        vscode.debug.addBreakpoints([new_bp]);
     }
 
     public handleNodeRemoved(node: Node){

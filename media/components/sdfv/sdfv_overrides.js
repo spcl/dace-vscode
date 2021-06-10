@@ -49,7 +49,7 @@ function clear_info_box() {
 function fill_info_embedded(elem) {
     const buttons = [
         $('#goto-source-btn'),
-        $('#goto-source-btn')
+        $('#goto-cpp-btn')
     ]
     // Clear and hide these buttons.
     buttons.forEach((btn) =>{

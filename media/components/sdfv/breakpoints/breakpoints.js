@@ -10,6 +10,8 @@ function refresh_breakpoints() {
     }
 }
 
+const BreakpointEnum = Object.freeze({ "UNBOUND": 0, "BOUND": 1 });
+
 class BreakpointIndicator {
 
     breakpoints;
@@ -18,11 +20,11 @@ class BreakpointIndicator {
 
     constructor(renderer) {
         this.renderer = renderer;
-        this.breakpoints = new Set()
+        this.breakpoints = new Map()
         this.show_breakpoints = false;
     }
 
-    get_sdfg_element(element) {
+    get_sdfg_element(element, as_string = false) {
         let undefined_val = -1;
         let sdfg_id = undefined_val;
         let state_id = undefined_val;
@@ -41,11 +43,18 @@ class BreakpointIndicator {
             node_id = element.id;
         }
 
-        return {
-            sdfg_id: sdfg_id,
-            state_id: state_id,
-            node_id: node_id
-        };
+        if (!as_string)
+            return {
+                sdfg_id: sdfg_id,
+                state_id: state_id,
+                node_id: node_id
+            };
+        else
+            return (
+                sdfg_id + '/' +
+                state_id + '/' +
+                node_id
+            );
     }
 
     draw() {
@@ -82,7 +91,7 @@ class BreakpointIndicator {
                     });
                 }
                 else {
-                    this.breakpoints.add(elem_uuid);
+                    this.breakpoints.set(elem_uuid, BreakpointEnum.BOUND);
                     this.draw_breakpoint(foreground_elem, this.renderer.ctx);
                     vscode.postMessage({
                         type: 'breakpoints.add_breakpoint',
@@ -94,25 +103,25 @@ class BreakpointIndicator {
     }
 
     check_breakpoint(node, ctx) {
-        let sdfg_elem = this.get_sdfg_element(node);
-        let elem_uuid = (
-            sdfg_elem.sdfg_id + '/' +
-            sdfg_elem.state_id + '/' +
-            sdfg_elem.node_id
-        );
+        let elem_uuid = this.get_sdfg_element(node, true);
 
         if (this.breakpoints.has(elem_uuid)) {
-            this.draw_tooltip(node, 'Right click to remove a Breakpoint');
-            this.draw_breakpoint(node, ctx);
+            const breakpoint_type = this.breakpoints.get(elem_uuid);
+            let msg = (breakpoint_type === BreakpointEnum.UNBOUND) ?
+                'Right click to remove the Breakpoint' :
+                'The Breakpoint set on this node is unbounded';
+            this.draw_tooltip(node, msg);
+            this.draw_breakpoint(node, ctx, breakpoint_type);
         }
-        else{
+        else {
             this.draw_tooltip(node, 'Right click to set a Breakpoint');
         }
     }
 
-    draw_breakpoint(node, ctx) {
+    draw_breakpoint(node, ctx, bp_enum) {
         // Draw a red circle to indicate that a breakpoint is set
-        this.draw_breakpoint_circle(node, ctx, 'black', 'red');
+        let color = (bp_enum === BreakpointEnum.BOUND) ? 'red': '#D3D3D3';
+        this.draw_breakpoint_circle(node, ctx, 'black', color);
     }
 
     erase_breakpoint(node, ctx) {
@@ -121,7 +130,7 @@ class BreakpointIndicator {
         this.draw_breakpoint_circle(node, ctx, background, background);
     }
 
-    draw_breakpoint_circle(node, ctx, stroke_color, fill_color){
+    draw_breakpoint_circle(node, ctx, stroke_color, fill_color) {
         // Draw the circle, if the node is a STATE, draw the BP at
         // the top left, otherwise draw the BP at the middle left
         let topleft = node.topleft();
@@ -135,7 +144,7 @@ class BreakpointIndicator {
         ctx.fill();
     }
 
-    draw_tooltip(node, msg){
+    draw_tooltip(node, msg) {
         if (this.renderer.mousepos &&
             node.intersect(this.renderer.mousepos.x, this.renderer.mousepos.y)) {
             this.renderer.tooltip = () => {
@@ -234,6 +243,20 @@ class BreakpointIndicator {
             ends_drag
         );
 
+        this.renderer.draw_async();
+    }
+
+    unbound_breakpoint(node) {
+        console.log('unbounding');
+        let elem_uuid = (
+            node.sdfg_id + '/' +
+            node.state_id + '/' +
+            node.node_id
+        );
+        if (this.breakpoints.has(elem_uuid)){
+            this.breakpoints.set(elem_uuid, BreakpointEnum.UNBOUND);
+        }
+        this.draw();
         this.renderer.draw_async();
     }
 
