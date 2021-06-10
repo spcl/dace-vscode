@@ -549,6 +549,21 @@ def get_property_metdata():
                         meta_dict['__reverse_type_lookup__'][
                             meta_type
                         ] = meta_dict[meta_key][propname]
+
+    # Save a lookup for enum values not present yet.
+    for enum_name in enum_list:
+        if not enum_name in meta_dict['__reverse_type_lookup__']:
+            choices = []
+            for choice in getattr(dace.dtypes, enum_name):
+                choice_short = str(choice).split('.')[-1]
+                if choice_short != 'Undefined':
+                    choices.append(choice_short)
+            meta_dict['__reverse_type_lookup__'][enum_name] = {
+                'category': 'General',
+                'metatype': enum_name,
+                'choices': choices,
+            }
+
     return {
         'meta_dict': meta_dict,
     }

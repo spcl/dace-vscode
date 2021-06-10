@@ -30,42 +30,7 @@ class Property {
         }
 
         // Update the element label if it has one.
-        if (this.element.data) {
-            if (this.element.data.node) {
-                this.element.data.node.label = value;
-
-                if (this.element instanceof ScopeNode) {
-                    // In scope nodes the range is attached.
-                    if (this.element instanceof EntryNode) {
-                        let exit_elem = find_graph_element_by_uuid(
-                            renderer.graph,
-                            this.element.sdfg.sdfg_list_id + '/' +
-                            this.element.parent_id + '/' +
-                            this.element.data.node.scope_exit + '/-1'
-                        );
-                        if (exit_elem) {
-                            this.element.data.node.label =
-                                compute_scope_label(this.element);
-                            exit_elem.element.data.node.label =
-                                this.element.data.node.label;
-                        }
-                    } else if (this.element instanceof ExitNode) {
-                        let entry_elem = find_graph_element_by_uuid(
-                            renderer.graph,
-                            this.element.sdfg.sdfg_list_id + '/' +
-                            this.element.parent_id + '/' +
-                            this.element.data.node.scope_entry + '/-1'
-                        );
-                        if (entry_elem) {
-                            this.element.data.node.label =
-                                compute_scope_label(entry_elem.element);
-                            entry_elem.element.data.node.label =
-                                this.element.data.node.label;
-                        }
-                    }
-                }
-            }
-        }
+        element_update_label(this.element, this.target);
     }
 
     get_value() {}
@@ -131,6 +96,36 @@ class ValueProperty extends Property {
 
         return {
             value: value,
+            value_changed: true,
+        };
+    }
+
+    update() {
+        const res = this.get_value();
+        super.write_back(res.value);
+        return res.value_changed;
+    }
+
+}
+
+class CodeProperty extends Property {
+
+    constructor(element, target, key, subkey, dtype, code_input, lang_input) {
+        super(element, target, key, subkey, dtype);
+
+        this.code_input = code_input;
+        this.lang_input = lang_input;
+    }
+
+    get_value() {
+        let code_val = this.code_input.val();
+        let lang_val = this.lang_input.val();
+
+        return {
+            value: {
+                string_data: code_val,
+                language: lang_val,
+            },
             value_changed: true,
         };
     }
@@ -213,7 +208,16 @@ class DictProperty extends Property {
                 const val_res = prop.val_prop.get_value();
                 if (key_res !== undefined && key_res.value !== undefined &&
                     key_res.value !== '') {
-                    new_dict[key_res.value] = val_res.value;
+                    if (prop.val_prop.datatype === 'CodeBlock' &&
+                        prop.val_prop.subkey !== undefined) {
+                        // For code properties, we need to write back the entire
+                        // code property structure, including language info.
+                        let code_val = prop.val_prop.target[prop.val_prop.key];
+                        code_val[prop.val_prop.subkey] = val_res.value;
+                        new_dict[key_res.value] = code_val;
+                    } else {
+                        new_dict[key_res.value] = val_res.value;
+                    }
                     value_changed = true;
                 }
             }
