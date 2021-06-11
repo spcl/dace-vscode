@@ -177,6 +177,9 @@ class MessageHandler {
             case 'unbound_breakpoint':
                 renderer.bpIndicator.unbound_breakpoint(message.node);
                 break;
+            case 'saved_nodes':
+                renderer.bpIndicator.set_saved_nodes(message.nodes);
+                break;
         }
     }
 

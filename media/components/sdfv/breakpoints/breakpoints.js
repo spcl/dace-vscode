@@ -10,7 +10,7 @@ function refresh_breakpoints() {
     }
 }
 
-const BreakpointEnum = Object.freeze({ "UNBOUND": 0, "BOUND": 1 });
+const BreakpointEnum = Object.freeze({ "BOUND": 0, "UNBOUND": 1 });
 
 class BreakpointIndicator {
 
@@ -22,6 +22,10 @@ class BreakpointIndicator {
         this.renderer = renderer;
         this.breakpoints = new Map()
         this.show_breakpoints = false;
+        vscode.postMessage({
+            type: 'breakpoints.get_saved_Nodes',
+            sdfg_name: this.renderer.sdfg.attributes.name
+        });
     }
 
     get_sdfg_element(element, as_string = false) {
@@ -87,7 +91,8 @@ class BreakpointIndicator {
                     this.erase_breakpoint(foreground_elem, this.renderer.ctx);
                     vscode.postMessage({
                         type: 'breakpoints.remove_breakpoint',
-                        node: sdfg_elem
+                        node: sdfg_elem,
+                        sdfg_name: this.renderer.sdfg.attributes.name
                     });
                 }
                 else {
@@ -95,7 +100,8 @@ class BreakpointIndicator {
                     this.draw_breakpoint(foreground_elem, this.renderer.ctx);
                     vscode.postMessage({
                         type: 'breakpoints.add_breakpoint',
-                        node: sdfg_elem
+                        node: sdfg_elem,
+                        sdfg_name: this.renderer.sdfg.attributes.name
                     });
                 }
             }
@@ -107,7 +113,7 @@ class BreakpointIndicator {
 
         if (this.breakpoints.has(elem_uuid)) {
             const breakpoint_type = this.breakpoints.get(elem_uuid);
-            let msg = (breakpoint_type === BreakpointEnum.UNBOUND) ?
+            let msg = (breakpoint_type === BreakpointEnum.BOUND) ?
                 'Right click to remove the Breakpoint' :
                 'The Breakpoint set on this node is unbounded';
             this.draw_tooltip(node, msg);
@@ -120,7 +126,7 @@ class BreakpointIndicator {
 
     draw_breakpoint(node, ctx, bp_enum) {
         // Draw a red circle to indicate that a breakpoint is set
-        let color = (bp_enum === BreakpointEnum.BOUND) ? 'red': '#D3D3D3';
+        let color = (bp_enum === BreakpointEnum.BOUND) ? 'red' : '#D3D3D3';
         this.draw_breakpoint_circle(node, ctx, 'black', color);
     }
 
@@ -247,17 +253,25 @@ class BreakpointIndicator {
     }
 
     unbound_breakpoint(node) {
-        console.log('unbounding');
         let elem_uuid = (
             node.sdfg_id + '/' +
             node.state_id + '/' +
             node.node_id
         );
-        if (this.breakpoints.has(elem_uuid)){
+        if (this.breakpoints.has(elem_uuid)) {
             this.breakpoints.set(elem_uuid, BreakpointEnum.UNBOUND);
         }
         this.draw();
         this.renderer.draw_async();
+    }
+
+    set_saved_nodes(nodes) {
+        nodes.forEach(node => {
+            let elem_uuid = node.sdfg_id + '/' +
+                node.state_id + '/' +
+                node.node_id;
+            this.breakpoints.set(elem_uuid, node.bound);
+        });
     }
 
 }

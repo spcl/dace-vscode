@@ -5,6 +5,7 @@ import { LoggingDebugSession, TerminatedEvent } from "vscode-debugadapter";
 import * as vscode from "vscode";
 import * as os from "os";
 import { DebugProtocol } from "vscode-debugprotocol";
+import { BreakpointHandler } from "../components/breakpointHandler"
 import { PORT } from '../components/daceListener';
 
 export interface DaceLaunchRequestArguments
@@ -158,6 +159,9 @@ export class DaceDebugSession extends LoggingDebugSession {
             entirePythonConfig: entirePyConfig,
         };
         pyCppDebuggerConfig[cppAttribute] = cppValue;
+
+        // Map and Set the Breakpoints
+        BreakpointHandler.getInstance()?.setAllBreakpoints();
 
         vscode.debug.startDebugging(
             this.folder,

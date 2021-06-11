@@ -1,15 +1,29 @@
 import * as vscode from 'vscode';
+import { DaCeVSCode } from '../extension';
 import fs = require("fs");
+
+enum binding {
+    BOUND = 0,
+    UNBOUND = 1
+}
 
 export class Node {
     sdfg_id: number;
     state_id: number;
     node_id: number;
 
-    constructor(sdfg_id: number, state_id: number, node_id: number) {
+    bound: binding;
+
+    cache: string | undefined;
+    target: string | undefined;
+    sdfg_name: string | undefined;
+
+    constructor(sdfg_id: number, state_id: number, node_id: number,
+        bound: binding = binding.BOUND) {
         this.sdfg_id = sdfg_id;
         this.state_id = state_id;
         this.node_id = node_id;
+        this.bound = bound;
     }
 
     public printer(): string {
@@ -17,6 +31,17 @@ export class Node {
             this.state_id + ':' +
             this.node_id;
     }
+
+    public isEqual(node: Node): boolean {
+        return this.sdfg_id == node.sdfg_id &&
+            this.state_id == node.state_id &&
+            this.node_id == node.node_id;
+    }
+}
+
+interface ISavedBP {
+    bp: vscode.SourceBreakpoint,
+    identifier: string
 }
 
 interface IFunction {
@@ -29,9 +54,11 @@ interface IHashFiles {
     [key: string]: IFunction[];
 }
 
-interface IHashBreakpoint {
-    [key: string]: vscode.SourceBreakpoint;
+interface IHashNodes {
+    [key: string]: Node[];
 }
+
+
 
 const SAVE_DIR = "/.vscode/";
 const SAVE_FILE = "daceDebugState.json";
@@ -40,17 +67,21 @@ export class BreakpointHandler extends vscode.Disposable {
 
     private static INSTANCE: BreakpointHandler | undefined = undefined;
 
-    // file path -> array of functions
+    // file path -> array of IFunction (name, cache, target_name)
     files: IHashFiles;
 
+    // Save nodes
+    savedNodes: IHashNodes;
+
     // Save all Breakpoints set in the C++ code for later removal
-    setBreakpoints: IHashBreakpoint;
+    setBreakpoints: ISavedBP[];
 
     constructor() {
-        super(() => this.disposeFunction())
+        super(() => this.disposeFunction());
         this.files = {};
-        this.setBreakpoints = {};
-        this.retrieveState()
+        this.savedNodes = {};
+        this.setBreakpoints = [];
+        this.retrieveState();
     }
 
     public static getInstance(): BreakpointHandler | undefined {
@@ -102,34 +133,42 @@ export class BreakpointHandler extends vscode.Disposable {
         else {
             console.log('already saved ' + funcName);
         }
-
-        vscode.debug.breakpoints.filter(this.pyFilter).forEach(element => {
-            let bp = element as vscode.SourceBreakpoint;
-            if (this.setBreakpoints[bp.id]) {
-                console.log("already handled");
-                return;
-            }
-            this.handleBreakpointAdded(bp);
-        })
     }
 
-    public changedBps(changes: vscode.BreakpointsChangeEvent) {
-        changes.added.filter(this.pyFilter).forEach(element => {
-            //vscode.debug.removeBreakpoints([element]);
-            let bp = element as vscode.SourceBreakpoint;
-            if (this.setBreakpoints[bp.id]) {
-                console.log("Already mapped");
-                return;
-            }
-            this.handleBreakpointAdded(bp);
+    public setAllBreakpoints() {
+        // Map and set all Breakpoints set in the dace (python) code
+        vscode.debug.breakpoints.filter(this.pyFilter).forEach(bp => {
+            this.handleBreakpointAdded(bp as vscode.SourceBreakpoint);
         });
-        changes.removed.filter(this.pyFilter).forEach(element => {
-            let bp = element as vscode.SourceBreakpoint;
-            this.handleBreakpointRemoved(bp);
-        });
-        changes.changed.forEach(element => {
-            console.log(element);
-            console.log("Changed not handled yet for breakpoints");
+
+        // Map and set all Breakpoints set directly on the sdfg
+        Object.entries(this.savedNodes).forEach(([sdfgName, nodes]) => {
+            nodes.forEach(node => {
+                let range = getCppRange(
+                    node,
+                    node.cache + "/map/map_cpp.json"
+                );
+                if (!range || !range.from)
+                    return;
+
+                let newBp = this.createBreakpoint(
+                    range.from,
+                    (node.cache) ? node.cache : '',
+                    sdfgName,
+                    node.target
+                );
+                let newIdentifier = this.bpIdentifier(newBp, sdfgName);
+                let alreadyExists = this.setBreakpoints.find((bp) => {
+                    return bp.identifier === newIdentifier;
+                });
+                if (!alreadyExists) {
+                    vscode.debug.addBreakpoints([newBp]);
+                    this.setBreakpoints.push({
+                        bp: newBp,
+                        identifier: newIdentifier
+                    });
+                }
+            });
         });
     }
 
@@ -160,64 +199,94 @@ export class BreakpointHandler extends vscode.Disposable {
                 bp.location.range.start.line + 1,
                 cachePath + "/map/map_py.json"
             );
-            if (!node) {
-                console.log("not a node")
+            if (!node)
                 return;
-            }
 
             let range = getCppRange(
                 node,
                 cachePath + "/map/map_cpp.json"
             )
 
-            if (!range || !range.from) {
-                vscode.window.showInformationMessage(
-                    'Could not find a specific line for Node:' +
-                    node.printer()
-                );
+            if (!range || !range.from)
                 return;
-            }
 
-            let new_bp = this.createBreakpoint(
+            let newBp = this.createBreakpoint(
                 range.from,
                 cachePath,
                 currentFunc.name,
                 currentFunc.target_name
             );
 
-            vscode.debug.addBreakpoints([new_bp]);
-            this.setBreakpoints[bp.id] = new_bp;
-            console.log("new");
+            let alreadyExists = this.setBreakpoints.find((bp) => {
+                return bp.identifier === this.bpIdentifier(newBp, currentFunc.name);
+            });
+            if (!alreadyExists) {
+                vscode.debug.addBreakpoints([newBp]);
+                this.setBreakpoints.push({
+                    bp: newBp,
+                    identifier: this.bpIdentifier(newBp, currentFunc.name)
+                });
+            }
         });
 
 
     }
 
-    private handleBreakpointRemoved(bp: vscode.SourceBreakpoint) {
-        let matchingBp = this.setBreakpoints[bp.id]
-        if (!matchingBp) {
-            console.log("No corresponding BP found")
-            return;
-        }
-
-        vscode.debug.removeBreakpoints([matchingBp]);
-        console.log("removed");
-        console.log(matchingBp);
-    }
-
-    public handleNodeAdded(node: Node){
+    public handleNodeAdded(node: Node, sdfgName: string) {
+        // Creating a Breakpoint for the BP panel
         let uri = vscode.Uri.parse(
             'C:/Users/Benjamin/Documents/Code/Bachelor/dace/.dacecache/myprogram/program.sdfg'
         );
-
         let pos = new vscode.Position(5, 0);
         let location = new vscode.Location(uri, pos);
         let new_bp = new vscode.SourceBreakpoint(location);
         vscode.debug.addBreakpoints([new_bp]);
+
+        // Search for the file with the corresponding function informations
+        Object.values(this.files).forEach(functions => {
+            let funcDetails = functions.find(func => {
+                return func.name === sdfgName;
+            });
+
+            if (funcDetails) {
+                node.cache = funcDetails.cache;
+                node.sdfg_name = funcDetails.name;
+                node.target = funcDetails.target_name;
+
+                let range = getCppRange(
+                    node,
+                    node.cache + "/map/map_cpp.json"
+                );
+
+                console.log(range);
+
+                if (!range || !range.from) {
+                    DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                        'type': 'unbound_breakpoint',
+                        'node': node
+                    });
+                    node.bound = binding.UNBOUND;
+                    return;
+                }
+
+                if (!this.savedNodes[sdfgName])
+                    this.savedNodes[sdfgName] = [];
+                this.savedNodes[sdfgName].push(node);
+                return;
+            }
+        });
+
+
     }
 
-    public handleNodeRemoved(node: Node){
-        console.log(node);
+    public handleNodeRemoved(node: Node, sdfgName: string) {
+        if (this.savedNodes[sdfgName])
+            this.savedNodes[sdfgName].forEach((n, i, _) => {
+                if (node.isEqual(n)) {
+                    this.savedNodes[sdfgName].splice(i, 1);
+                    return;
+                }
+            });
     }
 
     private getNode(line: number, path: fs.PathLike): Node | undefined {
@@ -273,6 +342,16 @@ export class BreakpointHandler extends vscode.Disposable {
         return new_bp;
     }
 
+    private bpIdentifier(bp: vscode.SourceBreakpoint, sdfgName: string): string {
+        // Create an identifier for a Breakpoint location in a C++ file
+        let range = bp.location.range
+        return sdfgName + '/' +
+            range.start.line + '/' +
+            range.start.character + '/' +
+            range.end.line + '/' +
+            range.end.character + '/';
+    }
+
     private normalizePath(path: string): string | undefined {
         let parsedPath;
         try {
@@ -293,11 +372,11 @@ export class BreakpointHandler extends vscode.Disposable {
     private saveState() {
         // Don't save if there is nothing to save or
         // the user doesn't have a Folder open
-        console.log('saving');
         let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath
         if (
             Object.keys(this.setBreakpoints).length === 0 &&
-            Object.keys(this.files).length === 0 ||
+            Object.keys(this.files).length === 0 &&
+            Object.keys(this.savedNodes).length === 0 ||
             !workspace
         ) {
             console.log('nothing to save');
@@ -312,7 +391,8 @@ export class BreakpointHandler extends vscode.Disposable {
 
         let data = JSON.stringify({
             "files": this.files,
-            "setBreakpoints": this.setBreakpoints
+            "setBreakpoints": this.setBreakpoints,
+            "savedNodes": this.savedNodes
         });
         try {
             fs.writeFile(
@@ -322,7 +402,7 @@ export class BreakpointHandler extends vscode.Disposable {
             )
             console.log("Saving file")
         } catch (error) {
-            console.log("Failed to save to file");
+            console.error("Failed to save to file");
         }
 
 
@@ -358,6 +438,7 @@ export class BreakpointHandler extends vscode.Disposable {
         let dataStr = String.fromCharCode(...dataBuffer);
         let dataJson = JSON.parse(dataStr);
         console.log(dataJson)
+
         let dataFiles = dataJson.files;
         if (dataFiles) {
             this.files = dataFiles;
@@ -368,21 +449,33 @@ export class BreakpointHandler extends vscode.Disposable {
             this.setBreakpoints = dataSetBreakpoints;
         }
 
+        let savedNodes = dataJson.savedNodes;
+        if (savedNodes) {
+            this.savedNodes = savedNodes;
+        }
+
+    }
+
+    public getSavedNodes(sdfgName: string) {
+        console.log(sdfgName);
+        console.log(this.savedNodes);
+        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+            'type': 'saved_nodes',
+            'nodes': this.savedNodes[sdfgName]
+        });
     }
 
     public disposeFunction() {
-        console.log(vscode.debug.breakpoints);
-        vscode.debug.removeBreakpoints(
+        /* vscode.debug.removeBreakpoints(
             Object.values(this.setBreakpoints)
-        );
-        console.log(vscode.debug.breakpoints);
+        ); */
         this.saveState();
     }
-
 }
 
 export function getCppRange(node: Node, path: fs.PathLike) {
     let mapCpp = jsonFromPath(path);
+    if (!mapCpp) return undefined
 
     let states = mapCpp[node.sdfg_id];
     if (!states) return undefined

@@ -4,7 +4,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeInterface } from '../daceInterface';
-import { DaCeVSCode } from '../extension';
 
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
@@ -98,22 +97,22 @@ export class BreakpointProvider
         switch (message.type) {
             case 'add_breakpoint':
                 node = message.node;
-                if (node){
+                if (node)
                     BreakpointHandler.getInstance()?.handleNodeAdded(
-                        new Node(node.sdfg_id, node.state_id, node.node_id)
+                        new Node(node.sdfg_id, node.state_id, node.node_id),
+                        message.sdfg_name
                     );
-                    DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                        'type': 'unbound_breakpoint',
-                        'node': node
-                    });
-                }
                 break;
             case 'remove_breakpoint':
                 node = message.node;
                 if (node)
                     BreakpointHandler.getInstance()?.handleNodeRemoved(
-                        new Node(node.sdfg_id, node.state_id, node.node_id)
+                        new Node(node.sdfg_id, node.state_id, node.node_id),
+                        message.sdfg_name
                     );
+                break;
+            case 'get_saved_Nodes':
+                BreakpointHandler.getInstance()?.getSavedNodes(message.sdfg_name);
                 break;
             default:
                 this.view?.webview.postMessage(message);
