@@ -4,7 +4,7 @@
 function vscode_handle_event(event, data) {
     switch (event) {
         case 'on_renderer_selection_changed':
-            if (renderer && renderer.selected_elements.length > 1)
+            if (daceRenderer && daceRenderer.selected_elements.length > 1)
                 get_applicable_transformations();
             else
                 sort_transformations(refresh_transformation_list);
@@ -24,8 +24,8 @@ function compute_scope_label(scope_entry) {
 
         let range = attributes.range.ranges[i];
         range_snippets.push(
-            parameter + '=' + sdfg_range_elem_to_string(
-                range, renderer.view_settings()
+            parameter + '=' + daceSDFGRangeElemToString(
+                range, daceRenderer.view_settings()
             )
         );
     }
@@ -52,8 +52,8 @@ function element_update_label(element, attributes) {
             if (element instanceof ScopeNode) {
                 // In scope nodes the range is attached.
                 if (element instanceof EntryNode) {
-                    let exit_elem = find_graph_element_by_uuid(
-                        renderer.graph,
+                    let exit_elem = daceFindGraphElementByUUID(
+                        daceRenderer.graph,
                         element.sdfg.sdfg_list_id + '/' +
                         element.parent_id + '/' +
                         element.data.node.scope_exit + '/-1'
@@ -64,8 +64,8 @@ function element_update_label(element, attributes) {
                             element.data.node.label;
                     }
                 } else if (element instanceof ExitNode) {
-                    let entry_elem = find_graph_element_by_uuid(
-                        renderer.graph,
+                    let entry_elem = daceFindGraphElementByUUID(
+                        daceRenderer.graph,
                         element.sdfg.sdfg_list_id + '/' +
                         element.parent_id + '/' +
                         element.data.node.scope_entry + '/-1'
@@ -127,9 +127,11 @@ function vscode_write_graph(g) {
 }
 
 function reselect_renderer_element(elem) {
-    if (renderer && renderer.graph) {
-        const uuid = get_uuid_graph_element(elem);
-        const new_elem_res = find_graph_element_by_uuid(renderer.graph, uuid);
+    if (daceRenderer && daceRenderer.graph) {
+        const uuid = daceGetUUIDGraphElement(elem);
+        const new_elem_res = daceFindGraphElementByUUID(
+            daceRenderer.graph, uuid
+        );
         if (new_elem_res && new_elem_res.element) {
             const new_elem = new_elem_res.element;
             fill_info_embedded(new_elem);
@@ -297,7 +299,7 @@ function attr_table_put_typeclass(
     }).appendTo(cell);
     const input = $('<input>', {
         'list': key + '-native-typeclasses',
-        'value': sdfg_typeclass_to_string(val),
+        'value': daceSDFGTypeclassToString(val),
     }).appendTo(container);
     if (choices) {
         const datalist = $('<datalist>', {
@@ -375,7 +377,7 @@ function attr_table_put_dict(
         'class': 'popup-editable-property-container',
     }).appendTo(cell);
     $('<div>', {
-        'html': sdfg_property_to_string(val, renderer.view_settings()),
+        'html': daceSDFGPropertyToString(val, daceRenderer.view_settings()),
     }).appendTo(dict_cell_container);
     const dict_edit_btn = $('<i>', {
         'class': 'material-icons property-edit-btn',
@@ -434,7 +436,7 @@ function attr_table_put_dict(
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
                 if (prop.update())
-                    vscode_write_graph(renderer.sdfg);
+                    vscode_write_graph(daceRenderer.sdfg);
                 modal.modal.modal('hide');
             });
 
@@ -458,7 +460,7 @@ function attr_table_put_list(
         'class': 'popup-editable-property-container',
     }).appendTo(cell);
     $('<div>', {
-        'html': sdfg_property_to_string(val, renderer.view_settings()),
+        'html': daceSDFGPropertyToString(val, daceRenderer.view_settings()),
     }).appendTo(list_cell_container);
     const list_cell_edit_btn = $('<i>', {
         'class': 'material-icons property-edit-btn',
@@ -512,7 +514,7 @@ function attr_table_put_list(
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
                 if (prop.update())
-                    vscode_write_graph(renderer.sdfg);
+                    vscode_write_graph(daceRenderer.sdfg);
                 modal.modal.modal('hide');
             });
 
@@ -527,7 +529,7 @@ function attr_table_put_range(key, subkey, val, elem, target, cell, dtype) {
         'class': 'popup-editable-property-container',
     }).appendTo(cell);
     $('<td>', {
-        'html': sdfg_property_to_string(val, renderer.view_settings()),
+        'html': daceSDFGPropertyToString(val, daceRenderer.view_settings()),
     }).appendTo(range_cell_container);
     const range_edit_btn = $('<i>', {
         'class': 'material-icons property-edit-btn',
@@ -684,7 +686,7 @@ function attr_table_put_range(key, subkey, val, elem, target, cell, dtype) {
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
                 if (prop.update())
-                    vscode_write_graph(renderer.sdfg);
+                    vscode_write_graph(daceRenderer.sdfg);
                 modal.modal.modal('hide');
             });
 
@@ -734,7 +736,9 @@ function attribute_table_put_entry(
     }).appendTo(row);
 
     if (dtype === undefined) {
-        value_cell.html(sdfg_property_to_string(val, renderer.view_settings()));
+        value_cell.html(daceSDFGPropertyToString(
+            val, daceRenderer.view_settings()
+        ));
     } else {
         switch (dtype) {
             case 'typeclass':
@@ -821,8 +825,8 @@ function attribute_table_put_entry(
                         choices
                     );
                 else
-                    value_cell.html(sdfg_property_to_string(
-                        val, renderer.view_settings()
+                    value_cell.html(daceSDFGPropertyToString(
+                        val, daceRenderer.view_settings()
                     ));
                 break;
         }
@@ -832,17 +836,17 @@ function attribute_table_put_entry(
         if (val_prop.input !== undefined) {
             val_prop.input.on('change', () => {
                 val_prop.update();
-                vscode_write_graph(renderer.sdfg);
+                vscode_write_graph(daceRenderer.sdfg);
             });
         } else if (val_prop.code_input !== undefined &&
                    val_prop.lang_input !== undefined) {
             val_prop.code_input.on('change', () => {
                 val_prop.update();
-                vscode_write_graph(renderer.sdfg);
+                vscode_write_graph(daceRenderer.sdfg);
             });
             val_prop.lang_input.on('change', () => {
                 val_prop.update();
-                vscode_write_graph(renderer.sdfg);
+                vscode_write_graph(daceRenderer.sdfg);
             });
         }
     }
@@ -851,7 +855,7 @@ function attribute_table_put_entry(
         key_prop.input !== undefined)
         key_prop.input.on('change', () => {
             if (key_prop.update())
-                vscode_write_graph(renderer.sdfg);
+                vscode_write_graph(daceRenderer.sdfg);
         });
 
     return {

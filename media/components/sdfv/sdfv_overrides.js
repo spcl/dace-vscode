@@ -99,8 +99,8 @@ function fill_info_embedded(elem) {
                     elem.data.node.scope_entry + '/-1';
 
             if (other_uuid) {
-                const ret_other_elem = find_graph_element_by_uuid(
-                    renderer.graph,
+                const ret_other_elem = daceFindGraphElementByUUID(
+                    daceRenderer.graph,
                     other_uuid
                 );
                 other_element = ret_other_elem.element;
@@ -134,14 +134,14 @@ function embedded_outline(renderer, graph) {
         'type': 'SDFG',
         'label': `SDFG ${renderer.sdfg.attributes.name}`,
         'collapsed': false,
-        'uuid': get_uuid_graph_element(undefined),
+        'uuid': daceGetUUIDGraphElement(undefined),
         'children': [],
     };
     outline_list.push(top_level_sdfg);
 
     const stack = [top_level_sdfg];
 
-    traverse_sdfg_scopes(graph, (node, parent) => {
+    daceTraverseSDFGScopes(graph, (node, parent) => {
         // Skip exit nodes when scopes are known.
         if (node.type().endsWith('Exit') && node.data.node.scope_entry >= 0) {
             stack.push(undefined);
@@ -190,7 +190,7 @@ function embedded_outline(renderer, graph) {
             'type': node_type,
             'label': node_label,
             'collapsed': is_collapsed,
-            'uuid': get_uuid_graph_element(node),
+            'uuid': daceGetUUIDGraphElement(node),
             'children': [],
         });
 
@@ -214,34 +214,6 @@ function embedded_outline(renderer, graph) {
 
 function init_info_box() {
     // Pass
-}
-
-
-// Recursively parse SDFG, including nested SDFG nodes
-function parse_sdfg(sdfg_json) {
-    return JSON.parse(sdfg_json, reviver);
-}
-
-function stringify_sdfg(sdfg) {
-    return JSON.stringify(sdfg, (name, val) => replacer(name, val, sdfg));
-}
-
-function reviver(name, val) {
-    if (name == 'sdfg' && val && typeof val === 'string' && val[0] === '{') {
-        return JSON.parse(val, reviver);
-    }
-    return val;
-}
-
-function isDict(v) {
-    return typeof v === 'object' && v !== null && !(v instanceof Array) && !(v instanceof Date);
-}
-
-function replacer(name, val, orig_sdfg) {
-    if (val && isDict(val) && val !== orig_sdfg && 'type' in val && val.type === 'SDFG') {
-        return JSON.stringify(val, (n, v) => replacer(n, v, val));
-    }
-    return val;
 }
 
 // Redefine the standard SDFV sidebar interface with the one for the info-box.
