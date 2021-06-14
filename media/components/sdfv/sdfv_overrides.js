@@ -216,13 +216,44 @@ function init_info_box() {
     // Pass
 }
 
+
+// Recursively parse SDFG, including nested SDFG nodes
+function parse_sdfg(sdfg_json) {
+    return JSON.parse(sdfg_json, reviver);
+}
+
+function stringify_sdfg(sdfg) {
+    return JSON.stringify(sdfg, (name, val) => replacer(name, val, sdfg));
+}
+
+function reviver(name, val) {
+    if (name == 'sdfg' && val && typeof val === 'string' && val[0] === '{') {
+        return JSON.parse(val, reviver);
+    }
+    return val;
+}
+
+function isDict(v) {
+    return typeof v === 'object' && v !== null && !(v instanceof Array) && !(v instanceof Date);
+}
+
+function replacer(name, val, orig_sdfg) {
+    if (val && isDict(val) && val !== orig_sdfg && 'type' in val && val.type === 'SDFG') {
+        return JSON.stringify(val, (n, v) => replacer(n, v, val));
+    }
+    return val;
+}
+
 // Redefine the standard SDFV sidebar interface with the one for the info-box.
-init_menu = init_info_box;
-sidebar_set_title = info_box_set_title;
-sidebar_show = info_box_show;
-sidebar_get_contents = info_box_get_contents;
-close_menu = clear_info_box;
-outline = embedded_outline;
+if (daceUIHandlers === undefined)
+    console.error("DaCe UI Handlers are not defined");
+
+daceUIHandlers.on_init_menu = init_info_box;
+daceUIHandlers.on_sidebar_set_title = info_box_set_title;
+daceUIHandlers.on_sidebar_show = info_box_show;
+daceUIHandlers.on_sidebar_get_contents = info_box_get_contents;
+daceUIHandlers.on_close_menu = clear_info_box;
+daceUIHandlers.on_outline = embedded_outline;
 // Redefine the standard SDFV element information-display function with the one
 // for the embedded layout.
-fill_info = fill_info_embedded;
+daceUIHandlers.on_fill_info = fill_info_embedded;

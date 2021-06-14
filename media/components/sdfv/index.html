@@ -22,21 +22,23 @@
         const csp_src = "{{ CSP_SRC }}";
     </script>
 
-    <script src="{{ CSP_SRC }}/webclient/renderer_dir/dagre.js"></script>
+    <!--<script src="{{ CSP_SRC }}/webclient/renderer_dir/dagre.js"></script>-->
     <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/pdfkit.standalone.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/blob-stream.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>
+    <!--<script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>-->
     <script src="{{ CSP_SRC }}/lib/split.min.js"></script>
     <script src="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.bundle.min.js"></script>
 
+    <!--
     <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
     <script src="{{ CSP_SRC }}/webclient/renderer_elements.js"></script>
     <script src="{{ CSP_SRC }}/webclient/context_menu.js"></script>
     <script src="{{ CSP_SRC }}/webclient/sdfg_utils.js"></script>
     <script src="{{ CSP_SRC }}/webclient/overlay_manager.js"></script>
     <script src="{{ CSP_SRC }}/webclient/renderer.js"></script>
+    -->
 </head>
 
 <body onresize="rendererSendResize();">
@@ -105,7 +107,10 @@
         var sdfg_json = '';
         var transformations = [[], [], [], []];
     </script>
-    <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/dist/sdfv.js"></script>
+    <script>
+        let renderer = daceRenderer;
+    </script>
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/vscode_sdfv.js"></script>
 
@@ -157,7 +162,7 @@
                     get_applicable_transformations();
             }
 
-            outline(renderer, renderer.graph);
+            embedded_outline(renderer, renderer.graph);
             refresh_analysis_pane();
 
             if (renderer) {
@@ -177,7 +182,7 @@
                 renderer.destroy();
             }
             init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
-            outline(renderer, renderer.graph);
+            embedded_outline(renderer, renderer.graph);
             refresh_analysis_pane();
         }
 
