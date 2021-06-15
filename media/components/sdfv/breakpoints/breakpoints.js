@@ -23,7 +23,7 @@ class BreakpointIndicator {
         this.breakpoints = new Map()
         this.show_breakpoints = false;
         vscode.postMessage({
-            type: 'breakpoints.get_saved_Nodes',
+            type: 'breakpoints.get_saved_nodes',
             sdfg_name: this.renderer.sdfg.attributes.name
         });
     }
@@ -266,11 +266,13 @@ class BreakpointIndicator {
     }
 
     set_saved_nodes(nodes) {
+        if (nodes === undefined || nodes === null)
+            return;
         nodes.forEach(node => {
             let elem_uuid = node.sdfg_id + '/' +
                 node.state_id + '/' +
                 node.node_id;
-            this.breakpoints.set(elem_uuid, node.bound);
+            this.breakpoints.set(elem_uuid, BreakpointEnum.BOUND);
         });
     }
 

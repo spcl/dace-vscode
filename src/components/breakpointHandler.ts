@@ -2,28 +2,19 @@ import * as vscode from 'vscode';
 import { DaCeVSCode } from '../extension';
 import fs = require("fs");
 
-enum binding {
-    BOUND = 0,
-    UNBOUND = 1
-}
-
 export class Node {
     sdfg_id: number;
     state_id: number;
     node_id: number;
 
-    bound: binding;
-
     cache: string | undefined;
     target: string | undefined;
     sdfg_name: string | undefined;
 
-    constructor(sdfg_id: number, state_id: number, node_id: number,
-        bound: binding = binding.BOUND) {
+    constructor(sdfg_id: number, state_id: number, node_id: number) {
         this.sdfg_id = sdfg_id;
         this.state_id = state_id;
         this.node_id = node_id;
-        this.bound = bound;
     }
 
     public printer(): string {
@@ -82,6 +73,13 @@ export class BreakpointHandler extends vscode.Disposable {
         this.savedNodes = {};
         this.setBreakpoints = [];
         this.retrieveState();
+
+        // When a debug session terminates and there isn't any active session
+        // remove all C++ breakpoints
+        vscode.debug.onDidTerminateDebugSession(res => {
+            if (!vscode.debug.activeDebugSession)
+                this.removeAllBreakpoints();
+        });
     }
 
     public static getInstance(): BreakpointHandler | undefined {
@@ -170,6 +168,13 @@ export class BreakpointHandler extends vscode.Disposable {
                 }
             });
         });
+    }
+
+    public removeAllBreakpoints() {
+        this.setBreakpoints.forEach(savedBp => {
+            vscode.debug.removeBreakpoints([savedBp.bp]);
+        });
+        this.setBreakpoints = [];
     }
 
     private handleBreakpointAdded(bp: vscode.SourceBreakpoint) {
@@ -265,7 +270,6 @@ export class BreakpointHandler extends vscode.Disposable {
                         'type': 'unbound_breakpoint',
                         'node': node
                     });
-                    node.bound = binding.UNBOUND;
                     return;
                 }
 
@@ -457,7 +461,6 @@ export class BreakpointHandler extends vscode.Disposable {
     }
 
     public getSavedNodes(sdfgName: string) {
-        console.log(sdfgName);
         console.log(this.savedNodes);
         DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             'type': 'saved_nodes',
@@ -466,9 +469,11 @@ export class BreakpointHandler extends vscode.Disposable {
     }
 
     public disposeFunction() {
-        /* vscode.debug.removeBreakpoints(
-            Object.values(this.setBreakpoints)
-        ); */
+        // Remove all Breakpoints that are still set
+        this.setBreakpoints.forEach(savedBp => {
+            vscode.debug.removeBreakpoints([savedBp.bp]);
+        });
+        this.setBreakpoints = [];
         this.saveState();
     }
 }

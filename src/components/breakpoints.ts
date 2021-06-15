@@ -111,7 +111,7 @@ export class BreakpointProvider
                         message.sdfg_name
                     );
                 break;
-            case 'get_saved_Nodes':
+            case 'get_saved_nodes':
                 BreakpointHandler.getInstance()?.getSavedNodes(message.sdfg_name);
                 break;
             default:
