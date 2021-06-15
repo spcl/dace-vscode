@@ -41,7 +41,7 @@ class BreakpointIndicator {
             sdfg_id = element.sdfg.sdfg_list_id;
             state_id = element.id;
         }
-        else if (element instanceof Node) {
+        else if (element instanceof SDFGNode) {
             sdfg_id = element.sdfg.sdfg_list_id;
             state_id = element.parent_id;
             node_id = element.id;
@@ -213,20 +213,20 @@ class BreakpointIndicator {
     display_breakpoints() {
         this.show_breakpoints = true;
         this.draw();
-        this.daceRenderer.draw_async()
+        this.daceRenderer.draw_async();
     }
 
     hide_breakpoints() {
         this.show_breakpoints = false;
         this.draw();
-        this.daceRenderer.draw_async()
+        this.daceRenderer.draw_async();
     }
 
     handle_mouse_event(event, comp_x_func, comp_y_func, evtype) {
         // Don't consider mouse events if we don't display the bp's
         if (!this.show_breakpoints)
             return;
-
+        
         let mousepos = { x: comp_x_func(event), y: comp_y_func(event) };
 
         // Find elements under cursor

@@ -148,11 +148,12 @@
 
             if (daceRenderer)
                 daceRenderer.set_sdfg(parsed_sdfg);
-            else
+            else{
                 daceInitSDFV(null, null, debug_draw);
-                if (parsed_sdfg != null)
+                if (parsed_sdfg !== null)
                     daceRenderer = new VSCodeRenderer(parsed_sdfg, document.getElementById('contents'),
-                        mouse_event, null, debug_draw);
+                        daceMouseEvent, null, debug_draw);
+            }
 
             if (!previewing) {
                 sdfg_json = sdfg;
@@ -184,7 +185,11 @@
                 user_transform = daceRenderer.canvas_manager.user_transform;
                 daceRenderer.destroy();
             }
-            daceInitSDFV(daceParseSDFG(sdfg_json), user_transform, debug_draw);
+            parsed_sdfg = daceParseSDFG(sdfg_json);
+            daceInitSDFV(null, null, debug_draw);
+            if (parsed_sdfg !== null)
+                daceRenderer = new VSCodeRenderer(parsed_sdfg, document.getElementById('contents'),
+                    daceMouseEvent, user_transform, debug_draw);
             embedded_outline(daceRenderer, daceRenderer.graph);
             refresh_analysis_pane();
             refresh_breakpoints();

@@ -1,4 +1,4 @@
-class VSCodeRenderer extends SDFGRenderer {
+class VSCodeRenderer extends daceSDFGRenderer {
 
     bpIndicator;
 
