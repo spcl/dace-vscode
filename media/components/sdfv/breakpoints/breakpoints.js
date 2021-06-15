@@ -2,10 +2,10 @@
 // All rights reserved.
 
 function refresh_breakpoints() {
-    if (renderer !== undefined && renderer !== null && vscode !== undefined) {
+    if (daceRenderer !== undefined && daceRenderer !== null && vscode !== undefined) {
         vscode.postMessage({
             type: 'breakpoints.refresh_breakpoints',
-            show_breakpoints: renderer.bpIndicator.show_breakpoints
+            show_breakpoints: daceRenderer.bpIndicator.show_breakpoints
         });
     }
 }
@@ -15,16 +15,16 @@ const BreakpointEnum = Object.freeze({ "BOUND": 0, "UNBOUND": 1 });
 class BreakpointIndicator {
 
     breakpoints;
-    renderer;
+    daceRenderer;
     show_breakpoints;
 
-    constructor(renderer) {
-        this.renderer = renderer;
+    constructor(daceRenderer) {
+        this.daceRenderer = daceRenderer;
         this.breakpoints = new Map()
         this.show_breakpoints = false;
         vscode.postMessage({
             type: 'breakpoints.get_saved_nodes',
-            sdfg_name: this.renderer.sdfg.attributes.name
+            sdfg_name: this.daceRenderer.sdfg.attributes.name
         });
     }
 
@@ -64,10 +64,10 @@ class BreakpointIndicator {
     draw() {
         if (this.show_breakpoints)
             this.recursively_shade_sdfg(
-                this.renderer.graph,
-                this.renderer.ctx,
-                this.renderer.canvas_manager.points_per_pixel(),
-                this.renderer.visible_rect
+                this.daceRenderer.graph,
+                this.daceRenderer.ctx,
+                this.daceRenderer.canvas_manager.points_per_pixel(),
+                this.daceRenderer.visible_rect
             );
     }
 
@@ -88,20 +88,20 @@ class BreakpointIndicator {
 
                 if (this.breakpoints.has(elem_uuid)) {
                     this.breakpoints.delete(elem_uuid);
-                    this.erase_breakpoint(foreground_elem, this.renderer.ctx);
+                    this.erase_breakpoint(foreground_elem, this.daceRenderer.ctx);
                     vscode.postMessage({
                         type: 'breakpoints.remove_breakpoint',
                         node: sdfg_elem,
-                        sdfg_name: this.renderer.sdfg.attributes.name
+                        sdfg_name: this.daceRenderer.sdfg.attributes.name
                     });
                 }
                 else {
                     this.breakpoints.set(elem_uuid, BreakpointEnum.BOUND);
-                    this.draw_breakpoint(foreground_elem, this.renderer.ctx);
+                    this.draw_breakpoint(foreground_elem, this.daceRenderer.ctx);
                     vscode.postMessage({
                         type: 'breakpoints.add_breakpoint',
                         node: sdfg_elem,
-                        sdfg_name: this.renderer.sdfg.attributes.name
+                        sdfg_name: this.daceRenderer.sdfg.attributes.name
                     });
                 }
             }
@@ -132,7 +132,7 @@ class BreakpointIndicator {
 
     erase_breakpoint(node, ctx) {
         // Draw on top of the Breakpoint
-        let background = node.getCssProperty(renderer, '--state-background-color');
+        let background = node.getCssProperty(daceRenderer, '--state-background-color');
         this.draw_breakpoint_circle(node, ctx, background, background);
     }
 
@@ -151,11 +151,11 @@ class BreakpointIndicator {
     }
 
     draw_tooltip(node, msg) {
-        if (this.renderer.mousepos &&
-            node.intersect(this.renderer.mousepos.x, this.renderer.mousepos.y)) {
-            this.renderer.tooltip = () => {
-                this.renderer.tooltip_container.innerText = (msg);
-                this.renderer.tooltip_container.className = 'sdfvtooltip';
+        if (this.daceRenderer.mousepos &&
+            node.intersect(this.daceRenderer.mousepos.x, this.daceRenderer.mousepos.y)) {
+            this.daceRenderer.tooltip = () => {
+                this.daceRenderer.tooltip_container.innerText = (msg);
+                this.daceRenderer.tooltip_container.className = 'sdfvtooltip';
             };
         }
     }
@@ -207,19 +207,19 @@ class BreakpointIndicator {
     }
 
     refresh() {
-        this.renderer.draw_async();
+        this.daceRenderer.draw_async();
     }
 
     display_breakpoints() {
         this.show_breakpoints = true;
         this.draw();
-        this.renderer.draw_async()
+        this.daceRenderer.draw_async()
     }
 
     hide_breakpoints() {
         this.show_breakpoints = false;
         this.draw();
-        this.renderer.draw_async()
+        this.daceRenderer.draw_async()
     }
 
     handle_mouse_event(event, comp_x_func, comp_y_func, evtype) {
@@ -230,7 +230,7 @@ class BreakpointIndicator {
         let mousepos = { x: comp_x_func(event), y: comp_y_func(event) };
 
         // Find elements under cursor
-        const elements_under_cursor = this.renderer.find_elements_under_cursor(
+        const elements_under_cursor = this.daceRenderer.find_elements_under_cursor(
             mousepos.x, mousepos.y
         );
         let elements = elements_under_cursor.elements;
@@ -249,7 +249,7 @@ class BreakpointIndicator {
             ends_drag
         );
 
-        this.renderer.draw_async();
+        this.daceRenderer.draw_async();
     }
 
     unbound_breakpoint(node) {
@@ -262,7 +262,7 @@ class BreakpointIndicator {
             this.breakpoints.set(elem_uuid, BreakpointEnum.UNBOUND);
         }
         this.draw();
-        this.renderer.draw_async();
+        this.daceRenderer.draw_async();
     }
 
     set_saved_nodes(nodes) {
