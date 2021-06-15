@@ -34,6 +34,9 @@ implements MessageReceiverInterface {
                 if (message.name !== undefined)
                     this.runSdfgInTerminal(message.name, undefined, origin);
                 break;
+            case 'expand_library_node':
+                this.expandLibraryNode(message.nodeid);
+                break;
             case 'apply_transformation':
                 if (message.transformation !== undefined)
                     this.applyTransformation(message.transformation);
@@ -553,6 +556,25 @@ implements MessageReceiverInterface {
                         transformation: transformation,
                     },
                     callback
+                );
+            }
+        });
+    }
+
+    public expandLibraryNode(nodeid: any) {
+        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (sdfg) {
+                this.showSpinner('Expanding library node');
+                this.sendPostRequest(
+                    '/expand_library_node',
+                    {
+                        sdfg: sdfg,
+                        nodeid: nodeid,
+                    },
+                    (data: any) => {
+                        this.hideSpinner();
+                        this.writeToActiveDocument(data.sdfg);
+                    }
                 );
             }
         });

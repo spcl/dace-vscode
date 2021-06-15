@@ -288,6 +288,24 @@ function attr_table_put_select(
             array === val
         ));
     });
+
+    if (elem instanceof LibraryNode && key === 'implementation')
+        $('<button>', {
+            'class': 'btn btn-sm btn-primary sdfv-property-expand-libnode-btn',
+            'text': 'Expand',
+            'click': () => {
+                if (vscode)
+                    vscode.postMessage({
+                        type: 'dace.expand_library_node',
+                        nodeid: [
+                            elem.sdfg.sdfg_list_id,
+                            elem.parent_id,
+                            elem.id,
+                        ],
+                    });
+            },
+        }).appendTo(cell);
+
     return new ValueProperty(elem, target, key, subkey, dtype, input);
 }
 

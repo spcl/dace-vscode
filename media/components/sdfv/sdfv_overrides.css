@@ -44,6 +44,16 @@ button.close {
   text-shadow: none;
 }
 
+.btn-primary {
+  border-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  background-color: var(--vscode-button-background);
+}
+
+.btn-primary:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
 pre.code {
   float: left;
 }
@@ -403,4 +413,8 @@ pre.code {
 
 .sdfv-property-code {
   resize: none;
+}
+
+.sdfv-property-expand-libnode-btn {
+  margin-left: 1rem;
 }

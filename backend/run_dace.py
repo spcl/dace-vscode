@@ -283,6 +283,57 @@ def load_sdfg_from_json(json):
         'sdfg': sdfg,
     }
 
+def expand_library_node(json_in):
+    """
+    Expand a specific library node in a given SDFG. If no specific library node
+    is provided, expand all library nodes in the given SDFG.
+    :param json_in:  The entire provided request JSON.
+    """
+    from dace import serialize
+    old_meta = serialize.JSON_STORE_METADATA
+    serialize.JSON_STORE_METADATA = False
+
+    sdfg = None
+    try:
+        loaded = load_sdfg_from_json(json_in['sdfg'])
+        if loaded['error'] is not None:
+            return loaded['error']
+        sdfg = loaded['sdfg']
+    except KeyError:
+        return {
+            'error': {
+                'message': 'Failed to expand library node',
+                'details': 'No SDFG provided',
+            },
+        }
+
+    try:
+        sdfg_id, state_id, node_id = json_in['nodeid']
+    except KeyError:
+        sdfg_id, state_id, node_id = None, None, None
+
+    if sdfg_id is None:
+        sdfg.expand_library_nodes()
+    else:
+        context_sdfg = sdfg.sdfg_list[sdfg_id]
+        state = context_sdfg.node(state_id)
+        node = state.node(node_id)
+        if isinstance(node, dace.nodes.LibraryNode):
+            node.expand(context_sdfg, state)
+        else:
+            return {
+                'error': {
+                    'message': 'Failed to expand library node',
+                    'details': 'The provided node is not a valid library node',
+                },
+            }
+
+    new_sdfg = sdfg.to_json()
+    serialize.JSON_STORE_METADATA = old_meta
+    return {
+        'sdfg': new_sdfg,
+    }
+
 def reapply_history_until(sdfg_json, index):
     """
     Rewind a given SDFG back to a specific point in its history by reapplying
@@ -642,6 +693,11 @@ def run_daemon(port):
         request_json = request.get_json()
         return apply_transformation(request_json['sdfg'],
                                     request_json['transformation'])
+
+    @daemon.route('/expand_library_node', methods=['POST'])
+    def _expand_library_node():
+        request_json = request.get_json()
+        return expand_library_node(request_json)
 
     @daemon.route('/reapply_history_until', methods=['POST'])
     def _reapply_history_until():
