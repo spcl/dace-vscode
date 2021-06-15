@@ -30,7 +30,7 @@ function transformation_get_affected_uuids(transformation) {
 
 function get_cleaned_selected_elements() {
     const cleaned_selected = [];
-    renderer.selected_elements.forEach(element => {
+    daceRenderer.selected_elements.forEach(element => {
         let type = 'other';
         if (element.data !== undefined && element.data.node !== undefined)
             type = 'node';
@@ -51,7 +51,8 @@ function get_cleaned_selected_elements() {
  * Request a list of applicable transformations from DaCe.
  */
 function get_applicable_transformations() {
-    if (renderer !== undefined && renderer !== null && vscode !== undefined) {
+    if (daceRenderer !== undefined && daceRenderer !== null &&
+        vscode !== undefined) {
         vscode.postMessage({
             type: 'dace.load_transformations',
             sdfg: sdfg_json,
@@ -72,14 +73,15 @@ async function sort_transformations(callback) {
         const global_transformations = [];
         const uncat_transformations = [];
 
-        const clear_subgraph_trafos = renderer.selected_elements.length <= 1;
+        const clear_subgraph_trafos =
+            daceRenderer.selected_elements.length <= 1;
 
         const all_transformations = [];
         for (const cat of transformations)
             for (const transformation of cat)
                 all_transformations.push(transformation);
 
-        const visible_elements = renderer.visible_elements();
+        const visible_elements = daceRenderer.visible_elements();
 
         for (const trafo of all_transformations) {
             // Subgraph Transformations always apply to the selection.
@@ -94,8 +96,8 @@ async function sort_transformations(callback) {
                 // Matching a node.
                 if (trafo._subgraph) {
                     for (const node_id of Object.values(trafo._subgraph)) {
-                        if (renderer !== undefined &&
-                            renderer.selected_elements.filter((e) => {
+                        if (daceRenderer !== undefined &&
+                            daceRenderer.selected_elements.filter((e) => {
                                 return (e.data.node !== undefined) &&
                                     e.sdfg.sdfg_list_id === trafo.sdfg_id &&
                                     e.parent_id === trafo.state_id &&
@@ -125,8 +127,8 @@ async function sort_transformations(callback) {
             } else {
                 if (trafo._subgraph) {
                     for (const node_id of Object.values(trafo._subgraph)) {
-                        if (renderer !== undefined &&
-                            renderer.selected_elements.filter((e) => {
+                        if (daceRenderer !== undefined &&
+                            daceRenderer.selected_elements.filter((e) => {
                                 return (e.data.state !== undefined) &&
                                     e.sdfg.sdfg_list_id === trafo.sdfg_id &&
                                     e.id === Number(node_id);
@@ -259,8 +261,8 @@ function show_transformation_details(trafo) {
             highlight_uuids(transformation_get_affected_uuids(trafo));
         },
         'mouseleave': () => {
-            if (renderer)
-                renderer.draw_async();
+            if (daceRenderer)
+                daceRenderer.draw_async();
         },
     }).append($('<span>', {
         'text': 'Zoom to area',
@@ -279,8 +281,8 @@ function show_transformation_details(trafo) {
             highlight_uuids(transformation_get_affected_uuids(trafo));
         },
         'mouseleave': () => {
-            if (renderer)
-                renderer.draw_async();
+            if (daceRenderer)
+                daceRenderer.draw_async();
         },
     }).append($('<span>', {
         'text': 'Preview',
@@ -304,8 +306,8 @@ function show_transformation_details(trafo) {
             highlight_uuids(transformation_get_affected_uuids(trafo));
         },
         'mouseleave': () => {
-            if (renderer)
-                renderer.draw_async();
+            if (daceRenderer)
+                daceRenderer.draw_async();
         },
     }).append($('<span>', {
         'text': 'Apply',

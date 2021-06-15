@@ -105,8 +105,8 @@ function fill_info_embedded(elem) {
                     elem.data.node.scope_entry + '/-1';
 
             if (other_uuid) {
-                const ret_other_elem = find_graph_element_by_uuid(
-                    renderer.graph,
+                const ret_other_elem = daceFindGraphElementByUUID(
+                    daceRenderer.graph,
                     other_uuid
                 );
                 other_element = ret_other_elem.element;
@@ -140,14 +140,14 @@ function embedded_outline(renderer, graph) {
         'type': 'SDFG',
         'label': `SDFG ${renderer.sdfg.attributes.name}`,
         'collapsed': false,
-        'uuid': get_uuid_graph_element(undefined),
+        'uuid': daceGetUUIDGraphElement(undefined),
         'children': [],
     };
     outline_list.push(top_level_sdfg);
 
     const stack = [top_level_sdfg];
 
-    traverse_sdfg_scopes(graph, (node, parent) => {
+    daceTraverseSDFGScopes(graph, (node, parent) => {
         // Skip exit nodes when scopes are known.
         if (node.type().endsWith('Exit') && node.data.node.scope_entry >= 0) {
             stack.push(undefined);
@@ -196,7 +196,7 @@ function embedded_outline(renderer, graph) {
             'type': node_type,
             'label': node_label,
             'collapsed': is_collapsed,
-            'uuid': get_uuid_graph_element(node),
+            'uuid': daceGetUUIDGraphElement(node),
             'children': [],
         });
 
@@ -223,12 +223,15 @@ function init_info_box() {
 }
 
 // Redefine the standard SDFV sidebar interface with the one for the info-box.
-init_menu = init_info_box;
-sidebar_set_title = info_box_set_title;
-sidebar_show = info_box_show;
-sidebar_get_contents = info_box_get_contents;
-close_menu = clear_info_box;
-outline = embedded_outline;
+if (daceUIHandlers === undefined)
+    console.error("DaCe UI Handlers are not defined");
+
+daceUIHandlers.on_init_menu = init_info_box;
+daceUIHandlers.on_sidebar_set_title = info_box_set_title;
+daceUIHandlers.on_sidebar_show = info_box_show;
+daceUIHandlers.on_sidebar_get_contents = info_box_get_contents;
+daceUIHandlers.on_close_menu = clear_info_box;
+daceUIHandlers.on_outline = embedded_outline;
 // Redefine the standard SDFV element information-display function with the one
 // for the embedded layout.
-fill_info = fill_info_embedded;
+daceUIHandlers.on_fill_info = fill_info_embedded;
