@@ -173,16 +173,16 @@ class MessageHandler {
                     window.sdfg_meta_dict = message.meta_dict;
                 break;
             case 'show_breakpoints':
-                renderer.bpIndicator.display_breakpoints();
+                daceRenderer.bpIndicator.display_breakpoints();
                 break;
             case 'hide_breakpoints':
-                renderer.bpIndicator.hide_breakpoints();
+                daceRenderer.bpIndicator.hide_breakpoints();
                 break;
             case 'unbound_breakpoint':
-                renderer.bpIndicator.unbound_breakpoint(message.node);
+                daceRenderer.bpIndicator.unbound_breakpoint(message.node);
                 break;
             case 'saved_nodes':
-                renderer.bpIndicator.set_saved_nodes(message.nodes);
+                daceRenderer.bpIndicator.set_saved_nodes(message.nodes);
                 break;
         }
     }
