@@ -13,10 +13,6 @@ class Property {
     }
 
     write_back(value) {
-        console.log("Writing back:");
-        console.log(value);
-        console.log(transformations);
-        console.log(this.trafo, this.target);
         if (this.subkey !== undefined) {
             if (this.datatype === 'Range' ||
                 this.datatype === 'SubsetProperty') {
@@ -33,29 +29,14 @@ class Property {
         } else {
             this.target[this.key] = value;
         }
-        console.log(transformations);
-        console.log(this.trafo, this.target);
-        console.log('\n');
 
         // Update the element label if it has one and this property belongs to
         // an SDFG element.
         if (this.element)
             element_update_label(this.element, this.target);
 
-        if (this.trafo) {
-            for (let i = 0; i < transformations.length; i++) {
-                const category = transformations[i];
-                for (let j = 0; j < category.length; j++) {
-                    const transformation = category[j];
-                    if (transformation['transformation'] === this.trafo['transformation'] &&
-                        transformation['_subgraph'] === this.trafo['_subgraph'] &&
-                        transformation['sdfg_id'] === this.trafo['sdfg_id'] &&
-                        transformation['state_id'] === this.trafo['state_id'] &&
-                        transformation['expr_index'] === this.trafo['expr_index'])
-                        transformations[i][j] = this.trafo;
-                }
-            }
-        }
+        if (this.trafo)
+            show_transformation_details(this.trafo);
     }
 
     get_value() {}
