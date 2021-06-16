@@ -432,3 +432,9 @@ pre.code {
 .sdfv-property-delete-btn:hover {
   cursor: pointer;
 }
+
+.sdfv-property-range-delete-cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}

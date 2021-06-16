@@ -639,12 +639,18 @@ function attr_table_put_range(
                     'class': 'range-input',
                     'value': range.start,
                 });
-                $('<div>', {
-                    'class': 'col-3',
-                }).appendTo(val_row).append($('<span>', {
+                const range_start_container = $('<div>', {
+                    'class': 'col-3 sdfv-property-range-delete-cell',
+                }).appendTo(val_row);
+                const delete_btn = $('<span>', {
+                    'class': 'material-icons-outlined sdfv-property-delete-btn',
+                    'text': 'remove_circle',
+                    'title': 'Delete entry',
+                }).appendTo(range_start_container);
+                range_start_container.append($('<div>').append($('<span>', {
                     'class': 'range-input-label',
                     'text': 'Start:',
-                })).append(range_start_input);
+                })).append(range_start_input));
 
                 const range_end_input = $('<input>', {
                     'type': 'text',
@@ -682,6 +688,14 @@ function attr_table_put_range(
                     'text': 'Tile:',
                 })).append(range_tile_input);
 
+                delete_btn.on('click', () => {
+                    range_start_input.val('');
+                    range_end_input.val('');
+                    range_step_input.val('');
+                    range_tile_input.val('');
+                    val_row.hide();
+                });
+
                 prop.range_input_list.push({
                     start: range_start_input,
                     end: range_end_input,
@@ -710,12 +724,18 @@ function attr_table_put_range(
                     'class': 'range-input',
                     'value': '',
                 });
-                $('<div>', {
-                    'class': 'col-3',
-                }).appendTo(val_row).append($('<span>', {
+                const range_start_container = $('<div>', {
+                    'class': 'col-3 sdfv-property-range-delete-cell',
+                }).appendTo(val_row);
+                const delete_btn = $('<span>', {
+                    'class': 'material-icons-outlined sdfv-property-delete-btn',
+                    'text': 'remove_circle',
+                    'title': 'Delete entry',
+                }).appendTo(range_start_container);
+                range_start_container.append($('<div>').append($('<span>', {
                     'class': 'range-input-label',
                     'text': 'Start:',
-                })).append(range_start_input);
+                })).append(range_start_input));
 
                 const range_end_input = $('<input>', {
                     'type': 'text',
@@ -752,6 +772,14 @@ function attr_table_put_range(
                     'class': 'range-input-label',
                     'text': 'Tile:',
                 })).append(range_tile_input);
+
+                delete_btn.on('click', () => {
+                    range_start_input.val('');
+                    range_end_input.val('');
+                    range_step_input.val('');
+                    range_tile_input.val('');
+                    val_row.hide();
+                });
 
                 prop.range_input_list.push({
                     start: range_start_input,
