@@ -1007,7 +1007,7 @@ function generate_attributes_table(elem, root) {
     ) {
         const gotoCppBtn = $('#goto-cpp-btn');
         const undefined_val = -1;
-        let sdfgName = elem.sdfg.attributes.name;
+        let sdfgName = daceRenderer.sdfg.attributes.name;
         let sdfgId = elem.sdfg.sdfg_list_id;
         let stateId = undefined_val;
         let nodeId = undefined_val;
