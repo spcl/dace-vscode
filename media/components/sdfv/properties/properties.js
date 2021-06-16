@@ -157,7 +157,7 @@ class TypeclassProperty extends Property {
 
     get_value() {
         return {
-            value: string_to_sdfg_typeclass(this.input.val()),
+            value: daceStringToSDFGTypeclass(this.input.val()),
             value_changed: true,
         };
     }

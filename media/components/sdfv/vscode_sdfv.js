@@ -762,8 +762,13 @@ function attribute_table_put_entry(
     }).appendTo(root);
     if (editable_key) {
         const key_cell = $('<div>', {
-            'class': 'col-3 attr-table-cell',
+            'class': 'col-3 attr-table-cell attr-table-cell-nopad',
         }).appendTo(row);
+        const delete_btn = $('<span>', {
+            'class': 'material-icons-outlined sdfv-property-delete-btn',
+            'text': 'remove_circle',
+            'title': 'Delete entry',
+        }).appendTo(key_cell);
         const key_input = $('<input>', {
             'type': 'text',
             'class': 'property-key-input',
@@ -771,6 +776,16 @@ function attribute_table_put_entry(
         }).appendTo(key_cell);
 
         key_prop = new KeyProperty(elem, trafo, target, key, key_input);
+
+        delete_btn.on('click', () => {
+            key_input.val('');
+            if (update_on_change && key_prop.input !== undefined) {
+                if (key_prop.update() && !trafo)
+                    vscode_write_graph(daceRenderer.sdfg);
+            } else {
+                row.hide();
+            }
+        });
     } else {
         $('<div>', {
             'class': 'col-3 attr-table-heading attr-table-cell',
