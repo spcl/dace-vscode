@@ -440,8 +440,14 @@ function attr_table_put_dict(
         Object.keys(val).forEach(k => {
             let v = val[k];
             const attr_prop = attribute_table_put_entry(
-                k, v, val_meta, val, elem, trafo, rowbox, true, false
+                k, v, val_meta, val, elem, trafo, rowbox, true, false, true
             );
+
+            if (attr_prop.delete_btn)
+                attr_prop.delete_btn.on('click', () => {
+                    attr_prop.key_prop.input.val('');
+                    attr_prop.row.hide();
+                });
 
             if (attr_prop)
                 prop.properties.push(attr_prop);
@@ -461,15 +467,23 @@ function attr_table_put_dict(
                 let new_prop = undefined;
                 if (val_meta)
                     new_prop = attribute_table_put_entry(
-                        '', '', val_meta, val, elem, trafo, rowbox, true, false
+                        '', '', val_meta, val, elem, trafo, rowbox, true, false,
+                        true
                     );
                 else
                     new_prop = attribute_table_put_entry(
                         '', '', { metatype: 'str' }, val, elem, trafo, rowbox,
-                        true, false
+                        true, false, true
                     );
-                if (new_prop)
+                if (new_prop) {
                     prop.properties.push(new_prop);
+
+                    if (new_prop.delete_btn)
+                        new_prop.delete_btn.on('click', () => {
+                            new_prop.key_prop.input.val('');
+                            new_prop.row.hide();
+                        });
+                }
             },
         }).appendTo($('<div>', {
             'class': 'col-2',
@@ -524,8 +538,18 @@ function attr_table_put_list(
             for (let i = 0; i < val.length; i++) {
                 const v = val[i];
                 const attr_prop = attribute_table_put_entry(
-                    i, v, elem_meta, val, elem, trafo, rowbox, false, false
+                    i, v, elem_meta, val, elem, trafo, rowbox, false, false,
+                    true
                 );
+
+                if (attr_prop.delete_btn) {
+                    attr_prop.delete_btn.on('click', () => {
+                        if (attr_prop.val_prop.input) {
+                            attr_prop.val_prop.input.val('');
+                            attr_prop.row.hide();
+                        }
+                    });
+                }
 
                 if (attr_prop && attr_prop.val_prop)
                     prop.properties_list.push(attr_prop.val_prop);
@@ -544,10 +568,21 @@ function attr_table_put_list(
             'click': () => {
                 let i = prop.properties_list.length;
                 let new_prop = attribute_table_put_entry(
-                    i, '', elem_meta, val, elem, trafo, rowbox, false, false
+                    i, '', elem_meta, val, elem, trafo, rowbox, false, false,
+                    true
                 );
-                if (new_prop && new_prop.val_prop)
+                if (new_prop && new_prop.val_prop) {
                     prop.properties_list.push(new_prop.val_prop);
+
+                    if (new_prop.delete_btn) {
+                        new_prop.delete_btn.on('click', () => {
+                            if (new_prop.val_prop.input) {
+                                new_prop.val_prop.input.val('');
+                                new_prop.row.hide();
+                            }
+                        });
+                    }
+                }
             },
         }).appendTo($('<div>', {
             'class': 'col-2',
@@ -743,10 +778,12 @@ function attr_table_put_range(
 }
 
 function attribute_table_put_entry(
-    key, val, meta, target, elem, trafo, root, editable_key, update_on_change
+    key, val, meta, target, elem, trafo, root, editable_key, update_on_change,
+    add_delete_button
 ) {
     let key_prop = undefined;
     let val_prop = undefined;
+    let delete_btn = undefined;
 
     let dtype = undefined;
     let choices = undefined;
@@ -760,15 +797,11 @@ function attribute_table_put_entry(
     const row = $('<div>', {
         'class': 'row attr-table-row',
     }).appendTo(root);
+    let key_cell = undefined;
     if (editable_key) {
-        const key_cell = $('<div>', {
-            'class': 'col-3 attr-table-cell attr-table-cell-nopad',
+        key_cell = $('<div>', {
+            'class': 'col-3 attr-table-cell',
         }).appendTo(row);
-        const delete_btn = $('<span>', {
-            'class': 'material-icons-outlined sdfv-property-delete-btn',
-            'text': 'remove_circle',
-            'title': 'Delete entry',
-        }).appendTo(key_cell);
         const key_input = $('<input>', {
             'type': 'text',
             'class': 'property-key-input',
@@ -776,22 +809,22 @@ function attribute_table_put_entry(
         }).appendTo(key_cell);
 
         key_prop = new KeyProperty(elem, trafo, target, key, key_input);
-
-        delete_btn.on('click', () => {
-            key_input.val('');
-            if (update_on_change && key_prop.input !== undefined) {
-                if (key_prop.update() && !trafo)
-                    vscode_write_graph(daceRenderer.sdfg);
-            } else {
-                row.hide();
-            }
-        });
     } else {
-        $('<div>', {
+        key_cell = $('<div>', {
             'class': 'col-3 attr-table-heading attr-table-cell',
             'text': key,
         }).appendTo(row);
     }
+
+    if (add_delete_button) {
+        key_cell.addClass('attr-table-cell-nopad');
+        delete_btn = $('<span>', {
+            'class': 'material-icons-outlined sdfv-property-delete-btn',
+            'text': 'remove_circle',
+            'title': 'Delete entry',
+        }).prependTo(key_cell);
+    }
+
     const value_cell = $('<div>', {
         'class': 'col-9 attr-table-cell',
     }).appendTo(row);
@@ -926,6 +959,8 @@ function attribute_table_put_entry(
     return {
         key_prop: key_prop,
         val_prop: val_prop,
+        delete_btn: delete_btn,
+        row: row,
     };
 }
 
@@ -1064,7 +1099,7 @@ function generate_attributes_table(elem, trafo, root) {
 
             attribute_table_put_entry(
                 k, val, attr_meta, attributes, elem, trafo, attr_table, false,
-                true
+                true, false
             );
         });
     });
