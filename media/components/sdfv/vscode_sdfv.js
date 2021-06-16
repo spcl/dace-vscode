@@ -1013,15 +1013,6 @@ function generate_attributes_table(elem, trafo, root) {
         }
     } else if (trafo) {
         attributes = trafo;
-        /*
-        Object.keys(trafo).forEach(k => {
-            if (k === '_subgraph' || k === 'sdfg_id' || k === 'state_id' ||
-                k === 'expr_index' ||
-                k === 'type' || k === 'transformation' || k === 'docstring')
-                return;
-            attributes[k] = trafo[k];
-        });
-        */
         identifier = trafo.transformation;
     }
 
