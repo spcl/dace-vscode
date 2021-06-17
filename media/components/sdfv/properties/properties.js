@@ -3,9 +3,9 @@
 
 class Property {
 
-    constructor (element, trafo, target, key, subkey, datatype) {
+    constructor (element, xform, target, key, subkey, datatype) {
         this.element = element;
-        this.trafo = trafo;
+        this.xform = xform;
         this.target = target;
         this.key = key;
         this.subkey = subkey;
@@ -35,8 +35,8 @@ class Property {
         if (this.element)
             element_update_label(this.element, this.target);
 
-        if (this.trafo)
-            show_transformation_details(this.trafo);
+        if (this.xform)
+            show_transformation_details(this.xform);
     }
 
     get_value() {}
@@ -53,9 +53,9 @@ class KeyProperty {
      * subclass of Property.
      */
 
-    constructor(element, trafo, target, key, input) {
+    constructor(element, xform, target, key, input) {
         this.element = element;
-        this.trafo = trafo;
+        this.xform = xform;
         this.target = target;
         this.key = key;
         this.input = input;
@@ -86,8 +86,8 @@ class KeyProperty {
 
 class ValueProperty extends Property {
 
-    constructor(element, trafo, target, key, subkey, datatype, input) {
-        super(element, trafo, target, key, subkey, datatype);
+    constructor(element, xform, target, key, subkey, datatype, input) {
+        super(element, xform, target, key, subkey, datatype);
 
         this.input = input;
     }
@@ -118,9 +118,9 @@ class ValueProperty extends Property {
 class CodeProperty extends Property {
 
     constructor(
-        element, trafo, target, key, subkey, dtype, code_input, lang_input
+        element, xform, target, key, subkey, dtype, code_input, lang_input
     ) {
-        super(element, trafo, target, key, subkey, dtype);
+        super(element, xform, target, key, subkey, dtype);
 
         this.code_input = code_input;
         this.lang_input = lang_input;
@@ -149,8 +149,8 @@ class CodeProperty extends Property {
 
 class TypeclassProperty extends Property {
 
-    constructor(element, trafo, target, key, subkey, datatype, input) {
-        super(element, trafo, target, key, subkey, datatype);
+    constructor(element, xform, target, key, subkey, datatype, input) {
+        super(element, xform, target, key, subkey, datatype);
 
         this.input = input;
     }
@@ -173,9 +173,9 @@ class TypeclassProperty extends Property {
 class ListProperty extends Property {
 
     constructor(
-        element, trafo, target, key, subkey, datatype, properties_list
+        element, xform, target, key, subkey, datatype, properties_list
     ) {
-        super(element, trafo, target, key, subkey, datatype);
+        super(element, xform, target, key, subkey, datatype);
 
         this.properties_list = properties_list;
     }
@@ -204,8 +204,8 @@ class ListProperty extends Property {
 
 class DictProperty extends Property {
 
-    constructor(element, trafo, target, key, subkey, datatype, properties) {
-        super(element, trafo, target, key, subkey, datatype);
+    constructor(element, xform, target, key, subkey, datatype, properties) {
+        super(element, xform, target, key, subkey, datatype);
 
         this.properties = properties;
     }
@@ -250,9 +250,9 @@ class DictProperty extends Property {
 class RangeProperty extends Property {
 
     constructor(
-        element, trafo, target, key, subkey, datatype, range_input_list
+        element, xform, target, key, subkey, datatype, range_input_list
     ) {
-        super(element, trafo, target, key, subkey, datatype);
+        super(element, xform, target, key, subkey, datatype);
 
         this.range_input_list = range_input_list;
     }

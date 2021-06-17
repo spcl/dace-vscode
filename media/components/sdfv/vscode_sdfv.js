@@ -209,7 +209,7 @@ function get_element_metadata(elem) {
 }
 
 function attr_table_put_bool(
-    key, subkey, val, elem, trafo, target, cell, dtype
+    key, subkey, val, elem, xform, target, cell, dtype
 ) {
     const bool_input_container = $('<div>', {
         'class': 'form-check form-switch',
@@ -225,21 +225,21 @@ function attr_table_put_bool(
         'text': ' ',
         'for': 'switch_' + key,
     }));
-    return new ValueProperty(elem, trafo, target, key, subkey, dtype, input);
+    return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
 }
 
 function attr_table_put_text(
-    key, subkey, val, elem, trafo, target, cell, dtype
+    key, subkey, val, elem, xform, target, cell, dtype
 ) {
     const input = $('<input>', {
         'type': 'text',
         'value': val,
     }).appendTo(cell);
-    return new ValueProperty(elem, trafo, target, key, subkey, dtype, input);
+    return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
 }
 
 function attr_table_put_code(
-    key, subkey, val, elem, trafo, target, cell, dtype
+    key, subkey, val, elem, xform, target, cell, dtype
 ) {
     const input = $('<textarea>', {
         'class': 'sdfv-property-code',
@@ -275,22 +275,22 @@ function attr_table_put_code(
         ));
     });
     return new CodeProperty(
-        elem, trafo, target, key, subkey, dtype, input, language_input
+        elem, xform, target, key, subkey, dtype, input, language_input
     );
 }
 
 function attr_table_put_number(
-    key, subkey, val, elem, trafo, target, cell, dtype
+    key, subkey, val, elem, xform, target, cell, dtype
 ) {
     const input = $('<input>', {
         'type': 'number',
         'value': val,
     }).appendTo(cell);
-    return new ValueProperty(elem, trafo, target, key, subkey, dtype, input);
+    return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
 }
 
 function attr_table_put_select(
-    key, subkey, val, elem, trafo, target, cell, dtype, choices
+    key, subkey, val, elem, xform, target, cell, dtype, choices
 ) {
     const input = $('<select>', {
         'class': 'sdfv-property-dropdown',
@@ -328,11 +328,11 @@ function attr_table_put_select(
             },
         }).appendTo(cell);
 
-    return new ValueProperty(elem, trafo, target, key, subkey, dtype, input);
+    return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
 }
 
 function attr_table_put_typeclass(
-    key, subkey, val, elem, trafo, target, cell, dtype, choices
+    key, subkey, val, elem, xform, target, cell, dtype, choices
 ) {
     const container = $('<div>', {
         'style': 'position: relative;',
@@ -355,7 +355,7 @@ function attr_table_put_typeclass(
         });
     }
     return new TypeclassProperty(
-        elem, trafo, target, key, subkey, dtype, input
+        elem, xform, target, key, subkey, dtype, input
     );
 }
 
@@ -413,7 +413,7 @@ function create_and_show_property_edit_modal(title, with_confirm) {
 }
 
 function attr_table_put_dict(
-    key, subkey, val, elem, trafo, target, cell, dtype, val_meta
+    key, subkey, val, elem, xform, target, cell, dtype, val_meta
 ) {
     const dict_cell_container = $('<div>', {
         'class': 'popup-editable-property-container',
@@ -427,7 +427,7 @@ function attr_table_put_dict(
         'title': 'Click to edit',
     }).appendTo(dict_cell_container);
 
-    const prop = new DictProperty(elem, trafo, target, key, subkey, dtype, []);
+    const prop = new DictProperty(elem, xform, target, key, subkey, dtype, []);
 
     dict_edit_btn.on('click', () => {
         prop.properties = [];
@@ -440,7 +440,7 @@ function attr_table_put_dict(
         Object.keys(val).forEach(k => {
             let v = val[k];
             const attr_prop = attribute_table_put_entry(
-                k, v, val_meta, val, elem, trafo, rowbox, true, false, true
+                k, v, val_meta, val, elem, xform, rowbox, true, false, true
             );
 
             if (attr_prop.delete_btn)
@@ -467,12 +467,12 @@ function attr_table_put_dict(
                 let new_prop = undefined;
                 if (val_meta)
                     new_prop = attribute_table_put_entry(
-                        '', '', val_meta, val, elem, trafo, rowbox, true, false,
+                        '', '', val_meta, val, elem, xform, rowbox, true, false,
                         true
                     );
                 else
                     new_prop = attribute_table_put_entry(
-                        '', '', { metatype: 'str' }, val, elem, trafo, rowbox,
+                        '', '', { metatype: 'str' }, val, elem, xform, rowbox,
                         true, false, true
                     );
                 if (new_prop) {
@@ -491,7 +491,7 @@ function attr_table_put_dict(
 
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
-                if (prop.update() && !trafo)
+                if (prop.update() && !xform)
                     vscode_write_graph(daceRenderer.sdfg);
                 modal.modal.modal('hide');
             });
@@ -503,7 +503,7 @@ function attr_table_put_dict(
 }
 
 function attr_table_put_list(
-    key, subkey, val, elem, trafo, target, cell, dtype, elem_meta
+    key, subkey, val, elem, xform, target, cell, dtype, elem_meta
 ) {
     // If a list's element type is unknown, i.e. there is no element metadata,
     // treat it as a string so it can be edited properly.
@@ -524,7 +524,7 @@ function attr_table_put_list(
         'title': 'Click to edit',
     }).appendTo(list_cell_container);
 
-    const prop = new ListProperty(elem, trafo, target, key, subkey, dtype, []);
+    const prop = new ListProperty(elem, xform, target, key, subkey, dtype, []);
 
     list_cell_edit_btn.on('click', () => {
         prop.properties_list = [];
@@ -538,7 +538,7 @@ function attr_table_put_list(
             for (let i = 0; i < val.length; i++) {
                 const v = val[i];
                 const attr_prop = attribute_table_put_entry(
-                    i, v, elem_meta, val, elem, trafo, rowbox, false, false,
+                    i, v, elem_meta, val, elem, xform, rowbox, false, false,
                     true
                 );
 
@@ -568,7 +568,7 @@ function attr_table_put_list(
             'click': () => {
                 let i = prop.properties_list.length;
                 let new_prop = attribute_table_put_entry(
-                    i, '', elem_meta, val, elem, trafo, rowbox, false, false,
+                    i, '', elem_meta, val, elem, xform, rowbox, false, false,
                     true
                 );
                 if (new_prop && new_prop.val_prop) {
@@ -590,7 +590,7 @@ function attr_table_put_list(
 
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
-                if (prop.update() && !trafo)
+                if (prop.update() && !xform)
                     vscode_write_graph(daceRenderer.sdfg);
                 modal.modal.modal('hide');
             });
@@ -602,7 +602,7 @@ function attr_table_put_list(
 }
 
 function attr_table_put_range(
-    key, subkey, val, elem, trafo, target, cell, dtype
+    key, subkey, val, elem, xform, target, cell, dtype
 ) {
     const range_cell_container = $('<div>', {
         'class': 'popup-editable-property-container',
@@ -617,7 +617,7 @@ function attr_table_put_range(
     }).appendTo(range_cell_container);
 
     const prop = new RangeProperty(
-        elem, trafo, target, key, 'ranges', dtype, []
+        elem, xform, target, key, 'ranges', dtype, []
     );
 
     range_edit_btn.on('click', () => {
@@ -794,7 +794,7 @@ function attr_table_put_range(
 
         if (modal.confirm_btn)
             modal.confirm_btn.on('click', () => {
-                if (prop.update() && !trafo)
+                if (prop.update() && !xform)
                     vscode_write_graph(daceRenderer.sdfg);
                 modal.modal.modal('hide');
             });
@@ -806,7 +806,7 @@ function attr_table_put_range(
 }
 
 function attribute_table_put_entry(
-    key, val, meta, target, elem, trafo, root, editable_key, update_on_change,
+    key, val, meta, target, elem, xform, root, editable_key, update_on_change,
     add_delete_button
 ) {
     let key_prop = undefined;
@@ -836,7 +836,7 @@ function attribute_table_put_entry(
             'value': key,
         }).appendTo(key_cell);
 
-        key_prop = new KeyProperty(elem, trafo, target, key, key_input);
+        key_prop = new KeyProperty(elem, xform, target, key, key_input);
     } else {
         key_cell = $('<div>', {
             'class': 'col-3 attr-table-heading attr-table-cell',
@@ -865,13 +865,13 @@ function attribute_table_put_entry(
         switch (dtype) {
             case 'typeclass':
                 val_prop = attr_table_put_typeclass(
-                    key, undefined, val, elem, trafo, target, value_cell, dtype,
+                    key, undefined, val, elem, xform, target, value_cell, dtype,
                     choices
                 );
                 break;
             case 'bool':
                 val_prop = attr_table_put_bool(
-                    key, undefined, val, elem, trafo, target, value_cell, dtype,
+                    key, undefined, val, elem, xform, target, value_cell, dtype,
                     false
                 );
                 break;
@@ -881,12 +881,12 @@ function attribute_table_put_entry(
                 // TODO(later): Treat symbolic expressions with a symbolic
                 // parser, they're not just a regular string.
                 val_prop = attr_table_put_text(
-                    key, undefined, val, elem, trafo, target, value_cell, dtype
+                    key, undefined, val, elem, xform, target, value_cell, dtype
                 );
                 break;
             case 'int':
                 val_prop = attr_table_put_number(
-                    key, undefined, val, elem, trafo, target, value_cell, dtype
+                    key, undefined, val, elem, xform, target, value_cell, dtype
                 );
                 break;
             case 'dict':
@@ -901,7 +901,7 @@ function attribute_table_put_entry(
                         '__reverse_type_lookup__'
                     ][val_type];
                 attr_table_put_dict(
-                    key, undefined, val, elem, trafo, target, value_cell, dtype,
+                    key, undefined, val, elem, xform, target, value_cell, dtype,
                     val_meta
                 );
                 break;
@@ -919,32 +919,32 @@ function attribute_table_put_entry(
                         '__reverse_type_lookup__'
                     ][elem_type];
                 val_prop = attr_table_put_list(
-                    key, undefined, val, elem, trafo, target, value_cell, dtype,
+                    key, undefined, val, elem, xform, target, value_cell, dtype,
                     elem_meta
                 );
                 break;
             case 'Range':
             case 'SubsetProperty':
                 val_prop = attr_table_put_range(
-                    key, undefined, val, elem, trafo, target, value_cell, dtype
+                    key, undefined, val, elem, xform, target, value_cell, dtype
                 );
                 break;
             case 'DataProperty':
                 val_prop = attr_table_put_select(
-                    key, undefined, val, elem, trafo, target, value_cell, dtype,
+                    key, undefined, val, elem, xform, target, value_cell, dtype,
                     elem ? Object.keys(elem.sdfg.attributes._arrays): []
                 );
                 break;
             case 'CodeBlock':
                 val_prop = attr_table_put_code(
-                    key, undefined, val ? val.string_data : '', elem, trafo,
+                    key, undefined, val ? val.string_data : '', elem, xform,
                     target, value_cell, dtype
                 );
                 break;
             default:
                 if (choices !== undefined)
                     val_prop = attr_table_put_select(
-                        key, undefined, val, elem, trafo, target, value_cell,
+                        key, undefined, val, elem, xform, target, value_cell,
                         dtype, choices
                     );
                 else
@@ -959,19 +959,19 @@ function attribute_table_put_entry(
         if (val_prop.input !== undefined) {
             val_prop.input.on('change', () => {
                 val_prop.update();
-                if (!trafo)
+                if (!xform)
                     vscode_write_graph(daceRenderer.sdfg);
             });
         } else if (val_prop.code_input !== undefined &&
                    val_prop.lang_input !== undefined) {
             val_prop.code_input.on('change', () => {
                 val_prop.update();
-                if (!trafo)
+                if (!xform)
                     vscode_write_graph(daceRenderer.sdfg);
             });
             val_prop.lang_input.on('change', () => {
                 val_prop.update();
-                if (!trafo)
+                if (!xform)
                     vscode_write_graph(daceRenderer.sdfg);
             });
         }
@@ -980,7 +980,7 @@ function attribute_table_put_entry(
     if (update_on_change && key_prop !== undefined &&
         key_prop.input !== undefined)
         key_prop.input.on('change', () => {
-            if (key_prop.update() && !trafo)
+            if (key_prop.update() && !xform)
                 vscode_write_graph(daceRenderer.sdfg);
         });
 
@@ -992,7 +992,7 @@ function attribute_table_put_entry(
     };
 }
 
-function generate_attributes_table(elem, trafo, root) {
+function generate_attributes_table(elem, xform, root) {
     let attributes = undefined;
     let identifier = '';
     if (elem) {
@@ -1011,16 +1011,16 @@ function generate_attributes_table(elem, trafo, root) {
             attributes = elem.attributes;
             identifer = elem.type;
         }
-    } else if (trafo) {
-        attributes = trafo;
-        identifier = trafo.transformation;
+    } else if (xform) {
+        attributes = xform;
+        identifier = xform.transformation;
     }
 
     let metadata = undefined;
     if (elem)
         metadata = get_element_metadata(elem);
-    else if (trafo)
-        metadata = get_transformation_metadata(trafo);
+    else if (xform)
+        metadata = get_transformation_metadata(xform);
 
     let sorted_attributes = {};
     Object.keys(attributes).forEach(k => {
@@ -1117,7 +1117,7 @@ function generate_attributes_table(elem, trafo, root) {
                 attr_meta = metadata[k];
 
             attribute_table_put_entry(
-                k, val, attr_meta, attributes, elem, trafo, attr_table, false,
+                k, val, attr_meta, attributes, elem, xform, attr_table, false,
                 true, false
             );
         });
