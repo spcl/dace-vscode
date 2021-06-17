@@ -3,8 +3,9 @@
 
 class Property {
 
-    constructor (element, target, key, subkey, datatype) {
+    constructor (element, xform, target, key, subkey, datatype) {
         this.element = element;
+        this.xform = xform;
         this.target = target;
         this.key = key;
         this.subkey = subkey;
@@ -29,8 +30,13 @@ class Property {
             this.target[this.key] = value;
         }
 
-        // Update the element label if it has one.
-        element_update_label(this.element, this.target);
+        // Update the element label if it has one and this property belongs to
+        // an SDFG element.
+        if (this.element)
+            element_update_label(this.element, this.target);
+
+        if (this.xform)
+            show_transformation_details(this.xform);
     }
 
     get_value() {}
@@ -47,8 +53,9 @@ class KeyProperty {
      * subclass of Property.
      */
 
-    constructor(element, target, key, input) {
+    constructor(element, xform, target, key, input) {
         this.element = element;
+        this.xform = xform;
         this.target = target;
         this.key = key;
         this.input = input;
@@ -79,8 +86,8 @@ class KeyProperty {
 
 class ValueProperty extends Property {
 
-    constructor(element, target, key, subkey, datatype, input) {
-        super(element, target, key, subkey, datatype);
+    constructor(element, xform, target, key, subkey, datatype, input) {
+        super(element, xform, target, key, subkey, datatype);
 
         this.input = input;
     }
@@ -110,8 +117,10 @@ class ValueProperty extends Property {
 
 class CodeProperty extends Property {
 
-    constructor(element, target, key, subkey, dtype, code_input, lang_input) {
-        super(element, target, key, subkey, dtype);
+    constructor(
+        element, xform, target, key, subkey, dtype, code_input, lang_input
+    ) {
+        super(element, xform, target, key, subkey, dtype);
 
         this.code_input = code_input;
         this.lang_input = lang_input;
@@ -140,15 +149,15 @@ class CodeProperty extends Property {
 
 class TypeclassProperty extends Property {
 
-    constructor(element, target, key, subkey, datatype, input) {
-        super(element, target, key, subkey, datatype);
+    constructor(element, xform, target, key, subkey, datatype, input) {
+        super(element, xform, target, key, subkey, datatype);
 
         this.input = input;
     }
 
     get_value() {
         return {
-            value: string_to_sdfg_typeclass(this.input.val()),
+            value: daceStringToSDFGTypeclass(this.input.val()),
             value_changed: true,
         };
     }
@@ -163,8 +172,10 @@ class TypeclassProperty extends Property {
 
 class ListProperty extends Property {
 
-    constructor(element, target, key, subkey, datatype, properties_list) {
-        super(element, target, key, subkey, datatype);
+    constructor(
+        element, xform, target, key, subkey, datatype, properties_list
+    ) {
+        super(element, xform, target, key, subkey, datatype);
 
         this.properties_list = properties_list;
     }
@@ -193,8 +204,8 @@ class ListProperty extends Property {
 
 class DictProperty extends Property {
 
-    constructor(element, target, key, subkey, datatype, properties) {
-        super(element, target, key, subkey, datatype);
+    constructor(element, xform, target, key, subkey, datatype, properties) {
+        super(element, xform, target, key, subkey, datatype);
 
         this.properties = properties;
     }
@@ -238,8 +249,10 @@ class DictProperty extends Property {
 
 class RangeProperty extends Property {
 
-    constructor(element, target, key, subkey, datatype, range_input_list) {
-        super(element, target, key, subkey, datatype);
+    constructor(
+        element, xform, target, key, subkey, datatype, range_input_list
+    ) {
+        super(element, xform, target, key, subkey, datatype);
 
         this.range_input_list = range_input_list;
     }
