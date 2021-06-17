@@ -50,8 +50,6 @@ interface IHashNodes {
     [key: string]: Node[];
 }
 
-
-
 const SAVE_DIR = "/.vscode/";
 const SAVE_FILE = "daceDebugState.json";
 
@@ -123,9 +121,9 @@ export class BreakpointHandler extends vscode.Disposable {
 
                         // Translate the current cursor position to a C++ Line
                         let location;
-                        if(position && editor && editor.document)
+                        if (position && editor && editor.document)
                             location = BPHinstance?.pyCppTranslation(
-                                editor.document.uri, 
+                                editor.document.uri,
                                 position.line
                             );
 
@@ -135,6 +133,8 @@ export class BreakpointHandler extends vscode.Disposable {
                         if (files && path && files[path].length !== 0) {
                             // Jump to the corresponding location in
                             // the C++ file
+                            // TODO: look through list for the right file as one 
+                            //      src file might have multiple Dace programs
                             let file = files[path][0]
                             SdfgViewerProvider.getInstance()?.goToFileLocation(
                                 vscode.Uri.file(
@@ -168,7 +168,13 @@ export class BreakpointHandler extends vscode.Disposable {
                     // Check if there are corresponding C++ & SDFG files saved
                     // If so, display the Menus
                     if (files && path && files[path] && files[path].length !== 0) {
-                        vscode.commands.executeCommand('setContext', 'sdfg.showMenuCommands', true);
+                        let file = files[path][0];
+                        let filepath = file.cache + "/src/" +
+                            file.target_name + "/" +
+                            file.name + ".cpp"
+                            
+                        if (fs.existsSync(filepath)) 
+                            vscode.commands.executeCommand('setContext', 'sdfg.showMenuCommands', true);
                         return;
                     }
                 }
@@ -269,11 +275,11 @@ export class BreakpointHandler extends vscode.Disposable {
 
     private handleBreakpointAdded(bp: vscode.SourceBreakpoint) {
         let location = this.pyCppTranslation(
-            bp.location.uri, 
+            bp.location.uri,
             bp.location.range.start.line
         );
-        
-        if(!location){
+
+        if (!location) {
             console.log("no location found");
             return;
         }
@@ -316,7 +322,7 @@ export class BreakpointHandler extends vscode.Disposable {
             return;
         }
 
-        for(let currentFunc of functions){
+        for (let currentFunc of functions) {
             let cachePath = currentFunc.cache;
 
             // Get the corresponding Node, if the line isn't in the map
@@ -328,14 +334,14 @@ export class BreakpointHandler extends vscode.Disposable {
             );
             if (!nodes || (nodes && nodes.length == 0))
                 continue;
-            
+
             let range;
             for (const node of nodes) {
                 range = getCppRange(
                     node,
                     cachePath + "/map/map_cpp.json"
                 )
-                if (range) 
+                if (range)
                     break;
             }
 
@@ -363,7 +369,7 @@ export class BreakpointHandler extends vscode.Disposable {
         let new_bp = new vscode.SourceBreakpoint(location);
         vscode.debug.addBreakpoints([new_bp]); */
 
-        // Search for the file with the corresponding function informations
+        // Search for the file with the corresponding function information
         Object.values(this.files).forEach(functions => {
             let funcDetails = functions.find(func => {
                 return func.name === sdfgName;
@@ -373,7 +379,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 node.cache = funcDetails.cache;
                 node.sdfg_name = funcDetails.name;
                 node.target = funcDetails.target_name;
-                
+
                 let range = getCppRange(
                     node,
                     node.cache + "/map/map_cpp.json"
@@ -429,7 +435,7 @@ export class BreakpointHandler extends vscode.Disposable {
             return undefined;
         } */
 
-        if(!Array.isArray(nodeJSON)){
+        if (!Array.isArray(nodeJSON)) {
             let msg = "Source Mapping seems to have the wrong format!"
             vscode.window.showInformationMessage(msg);
             return undefined;
@@ -522,7 +528,7 @@ export class BreakpointHandler extends vscode.Disposable {
     private retrieveState() {
         let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath
         if (!workspace) {
-            console.error("not saveing no workspace");
+            console.error("not saving no workspace");
             return;
         }
         let saveLocation = workspace + SAVE_DIR + SAVE_FILE;
