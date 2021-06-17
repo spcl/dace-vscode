@@ -3,7 +3,7 @@
 
 class MessageHandler {
 
-    constructor() { }
+    constructor() {}
 
     handle_message(message) {
         let el = undefined;
@@ -13,7 +13,7 @@ class MessageHandler {
                     daceGenericSDFGOverlay.OVERLAY_TYPE.STATIC_FLOPS
                 );
                 instrumentation_report_read_complete(message.result);
-            // Fall through to set the criterium.
+                // Fall through to set the criterium.
             case 'instrumentation_report_change_criterium':
                 if (message.criterium) {
                     const ol = daceRenderer.overlay_manager.get_overlay(

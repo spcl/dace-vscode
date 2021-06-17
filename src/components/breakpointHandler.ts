@@ -172,8 +172,8 @@ export class BreakpointHandler extends vscode.Disposable {
                         let filepath = file.cache + "/src/" +
                             file.target_name + "/" +
                             file.name + ".cpp"
-                            
-                        if (fs.existsSync(filepath)) 
+
+                        if (fs.existsSync(filepath))
                             vscode.commands.executeCommand('setContext', 'sdfg.showMenuCommands', true);
                         return;
                     }

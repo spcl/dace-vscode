@@ -5,7 +5,7 @@
  * Set the header/title of the info-box in the embedded view.
  * @param {*} title Title to set
  */
- function info_box_set_title(title) {
+function info_box_set_title(title) {
     $('#info-title').text(title);
 }
 
