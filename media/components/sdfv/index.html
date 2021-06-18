@@ -145,7 +145,7 @@
                                     prevent_refreshes = false) {
             parsed_sdfg = daceParseSDFG(sdfg);
 
-            if (daceRenderer)
+            if (daceRenderer) {
                 daceRenderer.set_sdfg(parsed_sdfg);
             } else {
                 daceInitSDFV(null, null, debug_draw);
