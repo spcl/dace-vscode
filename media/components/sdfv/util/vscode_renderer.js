@@ -21,4 +21,5 @@ class VSCodeRenderer extends daceSDFGRenderer {
         this.bpIndicator.handle_mouse_event(event, comp_x_func,
             comp_y_func, evtype);
     }
+
 }

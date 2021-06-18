@@ -400,7 +400,6 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
     console.log("deactivating DaCe");
     let context = DaCeVSCode.getInstance().getExtensionContext();
-    if(context){
+    if (context)
         context.subscriptions.forEach(item => item.dispose());
-    } 
 }
