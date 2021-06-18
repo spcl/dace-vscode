@@ -3,7 +3,7 @@
 
 import * as vscode from 'vscode';
 import { DaceDebugSession } from './daceDebugSession';
-import { DaCeInterface } from '../daceInterface'
+import { DaCeInterface } from '../daceInterface';
 import { BreakpointHandler } from './breakpointHandler';
 import { DaceListener } from './daceListener';
 import * as os from 'os';
@@ -175,4 +175,3 @@ class DaceInlineFactory
     }
 
 }
-
