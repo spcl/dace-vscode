@@ -402,5 +402,4 @@ export function deactivate() {
     let context = DaCeVSCode.getInstance().getExtensionContext();
     if (context)
         context.subscriptions.forEach(item => item.dispose());
-    } 
 }
