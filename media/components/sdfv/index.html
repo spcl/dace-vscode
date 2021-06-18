@@ -147,7 +147,7 @@
 
             if (daceRenderer)
                 daceRenderer.set_sdfg(parsed_sdfg);
-            else{
+            } else {
                 daceInitSDFV(null, null, debug_draw);
                 if (parsed_sdfg !== null)
                     daceRenderer = new VSCodeRenderer(parsed_sdfg, document.getElementById('contents'),
