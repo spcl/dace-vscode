@@ -6,7 +6,7 @@ export var PORT: number = 0;
 
 export class DaceListener extends vscode.Disposable{
 
-    server: Net.Server
+    server: Net.Server;
 
     constructor() {
         super(() => {this.server.close()});
@@ -22,14 +22,14 @@ export class DaceListener extends vscode.Disposable{
                 let dataStr = String.fromCharCode(...data);
                 this.handleData(JSON.parse(dataStr));
             });
-        })
+        });
 
         // listen on a random port and save the port number
         // to the exported variable PORT
         server.listen(0, () => {
             if (!server.address() || typeof server.address() === "string") {
                 console.log(server.address());
-                let msg = "Error occurred while starting server"
+                let msg = "Error occurred while starting server";
                 vscode.window.showErrorMessage(msg);
             }
 
@@ -41,7 +41,6 @@ export class DaceListener extends vscode.Disposable{
     }
 
     protected handleData(data: any | undefined) {
-        console.log(data)
         if (!data) {
             return;
         }

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DaCeVSCode } from '../extension';
-import { SdfgViewerProvider } from "../components/sdfgViewer"
+import { SdfgViewerProvider } from "../components/sdfgViewer";
 import fs = require("fs");
 
 export class Node {
@@ -25,9 +25,9 @@ export class Node {
     }
 
     public isEqual(node: Node): boolean {
-        return this.sdfg_id == node.sdfg_id &&
-            this.state_id == node.state_id &&
-            this.node_id == node.node_id;
+        return this.sdfg_id === node.sdfg_id &&
+            this.state_id === node.state_id &&
+            this.node_id === node.node_id;
     }
 }
 
@@ -171,7 +171,7 @@ export class BreakpointHandler extends vscode.Disposable {
                         let file = files[path][0];
                         let filepath = file.cache + "/src/" +
                             file.target_name + "/" +
-                            file.name + ".cpp"
+                            file.name + ".cpp";
 
                         if (fs.existsSync(filepath))
                             vscode.commands.executeCommand('setContext', 'sdfg.showMenuCommands', true);
@@ -210,7 +210,7 @@ export class BreakpointHandler extends vscode.Disposable {
         }
 
         let alreadySaved = this.files[normalizedFilePath].find((elem) => {
-            return elem.name === funcName
+            return elem.name === funcName;
         });
 
         if (!alreadySaved) {
@@ -332,7 +332,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 line + 1,
                 cachePath + "/map/map_py.json"
             );
-            if (!nodes || (nodes && nodes.length == 0))
+            if (!nodes || (nodes && nodes.length === 0))
                 continue;
 
             let range;
@@ -340,7 +340,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 range = getCppRange(
                     node,
                     cachePath + "/map/map_cpp.json"
-                )
+                );
                 if (range)
                     break;
             }
@@ -360,15 +360,6 @@ export class BreakpointHandler extends vscode.Disposable {
     }
 
     public handleNodeAdded(node: Node, sdfgName: string) {
-        // Creating a Breakpoint for the BP panel
-        /* let uri = vscode.Uri.parse(
-            'C:/Users/Benjamin/Documents/Code/Bachelor/dace/.dacecache/myprogram/program.sdfg'
-        );
-        let pos = new vscode.Position(5, 0);
-        let location = new vscode.Location(uri, pos);
-        let new_bp = new vscode.SourceBreakpoint(location);
-        vscode.debug.addBreakpoints([new_bp]); */
-
         // Search for the file with the corresponding function information
         Object.values(this.files).forEach(functions => {
             let funcDetails = functions.find(func => {
@@ -418,38 +409,33 @@ export class BreakpointHandler extends vscode.Disposable {
             return undefined;
         }
 
-        let nodeJSON = mapPy[line.toString()];
+        let nodesJSON = mapPy[line.toString()];
         // Return undefined if the line doesn't exist in the mapping
-        if (!nodeJSON) {
+        if (!nodesJSON) {
             return undefined;
         }
 
-        // Make sure the JSON object has the right Properties
-        /* if (
-            !nodeJSON.hasOwnProperty('sdfg_id') ||
-            !nodeJSON.hasOwnProperty('state_id') ||
-            !nodeJSON.hasOwnProperty('node_id')
-        ) {
-            let msg = "Source Mapping seems to have the wrong format!"
-            vscode.window.showInformationMessage(msg);
-            return undefined;
-        } */
-
-        if (!Array.isArray(nodeJSON)) {
+        if (!Array.isArray(nodesJSON)) {
             let msg = "Source Mapping seems to have the wrong format!"
             vscode.window.showInformationMessage(msg);
             return undefined;
         }
 
-        nodeJSON.map(node => {
-            new Node(
-                node.sdfg_id,
-                node.state_id,
-                node.node_id
-            )
-        })
+        try {
+            nodesJSON.map(node => {
+                new Node(
+                    node.sdfg_id,
+                    node.state_id,
+                    node.node_id
+                );
+            });
+        } catch (error) {
+            let msg = "Source Mapping seems to have the wrong format!";
+            vscode.window.showInformationMessage(msg);
+            return undefined;
+        }
 
-        return nodeJSON;
+        return nodesJSON;
     }
 
     private createBreakpoint(
@@ -476,7 +462,7 @@ export class BreakpointHandler extends vscode.Disposable {
 
     private bpIdentifier(bp: vscode.SourceBreakpoint, sdfgName: string): string {
         // Create an identifier for a Breakpoint location in a C++ file
-        let range = bp.location.range
+        let range = bp.location.range;
         return sdfgName + '/' +
             range.start.line + '/' +
             range.start.character + '/' +
@@ -495,7 +481,7 @@ export class BreakpointHandler extends vscode.Disposable {
     private saveState() {
         // Don't save if there is nothing to save or
         // the user doesn't have a Folder open
-        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath
+        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
         if (
             Object.keys(this.files).length === 0 &&
             Object.keys(this.savedNodes).length === 0 ||
@@ -504,7 +490,7 @@ export class BreakpointHandler extends vscode.Disposable {
             return;
         }
 
-        let saveLocation = workspace + SAVE_DIR
+        let saveLocation = workspace + SAVE_DIR;
         if (!fs.existsSync(saveLocation)) {
             fs.mkdirSync(saveLocation);
         }
@@ -519,14 +505,14 @@ export class BreakpointHandler extends vscode.Disposable {
                 saveLocation,
                 data,
                 () => { console.log(saveLocation) }
-            )
+            );
         } catch (error) {
             console.error("Failed to save to file");
         }
     }
 
     private retrieveState() {
-        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath
+        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
         if (!workspace) {
             console.error("not saving no workspace");
             return;
@@ -576,10 +562,10 @@ export class BreakpointHandler extends vscode.Disposable {
 
 export function getCppRange(node: Node, path: fs.PathLike) {
     let mapCpp = jsonFromPath(path);
-    if (!mapCpp) return undefined
+    if (!mapCpp) return undefined;
 
     let states = mapCpp[node.sdfg_id];
-    if (!states) return undefined
+    if (!states) return undefined;
 
     // Return the Range of an entire SDFG
     if (node.state_id === -1) {
@@ -591,7 +577,7 @@ export function getCppRange(node: Node, path: fs.PathLike) {
                 if (node.from < minLine)
                     minLine = node.from;
                 if (node.to > maxLine)
-                    maxLine = node.to
+                    maxLine = node.to;
             });
         });
         return {
@@ -660,8 +646,8 @@ function normalizePath(path: string): string | undefined {
     try {
         parsedPath = vscode.Uri.parse(path);
     } catch (error) {
-        return undefined
+        return undefined;
     }
-    let splitPath = parsedPath.fsPath.split(":")
-    return splitPath[splitPath.length - 1]
+    let splitPath = parsedPath.fsPath.split(":");
+    return splitPath[splitPath.length - 1];
 }
