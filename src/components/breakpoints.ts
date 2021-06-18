@@ -7,7 +7,7 @@ import { DaCeInterface } from '../daceInterface';
 
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
-import { BreakpointHandler, Node } from './breakpointHandler';
+import { BreakpointHandler, Node } from '../debugger/breakpointHandler';
 
 export class BreakpointProvider
     extends BaseComponent

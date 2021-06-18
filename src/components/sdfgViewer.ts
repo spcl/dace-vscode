@@ -12,7 +12,7 @@ import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 import { TransformationListProvider } from './transformationList';
 import { BreakpointProvider } from './breakpoints';
-import { getCppRange, Node } from './breakpointHandler';
+import { getCppRange, Node } from '../debugger/breakpointHandler';
 
 export class SdfgViewer {
 

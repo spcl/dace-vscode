@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DaCeVSCode } from '../extension';
-import { SdfgViewerProvider } from "./sdfgViewer"
+import { SdfgViewerProvider } from "../components/sdfgViewer"
 import fs = require("fs");
 
 export class Node {
