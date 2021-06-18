@@ -20,7 +20,7 @@ class BreakpointIndicator {
 
     constructor(daceRenderer) {
         this.daceRenderer = daceRenderer;
-        this.breakpoints = new Map()
+        this.breakpoints = new Map();
         this.show_breakpoints = false;
         vscode.postMessage({
             type: 'breakpoints.get_saved_nodes',
