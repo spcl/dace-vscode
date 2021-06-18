@@ -47,7 +47,7 @@ export class DaceDebugSession extends LoggingDebugSession {
         }
 
         const buildType = !args.buildType ? "Debug" : args.buildType;
-        const portNum:string = String(PORT)
+        const portNum:string = String(PORT);
 
         /**
          * Default:
