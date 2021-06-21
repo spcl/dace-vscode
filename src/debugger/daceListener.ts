@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 import * as Net from 'net';
 import * as vscode from 'vscode';
 import { BreakpointHandler } from './breakpointHandler';

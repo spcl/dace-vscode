@@ -1,3 +1,6 @@
+// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 import * as vscode from 'vscode';
 import { DaCeVSCode } from '../extension';
 import { SdfgViewerProvider } from "../components/sdfgViewer";
@@ -149,7 +152,7 @@ export class BreakpointHandler extends vscode.Disposable {
                     }
                 }
             ),
-            vscode.workspace.onDidOpenTextDocument(res => {
+            vscode.workspace.onDidOpenTextDocument(async res => {
                 /* 
                    When the User changes the file displayed,
                    check if there is a corresponding SDFG and
@@ -172,9 +175,13 @@ export class BreakpointHandler extends vscode.Disposable {
                         let filepath = file.cache + "/src/" +
                             file.target_name + "/" +
                             file.name + ".cpp";
-
-                        if (fs.existsSync(filepath))
+                        
+                        try {
+                            await vscode.workspace.fs.stat(vscode.Uri.parse(filepath));
                             vscode.commands.executeCommand('setContext', 'sdfg.showMenuCommands', true);
+                        } catch (error) {
+                            vscode.commands.executeCommand('setContext', 'sdfg.showMenuCommands', false);
+                        }
                         return;
                     }
                 }
@@ -402,7 +409,7 @@ export class BreakpointHandler extends vscode.Disposable {
             });
     }
 
-    private getNode(line: number, path: fs.PathLike): Node[] | undefined {
+    private getNode(line: number, path: string): Node[] | undefined {
 
         let mapPy = jsonFromPath(path);
         if (!mapPy) {
