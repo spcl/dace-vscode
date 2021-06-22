@@ -185,7 +185,6 @@
     </script>
     <script src="{{ CSP_SRC }}/webclient/dist/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/util/info_box_helper.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/vscode_sdfv.js"></script>
 
     <script src="{{ CSP_SRC }}/components/sdfv/util/helpers.js"></script>
@@ -229,7 +228,6 @@
             if (daceRenderer) {
                 daceRenderer.set_sdfg(parsed_sdfg);
             } else {
-                daceInitSDFV(null, null, debug_draw);
                 if (parsed_sdfg !== null)
                     daceRenderer = new VSCodeRenderer(
                         parsed_sdfg, document.getElementById('contents'),
@@ -268,7 +266,6 @@
                 daceRenderer.destroy();
             }
             parsed_sdfg = daceParseSDFG(sdfg_json);
-            daceInitSDFV(null, null, debug_draw);
             if (parsed_sdfg !== null)
                 daceRenderer = new VSCodeRenderer(
                     parsed_sdfg, document.getElementById('contents'),
