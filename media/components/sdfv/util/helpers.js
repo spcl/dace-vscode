@@ -9,7 +9,7 @@
  */
 function do_for_all_uuids(uuids, action) {
     uuids.forEach((uuid) => {
-        const result = find_graph_element_by_uuid(renderer.graph, uuid);
+        const result = daceFindGraphElementByUUID(daceRenderer.graph, uuid);
 
         let element = undefined;
         if (result !== undefined)
@@ -35,10 +35,10 @@ function do_for_all_uuids(uuids, action) {
  * @param {*} uuids     Elements to zoom to.
  */
 function zoom_to_uuids(uuids) {
-    if (renderer) {
+    if (daceRenderer) {
         const elements_to_display = [];
         do_for_all_uuids(uuids, (element) => elements_to_display.push(element));
-        renderer.zoom_to_view(elements_to_display);
+        daceRenderer.zoom_to_view(elements_to_display);
     }
 }
 
@@ -49,25 +49,25 @@ function zoom_to_uuids(uuids) {
  * @param {*} color     Color with which to highlight (defaults to wheat).
  */
 function highlight_uuids(uuids, color) {
-    if (renderer) {
+    if (daceRenderer) {
         // Make sure no previously shaded elements remain shaded by drawing
         // synchronously.
-        renderer.draw();
+        daceRenderer.draw();
 
         if (color === undefined)
             color = 'wheat';
 
         if (!uuids.length) {
-            renderer.graph.nodes().forEach((state_id) => {
-                renderer.graph.node(state_id).shade(
-                    renderer,
-                    renderer.ctx,
+            daceRenderer.graph.nodes().forEach((state_id) => {
+                daceRenderer.graph.node(state_id).shade(
+                    daceRenderer,
+                    daceRenderer.ctx,
                     color
                 );
             });
         } else {
             do_for_all_uuids(uuids, (element) => {
-                element.shade(renderer, renderer.ctx, color);
+                element.shade(daceRenderer, daceRenderer.ctx, color);
             });
         }
     }

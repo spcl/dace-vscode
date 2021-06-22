@@ -1,6 +1,34 @@
 # Change Log
 
+## 0.3
+
+### 0.3.3
+
+- Allow editing of transformation properties before applying
+- Support expansion of library nodes
+
+### 0.3.2
+
+- Fix various bugs regarding the editing of code properties.
+- Allow language selection in code properties.
+- Fix bugs regarding label updates upon property changes.
+
+### 0.3.1
+
+- Support custom transformations in transformation history.
+- Support custom library nodes.
+- Support custom enum properties (Schedules, Instrumentation, ...).
+
+### 0.3.0
+
+- Allow editing of SDFG properties.
+
 ## 0.2
+
+### 0.2.16
+
+- Switch to terminal mode by default for the dace daemon. This deprecates the
+  subprocess mode.
 
 ### 0.2.12
 

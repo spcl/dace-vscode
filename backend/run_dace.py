@@ -282,6 +282,57 @@ def load_sdfg_from_json(json):
         'sdfg': sdfg,
     }
 
+def expand_library_node(json_in):
+    """
+    Expand a specific library node in a given SDFG. If no specific library node
+    is provided, expand all library nodes in the given SDFG.
+    :param json_in:  The entire provided request JSON.
+    """
+    from dace import serialize
+    old_meta = serialize.JSON_STORE_METADATA
+    serialize.JSON_STORE_METADATA = False
+
+    sdfg = None
+    try:
+        loaded = load_sdfg_from_json(json_in['sdfg'])
+        if loaded['error'] is not None:
+            return loaded['error']
+        sdfg = loaded['sdfg']
+    except KeyError:
+        return {
+            'error': {
+                'message': 'Failed to expand library node',
+                'details': 'No SDFG provided',
+            },
+        }
+
+    try:
+        sdfg_id, state_id, node_id = json_in['nodeid']
+    except KeyError:
+        sdfg_id, state_id, node_id = None, None, None
+
+    if sdfg_id is None:
+        sdfg.expand_library_nodes()
+    else:
+        context_sdfg = sdfg.sdfg_list[sdfg_id]
+        state = context_sdfg.node(state_id)
+        node = state.node(node_id)
+        if isinstance(node, dace.nodes.LibraryNode):
+            node.expand(context_sdfg, state)
+        else:
+            return {
+                'error': {
+                    'message': 'Failed to expand library node',
+                    'details': 'The provided node is not a valid library node',
+                },
+            }
+
+    new_sdfg = sdfg.to_json()
+    serialize.JSON_STORE_METADATA = old_meta
+    return {
+        'sdfg': new_sdfg,
+    }
+
 def reapply_history_until(sdfg_json, index):
     """
     Rewind a given SDFG back to a specific point in its history by reapplying
@@ -458,8 +509,8 @@ def get_transformations(sdfg_json, selected_elements):
 
     if subgraph is not None:
         for xform in SubgraphTransformation.extensions():
-            if xform.can_be_applied(sdfg, subgraph):
-                xform_obj = xform(subgraph)
+            xform_obj = xform(subgraph)
+            if xform_obj.can_be_applied(sdfg, subgraph):
                 transformations.append(xform_obj.to_json())
                 docstrings[xform.__name__] = xform_obj.__doc__
 
@@ -479,6 +530,102 @@ def get_enum(name):
         }
     return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
 
+def get_property_metdata():
+    """ Generate a dictionary of class properties and their metadata.
+        This iterates over all classes registered as serializable in DaCe's
+        serialization module, checks whether there are properties present
+        (true for any class registered via the @make.properties decorator), and
+        then assembels their metadata to a dictionary.
+    """
+    # Lazy import to cut down on module load time.
+    from dace.sdfg.nodes import full_class_path
+
+    # In order to get all transformation metadata the @make.properties
+    # annotation for each transformation needs to have run, so the
+    # transformations are registered in `dace.serialize._DACE_SERIALIZE_TYPES`.
+    # The simplest way to achieve this is by simply getting all pattern matches
+    # of a dummy SDFG. Since this code should only be run once per SDFG editor,
+    # this doesn't add any continuous overhead like it would if we were to
+    # send transformation metadata along with `get_transformations`.
+    from dace.transformation import optimizer
+    _ = optimizer.Optimizer(dace.SDFG('dummy')).get_pattern_matches()
+
+    meta_dict = {}
+    meta_dict['__reverse_type_lookup__'] = {}
+    for typename in dace.serialize._DACE_SERIALIZE_TYPES:
+        t = dace.serialize._DACE_SERIALIZE_TYPES[typename]
+        if hasattr(t, '__properties__'):
+            meta_key = typename
+            if (issubclass(t, dace.sdfg.nodes.LibraryNode)
+                and not t == dace.sdfg.nodes.LibraryNode):
+                meta_key = full_class_path(t)
+
+            meta_dict[meta_key] = {}
+            libnode_implementations = None
+            if hasattr(t, 'implementations'):
+                libnode_implementations = list(t.implementations.keys())
+            for propname, prop in t.__properties__.items():
+                meta_dict[meta_key][propname] = prop.meta_to_json(prop)
+
+                if hasattr(prop, 'key_type') and hasattr(prop, 'value_type'):
+                    # For dictionary properties, add their key and value types.
+                    meta_dict[meta_key][propname][
+                        'key_type'
+                    ] = prop.key_type.__name__
+                    meta_dict[meta_key][propname][
+                        'value_type'
+                    ] = prop.value_type.__name__
+                elif hasattr(prop, 'element_type'):
+                    meta_dict[meta_key][propname][
+                        'element_type'
+                    ] = prop.element_type.__name__
+
+                if prop.choices is not None:
+                    # If there are specific choices for this property (i.e. this
+                    # property is an enum), list those as metadata as well.
+                    if inspect.isclass(prop.choices):
+                        if issubclass(prop.choices, aenum.Enum):
+                            choices = []
+                            for choice in prop.choices:
+                                choice_short = str(choice).split('.')[-1]
+                                if choice_short != 'Undefined':
+                                    choices.append(choice_short)
+                            meta_dict[meta_key][propname]['choices'] = choices
+                elif (propname == 'implementation'
+                    and libnode_implementations is not None):
+                    # For implementation properties, add all library
+                    # implementations as choices.
+                    meta_dict[meta_key][propname][
+                        'choices'
+                    ] = libnode_implementations
+
+                # Create a reverse lookup method for each meta type. This allows
+                # us to get meta information about things other than properties
+                # contained in some SDFG properties (types, CodeBlocks, etc.).
+                if meta_dict[meta_key][propname]['metatype']:
+                    meta_type = meta_dict[meta_key][propname]['metatype']
+                    if not meta_type in meta_dict['__reverse_type_lookup__']:
+                        meta_dict['__reverse_type_lookup__'][
+                            meta_type
+                        ] = meta_dict[meta_key][propname]
+
+    # Save a lookup for enum values not present yet.
+    for enum_name in enum_list:
+        if not enum_name in meta_dict['__reverse_type_lookup__']:
+            choices = []
+            for choice in getattr(dace.dtypes, enum_name):
+                choice_short = str(choice).split('.')[-1]
+                if choice_short != 'Undefined':
+                    choices.append(choice_short)
+            meta_dict['__reverse_type_lookup__'][enum_name] = {
+                'category': 'General',
+                'metatype': enum_name,
+                'choices': choices,
+            }
+
+    return {
+        'meta_dict': meta_dict,
+    }
 
 def _sdfg_remove_instrumentations(sdfg: dace.sdfg.SDFG):
     sdfg.instrument = dace.dtypes.InstrumentationType.No_Instrumentation
@@ -643,6 +790,11 @@ def run_daemon(port):
         return apply_transformation(request_json['sdfg'],
                                     request_json['transformation'])
 
+    @daemon.route('/expand_library_node', methods=['POST'])
+    def _expand_library_node():
+        request_json = request.get_json()
+        return expand_library_node(request_json)
+
     @daemon.route('/reapply_history_until', methods=['POST'])
     def _reapply_history_until():
         request_json = request.get_json()
@@ -672,6 +824,10 @@ def run_daemon(port):
         return insert_sdfg_element(request_json['sdfg'],
                                    request_json['type'],
                                    request_json['parent'])
+
+    @daemon.route('/get_metadata', methods=['GET'])
+    def _get_metadata():
+        return get_property_metdata()
 
     daemon.run(port=port)
 

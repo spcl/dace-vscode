@@ -8,12 +8,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/webclient/sdfv.css">
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
 
     <script>
         // Reference to the VSCode API.
@@ -24,20 +22,14 @@
         const csp_src = "{{ CSP_SRC }}";
     </script>
 
-    <script src="{{ CSP_SRC }}/webclient/renderer_dir/dagre.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/pdfkit.standalone.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/blob-stream.js"></script>
     <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>
-    <script src="{{ CSP_SRC }}/lib/split.min.js"></script>
-
     <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/renderer_elements.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/context_menu.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/sdfg_utils.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/overlay_manager.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/renderer.js"></script>
+    <script src="{{ CSP_SRC }}/lib/split.min.js"></script>
+    <script src="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.bundle.min.js"></script>
+
 </head>
 
 <body onresize="rendererSendResize();">
@@ -163,11 +155,16 @@
         <div id="info-container">
             <div id="info-header">
                 <div id="info-title-container">
-                    <h3 id="info-title"></h3>
+                    <h5 id="info-title"></h5>
                 </div>
                 <div id="goto-source-btn" class="hidden button">
                     <span>
                         Go to source
+                    </span>
+                </div>
+                <div id="goto-cpp-btn" class="hidden button">
+                    <span>
+                        Go to Generated Code
                     </span>
                 </div>
                 <div class="flex-spacer"></div>
@@ -186,7 +183,7 @@
         var sdfg_json = '';
         var transformations = [[], [], [], []];
     </script>
-    <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
+    <script src="{{ CSP_SRC }}/webclient/dist/sdfv.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/util/info_box_helper.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/vscode_sdfv.js"></script>
@@ -194,7 +191,32 @@
     <script src="{{ CSP_SRC }}/components/sdfv/util/helpers.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/messaging/message_handler.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/analysis/analysis.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/properties/properties.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/transformation/transformation.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/breakpoints/breakpoints.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/util/vscode_renderer.js"></script>
+
+    <!-- Load in the monaco editor. -->
+    <script>
+        var require = { paths: { 'vs': '{{ CSP_SRC }}/lib/vs' } };
+    </script>
+    <script src="{{ CSP_SRC }}/lib/vs/loader.js"></script>
+    <script src="{{ CSP_SRC }}/lib/vs/editor/editor.main.nls.js"></script>
+    <script src="{{ CSP_SRC }}/lib/vs/editor/editor.main.js"></script>
+    <script>
+        window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+
+        let proxy = URL.createObjectURL(new Blob([`
+            self.MonacoEnvironment = {
+                baseUrl: '{{ CSP_SRC }}/lib/vs'
+            };
+            importScripts('{{ CSP_SRC }}/lib/vs/base/worker/workerMain.js');
+        `], { type: 'text/javascript' }));
+
+        require(["vs/editor/editor.main"], function () {
+            window.monaco = monaco;
+        });
+    </script>
     <script>
         vscode = acquireVsCodeApi();
         message_handler = new MessageHandler();
@@ -202,12 +224,18 @@
 
         function setRendererContent(sdfg, previewing = false,
                                     prevent_refreshes = false) {
-            parsed_sdfg = parse_sdfg(sdfg);
+            parsed_sdfg = daceParseSDFG(sdfg);
 
-            if (renderer)
-                renderer.set_sdfg(parsed_sdfg);
-            else
-                init_sdfv(parsed_sdfg, null, debug_draw);
+            if (daceRenderer) {
+                daceRenderer.set_sdfg(parsed_sdfg);
+            } else {
+                daceInitSDFV(null, null, debug_draw);
+                if (parsed_sdfg !== null)
+                    daceRenderer = new VSCodeRenderer(
+                        parsed_sdfg, document.getElementById('contents'),
+                        daceMouseEvent, null, debug_draw
+                    );
+            }
 
             if (!previewing) {
                 sdfg_json = sdfg;
@@ -215,19 +243,40 @@
                     get_applicable_transformations();
             }
 
-            outline(renderer, renderer.graph);
+            embedded_outline(daceRenderer, daceRenderer.graph);
             refresh_analysis_pane();
+            refresh_breakpoints();
+
+            if (daceRenderer) {
+                if (daceRenderer.selected_elements &&
+                    daceRenderer.selected_elements.length === 1)
+                    reselect_renderer_element(
+                        daceRenderer.selected_elements[0]
+                    );
+                else if ((!daceRenderer.selected_elements) ||
+                         daceRenderer.selected_elements.length === 0)
+                    fill_info_embedded(
+                        new SDFG(daceRenderer.sdfg)
+                    );
+            }
         }
 
         function resetRendererContent() {
             let user_transform = null;
-            if (renderer) {
-                user_transform = renderer.canvas_manager.user_transform;
-                renderer.destroy();
+            if (daceRenderer) {
+                user_transform = daceRenderer.canvas_manager.user_transform;
+                daceRenderer.destroy();
             }
-            init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
-            outline(renderer, renderer.graph);
+            parsed_sdfg = daceParseSDFG(sdfg_json);
+            daceInitSDFV(null, null, debug_draw);
+            if (parsed_sdfg !== null)
+                daceRenderer = new VSCodeRenderer(
+                    parsed_sdfg, document.getElementById('contents'),
+                    daceMouseEvent, user_transform, debug_draw
+                );
+            embedded_outline(daceRenderer, daceRenderer.graph);
             refresh_analysis_pane();
+            refresh_breakpoints();
         }
 
         function refreshSdfg() {
@@ -255,12 +304,24 @@
             });
         }
 
+        // Send a request to the extension to jump to the
+        // generated code location of the current Node
+        function gotoCpp(sdfgName, sdfgId, stateId, nodeId) {
+            vscode.postMessage({
+                type: 'sdfv.go_to_cpp',
+                sdfg_name: sdfgName,
+                sdfg_id: sdfgId,
+                state_id: stateId,
+                node_id: nodeId
+            });
+        }
+
         // Resize the canvas correctly if the renderer exists. This gets
         // called whenever the body's size changes.
         function rendererSendResize() {
-            if (renderer) {
-                renderer.onresize();
-                renderer.draw_async();
+            if (daceRenderer) {
+                daceRenderer.onresize();
+                daceRenderer.draw_async();
             }
         }
 

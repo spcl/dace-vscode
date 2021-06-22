@@ -32,6 +32,7 @@ function clear_info_box() {
     $('#info-title').text('');
     $('#info-clear-btn').hide();
     $('#goto-source-btn').hide();
+    $('#goto-cpp-btn').hide();
     window.selected_transformation = undefined;
     if (vscode)
         vscode.postMessage({
@@ -46,12 +47,17 @@ function clear_info_box() {
  * @param {*} elem  The element to display info about
  */
 function fill_info_embedded(elem) {
-    const gotoSourceBtn = $('#goto-source-btn');
-    // Clear and hide the go to source button.
-    gotoSourceBtn.hide();
-    gotoSourceBtn.off('click');
-    gotoSourceBtn.prop('title', '');
-
+    const buttons = [
+        $('#goto-source-btn'),
+        $('#goto-cpp-btn')
+    ]
+    // Clear and hide these buttons.
+    buttons.forEach((btn) =>{
+        btn.hide();
+        btn.off('click');
+        btn.prop('title', '');
+    });
+    
     if (elem) {
         document.getElementById('info-title').innerText =
             elem.type() + ' ' + elem.label();
@@ -69,115 +75,51 @@ function fill_info_embedded(elem) {
             $('<hr>').appendTo(contents);
         }
 
-        const attr_table = $('<table>', {
-            id: 'sdfg-attribute-table',
-            'class': 'info-table',
-        }).appendTo(contents);
-        const attr_table_header = $('<thead>').appendTo(attr_table);
-        const attr_table_header_row = $('<tr>').appendTo(attr_table_header);
-        $('<th>', {
-            'class': 'key-col',
-            'text': 'Attribute',
-        }).appendTo(attr_table_header_row);
-        $('<th>', {
-            'class': 'val-col',
-            'text': 'Value',
-        }).appendTo(attr_table_header_row);
+        generate_attributes_table(elem, undefined, contents);
 
-        const attr_table_body = $('<tbody>').appendTo(attr_table);
-        for (const attr of Object.entries(elem.attributes())) {
-            if (attr[0] === 'layout' || attr[0] === 'sdfg' ||
-                attr[0] === 'orig_sdfg' || attr[0] === 'transformation_hist' ||
-                attr[0].startsWith('_'))
-                continue;
-            const val = sdfg_property_to_string(
-                attr[1],
-                renderer.view_settings()
-            );
-            if (val === null || val === '')
-                continue;
-
-
-            // Add interactive attribute
-            let added = add_attr_interactive(attr, attr_table_body, elem);
-
-            // If it hasn't been added then add it without option to edit
-            if (!added) {
-                if (attr[0] === 'debuginfo') {
-                    gotoSourceBtn.on('click', function() {
-                        gotoSource(
-                            attr[1].filename,
-                            attr[1].start_line,
-                            attr[1].start_column,
-                            attr[1].end_line,
-                            attr[1].end_column
-                        );
-                    });
-                    gotoSourceBtn.prop('title',
-                        attr[1].filename + ':' + attr[1].start_line);
-                    gotoSourceBtn.show();
-                    continue;
-                }
-
-                const row = $('<tr>').appendTo(attr_table_body);
-                $('<th>', {
-                    'class': 'key-col',
-                    'text': attr[0],
-                }).appendTo(row);
-                $('<td>', {
-                    'class': 'val-col',
-                    'html': val,
-                }).appendTo(row);
-            }
-        }
-
-        // If we're processing an access node, add array information too
         if (elem instanceof AccessNode) {
+            // If we're processing an access node, add array information too.
             const sdfg_array = elem.sdfg.attributes._arrays[
                 elem.attributes().data
             ];
             $('<br>').appendTo(contents);
             $('<p>', {
                 'class': 'info-subtitle',
-                'text': 'Array properties:',
+                'text': sdfg_array.type + ' properties:',
             }).appendTo(contents);
 
-            const array_table = $('<table>', {
-                id: 'sdfg-array-table',
-                'class': 'info-table',
-            }).appendTo(contents);
-            const array_table_header = $('<thead>').appendTo(array_table);
-            const array_table_header_row =
-                $('<tr>').appendTo(array_table_header);
-            $('<th>', {
-                'class': 'key-col',
-                'text': 'Property',
-            }).appendTo(array_table_header_row);
-            $('<th>', {
-                'class': 'val-col',
-                'text': 'Value',
-            }).appendTo(array_table_header_row);
+            generate_attributes_table(sdfg_array, undefined, contents);
+        } else if (elem instanceof ScopeNode) {
+            // If we're processing a scope node, we want to append the exit
+            // node's properties when selecting an entry node, and vice versa.
+            let other_element = undefined;
 
-            const array_table_body = $('<tbody>').appendTo(array_table);
-            for (const attr of Object.entries(sdfg_array.attributes)) {
-                if (attr[0] === 'layout' || attr[0] === 'sdfg' ||
-                    attr[0].startsWith('_meta_'))
-                    continue;
-                const val = sdfg_property_to_string(
-                    attr[1],
-                    renderer.view_settings()
+            let other_uuid = undefined;
+            if (elem instanceof EntryNode)
+                other_uuid = elem.sdfg.sdfg_list_id + '/' +
+                    elem.parent_id + '/' +
+                    elem.data.node.scope_exit + '/-1';
+            else if (elem instanceof ExitNode)
+                other_uuid = elem.sdfg.sdfg_list_id + '/' +
+                    elem.parent_id + '/' +
+                    elem.data.node.scope_entry + '/-1';
+
+            if (other_uuid) {
+                const ret_other_elem = daceFindGraphElementByUUID(
+                    daceRenderer.graph,
+                    other_uuid
                 );
-                if (val === null || val === '')
-                    continue;
-                const row = $('<tr>').appendTo(array_table_body);
-                $('<th>', {
-                    'class': 'key-col',
-                    'text': attr[0],
-                }).appendTo(row);
-                $('<td>', {
-                    'class': 'val-col',
-                    'html': val,
-                }).appendTo(row);
+                other_element = ret_other_elem.element;
+            }
+
+            if (other_element) {
+                $('<br>').appendTo(contents);
+                $('<p>', {
+                    'class': 'info-subtitle',
+                    'text': other_element.type() + ' ' + other_element.label(),
+                }).appendTo(contents);
+
+                generate_attributes_table(other_element, undefined, contents);
             }
         }
 
@@ -198,14 +140,14 @@ function embedded_outline(renderer, graph) {
         'type': 'SDFG',
         'label': `SDFG ${renderer.sdfg.attributes.name}`,
         'collapsed': false,
-        'uuid': get_uuid_graph_element(undefined),
+        'uuid': daceGetUUIDGraphElement(undefined),
         'children': [],
     };
     outline_list.push(top_level_sdfg);
 
     const stack = [top_level_sdfg];
 
-    traverse_sdfg_scopes(graph, (node, parent) => {
+    daceTraverseSDFGScopes(graph, (node, parent) => {
         // Skip exit nodes when scopes are known.
         if (node.type().endsWith('Exit') && node.data.node.scope_entry >= 0) {
             stack.push(undefined);
@@ -254,7 +196,7 @@ function embedded_outline(renderer, graph) {
             'type': node_type,
             'label': node_label,
             'collapsed': is_collapsed,
-            'uuid': get_uuid_graph_element(node),
+            'uuid': daceGetUUIDGraphElement(node),
             'children': [],
         });
 
@@ -301,18 +243,25 @@ $("#search").on('input', function (e) {
 
 function start_find_in_graph_vscode() {
     if (renderer)
-        setTimeout(() => {find_in_graph(renderer, renderer.graph, $('#search').val(),
-                                        $('#search-case-sensitive-btn')[0].checked);}, 1);
+        setTimeout(() => {
+            find_in_graph(
+                renderer, renderer.graph, $('#search').val(),
+                $('#search-case-sensitive-btn')[0].checked
+            );
+        }, 1);
 }
 
 // Redefine the standard SDFV sidebar interface with the one for the info-box.
-init_menu = init_info_box;
-sidebar_set_title = info_box_set_title;
-sidebar_show = info_box_show;
-sidebar_get_contents = info_box_get_contents;
-close_menu = clear_info_box;
-outline = embedded_outline;
+if (daceUIHandlers === undefined)
+    console.error("DaCe UI Handlers are not defined");
+
+daceUIHandlers.on_init_menu = init_info_box;
+daceUIHandlers.on_sidebar_set_title = info_box_set_title;
+daceUIHandlers.on_sidebar_show = info_box_show;
+daceUIHandlers.sidebar_get_contents = info_box_get_contents;
+daceUIHandlers.on_close_menu = clear_info_box;
+daceUIHandlers.on_outline = embedded_outline;
 // Redefine the standard SDFV element information-display function with the one
 // for the embedded layout.
-fill_info = fill_info_embedded;
-start_find_in_graph = start_find_in_graph_vscode;
+daceUIHandlers.on_fill_info = fill_info_embedded;
+daceUIHandlers.start_find_in_graph = start_find_in_graph_vscode;

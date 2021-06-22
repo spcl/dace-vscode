@@ -1,0 +1,27 @@
+name: Publish Extension Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The new version'
+        required: true
+        default: '0.4.0'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the extension under $GITHUB_WORKSPACE.
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      # Install packages.
+      - name: Install packages
+        run: npm install
+      # Publish the extension.
+      - uses: lannonbr/vsce-action@2.0.0
+        with:
+          args: "publish ${{ github.event.inputs.version }} -p $VSCE_TOKEN"
+        env:
+          VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
