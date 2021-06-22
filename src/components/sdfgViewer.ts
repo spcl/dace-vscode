@@ -139,8 +139,8 @@ export class SdfgViewerProvider
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
     }
 
-    public handleMessage(message: any,
-        origin: vscode.Webview | undefined = undefined): void {
+    public async handleMessage(message: any,
+        origin: vscode.Webview | undefined = undefined): Promise<void> {
         switch (message.type) {
             case 'get_current_sdfg':
                 const instance = SdfgViewerProvider.getInstance();
@@ -177,11 +177,9 @@ export class SdfgViewerProvider
                 break;
             case 'go_to_cpp':
                 // We want to jump to a specific cpp file
-                let cachePath = path.normalize(
-                    vscode.workspace.rootPath +
+                let cachePath = vscode.workspace.rootPath +
                     '/.dacecache/' +
-                    message.sdfg_name
-                );
+                    message.sdfg_name;
 
                 let mapPath = path.normalize(
                     cachePath +
@@ -195,38 +193,40 @@ export class SdfgViewerProvider
                     '.cpp'
                 );
 
-                const cppUri: vscode.Uri = vscode.Uri.file(cppPath);
+                const cppMapUri = vscode.Uri.file(mapPath);
+                const cppFileUri = vscode.Uri.file(cppPath);
                 const node = new Node(
                     message.sdfg_id,
                     message.state_id,
                     message.node_id,
                 );
-                let lineRange = getCppRange(node, mapPath);
 
-                // If there is no matching location we just goto the file
-                // without highlighting and indicte it with a message
-                if (!lineRange || !lineRange.from) {
-                    lineRange = {};
-                    lineRange.from = 1;
-                    vscode.window.showInformationMessage(
-                        'Could not find a specific line for Node:' +
-                        node.printer()
+                getCppRange(node, cppMapUri).then(lineRange => {
+                    // If there is no matching location we just goto the file
+                    // without highlighting and indicte it with a message
+                    if (!lineRange || !lineRange.from) {
+                        lineRange = {};
+                        lineRange.from = 1;
+                        vscode.window.showInformationMessage(
+                            'Could not find a specific line for Node:' +
+                            node.printer()
+                        );
+                    }
+
+                    // Subtract 1 as we don't want to heighlight the first line
+                    // as the 'to' value is inclusive 
+                    if (!lineRange.to) {
+                        lineRange.to = lineRange.from - 1;
+                    }
+
+                    this.goToFileLocation(
+                        cppFileUri,
+                        lineRange.from - 1,
+                        0,
+                        lineRange.to,
+                        0
                     );
-                }
-
-                // Subtract 1 as we don't want to heighlight the first line
-                // as the 'to' value is inclusive 
-                if (!lineRange.to) {
-                    lineRange.to = lineRange.from - 1;
-                }
-
-                this.goToFileLocation(
-                    cppUri,
-                    lineRange.from - 1,
-                    0,
-                    lineRange.to,
-                    0
-                );
+                });
                 break;
 
             default:

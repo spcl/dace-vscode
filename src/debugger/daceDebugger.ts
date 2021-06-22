@@ -146,7 +146,7 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
                     return [daceConfig, pythonConfig, winConfig];
                 } else {
                     daceConfig.cppAttachName = "(gdb) Attach";
-                    return [daceConfig, pythonConfig, winConfig];
+                    return [daceConfig, pythonConfig, gdbConfig];
                 }
 
             case configType.DEFAULT:
