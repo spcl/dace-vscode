@@ -207,7 +207,7 @@ function refresh_transformation_list(hide_loading = false) {
 
 function clear_selected_transformation() {
     if (window.selected_transformation !== undefined)
-        close_menu();
+        clear_info_box();
 }
 
 /**
@@ -312,6 +312,8 @@ function show_transformation_details(trafo) {
     }).append($('<span>', {
         'text': 'Apply',
     })).appendTo(trafo_button_container);
+
+    generate_attributes_table(undefined, trafo, info_contents);
 
     $('#info-clear-btn').show();
 }

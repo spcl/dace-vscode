@@ -308,6 +308,10 @@ pre.code {
   align-items: center;
 }
 
+.attr-table-cell-nopad {
+  padding-left: 0;
+}
+
 .attr-table-heading {
   font-weight: bold;
 }
@@ -419,4 +423,20 @@ pre.code {
 
 .sdfv-property-expand-libnode-btn {
   margin-left: 1rem;
+}
+
+.sdfv-property-delete-btn {
+  color: var(--vscode-inputValidation-errorBorder);
+  margin-right: .5rem;
+  user-select: none;
+}
+
+.sdfv-property-delete-btn:hover {
+  cursor: pointer;
+}
+
+.sdfv-property-range-delete-cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }

@@ -2,6 +2,11 @@
 
 ## 0.3
 
+### 0.3.3
+
+- Allow editing of transformation properties before applying
+- Support expansion of library nodes
+
 ### 0.3.2
 
 - Fix various bugs regarding the editing of code properties.

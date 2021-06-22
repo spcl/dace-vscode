@@ -13,7 +13,6 @@ import inspect
 import sympy
 import sys
 import traceback
-import types
 
 
 # Prepare a whitelist of DaCe enumeration types
@@ -540,6 +539,16 @@ def get_property_metdata():
     """
     # Lazy import to cut down on module load time.
     from dace.sdfg.nodes import full_class_path
+
+    # In order to get all transformation metadata the @make.properties
+    # annotation for each transformation needs to have run, so the
+    # transformations are registered in `dace.serialize._DACE_SERIALIZE_TYPES`.
+    # The simplest way to achieve this is by simply getting all pattern matches
+    # of a dummy SDFG. Since this code should only be run once per SDFG editor,
+    # this doesn't add any continuous overhead like it would if we were to
+    # send transformation metadata along with `get_transformations`.
+    from dace.transformation import optimizer
+    _ = optimizer.Optimizer(dace.SDFG('dummy')).get_pattern_matches()
 
     meta_dict = {}
     meta_dict['__reverse_type_lookup__'] = {}
