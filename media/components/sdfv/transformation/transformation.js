@@ -219,6 +219,7 @@ function clear_selected_transformation() {
  */
 function show_transformation_details(trafo) {
     $('#goto-source-btn').hide();
+    $('#goto-cpp-btn').hide();
 
     $('#info-title').text(trafo.transformation);
 

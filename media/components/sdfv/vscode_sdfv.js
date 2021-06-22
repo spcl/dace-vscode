@@ -1122,4 +1122,43 @@ function generate_attributes_table(elem, xform, root) {
             );
         });
     });
+
+    // Dsiplay a button to jump to the generated C++ code
+    if (
+        elem instanceof SDFGElement &&
+        !(elem instanceof Edge) &&
+        !(elem instanceof Connector)
+    ) {
+        const gotoCppBtn = $('#goto-cpp-btn');
+        const undefined_val = -1;
+        let sdfgName = daceRenderer.sdfg.attributes.name;
+        let sdfgId = elem.sdfg.sdfg_list_id;
+        let stateId = undefined_val;
+        let nodeId = undefined_val;
+
+        if (elem instanceof State) {
+            stateId = elem.id;
+        }
+        else if (elem instanceof Node) {
+            stateId = elem.parent_id;
+            nodeId = elem.id;
+        }
+
+        gotoCppBtn.on('click', function () {
+            gotoCpp(
+                sdfgName,
+                sdfgId,
+                stateId,
+                nodeId
+            );
+        });
+        gotoCppBtn.prop(
+            'title',
+            sdfgName + ':' +
+                sdfgId +
+                (stateId === undefined_val) ? '' : (':' + stateId +
+                    (nodeId === undefined_val) ? '' : (':' + nodeId))
+        );
+        gotoCppBtn.show();
+    }
 }

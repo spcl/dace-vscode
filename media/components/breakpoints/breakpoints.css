@@ -1,0 +1,32 @@
+/* Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+ * All rights reserved. */
+
+html {
+    height: 100%;
+    padding: 0;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    padding: .3rem .5rem;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--vscode-foreground);
+    background-color: inherit;
+}
+
+.hidden {
+    display: none;
+}
+
+#contents > div {
+    width: 100%;
+}
+
+#overlay-toggles label {
+    margin-right: .3rem;
+}
+
+button {
+    border: none;
+}

@@ -9,6 +9,7 @@ import { TransformationHistoryProvider } from './components/transformationHistor
 import { OutlineProvider } from './components/outline';
 import { AnalysisProvider } from './components/analysis';
 import { TransformationListProvider } from './components/transformationList';
+import { BreakpointProvider } from './components/breakpoints';
 import { activateSdfgPython } from './debugger/sdfgPythonDebugger';
 import { activateDaceDebug } from './debugger/daceDebugger';
 
@@ -33,6 +34,7 @@ export class DaCeVSCode {
     private trafoHistProvider?: TransformationHistoryProvider = undefined;
     private outlineProvider?: OutlineProvider = undefined;
     private analysisProvider?: AnalysisProvider = undefined;
+    private breakpointProvider?: BreakpointProvider = undefined;
 
     public registerCommand(command: string, handler: (...args: any[]) => any) {
         this.context?.subscriptions.push(vscode.commands.registerCommand(
@@ -195,6 +197,10 @@ export class DaCeVSCode {
             AnalysisProvider.register(context)
         );
         this.analysisProvider = AnalysisProvider.getInstance();
+        context.subscriptions.push(
+            BreakpointProvider.register(context)
+        );
+        this.breakpointProvider = BreakpointProvider.getInstance();
 
         // Register necessary commands.
         this.registerCommand('transformationList.sync', () => {
@@ -211,6 +217,12 @@ export class DaCeVSCode {
             if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                     type: 'refresh_analysis_pane',
+                });
+        });
+        this.registerCommand('breakpoints.sync', () => {
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'refresh_breakpoints',
                 });
         });
         this.registerCommand('sdfgOutline.sync', () => {
@@ -333,6 +345,7 @@ export class DaCeVSCode {
         const clearReason = 'No SDFG selected';
         this.outlineProvider?.clearOutline(clearReason);
         this.analysisProvider?.clear(clearReason);
+        this.breakpointProvider?.clear(clearReason);
         this.trafoHistProvider?.clearList(clearReason);
         this.trafoProvider?.clearList(clearReason);
     }
@@ -346,6 +359,7 @@ export class DaCeVSCode {
         this.trafoHistProvider?.refresh();
         this.outlineProvider?.refresh();
         this.analysisProvider?.refresh();
+        this.breakpointProvider?.refresh();
     }
 
     public async getActiveSdfg(fromDisk=false): Promise<any | undefined> {
@@ -384,4 +398,8 @@ export function activate(context: vscode.ExtensionContext) {
  * Called when the extension gets deactivated, ie. when VSCode is shut down.
  */
 export function deactivate() {
+    console.log("deactivating DaCe");
+    let context = DaCeVSCode.getInstance().getExtensionContext();
+    if (context)
+        context.subscriptions.forEach(item => item.dispose());
 }

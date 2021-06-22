@@ -82,6 +82,11 @@
                         Go to source
                     </span>
                 </div>
+                <div id="goto-cpp-btn" class="hidden button">
+                    <span>
+                        Go to Generated Code
+                    </span>
+                </div>
                 <div class="flex-spacer"></div>
                 <div id="info-clear-btn" class="hidden button" onclick="clear_info_box();">
                     <span>
@@ -107,6 +112,8 @@
     <script src="{{ CSP_SRC }}/components/sdfv/analysis/analysis.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/properties/properties.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/transformation/transformation.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/breakpoints/breakpoints.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/util/vscode_renderer.js"></script>
 
     <!-- Load in the monaco editor. -->
     <script>
@@ -129,7 +136,6 @@
             window.monaco = monaco;
         });
     </script>
-
     <script>
         vscode = acquireVsCodeApi();
         message_handler = new MessageHandler();
@@ -139,10 +145,14 @@
                                     prevent_refreshes = false) {
             parsed_sdfg = daceParseSDFG(sdfg);
 
-            if (daceRenderer)
+            if (daceRenderer) {
                 daceRenderer.set_sdfg(parsed_sdfg);
-            else
-                daceInitSDFV(parsed_sdfg, null, debug_draw);
+            } else {
+                daceInitSDFV(null, null, debug_draw);
+                if (parsed_sdfg !== null)
+                    daceRenderer = new VSCodeRenderer(parsed_sdfg, document.getElementById('contents'),
+                        daceMouseEvent, null, debug_draw);
+            }
 
             if (!previewing) {
                 sdfg_json = sdfg;
@@ -152,6 +162,7 @@
 
             embedded_outline(daceRenderer, daceRenderer.graph);
             refresh_analysis_pane();
+            refresh_breakpoints();
 
             if (daceRenderer) {
                 if (daceRenderer.selected_elements &&
@@ -173,9 +184,14 @@
                 user_transform = daceRenderer.canvas_manager.user_transform;
                 daceRenderer.destroy();
             }
-            daceInitSDFV(daceParseSDFG(sdfg_json), user_transform, debug_draw);
+            parsed_sdfg = daceParseSDFG(sdfg_json);
+            daceInitSDFV(null, null, debug_draw);
+            if (parsed_sdfg !== null)
+                daceRenderer = new VSCodeRenderer(parsed_sdfg, document.getElementById('contents'),
+                    daceMouseEvent, user_transform, debug_draw);
             embedded_outline(daceRenderer, daceRenderer.graph);
             refresh_analysis_pane();
+            refresh_breakpoints();
         }
 
         function refreshSdfg() {
@@ -200,6 +216,18 @@
                 startChar: startChar,
                 endRow: endRow,
                 endChar: endChar,
+            });
+        }
+
+        // Send a request to the extension to jump to the
+        // generated code location of the current Node
+        function gotoCpp(sdfgName, sdfgId, stateId, nodeId) {
+            vscode.postMessage({
+                type: 'sdfv.go_to_cpp',
+                sdfg_name: sdfgName,
+                sdfg_id: sdfgId,
+                state_id: stateId,
+                node_id: nodeId
             });
         }
 

@@ -530,7 +530,6 @@ def get_enum(name):
         }
     return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
 
-
 def get_property_metdata():
     """ Generate a dictionary of class properties and their metadata.
         This iterates over all classes registered as serializable in DaCe's
@@ -627,7 +626,6 @@ def get_property_metdata():
     return {
         'meta_dict': meta_dict,
     }
-
 
 def _sdfg_remove_instrumentations(sdfg: dace.sdfg.SDFG):
     sdfg.instrument = dace.dtypes.InstrumentationType.No_Instrumentation

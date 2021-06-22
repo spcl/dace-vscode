@@ -61,6 +61,9 @@ class MessageHandler {
             case 'refresh_analysis_pane':
                 refresh_analysis_pane();
                 break;
+            case 'refresh_breakpoints':
+                refresh_breakpoints();
+                break;
             case 'refresh_outline':
                 if (daceRenderer)
                     embedded_outline(daceRenderer, daceRenderer.graph);
@@ -168,6 +171,18 @@ class MessageHandler {
             case 'set_sdfg_metadata':
                 if (message.meta_dict)
                     window.sdfg_meta_dict = message.meta_dict;
+                break;
+            case 'show_breakpoints':
+                daceRenderer.bpIndicator.display_breakpoints();
+                break;
+            case 'hide_breakpoints':
+                daceRenderer.bpIndicator.hide_breakpoints();
+                break;
+            case 'unbound_breakpoint':
+                daceRenderer.bpIndicator.unbound_breakpoint(message.node);
+                break;
+            case 'saved_nodes':
+                daceRenderer.bpIndicator.set_saved_nodes(message.nodes);
                 break;
         }
     }

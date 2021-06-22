@@ -220,15 +220,16 @@ pre.code {
   display: flex;
   flex-direction: row;
   align-items: baseline;
+  padding-bottom: .5rem;
 }
 
 .flex-spacer {
   flex-grow: 1;
 }
 
-#goto-source-btn {
+#goto-source-btn, #goto-cpp-btn {
   font-size: .9rem;
-  margin: .2rem 1rem;
+  margin: .2rem 0 .2rem 1rem;
 }
 
 #info-clear-btn {
@@ -266,6 +267,7 @@ pre.code {
   background-color: var(--vscode-list-inactiveSelectionBackground);
   color: var(--vscode-list-inactiveSelectionForeground);
   padding: .3rem;
+  margin: 0;
   border: 1px solid var(--vscode-list-inactiveSelectionBackground);
 }
 

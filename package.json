@@ -21,6 +21,7 @@
         "onView:transformationList",
         "onView:transformationHistory",
         "onView:sdfgAnalysis",
+        "onView:breakpoints",
         "onView:sdfgOutline"
     ],
     "main": "./out/extension.js",
@@ -95,28 +96,28 @@
                         "properties": {
                             "pythonLaunchName": {
                                 "type": "string",
-                                "description": "The name of your python launch config if `pythonConfig: manual`",
+                                "description": "The name of your python launch config if `pythonConfig: custom`",
                                 "default": "Python: Current File"
                             },
                             "cppAttachName": {
                                 "type": "string",
-                                "description": "The name of your C++ attach config if `cppConfig: manual`",
+                                "description": "The name of your C++ attach config if `cppConfig: custom`",
                                 "default": "(Windows) Attach"
                             },
                             "pythonConfig": {
                                 "enum": [
-                                    "manual",
+                                    "custom",
                                     "default"
                                 ],
-                                "description": "Pick manual to manaully define the python Attach config, otherwise the default python configuration will be used",
+                                "description": "Pick custom to manually define the python Attach config, otherwise the default python configuration will be used",
                                 "default": "default"
                             },
                             "cppConfig": {
                                 "enum": [
-                                    "manual",
+                                    "custom",
                                     "default"
                                 ],
-                                "description": "Pick manual to manually define the C++ Attach config, otherwise based on your operating system either (Windows) Attach or (gdb) Attach will be used",
+                                "description": "Pick custom to manually define the C++ Attach config, otherwise based on your operating system either (Windows) Attach or (gdb) Attach will be used",
                                 "default": "default"
                             },
                             "buildType": {
@@ -250,6 +251,13 @@
                     "contextualTitle": "SDFG Analysis"
                 },
                 {
+                    "id": "breakpoints",
+                    "type": "webview",
+                    "name": "Breakpoints",
+                    "icon": "media/resources/icons/dace-hollow.svg",
+                    "contextualTitle": "Breakpoints"
+                },
+                {
                     "id": "sdfgOutline",
                     "type": "webview",
                     "name": "SDFG Outline",
@@ -269,6 +277,10 @@
             },
             {
                 "view": "sdfgAnalysis",
+                "contents": "No active SDFG"
+            },
+            {
+                "view": "breakpoints",
                 "contents": "No active SDFG"
             },
             {
@@ -292,6 +304,20 @@
                 "icon": "$(watch)"
             },
             {
+                "command": "sdfg.goto.sdfg",
+                "title": "Open the SDFG file",
+                "category": "SDFV",
+                "enablement": "!inDebugMode",
+                "icon": "$(preview)"
+            },
+            {
+                "command": "sdfg.goto.cpp",
+                "title": "Open the C++ file",
+                "category": "SDFV",
+                "enablement": "!inDebugMode",
+                "icon": "$(code)"
+            },
+            {
                 "command": "transformationList.sync",
                 "title": "Refresh Transformations",
                 "icon": {
@@ -310,6 +336,14 @@
             {
                 "command": "sdfgAnalysis.sync",
                 "title": "Refresh Analysis",
+                "icon": {
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
+                }
+            },
+            {
+                "command": "breakpoints.sync",
+                "title": "Refresh Breakpoints",
                 "icon": {
                     "dark": "media/resources/icons/dark/refresh.svg",
                     "light": "media/resources/icons/light/refresh.svg"
@@ -351,6 +385,14 @@
                     "when": "resourceLangId == sdfg"
                 },
                 {
+                    "command": "sdfg.goto.sdfg",
+                    "when": "resourceLangId == python"
+                },
+                {
+                    "command": "sdfg.goto.cpp",
+                    "when": "resourceLangId == python"
+                },
+                {
                     "command": "sdfg.previewTransformation",
                     "when": "false"
                 },
@@ -377,6 +419,28 @@
                     "command": "sdfg.debug.profile",
                     "when": "resourceLangId == sdfg",
                     "group": "1_run@20"
+                },
+                {
+                    "command": "sdfg.goto.sdfg",
+                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "group": "1_run@10"
+                },
+                {
+                    "command": "sdfg.goto.cpp",
+                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "group": "1_run@20"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "sdfg.goto.sdfg",
+                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "group": "1_run@10"
+                },
+                {
+                    "command": "sdfg.goto.cpp",
+                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "group": "1_run@20"
                 }
             ],
             "view/title": [
@@ -393,6 +457,11 @@
                 {
                     "command": "sdfgAnalysis.sync",
                     "when": "view == sdfgAnalysis",
+                    "group": "navigation"
+                },
+                {
+                    "command": "breakpoints.sync",
+                    "when": "view == breakpoints",
                     "group": "navigation"
                 },
                 {

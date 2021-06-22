@@ -4,6 +4,8 @@
 import * as vscode from 'vscode';
 import { DaceDebugSession } from './daceDebugSession';
 import { DaCeInterface } from '../daceInterface';
+import { BreakpointHandler } from './breakpointHandler';
+import { DaceListener } from './daceListener';
 import * as os from 'os';
 
 export function activateDaceDebug(context: vscode.ExtensionContext) {
@@ -19,6 +21,15 @@ export function activateDaceDebug(context: vscode.ExtensionContext) {
             new DaceInlineFactory()
         )
     );
+
+    const BPHandler = BreakpointHandler.activate(context);
+    const daceListener = new DaceListener();
+
+    context.subscriptions.push(
+        BPHandler,
+        daceListener
+    );
+
 }
 
 class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
@@ -53,7 +64,7 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
     ): Promise<vscode.DebugConfiguration[]> {
         enum configType {
             DEFAULT,
-            MANUAL,
+            CUSTOM,
         }
 
         interface MenuItem extends vscode.QuickPickItem {
@@ -68,8 +79,8 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
             },
             {
                 label: "DaCe Debugger",
-                description: "Manual",
-                type: configType.MANUAL,
+                description: "Custom",
+                type: configType.CUSTOM,
             },
         ];
 
@@ -125,9 +136,9 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
         };
 
         switch (selection.type) {
-            case configType.MANUAL:
-                daceConfig.pythonConfig = "manual";
-                daceConfig.cppConfig = "manual";
+            case configType.CUSTOM:
+                daceConfig.pythonConfig = "custom";
+                daceConfig.cppConfig = "custom";
                 daceConfig.pythonLaunchName = "Python: Current File";
 
                 if (os.platform().startsWith("win")) {
@@ -135,7 +146,7 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
                     return [daceConfig, pythonConfig, winConfig];
                 } else {
                     daceConfig.cppAttachName = "(gdb) Attach";
-                    return [daceConfig, pythonConfig, winConfig];
+                    return [daceConfig, pythonConfig, gdbConfig];
                 }
 
             case configType.DEFAULT:
