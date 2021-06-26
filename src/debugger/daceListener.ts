@@ -16,7 +16,7 @@ export class DaceListener extends vscode.Disposable {
     hasIndicatedRestricted: boolean;
 
     constructor() {
-        super(() => { this.server.close() });
+        super(() => {this.server.close()});
         this.server = this.startListening();
         this.hasIndicatedRestricted = false;
     }
