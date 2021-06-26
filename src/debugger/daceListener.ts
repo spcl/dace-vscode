@@ -7,13 +7,18 @@ import { BreakpointHandler } from './breakpointHandler';
 
 export var PORT: number = 0;
 
-export class DaceListener extends vscode.Disposable{
+export class DaceListener extends vscode.Disposable {
 
     server: Net.Server;
 
+    // To not spam the user with messages only indicate the restricted features
+    // message maximally once per activation 
+    hasIndicatedRestricted: boolean;
+
     constructor() {
-        super(() => {this.server.close()});
+        super(() => { this.server.close() });
         this.server = this.startListening();
+        this.hasIndicatedRestricted = false;
     }
 
     public startListening() {
@@ -50,6 +55,18 @@ export class DaceListener extends vscode.Disposable{
         switch (data.type) {
             case "registerFunction":
                 BreakpointHandler.getInstance()?.registerFunction(data);
+                break;
+            case "restrictedFeatures":
+                if (!this.hasIndicatedRestricted) {
+                    if (data.reason === 'config.cache.hash') {
+                        // When using the cache config 'hash' the mapping won't
+                        // be created and so not all features can be used
+                        const msg = "Due to using the cache configuration " +
+                            "'hash' only restricted debug features can be supported";
+                        vscode.window.showInformationMessage(msg);
+                        this.hasIndicatedRestricted = true;
+                    }
+                }
                 break;
             default:
                 break;

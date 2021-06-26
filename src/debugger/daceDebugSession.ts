@@ -160,9 +160,6 @@ export class DaceDebugSession extends LoggingDebugSession {
         };
         pyCppDebuggerConfig[cppAttribute] = cppValue;
 
-        // Map and Set the Breakpoints
-        BreakpointHandler.getInstance()?.setAllBreakpoints();
-
         vscode.debug.startDebugging(
             this.folder,
             pyCppDebuggerConfig,

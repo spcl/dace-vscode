@@ -177,20 +177,23 @@ export class SdfgViewerProvider
                 break;
             case 'go_to_cpp':
                 // We want to jump to a specific cpp file
-                let cachePath = vscode.workspace.rootPath +
+                let cachePath = path.normalize(
+                    vscode.workspace.rootPath +
                     '/.dacecache/' +
-                    message.sdfg_name;
-
-                let mapPath = path.normalize(
-                    cachePath +
-                    '/map/map_cpp.json'
+                    message.sdfg_name
                 );
 
-                let cppPath = path.normalize(
-                    cachePath +
-                    '/src/cpu/' +
-                    message.sdfg_name +
-                    '.cpp'
+                let mapPath = path.join(
+                    cachePath,
+                    'map',
+                    'map_cpp.json'
+                );
+
+                let cppPath = path.join(
+                    cachePath,
+                    'src',
+                    'cpu',
+                    message.sdfg_name + '.cpp'
                 );
 
                 const cppMapUri = vscode.Uri.file(mapPath);
