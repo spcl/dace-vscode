@@ -7,33 +7,32 @@ import { DaCeInterface } from '../daceInterface';
 
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
-import { BreakpointHandler, Node } from '../debugger/breakpointHandler';
 
-export class BreakpointProvider
+export class SdfgBreakpointProvider
     extends BaseComponent
     implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'breakpoints';
+    private static readonly viewType: string = 'sdfgBreakpoints';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: BreakpointProvider | undefined = undefined;
+    private static INSTANCE: SdfgBreakpointProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        BreakpointProvider.INSTANCE = new BreakpointProvider(ctx, this.viewType);
+        SdfgBreakpointProvider.INSTANCE = new SdfgBreakpointProvider(ctx, this.viewType);
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
-            BreakpointProvider.viewType,
-            BreakpointProvider.INSTANCE,
+            SdfgBreakpointProvider.viewType,
+            SdfgBreakpointProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): BreakpointProvider | undefined {
+    public static getInstance(): SdfgBreakpointProvider | undefined {
         return this.INSTANCE;
     }
 
@@ -59,7 +58,7 @@ export class BreakpointProvider
             this.context.extensionPath,
             'media',
             'components',
-            'breakpoints',
+            'sdfgBreakpoints',
             'index.html'
         ));
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
@@ -95,28 +94,6 @@ export class BreakpointProvider
     public handleMessage(message: any, origin?: vscode.Webview): void {
         let node;
         switch (message.type) {
-            case 'add_breakpoint':
-                node = message.node;
-                if (node)
-                    BreakpointHandler.getInstance()?.handleNodeAdded(
-                        new Node(node.sdfg_id, node.state_id, node.node_id),
-                        message.sdfg_name
-                    );
-                break;
-            case 'remove_breakpoint':
-                node = message.node;
-                if (node)
-                    BreakpointHandler.getInstance()?.handleNodeRemoved(
-                        new Node(node.sdfg_id, node.state_id, node.node_id),
-                        message.sdfg_name
-                    );
-                break;
-            case 'get_saved_nodes':
-                BreakpointHandler.getInstance()?.getSavedNodes(message.sdfg_name);
-                break;
-            case 'has_saved_nodes':
-                BreakpointHandler.getInstance()?.hasSavedNodes(message.sdfg_name);
-                break;
             default:
                 this.view?.webview.postMessage(message);
                 break;
@@ -131,7 +108,7 @@ export class BreakpointProvider
     }
 
     public refresh() {
-        vscode.commands.executeCommand('breakpoints.sync');
+        vscode.commands.executeCommand('sdfgBreakpoints.sync');
     }
 
 }

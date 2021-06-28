@@ -3,7 +3,7 @@
 
 class MessageHandler {
 
-    constructor() {}
+    constructor() { }
 
     handle_message(message) {
         let el = undefined;
@@ -13,7 +13,7 @@ class MessageHandler {
                     daceGenericSDFGOverlay.OVERLAY_TYPE.STATIC_FLOPS
                 );
                 instrumentation_report_read_complete(message.result);
-                // Fall through to set the criterium.
+            // Fall through to set the criterium.
             case 'instrumentation_report_change_criterium':
                 if (message.criterium) {
                     const ol = daceRenderer.overlay_manager.get_overlay(
@@ -53,6 +53,12 @@ class MessageHandler {
                 if (message.overlay !== undefined && daceRenderer)
                     daceRenderer.overlay_manager.deregister_overlay(
                         message.overlay
+                    );
+                break;
+            case 'register_breakpointindicator':
+                if (daceRenderer)
+                    daceRenderer.overlay_manager.register_overlay(
+                        new BreakpointIndicator(daceRenderer)
                     );
                 break;
             case 'refresh_symbol_list':
@@ -172,17 +178,15 @@ class MessageHandler {
                 if (message.meta_dict)
                     window.sdfg_meta_dict = message.meta_dict;
                 break;
-            case 'show_breakpoints':
-                daceRenderer.bpIndicator.display_breakpoints();
-                break;
-            case 'hide_breakpoints':
-                daceRenderer.bpIndicator.hide_breakpoints();
-                break;
             case 'unbound_breakpoint':
-                daceRenderer.bpIndicator.unbound_breakpoint(message.node);
+                daceRenderer.overlay_manager.get_overlay(
+                    daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
+                ).unbound_breakpoint(message.node);
                 break;
             case 'saved_nodes':
-                daceRenderer.bpIndicator.set_saved_nodes(message.nodes);
+                daceRenderer.overlay_manager.get_overlay(
+                    daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
+                ).set_saved_nodes(message.nodes);
                 break;
         }
     }

@@ -272,7 +272,6 @@ export class BreakpointHandler extends vscode.Disposable {
     public setAllBreakpoints() {
         // Map and set all Breakpoints set in the dace (python) code
         vscode.debug.breakpoints.filter(pyFilter).forEach(bp => {
-            console.log(bp);
             this.handleBreakpointAdded(bp as vscode.SourceBreakpoint);
         });
 
@@ -317,7 +316,6 @@ export class BreakpointHandler extends vscode.Disposable {
         this.setBreakpoints.forEach(savedBp => {
             vscode.debug.removeBreakpoints([savedBp.bp]);
         });
-        console.log("removing bp's");
         this.setBreakpoints = [];
     }
 
@@ -537,10 +535,20 @@ export class BreakpointHandler extends vscode.Disposable {
 
     public getSavedNodes(sdfgName: string) {
         // Sends the corresponding saved Nodes to the SDFG viewer
-        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-            'type': 'saved_nodes',
-            'nodes': this.savedNodes[sdfgName]
-        });
+        const nodes = this.savedNodes[sdfgName];
+        if(nodes != undefined && nodes.length != 0)
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                'type': 'saved_nodes',
+                'nodes': nodes
+            });
+    }
+
+    public hasSavedNodes(sdfgName: string) {
+        const nodes = this.savedNodes[sdfgName];
+        if(nodes != undefined && nodes.length != 0)
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                'type': 'has_nodes'
+            });
     }
 
     public showMenu(show: boolean) {

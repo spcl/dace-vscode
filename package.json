@@ -264,6 +264,14 @@
                     "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Outline"
                 }
+            ],
+            "debug": [
+                {
+                    "id": "sdfgBreakpoints",
+                    "type": "webview",
+                    "name": "SDFG Breakpoints",
+                    "contextualTitle": "SDFG Breakpoints"
+                }
             ]
         },
         "viewsWelcome": [
@@ -344,6 +352,14 @@
             {
                 "command": "breakpoints.sync",
                 "title": "Refresh Breakpoints",
+                "icon": {
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
+                }
+            },
+            {
+                "command": "sdfgBreakpoints.sync",
+                "title": "Refresh SDFG Breakpoints",
                 "icon": {
                     "dark": "media/resources/icons/dark/refresh.svg",
                     "light": "media/resources/icons/light/refresh.svg"

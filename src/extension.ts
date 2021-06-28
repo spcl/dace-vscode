@@ -10,6 +10,7 @@ import { OutlineProvider } from './components/outline';
 import { AnalysisProvider } from './components/analysis';
 import { TransformationListProvider } from './components/transformationList';
 import { BreakpointProvider } from './components/breakpoints';
+import { SdfgBreakpointProvider } from './components/sdfgBreakpoints';
 import { activateSdfgPython } from './debugger/sdfgPythonDebugger';
 import { activateDaceDebug } from './debugger/daceDebugger';
 
@@ -35,6 +36,7 @@ export class DaCeVSCode {
     private outlineProvider?: OutlineProvider = undefined;
     private analysisProvider?: AnalysisProvider = undefined;
     private breakpointProvider?: BreakpointProvider = undefined;
+    private sdfgBreakpointProvider?: SdfgBreakpointProvider = undefined;
 
     public registerCommand(command: string, handler: (...args: any[]) => any) {
         this.context?.subscriptions.push(vscode.commands.registerCommand(
@@ -201,6 +203,10 @@ export class DaCeVSCode {
             BreakpointProvider.register(context)
         );
         this.breakpointProvider = BreakpointProvider.getInstance();
+        context.subscriptions.push(
+            SdfgBreakpointProvider.register(context)
+        );
+        this.sdfgBreakpointProvider = SdfgBreakpointProvider.getInstance();
 
         // Register necessary commands.
         this.registerCommand('transformationList.sync', () => {
@@ -224,6 +230,14 @@ export class DaCeVSCode {
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                     type: 'refresh_breakpoints',
                 });
+        });
+        this.registerCommand('sdfgBreakpoints.sync', () => {
+            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined){
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'refresh_sdfgbreakpoints',
+                });
+                console.log('syncing sdfg BP')
+            }
         });
         this.registerCommand('sdfgOutline.sync', () => {
             if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)

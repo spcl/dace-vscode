@@ -10,7 +10,7 @@
     <title>SDFG Breakpoints</title>
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/breakpoints/breakpoints.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfgBreakpoints/sdfgBreakpoints.css">
 
     <script>
         // Reference to the VSCode API.
@@ -21,29 +21,18 @@
 
     <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
     <script src="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.bundle.min.js"></script>
-    <script src="{{ CSP_SRC }}/components/breakpoints/breakpoints.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfgBreakpoints/sdfgBreakpoints.js"></script>
 </head>
 
 <body>
     <div id="contents-container" class="container-fluid">
         <div id="none-message" class="hidden row">
         </div>
-        <div id="contents" class="hidden row">
-            <div>
-                <div id="breakpoints-toggle-container">
-                    <div>
-                        <span>
-                            Breakpoints:
-                        </span>
-                    </div>
-                    <div id="breakpoints-toggles">
-                    </div>
-                </div>
-            </div>
-        </div>
+
+        
     </div>
 
-    <script>
+    <!-- <script>
         vscode = acquireVsCodeApi();
 
         // Add a listener to receive messages from the extension.
@@ -109,7 +98,7 @@
                     type: 'sdfv.refresh_breakpoints',
                 });
         });
-    </script>
+    </script> -->
 </body>
 
 </html>
