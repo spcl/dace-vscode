@@ -173,8 +173,8 @@ class MessageHandler {
                 break;
             case 'added_node':
                 if (message.uuid !== 'error') {
-                    renderer.set_sdfg(message.sdfg);
-                    renderer.update_new_element(message.uuid);
+                    daceRenderer.set_sdfg(message.sdfg);
+                    daceRenderer.update_new_element(message.uuid);
                 }
                 break;
             case 'set_sdfg_metadata':

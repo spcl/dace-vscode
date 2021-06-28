@@ -53,6 +53,17 @@ class VSCodeRenderer extends daceSDFGRenderer {
         vscode_write_graph(this.sdfg);
     }
 
+    add_node_to_graph(add_type, parent) {
+        let g = this.sdfg;
+        un_graphiphy_sdfg(g);
+        vscode.postMessage({
+            type: 'dace.insert_node',
+            sdfg: JSON.stringify(g),
+            add_type: add_type,
+            parent: parent,
+        });
+    }
+
 }
 
 function dom_setup(){

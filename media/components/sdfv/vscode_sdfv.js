@@ -1028,7 +1028,7 @@ function generate_attributes_table(elem, xform, root) {
         if (k === 'layout' || k === 'sdfg' || k === 'sdfg_id' ||
             k === 'state_id' || k === 'expr_index' || k === 'type' ||
             k === 'transformation' || k === 'docstring' ||
-            k === 'is_collapsed' || k === 'orig_sdfg' ||
+            k === 'is_collapsed' || k === 'orig_sdfg' || k === 'position' ||
             k === 'transformation_hist' || k.startsWith('_'))
             return;
 

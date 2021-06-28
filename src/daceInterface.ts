@@ -67,7 +67,9 @@ implements MessageReceiverInterface {
                     this.getEnum(message.name, origin);
                 break;
             case 'insert_node':
-                this.insertSDFGElement(message.sdfg, message.add_type, message.parent, origin);
+                this.insertSDFGElement(
+                    message.sdfg, message.add_type, message.parent, origin
+                );
                 break;
             case 'query_sdfg_metadata':
                 this.querySdfgMetadata();
@@ -802,7 +804,9 @@ implements MessageReceiverInterface {
             });
     }
 
-    public insertSDFGElement(sdfg: string, type: string, parent: string, origin: vscode.Webview) {
+    public insertSDFGElement(
+        sdfg: string, type: string, parent: string, origin: vscode.Webview
+    ): void {
         function callback(data: any) {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'added_node',

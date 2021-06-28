@@ -50,7 +50,8 @@ function fill_info_embedded(elem) {
     const buttons = [
         $('#goto-source-btn'),
         $('#goto-cpp-btn')
-    ]
+    ];
+
     // Clear and hide these buttons.
     buttons.forEach((btn) =>{
         btn.hide();
@@ -224,7 +225,7 @@ function init_info_box() {
 
 $('#search-case-sensitive-btn').click(function (e) {
     let caseBtn = document.getElementById('search-case-sensitive-btn');
-    if (caseBtn.style.backgroundColor == 'transparent') {
+    if (caseBtn.style.backgroundColor === 'transparent') {
         caseBtn.style.backgroundColor = '#245779';
         caseBtn.checked = true;
     } else {
