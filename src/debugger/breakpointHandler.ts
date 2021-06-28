@@ -148,7 +148,7 @@ export class BreakpointHandler extends vscode.Disposable {
                             // the C++ file
                             // TODO: look through list for the right file as one 
                             //      src file might have multiple Dace programs
-                            let file = files[filePath][0]
+                            let file = files[filePath][0];
                             SdfgViewerProvider.getInstance()?.goToFileLocation(
                                 vscode.Uri.file(
                                     path.join(
@@ -160,7 +160,7 @@ export class BreakpointHandler extends vscode.Disposable {
                                 ),
                                 location ? location.line : 0, 0,
                                 location ? location.line : 0, 0
-                            )
+                            );
                         }
                     }
                 }

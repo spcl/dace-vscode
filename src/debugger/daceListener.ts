@@ -61,7 +61,7 @@ export class DaceListener extends vscode.Disposable {
                     if (data.reason === 'config.cache.hash') {
                         // When using the cache config 'hash' the mapping won't
                         // be created and so not all features can be used
-                        const msg = "Due to using the cache configuration " +
+                        const msg = "Due to the use of the cache configuration " +
                             "'hash' only restricted debug features can be supported";
                         vscode.window.showInformationMessage(msg);
                         this.hasIndicatedRestricted = true;
