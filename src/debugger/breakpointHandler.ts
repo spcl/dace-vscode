@@ -272,7 +272,6 @@ export class BreakpointHandler extends vscode.Disposable {
     public setAllBreakpoints() {
         // Map and set all Breakpoints set in the dace (python) code
         vscode.debug.breakpoints.filter(pyFilter).forEach(bp => {
-            console.log(bp);
             this.handleBreakpointAdded(bp as vscode.SourceBreakpoint);
         });
 
