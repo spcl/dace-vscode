@@ -230,6 +230,11 @@ export class SdfgViewerProvider
                     );
                 });
                 break;
+            case 'go_to_sdfg':
+                SdfgViewerProvider.getInstance()?.openViewer(
+                    vscode.Uri.file(message.path)
+                );
+                break;
             case 'add_breakpoint':
                 node = message.node;
                 if (node)
@@ -292,6 +297,10 @@ export class SdfgViewerProvider
                 );
             }
         );
+    }
+
+    public openViewer(uri: vscode.Uri) {
+        vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType);
     }
 
     public async resolveCustomTextEditor(
