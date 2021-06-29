@@ -117,10 +117,7 @@ export class BreakpointHandler extends vscode.Disposable {
                                 files[filePath][0].cache,
                                 "program.sdfg"
                             );
-                            SdfgViewerProvider.getInstance()?.goToFileLocation(
-                                vscode.Uri.file(sdfgPath),
-                                0, 0, 0, 0
-                            );
+                            SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(sdfgPath));
                         }
                     }
                 }
