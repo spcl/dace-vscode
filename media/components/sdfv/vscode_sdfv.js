@@ -45,9 +45,11 @@ function compute_scope_label(scope_entry) {
 }
 
 function element_update_label(element, attributes) {
-    if (element.data && attributes.label) {
+    console.log(element, attributes);
+    if (element.data) {
         if (element.data.node) {
-            element.data.node.label = attributes.label;
+            if (attributes.label)
+                element.data.node.label = attributes.label;
 
             if (element instanceof ScopeNode) {
                 // In scope nodes the range is attached.
@@ -77,6 +79,8 @@ function element_update_label(element, attributes) {
                             element.data.node.label;
                     }
                 }
+            } else if (element instanceof AccessNode && attributes.data) {
+                element.data.node.label = attributes.data;
             }
         }
     }
