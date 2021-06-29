@@ -721,18 +721,20 @@ def find_graph_element_by_uuid(sdfg, uuid):
     elif edge_id != -1 and state is not None:
         ret = {
             'parent': state,
-            'element': state.edge(edge_id),
+            'element': state.edges()[edge_id],
         }
     elif edge_id != -1 and state is None:
         ret = {
             'parent': state,
-            'element': graph.edge(edge_id),
+            'element': graph.edges()[edge_id],
         }
 
     return ret
 
 
 def remove_sdfg_elements(sdfg_json, uuids):
+    from dace.sdfg.graph import Edge
+
     old_meta = dace.serialize.JSON_STORE_METADATA
     dace.serialize.JSON_STORE_METADATA = False
 
@@ -750,7 +752,10 @@ def remove_sdfg_elements(sdfg_json, uuids):
         parent = element_ret['parent']
 
         if parent is not None and element is not None:
-            parent.remove_node(element)
+            if isinstance(element, Edge):
+                parent.remove_edge(element)
+            else:
+                parent.remove_node(element)
         else:
             return {
                 'error': {
