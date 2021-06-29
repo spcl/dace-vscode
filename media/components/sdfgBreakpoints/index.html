@@ -21,37 +21,11 @@
 
     <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
     <script src="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.bundle.min.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfgBreakpoints/sdfgBreakpoints.js"></script>
 </head>
 
 <body>
     <div class="sdfg-debug-container">
-        <div id="sdfg-debug-list" class="list">
-            <div class="list-element" label="Path to SDFG" title="Path to SDFG">
-                <div class="breakpoint">
-                    <div class="bp-circle-container">
-                        <div class="bp-circle"></div>
-                    </div>
-                    <div class="sdfg-name-container">
-                        <div class="sdfg-name">SDFG Name</div>
-                    </div>
-                    <div class="sdfg-identifier">0 : 0 : 1</div>
-                </div>
-            </div>
-            <div class="list-element" label="Path to SDFG" title="Path to SDFG">
-                <div class="breakpoint">
-                    <div class="bp-circle-container">
-                        <div class="bp-circle"></div>
-                    </div>
-                    <div class="sdfg-name-container">
-                        <div class="sdfg-name">SDFG Name</div>
-                    </div>
-                    <div class="sdfg-identifier">0 : 0 : 3</div>
-                </div>
-            </div>
-        </div>
-
-
+        <div id="sdfg-debug-list" class="list"></div>
     </div>
 
     <script>
@@ -92,6 +66,14 @@
                 'class': 'list-element',
                 'label': node.sdfg_path,
                 'title': node.sdfg_path
+            }).contextmenu(_ => {
+                vscode.postMessage({
+                    type: 'sdfv.go_to_cpp',
+                    sdfg_name: node.sdfg_name,
+                    sdfg_id: node.sdfg_id,
+                    state_id: node.state_id,
+                    node_id: node.node_id
+                });
             });
 
             const breakpoint = $('<div>', {
@@ -103,7 +85,7 @@
             });
             $('<div>', {
                 'class': 'bp-circle',
-            }).css({'background-color': color}).appendTo(circle_container);
+            }).css({ 'background-color': color }).appendTo(circle_container);
 
             const sdfg_name_container = $('<div>', {
                 'class': 'sdfg-name-container',

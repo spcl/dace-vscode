@@ -4,14 +4,14 @@
 function refresh_breakpoints() {
     if (daceRenderer !== undefined && daceRenderer !== null && vscode !== undefined) {
         let is_active = false;
-        for (const active_overlay of daceRenderer.overlay_manager.overlays){
-            if(active_overlay.type === daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS){
+        for (const active_overlay of daceRenderer.overlay_manager.overlays) {
+            if (active_overlay.type === daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS) {
                 is_active = true;
                 break;
             }
         }
         vscode.postMessage({
-            type: 'breakpoints.refresh_breakpoints',
+            type: 'sdfv.refresh_breakpoints',
             overlay: daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS,
             show_breakpoints: is_active
         });
@@ -33,7 +33,7 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
         this.daceRenderer = daceRenderer;
         this.breakpoints = new Map();
         vscode.postMessage({
-            type: 'breakpoints.get_saved_nodes',
+            type: 'sdfv.get_saved_nodes',
             sdfg_name: this.daceRenderer.sdfg.attributes.name
         });
         this.refresh();
@@ -95,12 +95,11 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
                     sdfg_elem.state_id + '/' +
                     sdfg_elem.node_id
                 );
-
                 if (this.breakpoints.has(elem_uuid)) {
                     this.breakpoints.delete(elem_uuid);
                     this.erase_breakpoint(foreground_elem, this.daceRenderer.ctx);
                     vscode.postMessage({
-                        type: 'breakpoints.remove_breakpoint',
+                        type: 'sdfv.remove_breakpoint',
                         node: sdfg_elem,
                         sdfg_name: this.daceRenderer.sdfg.attributes.name
                     });
@@ -109,7 +108,7 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
                     this.breakpoints.set(elem_uuid, BreakpointEnum.BOUND);
                     this.draw_breakpoint(foreground_elem, this.daceRenderer.ctx);
                     vscode.postMessage({
-                        type: 'breakpoints.add_breakpoint',
+                        type: 'sdfv.add_breakpoint',
                         node: sdfg_elem,
                         sdfg_name: this.daceRenderer.sdfg.attributes.name
                     });
@@ -120,7 +119,7 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
         }
     }
 
-    remove_breakpoint(node){
+    remove_breakpoint(node) {
         const elem_uuid = (
             node.sdfg_id + '/' +
             node.state_id + '/' +

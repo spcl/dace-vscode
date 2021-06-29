@@ -92,9 +92,8 @@ export class SdfgBreakpointProvider
     public handleMessage(message: any, origin?: vscode.Webview): void {
         switch (message.type) {
             case 'refresh_sdfg_breakpoints':
-                console.log("refreshing handler");
                 message.nodes = BreakpointHandler.getInstance()?.getAllNodes();
-                // Fallthrough to send to the webview
+            // Fallthrough to send to the webview
             default:
                 this.view?.webview.postMessage(message);
                 break;

@@ -11,8 +11,7 @@ import { AnalysisProvider } from './analysis';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 import { TransformationListProvider } from './transformationList';
-import { BreakpointProvider } from './breakpoints';
-import { getCppRange, Node } from '../debugger/breakpointHandler';
+import { BreakpointHandler, getCppRange, Node } from '../debugger/breakpointHandler';
 
 export class SdfgViewer {
 
@@ -109,7 +108,6 @@ export class SdfgViewerProvider
             TransformationHistoryProvider.getInstance()?.refresh();
             OutlineProvider.getInstance()?.refresh();
             AnalysisProvider.getInstance()?.refresh();
-            BreakpointProvider.getInstance()?.refresh();
         }
     }
 
@@ -141,6 +139,7 @@ export class SdfgViewerProvider
 
     public async handleMessage(message: any,
         origin: vscode.Webview | undefined = undefined): Promise<void> {
+        let node: any;
         switch (message.type) {
             case 'get_current_sdfg':
                 const instance = SdfgViewerProvider.getInstance();
@@ -198,7 +197,7 @@ export class SdfgViewerProvider
 
                 const cppMapUri = vscode.Uri.file(mapPath);
                 const cppFileUri = vscode.Uri.file(cppPath);
-                const node = new Node(
+                node = new Node(
                     message.sdfg_id,
                     message.state_id,
                     message.node_id,
@@ -230,6 +229,28 @@ export class SdfgViewerProvider
                         0
                     );
                 });
+                break;
+            case 'add_breakpoint':
+                node = message.node;
+                if (node)
+                    BreakpointHandler.getInstance()?.handleNodeAdded(
+                        new Node(node.sdfg_id, node.state_id, node.node_id),
+                        message.sdfg_name
+                    );
+                break;
+            case 'remove_breakpoint':
+                node = message.node;
+                if (node)
+                    BreakpointHandler.getInstance()?.handleNodeRemoved(
+                        new Node(node.sdfg_id, node.state_id, node.node_id),
+                        message.sdfg_name
+                    );
+                break;
+            case 'get_saved_nodes':
+                BreakpointHandler.getInstance()?.getSavedNodes(message.sdfg_name);
+                break;
+            case 'has_saved_nodes':
+                BreakpointHandler.getInstance()?.hasSavedNodes(message.sdfg_name);
                 break;
 
             default:

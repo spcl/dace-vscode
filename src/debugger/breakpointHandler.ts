@@ -90,7 +90,7 @@ export class BreakpointHandler extends vscode.Disposable {
         // first activation. If we don't create an onDidChangeBreakpoints
         // the breakpoints won't be recognized when running the debugger
         // the first time after activation and so the breakpoint won't be map.
-        vscode.debug.onDidChangeBreakpoints(_ => {});
+        vscode.debug.onDidChangeBreakpoints(_ => { });
     }
 
     public static getInstance(): BreakpointHandler | undefined {
@@ -263,7 +263,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 alreadySaved.target_name = targetName ? targetName : 'cpu';
             }
         }
-        
+
         this.setAllBreakpoints();
         vscode.debug.activeDebugSession?.customRequest("continue");
         this.showMenu(true);
@@ -410,9 +410,10 @@ export class BreakpointHandler extends vscode.Disposable {
         return undefined;
     }
 
-    public handleNodeAdded(node: Node, sdfgName: string) {
+    public async handleNodeAdded(node: Node, sdfgName: string) {
         // Search for the file with the corresponding function information
-        Object.values(this.files).forEach(async functions => {
+        let unbound = false;
+        for (const functions of Object.values(this.files)) {
             let funcDetails = functions.find(func => {
                 return func.name === sdfgName;
             });
@@ -429,15 +430,8 @@ export class BreakpointHandler extends vscode.Disposable {
                 );
 
                 if (!range || !range.from) {
-                    DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                        'type': 'unbound_breakpoint',
-                        'node': node
-                    });
-                    SdfgBreakpointProvider.getInstance()?.handleMessage({
-                        'type': 'unbound_sdfg_breakpoint',
-                        'node': node
-                    });
-                    return;
+                    unbound = true;
+                    continue;
                 }
 
                 if (!this.savedNodes[sdfgName])
@@ -447,9 +441,19 @@ export class BreakpointHandler extends vscode.Disposable {
                     'type': 'add_sdfg_breakpoint',
                     'node': node
                 });
+                return;
             }
-        });
-
+        }
+        if (unbound) {
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                'type': 'unbound_breakpoint',
+                'node': node
+            });
+            SdfgBreakpointProvider.getInstance()?.handleMessage({
+                'type': 'unbound_sdfg_breakpoint',
+                'node': node
+            });
+        }
         this.saveState();
     }
 
@@ -547,18 +551,18 @@ export class BreakpointHandler extends vscode.Disposable {
     public getSavedNodes(sdfgName: string) {
         // Sends the corresponding saved Nodes to the SDFG viewer
         const nodes = this.savedNodes[sdfgName];
-        if(nodes !== undefined && nodes.length !== 0)
+        if (nodes !== undefined && nodes.length !== 0)
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 'type': 'saved_nodes',
                 'nodes': nodes
             });
     }
 
-    public getAllNodes(){
+    public getAllNodes() {
         let allNodes = [];
         for (const nodes of Object.values(this.savedNodes)) {
             for (const node of nodes) {
-                if(node.cache)
+                if (node.cache)
                     allNodes.push({
                         sdfg_name: node.sdfg_name,
                         sdfg_path: path.join(node.cache, 'program.sdfg'),
@@ -573,7 +577,7 @@ export class BreakpointHandler extends vscode.Disposable {
 
     public hasSavedNodes(sdfgName: string) {
         const nodes = this.savedNodes[sdfgName];
-        if(nodes !== undefined && nodes.length !== 0)
+        if (nodes !== undefined && nodes.length !== 0)
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 'type': 'has_nodes'
             });
