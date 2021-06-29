@@ -659,18 +659,28 @@ def compile_sdfg(path, suppress_instrumentation=False):
         'filename': compiled_sdfg.filename,
     }
 
-def recursively_find_graph(graph, graph_id):
+def recursively_find_graph(graph, graph_id, ns_node = None):
     if graph.sdfg_id == graph_id:
-        return graph
+        return {
+            'graph': graph,
+            'node': ns_node,
+        }
+
+    res = {
+        'graph': None,
+        'node': None,
+    }
 
     for state in graph.nodes():
         for node in state.nodes():
             if isinstance(node, dace.nodes.NestedSDFG):
-                graph_result = recursively_find_graph(node.sdfg, graph_id)
+                graph_result = recursively_find_graph(
+                    node.sdfg, graph_id, node
+                )
                 if graph_result != None:
                     return graph_result
 
-    return None
+    return res
 
 
 def find_graph_element_by_uuid(sdfg, uuid):
@@ -681,36 +691,91 @@ def find_graph_element_by_uuid(sdfg, uuid):
     node_id = int(uuid_split[2])
     edge_id = int(uuid_split[3])
 
-    ret = None
+    ret = {
+        'parent': None,
+        'element': None,
+    }
 
     graph = sdfg
     if graph_id > 0:
-        graph = recursively_find_graph(graph, graph_id)
-        ret = graph
+        found_graph = recursively_find_graph(graph, graph_id)
+        graph = found_graph['graph']
+        ret = {
+            'parent': graph,
+            'element': found_graph['node'],
+        }
 
     state = None
-    if state_id != -1 and graph != None:
+    if state_id != -1 and graph is not None:
         state = graph.node(state_id)
-        ret = state
+        ret = {
+            'parent': graph,
+            'element': state,
+        }
 
-    if node_id != -1 and state != None:
-        ret = state.data.graph.node(node_id)
-    elif edge_id != -1 and state != None:
-        ret = state.data.graph.edge(edge_id)
-    elif edge_id != -1 and state == None:
-        ret = graph.edge(edge_id)
+    if node_id != -1 and state is not None:
+        ret = {
+            'parent': state,
+            'element': state.node(node_id),
+        }
+    elif edge_id != -1 and state is not None:
+        ret = {
+            'parent': state,
+            'element': state.edge(edge_id),
+        }
+    elif edge_id != -1 and state is None:
+        ret = {
+            'parent': state,
+            'element': graph.edge(edge_id),
+        }
 
     return ret
 
 
-def insert_sdfg_element(sdfg_str, type, parent):
+def remove_sdfg_elements(sdfg_json, uuids):
+    old_meta = dace.serialize.JSON_STORE_METADATA
+    dace.serialize.JSON_STORE_METADATA = False
+
+    loaded = load_sdfg_from_json(sdfg_json)
+    if loaded['error'] is not None:
+        return loaded['error']
+    sdfg = loaded['sdfg']
+
+    elements = []
+    for uuid in uuids:
+        elements.append(find_graph_element_by_uuid(sdfg, uuid))
+
+    for element_ret in elements:
+        element = element_ret['element']
+        parent = element_ret['parent']
+
+        if parent is not None and element is not None:
+            parent.remove_node(element)
+        else:
+            return {
+                'error': {
+                    'message': 'Failed to delete element',
+                    'details': 'Element or parent not found',
+                },
+            }
+
+    new_sdfg = sdfg.to_json()
+    dace.serialize.JSON_STORE_METADATA = old_meta
+
+    return {
+        'sdfg': new_sdfg,
+    }
+
+
+def insert_sdfg_element(sdfg_str, type, parent_uuid):
     sdfg_answer = load_sdfg_from_json(sdfg_str)
     sdfg = sdfg_answer['sdfg']
     uuid = 'error'
-    parent = find_graph_element_by_uuid(sdfg, parent)
+    ret = find_graph_element_by_uuid(sdfg, parent_uuid)
+    parent = ret['element']
 
     if type == 'SDFGState':
-        if parent == None:
+        if parent is None:
             parent = sdfg
         state = parent.add_state()
         uuid = [get_uuid(state)]
@@ -746,7 +811,10 @@ def insert_sdfg_element(sdfg_str, type, parent):
     new_sdfg_str = sdfg.to_json()
     dace.serialize.JSON_STORE_METADATA = old_meta
 
-    return {'sdfg': new_sdfg_str, 'uuid': uuid}
+    return {
+        'sdfg': new_sdfg_str,
+        'uuid': uuid,
+    }
 
 def run_daemon(port):
     from logging.config import dictConfig
@@ -824,6 +892,11 @@ def run_daemon(port):
         return insert_sdfg_element(request_json['sdfg'],
                                    request_json['type'],
                                    request_json['parent'])
+
+    @daemon.route('/remove_sdfg_elements', methods=['POST'])
+    def _remove_sdfg_elements():
+        request_json = request.get_json()
+        return remove_sdfg_elements(request_json['sdfg'], request_json['uuids'])
 
     @daemon.route('/get_metadata', methods=['GET'])
     def _get_metadata():

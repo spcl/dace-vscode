@@ -64,6 +64,24 @@ class VSCodeRenderer extends daceSDFGRenderer {
         });
     }
 
+    remove_graph_nodes(nodes) {
+        let g = this.sdfg;
+        un_graphiphy_sdfg(g);
+
+        const uuids = [];
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            const uuid = daceGetUUIDGraphElement(node);
+            uuids.push(uuid);
+        }
+
+        vscode.postMessage({
+            type: 'dace.remove_nodes',
+            sdfg: JSON.stringify(g),
+            uuids: uuids,
+        });
+    }
+
 }
 
 function dom_setup(){
