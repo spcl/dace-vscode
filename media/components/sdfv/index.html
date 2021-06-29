@@ -48,22 +48,22 @@
         </div>
         <div id="button-bar-wrapper">
             <div id="button-bar">
-                <div id="pan-btn" class="button" title="Pan mode"
-                     style="padding-bottom: 0px; user-select: none;">
+                <div class="spacer"></div>
+                <div id="pan-btn" class="button" title="Pan mode">
                     <em class="material-icons">pan_tool</em>
                 </div>
-                <div id="move-btn" class="button" title="Move mode"
-                     style="padding-bottom: 0px; user-select: none;">
+                <div id="move-btn" class="button" title="Move mode">
                     <em class="material-icons">open_with</em>
                 </div>
-                <div id="select-btn" class="button" title="Select mode"
-                     style="padding-bottom: 0px; user-select: none;">
+                <div id="select-btn" class="button" title="Select mode">
                     <svg width="1.3rem" height="1.3rem" viewBox="0 0 800 800" stroke="white" version="1.1" xmlns="http://www.w3.org/2000/svg">
                         <rect x="100" y="100" width="500" height="500" fill="transparent" stroke-width="50" />
                         <path d="M620 620 L800 620 L740 680 L840 780 L780 840 L680 740 L620 800 Z" fill="white"/>
                     </svg>
                 </div>
-                <div id="elem_map" class="button" title="Add map" type="Map" style="user-select: none;">
+                <div class="spacer"></div>
+                <div id="elem_map" class="button"
+                     title="Add map" type="Map">
                     <svg width="5.2rem" height="1.3rem" viewBox="0 0 800 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
                         <line x1="10" x2="190" y1="190" y2="10" />
                         <line x1="190" x2="600" y1="10" y2="10" />
@@ -71,7 +71,8 @@
                         <line x1="790" x2="10" y1="190" y2="190" />
                     </svg>
                 </div>
-                <div id="elem_consume" class="button" title="Add consume" type="Consume" style="user-select: none;">
+                <div id="elem_consume" class="button"
+                     title="Add consume" type="Consume">
                     <svg width="5.2rem" height="1.3rem" viewBox="0 0 800 200" stroke="white" stroke-width="10" stroke-dasharray="60,25" version="1.1" xmlns="http://www.w3.org/2000/svg">
                         <line x1="10"x2="190" y1="190" y2="10"/>
                         <line x1="190" x2="600" y1="10" y2="10"/>
@@ -79,8 +80,9 @@
                         <line x1="790" x2="10" y1="190" y2="190"/>
                     </svg>
                 </div>
-                <div class="break"></div>
-                <div id="elem_tasklet" class="button" title="Add tasklet" type="Tasklet" style="user-select: none;">
+                <div class="spacer"></div>
+                <div id="elem_tasklet" class="button"
+                     title="Add tasklet" type="Tasklet">
                     <svg width="2.6rem" height="1.3rem" viewBox="0 0 400 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
                         <line x1="10" x2="70" y1="130" y2="190"/>
                         <line x1="70" x2="330" y1="190" y2="190"/>
@@ -92,7 +94,8 @@
                         <line x1="10" x2="10" y1="70" y2="130"/>
                     </svg>
                 </div>
-                <div id="elem_nested_sdfg" class="button" title="Add nested SDFG" type="NestedSDFG" style="user-select: none;">
+                <div id="elem_nested_sdfg" class="button"
+                     title="Add nested SDFG" type="NestedSDFG">
                     <svg width="2.6rem" height="1.3rem" viewBox="0 0 400 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
                         <line x1="40" x2="80" y1="120" y2="160"/>
                         <line x1="80" x2="320" y1="160" y2="160"/>
@@ -113,19 +116,52 @@
                         <line x1="10" x2="10" y1="70" y2="130"/>
                     </svg>
                 </div>
-                <div id="elem_access_node" class="button" title="Add access node" type="AccessNode" style="user-select: none;">
+                <div id="elem_libnode" class="button"
+                     title="Add library node" type="LibraryNode">
+                    <svg width="2.6rem" height="1.3rem" viewBox="0 0 400 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="10" x2="10" y1="10" y2="190"/>
+                        <line x1="10" x2="390" y1="190" y2="190"/>
+                        <line x1="390" x2="390" y1="190" y2="55"/>
+                        <line x1="390" x2="345" y1="55" y2="10"/>
+                        <line x1="345" x2="10" y1="10" y2="10"/>
+                        <line x1="345" x2="345" y1="10" y2="55"/>
+                        <line x1="345" x2="390" y1="55" y2="55"/>
+                    </svg>
+                </div>
+                <div class="spacer"></div>
+                <div id="elem_access_node" class="button"
+                     title="Add access node" type="AccessNode">
                     <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="100" cy="100" r="90" fill="none"/>
                     </svg>
                 </div>
-                <div id="elem_stream" class="button" title="Add stream" type="Stream" style="user-select: none;">
+                <div id="elem_stream" class="button"
+                     title="Add stream" type="Stream">
                     <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="100" cy="100" r="90" fill="none" stroke-dasharray="60,25"/>
                     </svg>
                 </div>
-                <div id="elem_state" class="button" title="Add state" type="SDFGState" style="user-select: none;">
+                <div id="elem_state" class="button"
+                     title="Add state" type="SDFGState">
                     <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
                         <rect x="20" y="20" width="160" height="160" style="fill:#deebf7;" />
+                    </svg>
+                </div>
+                <div class="spacer"></div>
+                <div id="elem_connector" class="button"
+                     title="Add connector" type="Connector">
+                    <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="100" r="40" fill="none"/>
+                    </svg>
+                </div>
+                <div id="elem_edge" class="button"
+                     title="Add edge" type="Edge">
+                    <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10" version="1.1" xmlns="http://www.w3.org/2000/svg"><defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7"  refX="0" refY="3.5" orient="auto">
+                          <polygon points="0 0, 10 3.5, 0 7" />
+                        </marker>
+                      </defs>
+                      <line x1="20" y1="20" x2="180" y2="180" marker-end="url(#arrowhead)" />
                     </svg>
                 </div>
                 <div id="refresh-btn" class="button" onclick="refreshSdfg();">

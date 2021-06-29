@@ -151,46 +151,18 @@ pre.code {
   flex-direction: row;
 }
 
-#button-bar #pan-btn {
-  margin-left: 0.8rem;
-  margin-right: 0.1rem;
-}
-
-#button-bar #move-btn {
+#button-bar .button {
   margin: 0 .1rem;
+  user-select: none;
 }
 
-#button-bar #select-btn {
-  margin: 0 .1rem;
-}
-
-#button-bar #elem_map {
-  margin-left: 0.6rem;
-  margin-right: 0.1rem;
-}
-
-#button-bar #elem_consume {
-  margin: 0 .1rem;
-}
-
-#button-bar #elem_tasklet {
-  margin: 0 .1rem;
-}
-
-#button-bar #elem_nested_sdfg {
-  margin: 0 .1rem;
-}
-
-#button-bar #elem_access_node {
-  margin: 0 .1rem;
-}
-
-#button-bar #elem_stream {
-  margin: 0 .1rem;
-}
-
-#button-bar #elem_state {
-  margin: 0 .1rem;
+#button-bar .spacer {
+  width: .6rem;
+  height: 100%;
+  display: block;
+  background-color: transparent;
+  color: transparent;
+  user-select: none;
 }
 
 #button-bar #refresh-btn {

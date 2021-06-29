@@ -789,6 +789,9 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid):
     elif type == 'Map':
         map_entry, map_exit = parent.add_map('map', dict(i='0:1'))
         uuid = [get_uuid(map_entry, parent), get_uuid(map_exit, parent)]
+    elif type == 'Consume':
+        consume_entry, consume_exit = parent.add_consume('consume', ('i', '1'))
+        uuid = [get_uuid(consume_entry, parent), get_uuid(consume_exit, parent)]
     elif type == 'Tasklet':
         tasklet = parent.add_tasklet(
             name='placeholder',
@@ -796,8 +799,6 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid):
             outputs={'out'},
             code='')
         uuid = [get_uuid(tasklet, parent)]
-    elif type == 'Consume':
-        raise NotImplementedError()
     elif type == 'NestedSDFG':
         sub_sdfg = dace.SDFG('nested_sdfg')
         sub_sdfg.add_array('in', [1], dace.float32)
@@ -805,6 +806,8 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid):
         
         nsdfg = parent.add_nested_sdfg(sub_sdfg, sdfg, {'in'}, {'out'})
         uuid = [get_uuid(nsdfg, parent)]
+    elif type == 'LibraryNode':
+        raise NotImplementedError()
 
     old_meta = dace.serialize.JSON_STORE_METADATA
     dace.serialize.JSON_STORE_METADATA = False

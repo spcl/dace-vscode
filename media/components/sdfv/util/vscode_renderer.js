@@ -19,9 +19,12 @@ class VSCodeRenderer extends daceSDFGRenderer {
                 document.getElementById('elem_consume'),
                 document.getElementById('elem_tasklet'),
                 document.getElementById('elem_nested_sdfg'),
+                document.getElementById('elem_libnode'),
                 document.getElementById('elem_access_node'),
                 document.getElementById('elem_stream'),
                 document.getElementById('elem_state'),
+                document.getElementById('elem_connector'),
+                document.getElementById('elem_edge'),
             ];
             if (pan_btn)
                 mode_buttons = {
