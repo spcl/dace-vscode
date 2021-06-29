@@ -104,8 +104,8 @@ pre.code {
 }
 
 #search-bar #search {
-  padding: .2rem .1rem;
-  margin-right: .2rem;
+  padding: .2rem .3rem;
+  margin-right: .3rem;
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-placeholderForeground);
@@ -116,8 +116,19 @@ pre.code {
 }
 
 #search-bar #search-case-container {
-  height: 100%;
-  vertical-align: middle;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#search-bar #search-case-container label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#search-bar #search-case-container label input {
+  margin-right: .3rem;
 }
 
 #search-bar #search-case {
@@ -129,12 +140,8 @@ pre.code {
   border-color: var(--vscode-checkbox-border);
 }
 
-#search-bar #search-btn {
-  margin: 0 .5rem;
-}
-
 #search-bar .button {
-  margin-left: .3rem;
+  margin: 0 .5rem;
 }
 
 #search-bar #run-btn {
@@ -207,11 +214,11 @@ pre.code {
   overflow-y: scroll;
 }
 
-.split-container-vertical > #info-container {
+.split-container-vertical>#info-container {
   padding-top: .5rem;
 }
 
-.split-container-horizontal > #info-container {
+.split-container-horizontal>#info-container {
   padding-left: .5rem;
   padding-right: .5rem;
 }
@@ -227,7 +234,8 @@ pre.code {
   flex-grow: 1;
 }
 
-#goto-source-btn, #goto-cpp-btn {
+#goto-source-btn,
+#goto-cpp-btn {
   font-size: .9rem;
   margin: .2rem 0 .2rem 1rem;
 }
@@ -276,12 +284,12 @@ pre.code {
   color: var(--vscode-list-hoverForeground);
 }
 
-.attr-cat-toggle-btn > .attr-cat-toggle-btn-indicator {
+.attr-cat-toggle-btn>.attr-cat-toggle-btn-indicator {
   float: right;
   transition: all .5s;
 }
 
-.attr-cat-toggle-btn.active > .attr-cat-toggle-btn-indicator {
+.attr-cat-toggle-btn.active>.attr-cat-toggle-btn-indicator {
   transform: rotate(180deg);
 }
 
@@ -348,11 +356,11 @@ pre.code {
   width: 100%;
 }
 
-.form-check.form-switch > label::before {
+.form-check.form-switch>label::before {
   cursor: pointer;
 }
 
-.form-check.form-switch > label::after {
+.form-check.form-switch>label::after {
   cursor: pointer;
 }
 
