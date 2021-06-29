@@ -3,8 +3,7 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DaCeInterface } from '../daceInterface';
-import { BreakpointHandler } from '../debugger/breakpointHandler'
+import { BreakpointHandler } from '../debugger/breakpointHandler';
 
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';

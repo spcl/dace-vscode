@@ -18,12 +18,7 @@ function refresh_breakpoints() {
     }
 }
 
-daceGenericSDFGOverlay.OVERLAY_TYPE = {
-    MEMORY_VOLUME: 'OVERLAY_TYPE_MEMORY_VOLUME',
-    STATIC_FLOPS: 'OVERLAY_TYPE_STATIC_FLOPS',
-    RUNTIME_US: 'OVERLAY_TYPE_RUNTIME_US',
-    BREAKPOINTS: 'OVERLAY_TYPE_BREAKPOINTS'
-};
+daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS = 'OVERLAY_TYPE_BREAKPOINTS';
 
 const BreakpointEnum = Object.freeze({ "BOUND": 0, "UNBOUND": 1 });
 

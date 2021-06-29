@@ -220,7 +220,7 @@ export class BreakpointHandler extends vscode.Disposable {
         const cachePath: string | undefined = data['path_cache'];
         const funcName: string | undefined = data['name'];
         const targetName: string | undefined = data['target_name'];
-        const madeWithApi: boolean | undefined = data['made_with_api']
+        const madeWithApi: boolean | undefined = data['made_with_api'];
 
         if (!filePaths || !cachePath || !funcName) {
             return;
@@ -257,8 +257,8 @@ export class BreakpointHandler extends vscode.Disposable {
                 );
             }
             // In case the user changes it's cache settings or changes the target
-            else if (alreadySaved.cache != cachePath ||
-                alreadySaved.target_name != targetName) {
+            else if (alreadySaved.cache !== cachePath ||
+                alreadySaved.target_name !== targetName) {
                 alreadySaved.cache = cachePath;
                 alreadySaved.target_name = targetName ? targetName : 'cpu';
             }
@@ -404,7 +404,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 functionName: currentFunc.name,
                 target: currentFunc.target_name,
                 madeWithApi: currentFunc.made_with_api
-            }
+            };
         }
 
         return undefined;
@@ -481,14 +481,14 @@ export class BreakpointHandler extends vscode.Disposable {
         let src_map = mapPy[src_file];
 
         if (!src_map)
-            return undefined
+            return undefined;
 
         let nodesJSON = src_map[line.toString()];
         if (!nodesJSON)
             return undefined;
 
         if (!Array.isArray(nodesJSON)) {
-            let msg = "Source Mapping seems to have the wrong format!"
+            let msg = "Source Mapping seems to have the wrong format!";
             vscode.window.showInformationMessage(msg);
             return undefined;
         }
@@ -547,7 +547,7 @@ export class BreakpointHandler extends vscode.Disposable {
     public getSavedNodes(sdfgName: string) {
         // Sends the corresponding saved Nodes to the SDFG viewer
         const nodes = this.savedNodes[sdfgName];
-        if(nodes != undefined && nodes.length != 0)
+        if(nodes !== undefined && nodes.length !== 0)
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 'type': 'saved_nodes',
                 'nodes': nodes
@@ -573,7 +573,7 @@ export class BreakpointHandler extends vscode.Disposable {
 
     public hasSavedNodes(sdfgName: string) {
         const nodes = this.savedNodes[sdfgName];
-        if(nodes != undefined && nodes.length != 0)
+        if(nodes !== undefined && nodes.length !== 0)
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 'type': 'has_nodes'
             });
@@ -709,7 +709,7 @@ export async function getCppRange(node: Node, uri: vscode.Uri) {
         return {
             'from': minLine,
             'to': maxLine
-        }
+        };
     }
     let nodes = states[node.state_id];
     if (!nodes) return undefined;
@@ -723,17 +723,17 @@ export async function getCppRange(node: Node, uri: vscode.Uri) {
             if (node.from < minLine)
                 minLine = node.from;
             if (node.to > maxLine)
-                maxLine = node.to
+                maxLine = node.to;
         });
         return {
             'from': minLine,
             'to': maxLine
-        }
+        };
     }
 
     // Return the Range of a single node if it exists
     let cppRange = nodes[node.node_id];
-    if (!cppRange) return undefined
+    if (!cppRange) return undefined;
     return cppRange;
     // Returns an Object of the form {'from': _, 'to': _}
 }
