@@ -36,7 +36,6 @@ export class DaCeVSCode {
     private outlineProvider?: OutlineProvider = undefined;
     private analysisProvider?: AnalysisProvider = undefined;
     private breakpointProvider?: BreakpointProvider = undefined;
-    private sdfgBreakpointProvider?: SdfgBreakpointProvider = undefined;
 
     public registerCommand(command: string, handler: (...args: any[]) => any) {
         this.context?.subscriptions.push(vscode.commands.registerCommand(
@@ -206,7 +205,6 @@ export class DaCeVSCode {
         context.subscriptions.push(
             SdfgBreakpointProvider.register(context)
         );
-        this.sdfgBreakpointProvider = SdfgBreakpointProvider.getInstance();
 
         // Register necessary commands.
         this.registerCommand('transformationList.sync', () => {
@@ -232,12 +230,10 @@ export class DaCeVSCode {
                 });
         });
         this.registerCommand('sdfgBreakpoints.sync', () => {
-            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined){
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                    type: 'refresh_sdfgbreakpoints',
-                });
-                console.log('syncing sdfg BP')
-            }
+            console.log("refresh command");
+            SdfgBreakpointProvider.getInstance()?.handleMessage({
+                type: 'refresh_sdfg_breakpoints',
+            });
         });
         this.registerCommand('sdfgOutline.sync', () => {
             if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
@@ -412,7 +408,6 @@ export function activate(context: vscode.ExtensionContext) {
  * Called when the extension gets deactivated, ie. when VSCode is shut down.
  */
 export function deactivate() {
-    console.log("deactivating DaCe");
     let context = DaCeVSCode.getInstance().getExtensionContext();
     if (context)
         context.subscriptions.forEach(item => item.dispose());

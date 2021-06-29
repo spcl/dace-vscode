@@ -4,7 +4,8 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeVSCode } from '../extension';
-import { SdfgViewerProvider } from "../components/sdfgViewer";
+import { SdfgViewerProvider } from '../components/sdfgViewer';
+import { SdfgBreakpointProvider } from '../components/sdfgBreakpoints';
 
 export class Node {
     sdfg_id: number;
@@ -432,13 +433,20 @@ export class BreakpointHandler extends vscode.Disposable {
                         'type': 'unbound_breakpoint',
                         'node': node
                     });
+                    SdfgBreakpointProvider.getInstance()?.handleMessage({
+                        'type': 'unbound_sdfg_breakpoint',
+                        'node': node
+                    });
                     return;
                 }
 
                 if (!this.savedNodes[sdfgName])
                     this.savedNodes[sdfgName] = [];
                 this.savedNodes[sdfgName].push(node);
-                return;
+                SdfgBreakpointProvider.getInstance()?.handleMessage({
+                    'type': 'add_sdfg_breakpoint',
+                    'node': node
+                });
             }
         });
 
@@ -454,6 +462,9 @@ export class BreakpointHandler extends vscode.Disposable {
                 }
             });
             this.saveState();
+            SdfgBreakpointProvider.getInstance()?.handleMessage({
+                'type': 'refresh_sdfg_breakpoints'
+            });
         }
     }
 
@@ -541,6 +552,23 @@ export class BreakpointHandler extends vscode.Disposable {
                 'type': 'saved_nodes',
                 'nodes': nodes
             });
+    }
+
+    public getAllNodes(){
+        let allNodes = [];
+        for (const nodes of Object.values(this.savedNodes)) {
+            for (const node of nodes) {
+                if(node.cache)
+                    allNodes.push({
+                        sdfg_name: node.sdfg_name,
+                        sdfg_path: path.join(node.cache, 'program.sdfg'),
+                        sdfg_id: node.sdfg_id,
+                        state_id: node.state_id,
+                        node_id: node.node_id
+                    });
+            }
+        }
+        return allNodes;
     }
 
     public hasSavedNodes(sdfgName: string) {

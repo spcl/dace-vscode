@@ -25,80 +25,130 @@
 </head>
 
 <body>
-    <div id="contents-container" class="container-fluid">
-        <div id="none-message" class="hidden row">
+    <div class="sdfg-debug-container">
+        <div id="sdfg-debug-list" class="list">
+            <div class="list-element" label="Path to SDFG" title="Path to SDFG">
+                <div class="breakpoint">
+                    <div class="bp-circle-container">
+                        <div class="bp-circle"></div>
+                    </div>
+                    <div class="sdfg-name-container">
+                        <div class="sdfg-name">SDFG Name</div>
+                    </div>
+                    <div class="sdfg-identifier">0 : 0 : 1</div>
+                </div>
+            </div>
+            <div class="list-element" label="Path to SDFG" title="Path to SDFG">
+                <div class="breakpoint">
+                    <div class="bp-circle-container">
+                        <div class="bp-circle"></div>
+                    </div>
+                    <div class="sdfg-name-container">
+                        <div class="sdfg-name">SDFG Name</div>
+                    </div>
+                    <div class="sdfg-identifier">0 : 0 : 3</div>
+                </div>
+            </div>
         </div>
 
-        
+
     </div>
 
-    <!-- <script>
+    <script>
         vscode = acquireVsCodeApi();
 
         // Add a listener to receive messages from the extension.
         window.addEventListener('message', e => {
             const message = e.data;
+            let sdfg_debug = undefined;
             switch (message.type) {
-                case 'refresh_breakpoints':
-                    const toggle_container = $('#breakpoints-toggles');
-                    toggle_container.html('');
+                case 'refresh_sdfg_breakpoints':
+                    console.log("refreshing", message.nodes);
+                    sdfg_debug = $('#sdfg-debug-list');
+                    sdfg_debug.html('');
 
-                    const breakpoints_toggle = $('<input>', {
-                        'type': 'checkbox',
-                        'name': 'breakpoints-toggle',
-                        'value': 'breakpoints',
-                    });
-                    if (message.show_breakpoints)
-                        breakpoints_toggle.prop('checked', true);
-
-                    const toggle_label = $('<label>', {
-                    }).appendTo(toggle_container);
-
-                    toggle_label.append(breakpoints_toggle);
-                    toggle_label.append('&nbsp;' + 'Display Breakpoints');
-
-
-                    $('input[type=checkbox][name=breakpoints-toggle]').change(
-                        function () {
-                            if (this.checked) {
-                                vscode.postMessage({
-                                    type: 'sdfv.register_breakpointindicator'
-                                });
-                            }
-                            else {
-                                vscode.postMessage({
-                                    type: 'sdfv.deregister_overlay',
-                                    overlay: message.overlay,
-                                });
-                            }
+                    if (message.nodes) {
+                        for (const node of message.nodes) {
+                            createBreakpoint(sdfg_debug, node, '#dd0000');
                         }
-                    );
-
-                    $('#none-message').hide();
-                    $('#contents').show();
+                    }
+                    sdfg_debug.show();
                     break;
-                case 'clear':
-                    $('#breakpoints-toggles').html('');
-                    $('#contents').hide();
-                    const none_message = $('#none-message');
-                    if (message.reason)
-                        none_message.text(message.reason);
-                    else
-                        none_message.text('No breakpoints');
-                    none_message.show();
+                case 'add_sdfg_breakpoint':
+                    sdfg_debug = $('#sdfg-debug-list');
+                    createBreakpoint(sdfg_debug, message.node, "#dd0000");
+                    break;
+                case 'unbound_sdfg_breakpoint':
+                    sdfg_debug = $('#sdfg-debug-list');
+                    createBreakpoint(sdfg_debug, message.node, "#a3a3a3");
                     break;
                 default:
                     break;
             }
         });
 
-        $(document).ready(() => {
-            if (vscode)
+        function createBreakpoint(sdfg_debug, node, color) {
+            const list_element = $('<div>', {
+                'class': 'list-element',
+                'label': node.sdfg_path,
+                'title': node.sdfg_path
+            });
+
+            const breakpoint = $('<div>', {
+                'class': 'breakpoint',
+            });
+
+            const circle_container = $('<div>', {
+                'class': 'bp-circle-container',
+            });
+            $('<div>', {
+                'class': 'bp-circle',
+            }).css({'background-color': color}).appendTo(circle_container);
+
+            const sdfg_name_container = $('<div>', {
+                'class': 'sdfg-name-container',
+            });
+            $('<div>', {
+                'class': 'sdfg-name'
+            }).text(node.sdfg_name).appendTo(sdfg_name_container);
+
+            const remove_bp = $('<div>', {
+                'class': 'remove-bp'
+            }).text('X');
+            remove_bp.click(_ => {
                 vscode.postMessage({
-                    type: 'sdfv.refresh_breakpoints',
+                    type: 'breakpoints.remove_breakpoint',
+                    node: node,
+                    sdfg_name: node.sdfg_name
                 });
+                vscode.postMessage({
+                    type: 'sdfv.remove_breakpoint',
+                    node: node,
+                    sdfg_name: node.sdfg_name
+                });
+            });
+
+            const sdfg_identifier = $('<div>', {
+                'class': 'sdfg-identifier'
+            }).text(`${node.sdfg_id} : ${node.state_id} : ${node.node_id}`);
+
+            breakpoint.append(circle_container);
+            breakpoint.append(sdfg_name_container);
+            breakpoint.append(remove_bp);
+            breakpoint.append(sdfg_identifier);
+            list_element.append(breakpoint);
+            sdfg_debug.append(list_element);
+        }
+
+        $(document).ready(() => {
+            console.log("start refresh from document");
+            if (vscode) {
+                vscode.postMessage({
+                    type: 'sdfgBreakpoints.refresh_sdfg_breakpoints',
+                });
+            }
         });
-    </script> -->
+    </script>
 </body>
 
 </html>

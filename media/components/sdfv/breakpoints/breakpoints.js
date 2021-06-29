@@ -3,7 +3,7 @@
 
 function refresh_breakpoints() {
     if (daceRenderer !== undefined && daceRenderer !== null && vscode !== undefined) {
-        const is_active = false;
+        let is_active = false;
         for (const active_overlay of daceRenderer.overlay_manager.overlays){
             if(active_overlay.type === daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS){
                 is_active = true;
@@ -113,7 +113,6 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
                 else {
                     this.breakpoints.set(elem_uuid, BreakpointEnum.BOUND);
                     this.draw_breakpoint(foreground_elem, this.daceRenderer.ctx);
-                    console.log(sdfg_elem);
                     vscode.postMessage({
                         type: 'breakpoints.add_breakpoint',
                         node: sdfg_elem,
@@ -124,6 +123,17 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
                 this.daceRenderer.draw_async();
             }
         }
+    }
+
+    remove_breakpoint(node){
+        const elem_uuid = (
+            node.sdfg_id + '/' +
+            node.state_id + '/' +
+            node.node_id
+        );
+        this.breakpoints.delete(elem_uuid);
+        this.draw();
+        this.daceRenderer.draw_async();
     }
 
     check_breakpoint(node, ctx) {

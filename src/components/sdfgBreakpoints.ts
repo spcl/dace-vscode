@@ -4,6 +4,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeInterface } from '../daceInterface';
+import { BreakpointHandler } from '../debugger/breakpointHandler'
 
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
@@ -41,8 +42,6 @@ export class SdfgBreakpointProvider
         _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
     ) {
-        DaCeInterface.getInstance().start();
-
         this.view = webviewView;
 
         webviewView.webview.options = {
@@ -92,8 +91,11 @@ export class SdfgBreakpointProvider
     }
 
     public handleMessage(message: any, origin?: vscode.Webview): void {
-        let node;
         switch (message.type) {
+            case 'refresh_sdfg_breakpoints':
+                console.log("refreshing handler");
+                message.nodes = BreakpointHandler.getInstance()?.getAllNodes();
+                // Fallthrough to send to the webview
             default:
                 this.view?.webview.postMessage(message);
                 break;

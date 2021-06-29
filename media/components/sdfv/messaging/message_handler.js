@@ -70,6 +70,9 @@ class MessageHandler {
             case 'refresh_breakpoints':
                 refresh_breakpoints();
                 break;
+            case 'refresh_sdfg_breakpoints':
+                refresh_sdfg_breakpoints();
+                break;
             case 'refresh_outline':
                 if (daceRenderer)
                     embedded_outline(daceRenderer, daceRenderer.graph);
@@ -182,6 +185,12 @@ class MessageHandler {
                 daceRenderer.overlay_manager.get_overlay(
                     daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
                 ).unbound_breakpoint(message.node);
+                break;
+            case 'remove_breakpoint':
+                if(daceRenderer.sdfg.attributes.name === message.node.sdfg_name)
+                    daceRenderer.overlay_manager.get_overlay(
+                        daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
+                    ).remove_breakpoint(message.node);
                 break;
             case 'saved_nodes':
                 daceRenderer.overlay_manager.get_overlay(
