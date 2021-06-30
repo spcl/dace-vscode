@@ -217,12 +217,6 @@ export class DaCeVSCode {
                     type: 'refresh_analysis_pane',
                 });
         });
-        this.registerCommand('breakpoints.sync', () => {
-            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                    type: 'refresh_breakpoints',
-                });
-        });
         this.registerCommand('sdfgBreakpoints.sync', () => {
             SdfgBreakpointProvider.getInstance()?.handleMessage({
                 type: 'refresh_sdfg_breakpoints',

@@ -266,6 +266,36 @@ export class BreakpointHandler extends vscode.Disposable {
         this.saveState();
     }
 
+    public handleMessage(message: any, origin: any) {
+        let node;
+        switch (message.type) {
+            case 'add_breakpoint':
+                node = message.node;
+                if (node)
+                    BreakpointHandler.getInstance()?.handleNodeAdded(
+                        new Node(node.sdfg_id, node.state_id, node.node_id),
+                        message.sdfg_name
+                    );
+                break;
+            case 'remove_breakpoint':
+                node = message.node;
+                if (node)
+                    BreakpointHandler.getInstance()?.handleNodeRemoved(
+                        new Node(node.sdfg_id, node.state_id, node.node_id),
+                        message.sdfg_name
+                    );
+                break;
+            case 'get_saved_nodes':
+                BreakpointHandler.getInstance()?.getSavedNodes(message.sdfg_name);
+                break;
+            case 'has_saved_nodes':
+                BreakpointHandler.getInstance()?.hasSavedNodes(message.sdfg_name);
+                break;
+            default:
+                break;
+        }
+    }
+
     public setAllBreakpoints() {
         // Map and set all Breakpoints set in the dace (python) code
         vscode.debug.breakpoints.filter(pyFilter).forEach(bp => {

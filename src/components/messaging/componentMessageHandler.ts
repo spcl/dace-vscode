@@ -10,6 +10,7 @@ import { AnalysisProvider } from "../analysis";
 import { SdfgBreakpointProvider } from "../sdfgBreakpoints";
 import { TransformationListProvider } from '../transformationList';
 import { TransformationHistoryProvider } from '../transformationHistory';
+import { BreakpointHandler } from '../../debugger/breakpointHandler';
 
 export class ComponentMessageHandler {
 
@@ -26,7 +27,6 @@ export class ComponentMessageHandler {
     public handleMessage(message: any, origin: vscode.Webview) {
         if (message.type !== undefined) {
             const [target, type] = message.type.split('.');
-
             message.type = type;
             switch (target) {
                 case 'sdfv':
@@ -64,6 +64,12 @@ export class ComponentMessageHandler {
                     break;
                 case 'transformation_list':
                     TransformationListProvider.getInstance()?.handleMessage(
+                        message,
+                        origin
+                    );
+                    break;
+                case 'bp_handler':
+                    BreakpointHandler.getInstance()?.handleMessage(
                         message,
                         origin
                     );

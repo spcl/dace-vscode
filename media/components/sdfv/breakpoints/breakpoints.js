@@ -2,19 +2,16 @@
 // All rights reserved.
 
 function refresh_breakpoints() {
-    if (daceRenderer !== undefined && daceRenderer !== null && vscode !== undefined) {
+    if (daceRenderer !== undefined && daceRenderer !== null
+        && vscode !== undefined) {
         let is_active = false;
         for (const active_overlay of daceRenderer.overlay_manager.overlays) {
-            if (active_overlay.type === daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS) {
+            if (active_overlay.type === daceGenericSDFGOverlay.
+                OVERLAY_TYPE.BREAKPOINTS) {
                 is_active = true;
                 break;
             }
         }
-        vscode.postMessage({
-            type: 'sdfv.refresh_breakpoints',
-            overlay: daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS,
-            show_breakpoints: is_active
-        });
     }
 }
 
@@ -33,7 +30,7 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
         this.daceRenderer = daceRenderer;
         this.breakpoints = new Map();
         vscode.postMessage({
-            type: 'sdfv.get_saved_nodes',
+            type: 'bp_handler.get_saved_nodes',
             sdfg_name: this.daceRenderer.sdfg.attributes.name
         });
         this.refresh();
@@ -99,7 +96,7 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
                     this.breakpoints.delete(elem_uuid);
                     this.erase_breakpoint(foreground_elem, this.daceRenderer.ctx);
                     vscode.postMessage({
-                        type: 'sdfv.remove_breakpoint',
+                        type: 'bp_handler.remove_breakpoint',
                         node: sdfg_elem,
                         sdfg_name: this.daceRenderer.sdfg.attributes.name
                     });
@@ -108,7 +105,7 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
                     this.breakpoints.set(elem_uuid, BreakpointEnum.BOUND);
                     this.draw_breakpoint(foreground_elem, this.daceRenderer.ctx);
                     vscode.postMessage({
-                        type: 'sdfv.add_breakpoint',
+                        type: 'bp_handler.add_breakpoint',
                         node: sdfg_elem,
                         sdfg_name: this.daceRenderer.sdfg.attributes.name
                     });
