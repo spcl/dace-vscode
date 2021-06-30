@@ -54,7 +54,7 @@
                     Refresh SDFG
                 </span>
             </div>
-            <div id="breakpoint-btn" class="button" onclick="displayBreakpoints();">
+            <div id="breakpoint-btn" class="button" onclick="displayBreakpoints(!showBps);">
                 <span id="display-bps">
                     Display Breakpoints
                 </span>
@@ -200,21 +200,23 @@
                 });
         }
 
-        function displayBreakpoints() {
-            if (showBps) {
+        function displayBreakpoints(value) {
+            let type = daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS;
+            let already_active = daceRenderer.overlay_manager.get_overlay(type);
+            if (value && already_active === undefined) {
+                vscode.postMessage({
+                    type: 'sdfv.register_breakpointindicator',
+                });
+                $('#display-bps').html('Hide Breakpoints');
+            }
+            else if (!value) {
                 vscode.postMessage({
                     type: 'sdfv.deregister_overlay',
                     overlay: daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
                 });
                 $('#display-bps').html('Display Breakpoints');
             }
-            else {
-                vscode.postMessage({
-                    type: 'sdfv.register_breakpointindicator',
-                });
-                $('#display-bps').html('Hide Breakpoints');
-            }
-            showBps = !showBps;
+            showBps = value;
         }
 
         // Add a listener to update the content when the extension calls for it.

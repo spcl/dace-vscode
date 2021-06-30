@@ -70,6 +70,7 @@
                     type: 'sdfv.go_to_sdfg',
                     path: node.sdfg_path,
                     zoom_to: `${node.sdfg_id}/${node.state_id}/-1/-1`,
+                    display_bps: true,
                 });
             }).contextmenu(_ => {
                 vscode.postMessage({

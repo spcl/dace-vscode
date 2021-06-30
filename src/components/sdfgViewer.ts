@@ -233,7 +233,8 @@ export class SdfgViewerProvider
             case 'go_to_sdfg':
                 SdfgViewerProvider.getInstance()?.openViewer(
                     vscode.Uri.file(message.path),
-                    message.zoom_to
+                    message.zoom_to,
+                    message.display_bps
                 );
                 break;
             case 'add_breakpoint':
@@ -300,12 +301,18 @@ export class SdfgViewerProvider
         );
     }
 
-    public openViewer(uri: vscode.Uri, zoom_to: string | undefined = undefined) {
+    public openViewer(uri: vscode.Uri, zoom_to: string | undefined = undefined,
+        display_bps: boolean = false) {
         vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType).then(_ => {
             if (zoom_to)
                 this.handleMessage({
                     type: 'zoom_to_node',
                     uuid: zoom_to,
+                });
+            if (display_bps)
+                this.handleMessage({
+                    type: 'display_breakpoints',
+                    display: display_bps
                 });
         });
     }
