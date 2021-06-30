@@ -304,6 +304,9 @@ export class BreakpointHandler extends vscode.Disposable {
                 alreadySaved.cache = cachePath;
                 alreadySaved.target_name = targetName ? targetName : 'cpu';
             }
+            else if (alreadySaved.codegen_map !== codegenMap) {
+                alreadySaved.codegen_map = codegenMap ? codegenMap : false;
+            }
         }
         this.setAllBreakpoints();
         vscode.debug.activeDebugSession?.customRequest("continue");
