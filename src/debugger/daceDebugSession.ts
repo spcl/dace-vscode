@@ -16,6 +16,7 @@ export interface DaceLaunchRequestArguments
     pythonConfig?: string;
     cppConfig?: string;
     buildType?: string;
+    daCeDev?: boolean;
 }
 
 export class DaceDebugSession extends LoggingDebugSession {
@@ -47,7 +48,8 @@ export class DaceDebugSession extends LoggingDebugSession {
         }
 
         const buildType = !args.buildType ? "Debug" : args.buildType;
-        const portNum:string = String(PORT);
+        const daceDev = args.daCeDev;
+        const portNum: string = String(PORT);
 
         /**
          * Default:
@@ -116,6 +118,12 @@ export class DaceDebugSession extends LoggingDebugSession {
                 }
             }
         }
+
+        // We don't want to override the value in .dace.config if the
+        // dev doesn't define daceDev
+        if (daceDev !== undefined)
+            entirePyConfig.env.
+                DACE_compiler_codegen_lineinfo = daceDev ? "true" : "false";
 
         /**
          * Default:
