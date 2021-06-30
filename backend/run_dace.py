@@ -772,7 +772,7 @@ def remove_sdfg_elements(sdfg_json, uuids):
     }
 
 
-def insert_sdfg_element(sdfg_str, type, parent_uuid):
+def insert_sdfg_element(sdfg_str, type, parent_uuid, edge_a_uuid):
     sdfg_answer = load_sdfg_from_json(sdfg_str)
     sdfg = sdfg_answer['sdfg']
     uuid = 'error'
@@ -813,6 +813,39 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid):
         uuid = [get_uuid(nsdfg, parent)]
     elif type == 'LibraryNode':
         raise NotImplementedError()
+    elif type == 'Edge':
+        edge_start_ret = find_graph_element_by_uuid(sdfg, edge_a_uuid)
+        edge_start = edge_start_ret['element']
+        edge_parent = edge_start_ret['parent']
+        if edge_start is not None:
+            if edge_parent is None:
+                edge_parent = sdfg
+
+            if isinstance(edge_parent, dace.SDFGState):
+                if not (isinstance(edge_start, dace.nodes.Node) and
+                        isinstance(parent, dace.nodes.Node)):
+                    return {
+                        'error': {
+                            'message': 'Failed to add edge',
+                            'details': 'Must connect two nodes or two states',
+                        },
+                    }
+                memlet = dace.Memlet()
+                edge_parent.add_edge(edge_start, None, parent, None, memlet)
+            elif isinstance(edge_parent, dace.sdfg.SDFG):
+                if not (isinstance(edge_start, dace.SDFGState) and
+                        isinstance(parent, dace.SDFGState)):
+                    return {
+                        'error': {
+                            'message': 'Failed to add edge',
+                            'details': 'Must connect two nodes or two states',
+                        },
+                    }
+                isedge = dace.sdfg.InterstateEdge()
+                edge_parent.add_edge(edge_start, parent, isedge)
+            uuid = ['NONE']
+        else:
+            raise ValueError('No edge starting point provided')
 
     old_meta = dace.serialize.JSON_STORE_METADATA
     dace.serialize.JSON_STORE_METADATA = False
@@ -899,7 +932,8 @@ def run_daemon(port):
         request_json = request.get_json()
         return insert_sdfg_element(request_json['sdfg'],
                                    request_json['type'],
-                                   request_json['parent'])
+                                   request_json['parent'],
+                                   request_json['edge_a'])
 
     @daemon.route('/remove_sdfg_elements', methods=['POST'])
     def _remove_sdfg_elements():

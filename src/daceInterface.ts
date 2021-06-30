@@ -68,7 +68,8 @@ implements MessageReceiverInterface {
                 break;
             case 'insert_node':
                 this.insertSDFGElement(
-                    message.sdfg, message.add_type, message.parent, origin
+                    message.sdfg, message.add_type, message.parent,
+                    message.edge_a, origin
                 );
                 break;
             case 'remove_nodes':
@@ -808,7 +809,8 @@ implements MessageReceiverInterface {
     }
 
     public insertSDFGElement(
-        sdfg: string, type: string, parent: string, origin: vscode.Webview
+        sdfg: string, type: string, parent: string, edge_a: string,
+        origin: vscode.Webview
     ): void {
         function callback(data: any) {
             origin.postMessage({
@@ -818,12 +820,16 @@ implements MessageReceiverInterface {
             });
         }
 
+        if (!edge_a)
+            edge_a = 'NONE';
+
         this.sendPostRequest(
             '/insert_sdfg_element',
             {
                 'sdfg': JSON.parse(sdfg),
                 'type': type,
-                'parent': parent
+                'parent': parent,
+                'edge_a': edge_a,
             },
             callback
         );

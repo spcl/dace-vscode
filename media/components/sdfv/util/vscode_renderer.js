@@ -56,7 +56,9 @@ class VSCodeRenderer extends daceSDFGRenderer {
         vscode_write_graph(this.sdfg);
     }
 
-    add_node_to_graph(add_type, parent) {
+    add_node_to_graph(
+        add_type, parent, edge_a = undefined
+    ) {
         let g = this.sdfg;
         un_graphiphy_sdfg(g);
         vscode.postMessage({
@@ -64,6 +66,7 @@ class VSCodeRenderer extends daceSDFGRenderer {
             sdfg: JSON.stringify(g),
             add_type: add_type,
             parent: parent,
+            edge_a: edge_a,
         });
     }
 
@@ -83,6 +86,33 @@ class VSCodeRenderer extends daceSDFGRenderer {
             sdfg: JSON.stringify(g),
             uuids: uuids,
         });
+    }
+
+    /**
+     * Set the correct poisiton for newly added graph elements.
+     * This is called as a callback after a new element has been added to the
+     * graph and uses a previously stored adding poistion to correctly
+     * position the newly added element.
+     */
+    update_new_element(uuids) {
+        if (!this.add_position)
+            return;
+
+        let first = uuids[0];
+
+        if (first === 'NONE')
+            return;
+
+        let el = daceFindGraphElementByUUID(this.graph, first).element;
+        // TODO: set in construction attribute
+        this.canvas_manager.translate_element(
+            el, { x: el.x, y: el.y }, this.add_position, this.sdfg,
+            this.sdfg_list, this.state_parent_list, null, true
+        );
+
+        this.add_position = null;
+
+        this.send_new_sdfg_to_vscode();
     }
 
 }
