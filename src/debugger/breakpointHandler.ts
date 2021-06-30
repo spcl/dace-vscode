@@ -44,7 +44,8 @@ interface IFunction {
     name: string,
     cache: string,
     target_name: string,
-    made_with_api: boolean
+    made_with_api: boolean,
+    codegen_map: boolean
 }
 
 interface IHashFiles {
@@ -70,6 +71,10 @@ export class BreakpointHandler extends vscode.Disposable {
 
     // Save all Breakpoints set in the C++ code for later removal
     setBreakpoints: ISavedBP[];
+
+    // Current cpp file func. Saving to not recompute.
+    // Only updated when opening C++ file
+    currentFunc: IFunction | undefined = undefined;
 
     constructor() {
         super(() => this.disposeFunction());
@@ -206,6 +211,44 @@ export class BreakpointHandler extends vscode.Disposable {
                     }
                 }
                 BPHInstance?.showMenu(false);
+
+                if (pathName.endsWith(".cpp") && BPHInstance) {
+                    const files = BPHInstance.files;
+                    const currentFile = normalizePath(pathName);
+                    for (const functions of Object.values(files)) {
+                        for (const func of functions) {
+                            const matchFile = path.join(func.cache, 'src',
+                                func.target_name, func.name + '.cpp');
+                            if (normalizePath(matchFile) === currentFile) {
+                                BPHInstance.currentFunc = func;
+                                return;
+                            }
+                        }
+                    }
+                }
+            }),
+            vscode.languages.registerHoverProvider('cpp', {
+                async provideHover(document, position, token) {
+                    console.log('hoverProvider');
+
+                    const INSTANCE = BreakpointHandler.getInstance();
+                    const files = INSTANCE?.files;
+                    const filePath = normalizePath(document.fileName);
+                    if (!INSTANCE || !files || !filePath)
+                        return undefined;
+
+                    const func = INSTANCE.currentFunc;
+                    if (func && func.codegen_map) {
+                        const codegenLoc = await INSTANCE.getCodegen(position.line, func);
+                        if (codegenLoc && codegenLoc.file, codegenLoc.line) {
+                            return new vscode.Hover({
+                                language: "CODEGEN",
+                                value: `${codegenLoc.file}:${codegenLoc.line}`,
+                            });
+                        }
+                    }
+                    return undefined;
+                }
             })
         );
 
@@ -218,6 +261,7 @@ export class BreakpointHandler extends vscode.Disposable {
         const funcName: string | undefined = data['name'];
         const targetName: string | undefined = data['target_name'];
         const madeWithApi: boolean | undefined = data['made_with_api'];
+        const codegenMap: boolean | undefined = data['codegen_map'];
 
         if (!filePaths || !cachePath || !funcName) {
             return;
@@ -249,7 +293,8 @@ export class BreakpointHandler extends vscode.Disposable {
                         name: funcName,
                         cache: cachePath,
                         target_name: targetName ? targetName : 'cpu',
-                        made_with_api: madeWithApi ? madeWithApi : false
+                        made_with_api: madeWithApi ? madeWithApi : false,
+                        codegen_map: codegenMap ? codegenMap : false,
                     }
                 );
             }
@@ -538,6 +583,13 @@ export class BreakpointHandler extends vscode.Disposable {
         }
 
         return nodesJSON;
+    }
+
+    private async getCodegen(line: Number, func: IFunction) {
+        const codegenPath = path.join(func.cache, 'map', 'map_codegen.json');
+        const filePath = vscode.Uri.file(codegenPath);
+        const genMap = await jsonFromPath(filePath);
+        return genMap[line.toString()];
     }
 
     private createBreakpoint(
