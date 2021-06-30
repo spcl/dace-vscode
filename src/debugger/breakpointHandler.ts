@@ -260,7 +260,6 @@ export class BreakpointHandler extends vscode.Disposable {
                 alreadySaved.target_name = targetName ? targetName : 'cpu';
             }
         }
-
         this.setAllBreakpoints();
         vscode.debug.activeDebugSession?.customRequest("continue");
         this.showMenu(true);
