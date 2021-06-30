@@ -37,7 +37,6 @@
             let sdfg_debug = undefined;
             switch (message.type) {
                 case 'refresh_sdfg_breakpoints':
-                    console.log("refreshing", message.nodes);
                     sdfg_debug = $('#sdfg-debug-list');
                     sdfg_debug.html('');
 
@@ -70,6 +69,7 @@
                 vscode.postMessage({
                     type: 'sdfv.go_to_sdfg',
                     path: node.sdfg_path,
+                    zoom_to: `${node.sdfg_id}/${node.state_id}/-1/-1`,
                 });
             }).contextmenu(_ => {
                 vscode.postMessage({
@@ -128,7 +128,6 @@
         }
 
         $(document).ready(() => {
-            console.log("start refresh from document");
             if (vscode) {
                 vscode.postMessage({
                     type: 'sdfgBreakpoints.refresh_sdfg_breakpoints',
