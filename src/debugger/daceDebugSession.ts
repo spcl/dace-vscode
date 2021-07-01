@@ -68,11 +68,7 @@ export class DaceDebugSession extends LoggingDebugSession {
                 type: "python",
                 request: "launch",
                 program: "${file}",
-                console: "integratedTerminal",
-                env: {
-                    DACE_compiler_build_type: buildType,
-                    DACE_port: portNum
-                },
+                console: "integratedTerminal"
             };
         } else {
             if (!args.pythonLaunchName) {
@@ -101,23 +97,14 @@ export class DaceDebugSession extends LoggingDebugSession {
                         return; // abort launch
                     });
                 }
-
-                /**
-                 * Depending on if the user set an environment variable
-                 * or not we either add it to the variables
-                 * or create an 'env' attribute
-                 */
-                if (entirePyConfig.env) {
-                    entirePyConfig.env.DACE_compiler_build_type = buildType;
-                    entirePyConfig.env.DACE_port = portNum;
-                } else {
-                    entirePyConfig.env = {
-                        DACE_compiler_build_type: buildType,
-                        DACE_port: portNum
-                    };
-                }
             }
         }
+
+        if (!entirePyConfig.env) {
+            entirePyConfig.env = {};
+        }
+        entirePyConfig.env.DACE_compiler_build_type = buildType;
+        entirePyConfig.env.DACE_port = portNum;
 
         // We don't want to override the value in .dace.config if the
         // dev doesn't define daceDev
