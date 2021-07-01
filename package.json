@@ -343,6 +343,10 @@
             {
                 "command": "sdfg.applyHistoryPoint",
                 "title": "Revert To"
+            },
+            {
+                "command": "dace.config",
+                "title": "Open .dace.config"
             }
         ],
         "menus": {

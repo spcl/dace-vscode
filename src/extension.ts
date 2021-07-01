@@ -2,6 +2,8 @@
 // All rights reserved.
 
 import * as vscode from 'vscode';
+import { homedir } from 'os';
+import { join } from 'path';
 
 import { SdfgViewerProvider } from './components/sdfgViewer';
 import { DaCeInterface } from './daceInterface';
@@ -244,6 +246,12 @@ export class DaCeVSCode {
             term.sendText(
                 'pip install dace'
             );
+        });
+        this.registerCommand('dace.config', () => {
+            const uri = vscode.Uri.file(
+                join(homedir(), '.dace.conf')
+            );
+            vscode.commands.executeCommand("vscode.openWith", uri, "default");
         });
 
         const sdfgWatcher = vscode.workspace.createFileSystemWatcher(
