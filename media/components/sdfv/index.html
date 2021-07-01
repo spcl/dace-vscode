@@ -54,6 +54,11 @@
                     Refresh SDFG
                 </span>
             </div>
+            <div id="breakpoint-btn" class="button" onclick="displayBreakpoints(!showBps);">
+                <span id="display-bps">
+                    Display Breakpoints
+                </span>
+            </div>
         </div>
     </div>
 
@@ -140,18 +145,16 @@
         vscode = acquireVsCodeApi();
         message_handler = new MessageHandler();
         var debug_draw = false;
+        var showBps = false;
 
         function setRendererContent(sdfg, previewing = false,
-                                    prevent_refreshes = false) {
+            prevent_refreshes = false) {
             parsed_sdfg = daceParseSDFG(sdfg);
 
             if (daceRenderer) {
                 daceRenderer.set_sdfg(parsed_sdfg);
             } else {
-                daceInitSDFV(null, null, debug_draw);
-                if (parsed_sdfg !== null)
-                    daceRenderer = new VSCodeRenderer(parsed_sdfg, document.getElementById('contents'),
-                        daceMouseEvent, null, debug_draw);
+                daceInitSDFV(parsed_sdfg, null, debug_draw);
             }
 
             if (!previewing) {
@@ -171,7 +174,7 @@
                         daceRenderer.selected_elements[0]
                     );
                 else if ((!daceRenderer.selected_elements) ||
-                         daceRenderer.selected_elements.length === 0)
+                    daceRenderer.selected_elements.length === 0)
                     fill_info_embedded(
                         new SDFG(daceRenderer.sdfg)
                     );
@@ -185,10 +188,7 @@
                 daceRenderer.destroy();
             }
             parsed_sdfg = daceParseSDFG(sdfg_json);
-            daceInitSDFV(null, null, debug_draw);
-            if (parsed_sdfg !== null)
-                daceRenderer = new VSCodeRenderer(parsed_sdfg, document.getElementById('contents'),
-                    daceMouseEvent, user_transform, debug_draw);
+            daceInitSDFV(parsed_sdfg, user_transform, debug_draw);
             embedded_outline(daceRenderer, daceRenderer.graph);
             refresh_analysis_pane();
             refresh_breakpoints();
@@ -199,6 +199,25 @@
                 vscode.postMessage({
                     type: 'sdfv.get_current_sdfg',
                 });
+        }
+
+        function displayBreakpoints(value) {
+            let type = daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS;
+            let already_active = daceRenderer.overlay_manager.get_overlay(type);
+            if (value && already_active === undefined) {
+                vscode.postMessage({
+                    type: 'sdfv.register_breakpointindicator',
+                });
+                $('#display-bps').html('Hide Breakpoints');
+            }
+            else if (!value) {
+                vscode.postMessage({
+                    type: 'sdfv.deregister_overlay',
+                    overlay: daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
+                });
+                $('#display-bps').html('Display Breakpoints');
+            }
+            showBps = value;
         }
 
         // Add a listener to update the content when the extension calls for it.

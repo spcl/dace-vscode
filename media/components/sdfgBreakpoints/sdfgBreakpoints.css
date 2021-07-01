@@ -1,0 +1,110 @@
+/* Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+ * All rights reserved. */
+
+html {
+    padding: 0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Segoe WPC, Segoe UI, sans-serif;
+    color: var(--vscode-foreground);
+    background-color: inherit;
+}
+
+.sdfg-debug-container {
+    overflow: hidden;
+    flex: 1;
+    margin: 0;
+    padding: 0;
+}
+
+.list {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    white-space: nowrap;
+}
+
+.list-element {
+    height: 22px;
+    line-height: 22px;
+    font-size: 13px;
+    cursor: pointer;
+    padding-left: 2px;
+    padding-right: 0.8em;
+}
+
+.list-element:hover {
+    background-color: rgba(90, 92, 94, .2);
+}
+
+.list-element .breakpoint {
+    display: flex;
+    flex: 1;
+    align-items: center;
+}
+
+.bp-circle-container {
+    width: 19px;
+    height: 19px;
+    min-width: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bp-circle-container .bp-circle {
+    height: 9px;
+    width: 9px;
+    margin: 2px 3px;
+    border-radius: 45%;
+}
+
+.sdfg-name-container {
+    padding-left: 3px;
+    flex: 1;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.sdfg-name-container .sdfg-name {
+    flex: 1;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.remove-bp {
+    width: 19px;
+    height: 19px;
+    min-width: 19px;
+    align-items: center;
+    justify-content: center;
+    display: none;
+    margin: 0 1px;
+    border-radius: 5px;
+}
+
+.remove-bp:hover{
+    background-color: rgba(77, 77, 77, 0.6);
+}
+
+.list-element:hover .remove-bp{
+    display: flex;
+}
+
+.sdfg-identifier {
+    padding: 3px 6px;
+    border-radius: 11px;
+    font-size: 11px;
+    min-width: 18px;
+    min-height: 18px;
+    line-height: 11px;
+    font-weight: 400;
+    text-align: center;
+    display: inline-block;
+    box-sizing: border-box;
+    background-color: rgba(77, 77, 77, 0.6);
+    color: rgba(255, 255, 255, 0.6);
+}
