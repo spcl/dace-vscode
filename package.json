@@ -1,7 +1,7 @@
 {
     "name": "sdfv",
-    "displayName": "DaCe SDFG Viewer (SDFV)",
-    "description": "DaCe SDFG Viewer (SDFV) for VS Code",
+    "displayName": "DaCe SDFG Editor",
+    "description": "Transform and optimize data-centric programs with a click of a button",
     "version": "0.3.4",
     "engines": {
         "vscode": "^1.55.0"
@@ -25,7 +25,7 @@
         "onView:sdfgOutline"
     ],
     "main": "./out/extension.js",
-    "publisher": "phschaad",
+    "publisher": "SPCL at ETH Zurich",
     "bugs": {
         "url": "https://github.com/spcl/dace-vscode/issues"
     },
