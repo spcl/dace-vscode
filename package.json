@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Viewer (SDFV)",
     "description": "DaCe SDFG Viewer (SDFV) for VS Code",
-    "version": "0.3.2",
+    "version": "0.3.4",
     "engines": {
         "vscode": "^1.55.0"
     },
