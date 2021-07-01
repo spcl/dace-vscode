@@ -187,10 +187,14 @@ class MessageHandler {
                 ).unbound_breakpoint(message.node);
                 break;
             case 'remove_breakpoint':
-                if (daceRenderer.sdfg.attributes.name === message.node.sdfg_name)
-                    daceRenderer.overlay_manager.get_overlay(
+                if (daceRenderer.sdfg.attributes.name === message.node.sdfg_name) {
+                    const ol = daceRenderer.overlay_manager.get_overlay(
                         daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
-                    ).remove_breakpoint(message.node);
+                    );
+                    // This can can be called while the SDFG isn't displayed
+                    if (ol !== undefined && ol !== null)
+                        ol.remove_breakpoint(message.node);
+                }
                 break;
             case 'saved_nodes':
                 daceRenderer.overlay_manager.get_overlay(
