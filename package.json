@@ -123,6 +123,11 @@
                                 ],
                                 "description": "Setting the build type to RelWithDebInfo will optimize the compilation, however, there is no guaranty that every breakpoint will hit.",
                                 "default": "Debug"
+                            },
+                            "daCeDev": {
+                                "type": "boolean",
+                                "description": "Adds some DaCe developer features. Example: creates CODEGEN map",
+                                "default": "false"
                             }
                         }
                     }
@@ -343,6 +348,10 @@
             {
                 "command": "sdfg.applyHistoryPoint",
                 "title": "Revert To"
+            },
+            {
+                "command": "dace.config",
+                "title": "Open .dace.config"
             }
         ],
         "menus": {
