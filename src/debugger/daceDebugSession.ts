@@ -17,6 +17,7 @@ export interface DaceLaunchRequestArguments
     cppConfig?: string;
     buildType?: string;
     daCeDev?: boolean;
+    sdfgEdit?: boolean;
 }
 
 export class DaceDebugSession extends LoggingDebugSession {
@@ -112,6 +113,9 @@ export class DaceDebugSession extends LoggingDebugSession {
             entirePyConfig.env.
                 DACE_compiler_codegen_lineinfo = daceDev ? "true" : "false";
 
+        if (args.sdfgEdit !== undefined)
+            entirePyConfig.env.
+                DACE_sdfg_edit = args.sdfgEdit ? "true" : "false";
         /**
          * Default:
          *   We detect the operating system and set
