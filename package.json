@@ -1,8 +1,8 @@
 {
     "name": "sdfv",
-    "displayName": "DaCe SDFG Viewer (SDFV)",
-    "description": "DaCe SDFG Viewer (SDFV) for VS Code",
-    "version": "0.3.2",
+    "displayName": "DaCe SDFG Editor",
+    "description": "Transform and optimize data-centric programs with a click of a button",
+    "version": "0.3.4",
     "engines": {
         "vscode": "^1.55.0"
     },
@@ -38,7 +38,8 @@
         "benjamin-simmonds.pythoncpp-debug"
     ],
     "contributes": {
-        "debuggers": [{
+        "debuggers": [
+            {
                 "type": "sdfg-python",
                 "label": "SDFG with Python",
                 "configurationAttributes": {
@@ -55,12 +56,15 @@
                         }
                     }
                 },
-                "initialConfigurations": [{
-                    "type": "sdfg-python",
-                    "request": "launch",
-                    "name": "SDFG: Run current file"
-                }],
-                "configurationSnippets": [{
+                "initialConfigurations": [
+                    {
+                        "type": "sdfg-python",
+                        "request": "launch",
+                        "name": "SDFG: Run current file"
+                    }
+                ],
+                "configurationSnippets": [
+                    {
                         "label": "SDFG: Run current file",
                         "description": "A new configuration for running the currently open SDFG.",
                         "body": {
@@ -137,87 +141,105 @@
                         }
                     }
                 },
-                "configurationSnippets": [{
-                    "label": "DaCe: Run current Program",
-                    "description": "A new configuration for debugging a DaCe program with mixed debugging",
-                    "body": {
-                        "name": "DaCe: debug",
-                        "type": "dace-debug",
-                        "request": "launch",
-                        "pythonConfig": "default",
-                        "cppConfig": "default"
+                "configurationSnippets": [
+                    {
+                        "label": "DaCe: Run current Program",
+                        "description": "A new configuration for debugging a DaCe program with mixed debugging",
+                        "body": {
+                            "name": "DaCe: debug",
+                            "type": "dace-debug",
+                            "request": "launch",
+                            "pythonConfig": "default",
+                            "cppConfig": "default"
+                        }
                     }
-                }]
+                ]
             }
         ],
-        "configuration": [{
-            "title": "DaCe SDFG Optimizer",
-            "properties": {
-                "dace.interface.port": {
-                    "type": "integer",
-                    "default": 5000,
-                    "description": "Run the DaCe backend on a different port",
-                    "scope": "machine-overridable"
-                },
-                "dace.sdfv.layout": {
-                    "type": "string",
-                    "default": "horizontal",
-                    "enum": [
-                        "horizontal",
-                        "vertical"
-                    ],
-                    "enumDescriptions": [
-                        "Split the SDFG Optimizer layout horizontally",
-                        "Split the SDFG Optimizer layout vertically"
-                    ]
+        "configuration": [
+            {
+                "title": "DaCe SDFG Optimizer",
+                "properties": {
+                    "dace.interface.port": {
+                        "type": "integer",
+                        "default": 5000,
+                        "description": "Run the DaCe backend on a different port",
+                        "scope": "machine-overridable"
+                    },
+                    "dace.sdfv.layout": {
+                        "type": "string",
+                        "default": "horizontal",
+                        "enum": [
+                            "horizontal",
+                            "vertical"
+                        ],
+                        "enumDescriptions": [
+                            "Split the SDFG Optimizer layout horizontally",
+                            "Split the SDFG Optimizer layout vertically"
+                        ]
+                    }
                 }
             }
-        }],
-        "breakpoints": [{
+        ],
+        "breakpoints": [
+            {
                 "language": "python"
             },
             {
                 "language": "cpp"
             }
         ],
-        "languages": [{
-            "id": "sdfg",
-            "extensions": [
-                ".sdfg"
-            ],
-            "aliases": [
-                "SDFG",
-                "sdfg"
-            ],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "sdfg",
-            "scopeName": "source.sdfg",
-            "path": "./syntaxes/SDFG.tmLanguage.json"
-        }],
-        "customEditors": [{
-            "viewType": "sdfgCustom.sdfv",
-            "displayName": "SDFG Viewer",
-            "selector": [{
-                "filenamePattern": "*.sdfg"
-            }],
-            "priority": "default"
-        }],
-        "iconThemes": [{
-            "id": "sdfgicon",
-            "label": "Seti + SDFG Extension",
-            "path": "media/resources/icon-theme/sdfg-icon-theme.json"
-        }],
+        "languages": [
+            {
+                "id": "sdfg",
+                "extensions": [
+                    ".sdfg"
+                ],
+                "aliases": [
+                    "SDFG",
+                    "sdfg"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "sdfg",
+                "scopeName": "source.sdfg",
+                "path": "./syntaxes/SDFG.tmLanguage.json"
+            }
+        ],
+        "customEditors": [
+            {
+                "viewType": "sdfgCustom.sdfv",
+                "displayName": "SDFG Viewer",
+                "selector": [
+                    {
+                        "filenamePattern": "*.sdfg"
+                    }
+                ],
+                "priority": "default"
+            }
+        ],
+        "iconThemes": [
+            {
+                "id": "sdfgicon",
+                "label": "Seti + SDFG Extension",
+                "path": "media/resources/icon-theme/sdfg-icon-theme.json"
+            }
+        ],
         "viewsContainers": {
-            "activitybar": [{
-                "id": "transformation-explorer",
-                "title": "SDFG Optimization",
-                "icon": "media/resources/icons/dace-hollow.svg"
-            }]
+            "activitybar": [
+                {
+                    "id": "transformation-explorer",
+                    "title": "SDFG Optimization",
+                    "icon": "media/resources/icons/dace-hollow.svg"
+                }
+            ]
         },
         "views": {
-            "transformation-explorer": [{
+            "transformation-explorer": [
+                {
                     "id": "transformationList",
                     "type": "webview",
                     "name": "Transformations",
@@ -246,14 +268,17 @@
                     "contextualTitle": "SDFG Outline"
                 }
             ],
-            "debug": [{
-                "id": "sdfgBreakpoints",
-                "type": "webview",
-                "name": "SDFG Breakpoints",
-                "contextualTitle": "SDFG Breakpoints"
-            }]
+            "debug": [
+                {
+                    "id": "sdfgBreakpoints",
+                    "type": "webview",
+                    "name": "SDFG Breakpoints",
+                    "contextualTitle": "SDFG Breakpoints"
+                }
+            ]
         },
-        "viewsWelcome": [{
+        "viewsWelcome": [
+            {
                 "view": "transformationList",
                 "contents": "No active SDFG"
             },
@@ -270,7 +295,8 @@
                 "contents": "No active SDFG"
             }
         ],
-        "commands": [{
+        "commands": [
+            {
                 "command": "sdfg.debug.run",
                 "title": "Run the current SDFG",
                 "category": "SDFV",
@@ -360,7 +386,8 @@
             }
         ],
         "menus": {
-            "commandPalette": [{
+            "commandPalette": [
+                {
                     "command": "sdfg.debug.run",
                     "when": "resourceLangId == sdfg"
                 },
@@ -393,7 +420,8 @@
                     "when": "false"
                 }
             ],
-            "editor/title": [{
+            "editor/title": [
+                {
                     "command": "sdfg.debug.run",
                     "when": "resourceLangId == sdfg",
                     "group": "1_run@10"
@@ -414,7 +442,8 @@
                     "group": "1_run@20"
                 }
             ],
-            "editor/context": [{
+            "editor/context": [
+                {
                     "command": "sdfg.goto.sdfg",
                     "when": "sdfg.showMenuCommands == true && resourceLangId == python",
                     "group": "1_run@10"
@@ -425,7 +454,8 @@
                     "group": "1_run@20"
                 }
             ],
-            "view/title": [{
+            "view/title": [
+                {
                     "command": "transformationList.sync",
                     "when": "view == transformationList",
                     "group": "navigation"
