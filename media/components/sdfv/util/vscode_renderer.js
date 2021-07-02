@@ -15,15 +15,13 @@ class VSCodeRenderer extends daceSDFGRenderer {
             let move_btn = document.getElementById('move-btn');
             let select_btn = document.getElementById('select-btn');
             let add_btns = [
+                document.getElementById('elem_access_node'),
                 document.getElementById('elem_map'),
                 document.getElementById('elem_consume'),
                 document.getElementById('elem_tasklet'),
                 document.getElementById('elem_nested_sdfg'),
                 document.getElementById('elem_libnode'),
-                document.getElementById('elem_access_node'),
-                document.getElementById('elem_stream'),
                 document.getElementById('elem_state'),
-                document.getElementById('elem_connector'),
                 document.getElementById('elem_edge'),
             ];
             if (pan_btn)
@@ -113,6 +111,105 @@ class VSCodeRenderer extends daceSDFGRenderer {
         this.add_position = null;
 
         this.send_new_sdfg_to_vscode();
+    }
+
+    show_select_library_node_dialog(callback) {
+        const libnode_select_modal = $('<div>', {
+            'class': 'modal fade',
+            'role': 'dialog',
+        }).appendTo('body');
+
+        const modal_doc = $('<div>', {
+            'class': 'modal-dialog modal-dialog-centered',
+            'role': 'document',
+        }).appendTo(libnode_select_modal);
+        const modal_content = $('<div>', {
+            'class': 'modal-content',
+        }).appendTo(modal_doc);
+        const modal_header = $('<div>', {
+            'class': 'modal-header',
+        }).appendTo(modal_content);
+
+        $('<h5>', {
+            'class': 'modal-title',
+            'text': 'Select Library Node',
+        }).appendTo(modal_header);
+
+        const modal_body = $('<div>', {
+            'class': 'modal-body',
+        }).appendTo(modal_content);
+
+        const modal_footer = $('<div>', {
+            'class': 'modal-footer',
+        }).appendTo(modal_content);
+        $('<button>', {
+            'class': 'btn btn-secondary',
+            'type': 'button',
+            'data-bs-dismiss': 'modal',
+            'text': 'Close',
+        }).appendTo(modal_footer);
+
+        //callback();
+        if (window.sdfg_meta_dict) {
+            const libraries = window.sdfg_meta_dict['__libs__'];
+
+            const container = $('<div>', {
+                'class': 'container-fluid',
+            }).appendTo(modal_body);
+
+            const row = $('<div>', {
+                'class': 'row',
+            }).appendTo(container);
+
+            const header_wrapper = $('<div>', {
+                'class': 'col-3',
+            }).appendTo(row);
+            $('<span>', {
+                'text': 'Library Node:'
+            }).appendTo(header_wrapper);
+
+            const select_wrapper = $('<div>', {
+                'class': 'col-9',
+            }).appendTo(row);
+            const lib_input = $('<select>', {
+                'class': 'sdfv-property-dropdown',
+            }).appendTo(select_wrapper);
+
+            Object.keys(libraries).forEach(libname => {
+                lib_input.append(new Option(
+                    libname,
+                    libraries[libname],
+                    false,
+                    false
+                ));
+            });
+
+            $('<button>', {
+                'class': 'btn btn-primary',
+                'type': 'button',
+                'text': 'Ok',
+                'click': () => {
+                    if (lib_input.val()) {
+                        callback();
+                        this.add_mode_lib = lib_input.val();
+                        libnode_select_modal.modal('hide');
+                    } else {
+                        lib_input.addClass('is-invalid');
+                    }
+                },
+            }).appendTo(modal_footer);
+        } else {
+            modal_body.append($('<p>', {
+                'text': 'You need to open the SDFG Optimization sidepanel to ' +
+                    'add library nodes or edit SDFG properties',
+            }));
+        }
+
+        libnode_select_modal.on(
+            'hidden.bs.modal', () => libnode_select_modal.remove()
+        );
+
+        libnode_select_modal.modal('show');
     }
 
 }

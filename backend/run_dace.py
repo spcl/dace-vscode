@@ -10,6 +10,7 @@ from dace.symbolic import pystr_to_symbolic
 from dace.libraries.blas import MatMul, Transpose
 from dace.libraries.standard import Reduce
 import inspect
+from pydoc import locate
 import sympy
 import sys
 import traceback
@@ -552,6 +553,7 @@ def get_property_metdata():
 
     meta_dict = {}
     meta_dict['__reverse_type_lookup__'] = {}
+    meta_dict['__libs__'] = {}
     for typename in dace.serialize._DACE_SERIALIZE_TYPES:
         t = dace.serialize._DACE_SERIALIZE_TYPES[typename]
         if hasattr(t, '__properties__'):
@@ -608,6 +610,12 @@ def get_property_metdata():
                         meta_dict['__reverse_type_lookup__'][
                             meta_type
                         ] = meta_dict[meta_key][propname]
+
+            # For library nodes we want to make sure they are all easily
+            # accessible under '__libs__', to be able to list them all out.
+            if (issubclass(t, dace.sdfg.nodes.LibraryNode)
+                and not t == dace.sdfg.nodes.LibraryNode):
+                meta_dict['__libs__'][typename] = meta_key
 
     # Save a lookup for enum values not present yet.
     for enum_name in enum_list:
@@ -779,12 +787,19 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid, edge_a_uuid):
     ret = find_graph_element_by_uuid(sdfg, parent_uuid)
     parent = ret['element']
 
+    libname = None
+    if type is not None and isinstance(type, str):
+        split_type = type.split('|')
+        if len(split_type) == 2:
+            type = split_type[0]
+            libname = split_type[1]
+
     if type == 'SDFGState':
         if parent is None:
             parent = sdfg
         state = parent.add_state()
         uuid = [get_uuid(state)]
-    elif type == 'AccessNode' or type == 'Stream':
+    elif type == 'AccessNode':
         arrays = list(parent.parent.arrays.keys())
         if len(arrays) == 0:
             parent.parent.add_array('tmp', [1], dtype=dace.float64)
@@ -812,7 +827,17 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid, edge_a_uuid):
         nsdfg = parent.add_nested_sdfg(sub_sdfg, sdfg, {'in'}, {'out'})
         uuid = [get_uuid(nsdfg, parent)]
     elif type == 'LibraryNode':
-        raise NotImplementedError()
+        if libname is None:
+            return {
+                'error': {
+                    'message': 'Failed to add library node',
+                    'details': 'Must provide a valid library node type',
+                },
+            }
+        libnode_class = locate(libname)
+        libnode = libnode_class()
+        parent.add_node(libnode)
+        uuid = [get_uuid(libnode, parent)]
     elif type == 'Edge':
         edge_start_ret = find_graph_element_by_uuid(sdfg, edge_a_uuid)
         edge_start = edge_start_ret['element']
