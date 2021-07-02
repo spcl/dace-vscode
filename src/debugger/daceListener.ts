@@ -4,6 +4,7 @@
 import * as Net from 'net';
 import * as vscode from 'vscode';
 import { BreakpointHandler } from './breakpointHandler';
+import { SdfgViewerProvider } from '../components/sdfgViewer';
 
 export var PORT: number = 0;
 
@@ -16,7 +17,7 @@ export class DaceListener extends vscode.Disposable {
     hasIndicatedRestricted: boolean;
 
     constructor() {
-        super(() => {this.server.close()});
+        super(() => { this.server.close(); });
         this.server = this.startListening();
         this.hasIndicatedRestricted = false;
     }
@@ -68,6 +69,13 @@ export class DaceListener extends vscode.Disposable {
                     }
                 }
                 break;
+            case "stopForTransformation":
+                const activeSession = vscode.debug.activeDebugSession;
+                if (activeSession) {
+                    activeSession.customRequest('pause').then(_ => {
+                        SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
+                    });
+                }
             default:
                 break;
         }

@@ -124,10 +124,15 @@
                                 "description": "Setting the build type to RelWithDebInfo will optimize the compilation, however, there is no guaranty that every breakpoint will hit.",
                                 "default": "Debug"
                             },
+                            "sdfgEdit": {
+                                "type": "boolean",
+                                "description": "Stops the debugger to apply transformations before code generation",
+                                "default": false
+                            },
                             "daCeDev": {
                                 "type": "boolean",
                                 "description": "Adds some DaCe developer features. Example: creates CODEGEN map",
-                                "default": "false"
+                                "default": false
                             }
                         }
                     }
