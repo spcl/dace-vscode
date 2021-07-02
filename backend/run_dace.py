@@ -1,6 +1,44 @@
 # Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
+#####################################################################
+# Before importing anything, try to take the ".env" file into account
+import os
+import re
+import sys
+try:
+    import dotenv
+    import re
+    import sys
+
+    # First, load the environment
+    dotenv.load_dotenv()
+    # Then, gather values
+    vals = dotenv.dotenv_values()
+except (ModuleNotFoundError, ImportError):
+    # Failsafe mode - try to load directly
+    vals = {}
+    if os.path.isfile('.env'):
+        with open('.env', 'r') as fp:
+            lines = fp.readlines()
+            for line in lines:
+                if '=' not in line:
+                    continue
+                pos = line.find('=')
+                envvar = line[:pos]
+                envval = line[pos + 1:]
+                vals[envvar] = envval
+
+            # First, load the environment
+            os.environ.update(vals)
+
+# Add any extra module paths from .env
+if 'PYTHONPATH' in vals:
+    paths = re.split(';|:', vals['PYTHONPATH'])
+    sys.path.extend(paths)
+#####################################################################
+
+# Then, load the rest of the modules
 import aenum
 from argparse import ArgumentParser
 import ast, astunparse
