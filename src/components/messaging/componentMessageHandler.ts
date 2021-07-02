@@ -7,9 +7,10 @@ import { DaCeInterface } from '../../daceInterface';
 import { OutlineProvider } from "../outline";
 import { SdfgViewerProvider } from "../sdfgViewer";
 import { AnalysisProvider } from "../analysis";
-import { BreakpointProvider } from "../breakpoints";
+import { SdfgBreakpointProvider } from "../sdfgBreakpoints";
 import { TransformationListProvider } from '../transformationList';
 import { TransformationHistoryProvider } from '../transformationHistory';
+import { BreakpointHandler } from '../../debugger/breakpointHandler';
 
 export class ComponentMessageHandler {
 
@@ -26,7 +27,6 @@ export class ComponentMessageHandler {
     public handleMessage(message: any, origin: vscode.Webview) {
         if (message.type !== undefined) {
             const [target, type] = message.type.split('.');
-
             message.type = type;
             switch (target) {
                 case 'sdfv':
@@ -47,8 +47,8 @@ export class ComponentMessageHandler {
                         origin
                     );
                     break;
-                case 'breakpoints':
-                    BreakpointProvider.getInstance()?.handleMessage(
+                case 'sdfgBreakpoints':
+                    SdfgBreakpointProvider.getInstance()?.handleMessage(
                         message,
                         origin
                     );
@@ -64,6 +64,12 @@ export class ComponentMessageHandler {
                     break;
                 case 'transformation_list':
                     TransformationListProvider.getInstance()?.handleMessage(
+                        message,
+                        origin
+                    );
+                    break;
+                case 'bp_handler':
+                    BreakpointHandler.getInstance()?.handleMessage(
                         message,
                         origin
                     );

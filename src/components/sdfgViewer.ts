@@ -11,8 +11,7 @@ import { AnalysisProvider } from './analysis';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 import { TransformationListProvider } from './transformationList';
-import { BreakpointProvider } from './breakpoints';
-import { getCppRange, Node } from '../debugger/breakpointHandler';
+import { BreakpointHandler, getCppRange, Node } from '../debugger/breakpointHandler';
 
 export class SdfgViewer {
 
@@ -109,7 +108,6 @@ export class SdfgViewerProvider
             TransformationHistoryProvider.getInstance()?.refresh();
             OutlineProvider.getInstance()?.refresh();
             AnalysisProvider.getInstance()?.refresh();
-            BreakpointProvider.getInstance()?.refresh();
         }
     }
 
@@ -141,6 +139,7 @@ export class SdfgViewerProvider
 
     public async handleMessage(message: any,
         origin: vscode.Webview | undefined = undefined): Promise<void> {
+        let node: any;
         switch (message.type) {
             case 'get_current_sdfg':
                 const instance = SdfgViewerProvider.getInstance();
@@ -177,25 +176,28 @@ export class SdfgViewerProvider
                 break;
             case 'go_to_cpp':
                 // We want to jump to a specific cpp file
-                let cachePath = vscode.workspace.rootPath +
+                let cachePath = path.normalize(
+                    vscode.workspace.rootPath +
                     '/.dacecache/' +
-                    message.sdfg_name;
-
-                let mapPath = path.normalize(
-                    cachePath +
-                    '/map/map_cpp.json'
+                    message.sdfg_name
                 );
 
-                let cppPath = path.normalize(
-                    cachePath +
-                    '/src/cpu/' +
-                    message.sdfg_name +
-                    '.cpp'
+                let mapPath = path.join(
+                    cachePath,
+                    'map',
+                    'map_cpp.json'
+                );
+
+                let cppPath = path.join(
+                    cachePath,
+                    'src',
+                    'cpu',
+                    message.sdfg_name + '.cpp'
                 );
 
                 const cppMapUri = vscode.Uri.file(mapPath);
                 const cppFileUri = vscode.Uri.file(cppPath);
-                const node = new Node(
+                node = new Node(
                     message.sdfg_id,
                     message.state_id,
                     message.node_id,
@@ -228,7 +230,13 @@ export class SdfgViewerProvider
                     );
                 });
                 break;
-
+            case 'go_to_sdfg':
+                SdfgViewerProvider.getInstance()?.openViewer(
+                    vscode.Uri.file(message.path),
+                    message.zoom_to,
+                    message.display_bps
+                );
+                break;
             default:
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
                 break;
@@ -268,6 +276,22 @@ export class SdfgViewerProvider
                 );
             }
         );
+    }
+
+    public openViewer(uri: vscode.Uri, zoom_to: string | undefined = undefined,
+        display_bps: boolean = false) {
+        vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType).then(_ => {
+            if (zoom_to)
+                this.handleMessage({
+                    type: 'zoom_to_node',
+                    uuid: zoom_to,
+                });
+            if (display_bps)
+                this.handleMessage({
+                    type: 'display_breakpoints',
+                    display: display_bps
+                });
+        });
     }
 
     public async resolveCustomTextEditor(

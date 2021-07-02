@@ -1,8 +1,8 @@
 {
     "name": "sdfv",
-    "displayName": "DaCe SDFG Viewer (SDFV)",
-    "description": "DaCe SDFG Viewer (SDFV) for VS Code",
-    "version": "0.3.2",
+    "displayName": "DaCe SDFG Editor",
+    "description": "Transform and optimize data-centric programs with a click of a button",
+    "version": "0.3.4",
     "engines": {
         "vscode": "^1.55.0"
     },
@@ -21,7 +21,7 @@
         "onView:transformationList",
         "onView:transformationHistory",
         "onView:sdfgAnalysis",
-        "onView:breakpoints",
+        "onView:sdfgBreakpoints",
         "onView:sdfgOutline"
     ],
     "main": "./out/extension.js",
@@ -128,6 +128,11 @@
                                 ],
                                 "description": "Setting the build type to RelWithDebInfo will optimize the compilation, however, there is no guaranty that every breakpoint will hit.",
                                 "default": "Debug"
+                            },
+                            "daCeDev": {
+                                "type": "boolean",
+                                "description": "Adds some DaCe developer features. Example: creates CODEGEN map",
+                                "default": "false"
                             }
                         }
                     }
@@ -252,18 +257,19 @@
                     "contextualTitle": "SDFG Analysis"
                 },
                 {
-                    "id": "breakpoints",
-                    "type": "webview",
-                    "name": "Breakpoints",
-                    "icon": "media/resources/icons/dace-hollow.svg",
-                    "contextualTitle": "Breakpoints"
-                },
-                {
                     "id": "sdfgOutline",
                     "type": "webview",
                     "name": "SDFG Outline",
                     "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Outline"
+                }
+            ],
+            "debug": [
+                {
+                    "id": "sdfgBreakpoints",
+                    "type": "webview",
+                    "name": "SDFG Breakpoints",
+                    "contextualTitle": "SDFG Breakpoints"
                 }
             ]
         },
@@ -278,10 +284,6 @@
             },
             {
                 "view": "sdfgAnalysis",
-                "contents": "No active SDFG"
-            },
-            {
-                "view": "breakpoints",
                 "contents": "No active SDFG"
             },
             {
@@ -343,8 +345,8 @@
                 }
             },
             {
-                "command": "breakpoints.sync",
-                "title": "Refresh Breakpoints",
+                "command": "sdfgBreakpoints.sync",
+                "title": "Refresh SDFG Breakpoints",
                 "icon": {
                     "dark": "media/resources/icons/dark/refresh.svg",
                     "light": "media/resources/icons/light/refresh.svg"
@@ -373,6 +375,10 @@
             {
                 "command": "sdfg.applyHistoryPoint",
                 "title": "Revert To"
+            },
+            {
+                "command": "dace.config",
+                "title": "Open .dace.config"
             }
         ],
         "menus": {
@@ -461,9 +467,8 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "breakpoints.sync",
-                    "when": "view == breakpoints",
-                    "group": "navigation"
+                    "command": "sdfgBreakpoints.sync",
+                    "when": "view == sdfgBreakpoints"
                 },
                 {
                     "command": "sdfgOutline.sync",

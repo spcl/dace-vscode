@@ -34,7 +34,7 @@ class VSCodeRenderer extends daceSDFGRenderer {
         }
 
         super(sdfg, container, on_mouse_event, user_transform,
-            debug_draw, background, mode_buttons);
+              debug_draw, background, mode_buttons);
 
         this.bpIndicator = new BreakpointIndicator(this);
     }
@@ -214,7 +214,7 @@ class VSCodeRenderer extends daceSDFGRenderer {
 
 }
 
-function dom_setup(){
+function dom_setup() {
     $('#search-btn').click(() => {
         if (globals.daceRenderer)
             setTimeout(() => {

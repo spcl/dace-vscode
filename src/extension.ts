@@ -2,6 +2,8 @@
 // All rights reserved.
 
 import * as vscode from 'vscode';
+import { homedir } from 'os';
+import { join } from 'path';
 
 import { SdfgViewerProvider } from './components/sdfgViewer';
 import { DaCeInterface } from './daceInterface';
@@ -9,7 +11,7 @@ import { TransformationHistoryProvider } from './components/transformationHistor
 import { OutlineProvider } from './components/outline';
 import { AnalysisProvider } from './components/analysis';
 import { TransformationListProvider } from './components/transformationList';
-import { BreakpointProvider } from './components/breakpoints';
+import { SdfgBreakpointProvider } from './components/sdfgBreakpoints';
 import { activateSdfgPython } from './debugger/sdfgPythonDebugger';
 import { activateDaceDebug } from './debugger/daceDebugger';
 
@@ -34,7 +36,6 @@ export class DaCeVSCode {
     private trafoHistProvider?: TransformationHistoryProvider = undefined;
     private outlineProvider?: OutlineProvider = undefined;
     private analysisProvider?: AnalysisProvider = undefined;
-    private breakpointProvider?: BreakpointProvider = undefined;
 
     public registerCommand(command: string, handler: (...args: any[]) => any) {
         this.context?.subscriptions.push(vscode.commands.registerCommand(
@@ -74,7 +75,7 @@ export class DaCeVSCode {
         ).then(() => {
             const editor =
                 SdfgViewerProvider.getInstance()
-                ?.findEditorForPath(sdfgUri);
+                    ?.findEditorForPath(sdfgUri);
             if (editor) {
                 editor.wrapperFile = sourcePath;
                 editor.linkFile = linkFile;
@@ -150,7 +151,7 @@ export class DaCeVSCode {
                                 'SDFV_auto_open_generated_sdfg',
                                 true
                             );
-                            // Fall through.
+                        // Fall through.
                         case 'Yes':
                             this.openGeneratedSdfg(
                                 sdfgPath,
@@ -164,7 +165,7 @@ export class DaCeVSCode {
                                 'SDFV_auto_open_generated_sdfg',
                                 false
                             );
-                            // Fall through.
+                        // Fall through.
                         case 'No':
                             break;
                     }
@@ -198,9 +199,8 @@ export class DaCeVSCode {
         );
         this.analysisProvider = AnalysisProvider.getInstance();
         context.subscriptions.push(
-            BreakpointProvider.register(context)
+            SdfgBreakpointProvider.register(context)
         );
-        this.breakpointProvider = BreakpointProvider.getInstance();
 
         // Register necessary commands.
         this.registerCommand('transformationList.sync', () => {
@@ -219,11 +219,10 @@ export class DaCeVSCode {
                     type: 'refresh_analysis_pane',
                 });
         });
-        this.registerCommand('breakpoints.sync', () => {
-            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                    type: 'refresh_breakpoints',
-                });
+        this.registerCommand('sdfgBreakpoints.sync', () => {
+            SdfgBreakpointProvider.getInstance()?.handleMessage({
+                type: 'refresh_sdfg_breakpoints',
+            });
         });
         this.registerCommand('sdfgOutline.sync', () => {
             if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
@@ -247,6 +246,12 @@ export class DaCeVSCode {
             term.sendText(
                 'pip install dace'
             );
+        });
+        this.registerCommand('dace.config', () => {
+            const uri = vscode.Uri.file(
+                join(homedir(), '.dace.conf')
+            );
+            vscode.commands.executeCommand("vscode.openWith", uri, "default");
         });
 
         const sdfgWatcher = vscode.workspace.createFileSystemWatcher(
@@ -293,7 +298,7 @@ export class DaCeVSCode {
                                 'SDFV_auto_open_instrumentation_report',
                                 true
                             );
-                            // Fall through.
+                        // Fall through.
                         case 'Yes':
                             this.openInstrumentationReport(url, report);
                             break;
@@ -302,7 +307,7 @@ export class DaCeVSCode {
                                 'SDFV_auto_open_instrumentation_report',
                                 false
                             );
-                            // Fall through.
+                        // Fall through.
                         case 'No':
                             break;
                     }
@@ -345,13 +350,12 @@ export class DaCeVSCode {
         const clearReason = 'No SDFG selected';
         this.outlineProvider?.clearOutline(clearReason);
         this.analysisProvider?.clear(clearReason);
-        this.breakpointProvider?.clear(clearReason);
         this.trafoHistProvider?.clearList(clearReason);
         this.trafoProvider?.clearList(clearReason);
     }
 
     public updateActiveSdfg(activeSdfgFileName: string,
-                            activeEditor: vscode.Webview) {
+        activeEditor: vscode.Webview) {
         this.activeSdfgFileName = activeSdfgFileName;
         this.activeEditor = activeEditor;
 
@@ -359,10 +363,9 @@ export class DaCeVSCode {
         this.trafoHistProvider?.refresh();
         this.outlineProvider?.refresh();
         this.analysisProvider?.refresh();
-        this.breakpointProvider?.refresh();
     }
 
-    public async getActiveSdfg(fromDisk=false): Promise<any | undefined> {
+    public async getActiveSdfg(fromDisk = false): Promise<any | undefined> {
         let sdfgJson = undefined;
         if (fromDisk === true) {
             if (this.activeSdfgFileName)
@@ -398,7 +401,6 @@ export function activate(context: vscode.ExtensionContext) {
  * Called when the extension gets deactivated, ie. when VSCode is shut down.
  */
 export function deactivate() {
-    console.log("deactivating DaCe");
     let context = DaCeVSCode.getInstance().getExtensionContext();
     if (context)
         context.subscriptions.forEach(item => item.dispose());
