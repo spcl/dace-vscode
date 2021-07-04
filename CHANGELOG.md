@@ -2,6 +2,12 @@
 
 ## 0.3
 
+### 0.3.4
+
+- Support breakpoints in SDFGs
+  - Adds a breakpoint overlay to active SDFGs in the editor
+  - Allows the execution of SDFGs in debug mode, halting at breakpoints
+
 ### 0.3.3
 
 - Allow editing of transformation properties before applying

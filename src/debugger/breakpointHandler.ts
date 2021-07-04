@@ -229,8 +229,6 @@ export class BreakpointHandler extends vscode.Disposable {
             }),
             vscode.languages.registerHoverProvider('cpp', {
                 async provideHover(document, position, token) {
-                    console.log('hoverProvider');
-
                     const INSTANCE = BreakpointHandler.getInstance();
                     const files = INSTANCE?.files;
                     const filePath = normalizePath(document.fileName);
@@ -239,12 +237,23 @@ export class BreakpointHandler extends vscode.Disposable {
 
                     const func = INSTANCE.currentFunc;
                     if (func && func.codegen_map) {
-                        const codegenLoc = await INSTANCE.getCodegen(position.line, func);
+                        const codegenLoc = await INSTANCE.getCodegen(
+                            position.line + 1,
+                            func
+                        );
                         if (codegenLoc && codegenLoc.file, codegenLoc.line) {
-                            return new vscode.Hover({
-                                language: "CODEGEN",
-                                value: `${codegenLoc.file}:${codegenLoc.line}`,
-                            });
+                            const uri = vscode.Uri.file(codegenLoc.file);
+                            let hover_link = new vscode.MarkdownString(
+                                `[open CODEGEN]` +
+                                `(file://${uri.path}#${codegenLoc.line})`
+                            );
+                            hover_link.isTrusted = true;
+                            let content = {
+                                // For nicer highlighting
+                                language: 'javascript',
+                                value: `${uri.fsPath}:${codegenLoc.line}`
+                            };
+                            return new vscode.Hover([content, hover_link]);
                         }
                     }
                     return undefined;
