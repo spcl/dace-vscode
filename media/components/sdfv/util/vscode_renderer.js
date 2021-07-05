@@ -35,19 +35,6 @@ class VSCodeRenderer extends daceSDFGRenderer {
 
         super(sdfg, container, on_mouse_event, user_transform,
               debug_draw, background, mode_buttons);
-
-        this.bpIndicator = new BreakpointIndicator(this);
-    }
-
-    draw(dt) {
-        super.draw(dt);
-        this.bpIndicator.draw();
-    }
-
-    on_mouse_event(event, comp_x_func, comp_y_func, evtype = 'other') {
-        super.on_mouse_event(event, comp_x_func, comp_y_func, evtype);
-        this.bpIndicator.handle_mouse_event(event, comp_x_func,
-            comp_y_func, evtype);
     }
 
     send_new_sdfg_to_vscode() {
@@ -102,11 +89,24 @@ class VSCodeRenderer extends daceSDFGRenderer {
             return;
 
         let el = daceFindGraphElementByUUID(this.graph, first).element;
+
         // TODO: set in construction attribute
         this.canvas_manager.translate_element(
             el, { x: el.x, y: el.y }, this.add_position, this.sdfg,
             this.sdfg_list, this.state_parent_list, null, true
         );
+
+        if (el instanceof daceSDFGElements.EntryNode && uuids.length >= 2) {
+            let exit = daceFindGraphElementByUUID(this.graph, uuids[1]).element;
+            if (exit) {
+                this.canvas_manager.translate_element(
+                    exit, { x: exit.x, y: exit.y },
+                    { x: this.add_position.x, y: this.add_position.y + 100},
+                    this.sdfg, this.sdfg_list, this.state_parent_list, null,
+                    true
+                );
+            }
+        }
 
         this.add_position = null;
 

@@ -102,7 +102,6 @@ pre.code {
   font-size: .9rem;
 }
 
-<<<<<<< HEAD
 #top-bar #search-bar-wrapper {
   height: 100%;
 }
@@ -117,11 +116,6 @@ pre.code {
 #top-bar #search-bar #search {
   padding: .3rem .1rem;
   margin-right: .2rem;
-=======
-#search-bar #search {
-  padding: .2rem .3rem;
-  margin-right: .3rem;
->>>>>>> master
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-placeholderForeground);
@@ -131,27 +125,7 @@ pre.code {
   color: var(--vscode-input-placeholderForeground);
 }
 
-<<<<<<< HEAD
 #search-case-sensitive-btn {
-=======
-#search-bar #search-case-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#search-bar #search-case-container label {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#search-bar #search-case-container label input {
-  margin-right: .3rem;
-}
-
-#search-bar #search-case {
->>>>>>> master
   height: 1.3rem;
   width: 1.3rem;
   margin-left: -1.6rem;
@@ -177,7 +151,6 @@ pre.code {
   flex-direction: row;
 }
 
-<<<<<<< HEAD
 #button-bar .button {
   margin: 0 .1rem;
   user-select: none;
@@ -190,13 +163,9 @@ pre.code {
   background-color: transparent;
   color: transparent;
   user-select: none;
-=======
-#search-bar .button {
-  margin-left: .5rem;
->>>>>>> master
 }
 
-#button-bar #refresh-btn {
+#button-bar #breakpoint-btn {
   margin-left: auto;
 }
 

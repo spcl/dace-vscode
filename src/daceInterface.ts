@@ -186,9 +186,10 @@ implements MessageReceiverInterface {
 
     public async startDaemonInTerminal(callback?: CallableFunction) {
         if (this.daemonTerminal === undefined)
-            this.daemonTerminal = vscode.window.createTerminal(
-                'SDFG Optimizer'
-            );
+            this.daemonTerminal = vscode.window.createTerminal({
+                hideFromUser: true,
+                name: 'SDFG Optimizer',
+            });
 
         const scriptUri = this.getRunDaceScriptUri();
         if (scriptUri) {

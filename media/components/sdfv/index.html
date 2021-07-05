@@ -153,16 +153,18 @@
                       <line x1="20" y1="20" x2="180" y2="180" marker-end="url(#arrowhead)" />
                     </svg>
                 </div>
+                <div id="breakpoint-btn" class="button"
+                     onclick="displayBreakpoints(!showBps);">
+                    <span id="display-bps">
+                        Display Breakpoints
+                    </span>
+                </div>
+                <div class="spacer"></div>
                 <div id="refresh-btn" class="button" onclick="refreshSdfg();">
                     <span>
                         Refresh SDFG
                     </span>
                 </div>
-            </div>
-            <div id="breakpoint-btn" class="button" onclick="displayBreakpoints(!showBps);">
-                <span id="display-bps">
-                    Display Breakpoints
-                </span>
             </div>
         </div>
     </div>
@@ -262,7 +264,7 @@
                 if (parsed_sdfg !== null)
                     daceRenderer = new VSCodeRenderer(
                         parsed_sdfg, document.getElementById('contents'),
-                        daceMouseEvent, null, debug_draw
+                        daceMouseEvent, null, debug_draw, null, null
                     );
             }
 
@@ -296,12 +298,14 @@
                 user_transform = daceRenderer.canvas_manager.user_transform;
                 daceRenderer.destroy();
             }
+
             parsed_sdfg = daceParseSDFG(sdfg_json);
             if (parsed_sdfg !== null)
                 daceRenderer = new VSCodeRenderer(
                     parsed_sdfg, document.getElementById('contents'),
-                    daceMouseEvent, user_transform, debug_draw
+                    daceMouseEvent, user_transform, debug_draw, null, null
                 );
+
             embedded_outline(daceRenderer, daceRenderer.graph);
             refresh_analysis_pane();
             refresh_breakpoints();
@@ -326,7 +330,7 @@
             else if (!value) {
                 vscode.postMessage({
                     type: 'sdfv.deregister_overlay',
-                    overlay: daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
+                    overlay: daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS,
                 });
                 $('#display-bps').html('Display Breakpoints');
             }
