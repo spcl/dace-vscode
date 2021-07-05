@@ -93,6 +93,7 @@ class MessageHandler {
                 get_applicable_transformations();
                 break;
             case 'get_applicable_transformations_callback':
+                daemon_connected = true;
                 if (message.transformations !== undefined)
                     transformations = [[], [], [], message.transformations];
                 else

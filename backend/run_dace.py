@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 import ast, astunparse
 import dace
 from dace.sdfg import propagation
+from dace.sdfg.nodes import NestedSDFG
 from dace.symbolic import pystr_to_symbolic
 from dace.libraries.blas import MatMul, Transpose
 from dace.libraries.standard import Reduce
@@ -797,6 +798,8 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid, edge_a_uuid):
     if type == 'SDFGState':
         if parent is None:
             parent = sdfg
+        elif isinstance(parent, NestedSDFG):
+            parent = parent.sdfg
         state = parent.add_state()
         uuid = [get_uuid(state)]
     elif type == 'AccessNode':
