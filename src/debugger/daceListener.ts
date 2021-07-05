@@ -69,10 +69,8 @@ export class DaceListener extends vscode.Disposable {
                     }
                 }
                 break;
-            case "stopForTransformation":
-                const activeSession = vscode.debug.activeDebugSession;
-                if (activeSession)
-                    SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
+            case "openSDFG":
+                SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
 
             default:
                 break;
