@@ -98,7 +98,6 @@ function compute_scope_label(scope_entry) {
 }
 
 function element_update_label(element, attributes) {
-    console.log(element, attributes);
     if (element.data) {
         if (element.data.node) {
             if (attributes.label)

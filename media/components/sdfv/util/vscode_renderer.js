@@ -8,8 +8,6 @@ class VSCodeRenderer extends daceSDFGRenderer {
     constructor(sdfg, container, on_mouse_event = null, user_transform = null,
         debug_draw = false, background = null, mode_buttons = null) {
 
-        dom_setup();
-
         if (!mode_buttons) {
             let pan_btn = document.getElementById('pan-btn');
             let move_btn = document.getElementById('move-btn');
@@ -188,28 +186,4 @@ class VSCodeRenderer extends daceSDFGRenderer {
         modal_ret.modal.modal('show');
     }
 
-}
-
-function dom_setup() {
-    $('#search-btn').click(() => {
-        if (globals.daceRenderer)
-            setTimeout(() => {
-                find_in_graph(
-                    globals.daceRenderer, globals.daceRenderer.graph,
-                    $('#search').val(), $('#search-case')[0].checked
-                );
-            }, 1);
-    });
-    $('#search').on('keydown', (e) => {
-        if (e.key === 'Enter' || e.which === 13) {
-            if (globals.daceRenderer)
-                setTimeout(() => {
-                    find_in_graph(
-                        globals.daceRenderer, globals.daceRenderer.graph,
-                        $('#search').val(), $('#search-case')[0].checked
-                    );
-                }, 1);
-            e.preventDefault();
-        }
-    });
 }

@@ -243,10 +243,10 @@ $("#search").on('input', function (e) {
 });
 
 function start_find_in_graph_vscode() {
-    if (renderer)
+    if (daceRenderer)
         setTimeout(() => {
-            find_in_graph(
-                renderer, renderer.graph, $('#search').val(),
+            daceFindInGraph(
+                daceRenderer, daceRenderer.graph, $('#search').val(),
                 $('#search-case-sensitive-btn')[0].checked
             );
         }, 1);

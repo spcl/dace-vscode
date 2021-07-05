@@ -510,7 +510,13 @@ def get_transformations(sdfg_json, selected_elements):
             subgraph = SubgraphView(state, selected_nodes)
 
     if subgraph is not None:
-        for xform in SubgraphTransformation.extensions():
+        extensions = SubgraphTransformation.extensions()
+        for xform in extensions:
+            xform_data = extensions[xform]
+            if ('singlestate' in xform_data and
+                xform_data['singlestate'] and
+                len(selected_states) > 0):
+                continue
             xform_obj = xform(subgraph)
             if xform_obj.can_be_applied(sdfg, subgraph):
                 transformations.append(xform_obj.to_json())
