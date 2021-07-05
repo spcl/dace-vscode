@@ -148,18 +148,26 @@ class VSCodeRenderer extends daceSDFGRenderer {
             'class': 'col-3',
         }).appendTo(row);
         $('<span>', {
-            'text': 'Library Node:'
+            'text': 'Library:'
         }).appendTo(header_wrapper);
 
-        const select_wrapper = $('<div>', {
+        const lib_input_wrapper = $('<div>', {
             'class': 'col-9',
         }).appendTo(row);
-        const lib_input = $('<select>', {
-            'class': 'sdfv-property-dropdown',
-        }).appendTo(select_wrapper);
+        const lib_input = $('<input>', {
+            'type': 'text',
+            'style': 'width: 100%;',
+            'list': 'lib-selection-input-list',
+            'value': '',
+            'placeholder': 'Type to search...'
+        }).appendTo(lib_input_wrapper);
+
+        const datalist = $('<datalist>', {
+            'id': 'lib-selection-input-list',
+        }).appendTo(lib_input_wrapper);
 
         Object.keys(libraries).forEach(libname => {
-            lib_input.append(new Option(
+            datalist.append(new Option(
                 libname,
                 libraries[libname],
                 false,
@@ -171,7 +179,7 @@ class VSCodeRenderer extends daceSDFGRenderer {
             if (lib_input.val()) {
                 callback();
                 this.add_mode_lib = lib_input.val();
-                libnode_select_modal.modal('hide');
+                modal_ret.modal.modal('hide');
             } else {
                 lib_input.addClass('is-invalid');
             }
