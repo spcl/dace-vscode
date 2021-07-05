@@ -733,7 +733,7 @@ def find_graph_element_by_uuid(sdfg, uuid):
         }
     elif edge_id != -1 and state is None:
         ret = {
-            'parent': state,
+            'parent': graph,
             'element': graph.edges()[edge_id],
         }
 

@@ -187,7 +187,7 @@ implements MessageReceiverInterface {
     public async startDaemonInTerminal(callback?: CallableFunction) {
         if (this.daemonTerminal === undefined)
             this.daemonTerminal = vscode.window.createTerminal({
-                hideFromUser: true,
+                hideFromUser: false,
                 name: 'SDFG Optimizer',
             });
 
@@ -506,6 +506,9 @@ implements MessageReceiverInterface {
         this.daemonBooting = true;
 
         const callback = () => {
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'daemon_connected',
+            });
             TransformationHistoryProvider.getInstance()?.refresh();
             TransformationListProvider.getInstance()?.refresh(true);
             this.querySdfgMetadata();

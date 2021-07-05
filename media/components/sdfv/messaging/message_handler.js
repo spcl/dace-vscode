@@ -213,6 +213,9 @@ class MessageHandler {
             case 'display_breakpoints':
                 displayBreakpoints(message.display);
                 break;
+            case 'daemon_connected':
+                daemon_connected = true;
+                break;
         }
     }
 
