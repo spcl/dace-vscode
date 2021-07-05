@@ -20,6 +20,14 @@ export interface DaceLaunchRequestArguments
     sdfgEdit?: boolean;
 }
 
+enum actionType {
+    RUN = 'run',
+    LOAD = 'load',
+    TRANSFORM = 'transform',
+    PROFILE = 'profile',
+    ABORT = 'abort'
+}
+
 export class DaceDebugSession extends LoggingDebugSession {
     private folder: vscode.WorkspaceFolder | undefined;
 
@@ -36,10 +44,10 @@ export class DaceDebugSession extends LoggingDebugSession {
         this.folder = folders[0];
     }
 
-    protected launchRequest(
+    protected async launchRequest(
         response: DebugProtocol.LaunchResponse,
         args: DaceLaunchRequestArguments
-    ): Thenable<void> | void {
+    ): Promise<Thenable<void> | void> {
         if (!this.folder) {
             let msg = "Working folder not found, open a folder and try again";
             return vscode.window.showErrorMessage(msg).then((_) => {
@@ -113,9 +121,21 @@ export class DaceDebugSession extends LoggingDebugSession {
             entirePyConfig.env.
                 DACE_compiler_codegen_lineinfo = daceDev ? "true" : "false";
 
-        if (args.sdfgEdit !== undefined)
-            entirePyConfig.env.
-                DACE_sdfg_edit = args.sdfgEdit ? "true" : "false";
+        if (args.sdfgEdit) {
+            const selection = await pickAction();
+            switch (selection) {
+                case actionType.ABORT:
+                    this.sendEvent(new TerminatedEvent());
+                    this.sendResponse(response);
+                    return;
+                case actionType.RUN:
+                    break;
+                default:
+                    entirePyConfig.env.DACE_sdfg_edit = selection;
+                    break;
+            }
+        }
+
         /**
          * Default:
          *   We detect the operating system and set
@@ -214,4 +234,46 @@ function nameDefinedInLaunch(name: string, launch: any) {
         i++;
     }
     return undefined;
+}
+
+async function pickAction() {
+    interface MenuItem extends vscode.QuickPickItem {
+        type: actionType;
+    }
+
+    const items: MenuItem[] = [
+        {
+            label: "Run",
+            description: "Runs and terminates",
+            type: actionType.RUN,
+        },
+        {
+            label: "Load",
+            description: "Load SDFG from file",
+            type: actionType.LOAD,
+        },
+        {
+            label: "Transform",
+            description: "Allows transformation before codegeneration",
+            type: actionType.TRANSFORM,
+        },
+        {
+            label: "Profile",
+            description: "Profiles a run",
+            type: actionType.PROFILE,
+        },
+        {
+            label: "Abort",
+            description: "Terminates the Debugger",
+            type: actionType.ABORT,
+        }
+    ];
+
+    const selection:
+        | MenuItem
+        | undefined = await vscode.window.showQuickPick(items, {
+            placeHolder: "Select a run type",
+        });
+
+    return selection ? selection.type : actionType.ABORT;
 }
