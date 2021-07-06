@@ -62,10 +62,6 @@ implements MessageReceiverInterface {
             case 'get_flops':
                 this.getFlops();
                 break;
-            case 'get_enum':
-                if (message.name)
-                    this.getEnum(message.name, origin);
-                break;
             case 'insert_node':
                 this.insertSDFGElement(
                     message.sdfg, message.add_type, message.parent,
@@ -798,18 +794,6 @@ implements MessageReceiverInterface {
             },
             callback
         );
-    }
-
-    public getEnum(name: string, origin: vscode.Webview) {
-        if (this.daemonRunning)
-            this.sendGetRequest('/get_enum/' + name, (response: any) => {
-                if (response.enum)
-                    origin.postMessage({
-                        'type': 'get_enum_callback',
-                        'name': name,
-                        'enum': response.enum,
-                    });
-            });
     }
 
     public insertSDFGElement(

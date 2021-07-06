@@ -168,19 +168,6 @@ class MessageHandler {
             case 'clear_selected_transformation':
                 clear_selected_transformation();
                 break;
-            case 'get_enum_callback':
-                if (message.enum)
-                    switch (message.name) {
-                        case 'InstrumentationType':
-                            window.instruments = message.enum;
-                            break;
-                        case 'AccessType':
-                            window.access = message.enum;
-                            break;
-                        default:
-                            break;
-                    }
-                break;
             case 'added_node':
                 if (message.uuid !== 'error') {
                     daceRenderer.set_sdfg(message.sdfg);
