@@ -51,8 +51,7 @@ sys.path.append(path.abspath(path.dirname(__file__)))
 from dace_vscode.utils import (
     load_sdfg_from_file,
 )
-from dace_vscode.arith_ops import get_arith_ops
-from dace_vscode import transformations, editing
+from dace_vscode import transformations, editing, arith_ops
 
 
 def get_property_metdata():
@@ -258,7 +257,7 @@ def run_daemon(port):
     @daemon.route('/get_arith_ops', methods=['POST'])
     def _get_arith_ops():
         request_json = request.get_json()
-        return get_arith_ops(request_json['sdfg'])
+        return arith_ops.get_arith_ops(request_json['sdfg'])
 
     @daemon.route('/compile_sdfg_from_file', methods=['POST'])
     def _compile_sdfg_from_file():

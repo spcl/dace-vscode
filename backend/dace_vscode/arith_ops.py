@@ -2,13 +2,13 @@
 # All rights reserved.
 
 import ast
-from astunparse import unparse
+import astunparse
 from dace.symbolic import pystr_to_symbolic
 from dace.sdfg import propagation
 from dace.libraries.blas import MatMul, Transpose
 from dace.libraries.standard import Reduce
 from dace import nodes, dtypes
-from sympy import function as spf
+import sympy
 
 from dace_vscode.utils import get_uuid, load_sdfg_from_json
 
@@ -63,7 +63,7 @@ def count_reduce(node, symbols, state):
     return result
 
 
-bigo = spf.Function('bigo')
+bigo = sympy.Function('bigo')
 PYFUNC_TO_ARITHMETICS = {
     'float': 0,
     'math.exp': 1,
@@ -98,7 +98,7 @@ class ArithmeticCounter(ast.NodeVisitor):
         return self.generic_visit(node)
 
     def visit_Call(self, node):
-        fname = unparse(node.func)[:-1]
+        fname = astunparse.unparse(node.func)[:-1]
         if fname not in PYFUNC_TO_ARITHMETICS:
             print('WARNING: Unrecognized python function "%s"' % fname)
             return self.generic_visit(node)
