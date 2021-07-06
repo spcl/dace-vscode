@@ -4,7 +4,7 @@
 from dace import (
     serialize, nodes, SDFG, SDFGState, InterstateEdge, Memlet, dtypes
 )
-from dace_backend.utils import (
+from dace_vscode.utils import (
     load_sdfg_from_json,
     find_graph_element_by_uuid,
     get_uuid,

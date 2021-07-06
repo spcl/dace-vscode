@@ -43,13 +43,16 @@ import aenum
 from argparse import ArgumentParser
 import dace
 import inspect
+from os import path
 import sys
 
-from dace_backend.utils import (
+sys.path.append(path.abspath(path.dirname(__file__)))
+
+from dace_vscode.utils import (
     load_sdfg_from_file,
 )
-from dace_backend.arith_ops import get_arith_ops
-from dace_backend import transformations, editing
+from dace_vscode.arith_ops import get_arith_ops
+from dace_vscode import transformations, editing
 
 
 def get_property_metdata():

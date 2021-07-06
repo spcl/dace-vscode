@@ -10,7 +10,7 @@ from dace.libraries.standard import Reduce
 from dace import nodes, dtypes
 from sympy import function as spf
 
-from dace_backend.utils import get_uuid, load_sdfg_from_json
+from dace_vscode.utils import get_uuid, load_sdfg_from_json
 
 
 def symeval(val, symbols):

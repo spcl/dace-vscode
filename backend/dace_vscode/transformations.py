@@ -3,7 +3,7 @@
 
 from dace import nodes, serialize
 from dace.transformation.transformation import SubgraphTransformation
-from dace_backend import utils
+from dace_vscode import utils
 import sys
 import traceback
 
