@@ -853,6 +853,9 @@ function attribute_table_put_entry(
         }).appendTo(row);
     }
 
+    if (meta && meta['desc'])
+        row.attr('title', meta['desc']);
+
     if (add_delete_button) {
         key_cell.addClass('attr-table-cell-nopad');
         delete_btn = $('<span>', {

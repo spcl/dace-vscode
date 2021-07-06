@@ -156,12 +156,6 @@
             {
                 "title": "DaCe SDFG Optimizer",
                 "properties": {
-                    "dace.interface.port": {
-                        "type": "integer",
-                        "default": 5000,
-                        "description": "Run the DaCe backend on a different port",
-                        "scope": "machine-overridable"
-                    },
                     "dace.sdfv.layout": {
                         "type": "string",
                         "default": "horizontal",

@@ -4,6 +4,7 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { request } from 'http';
+import * as net from 'net';
 
 import { DaCeVSCode } from './extension';
 import { SdfgViewerProvider } from './components/sdfgViewer';
@@ -89,9 +90,27 @@ implements MessageReceiverInterface {
     private daemonRunning = false;
     private daemonBooting = false;
 
-    private port: number = vscode.workspace.getConfiguration(
-        'dace.interface'
-    ).port;
+    private port: number = -1;
+
+    private getRandomPort(callback: CallableFunction) {
+        const rangeMin = 1024;
+        const rangeMax = 65535;
+        const portCandidate = Math.floor(
+            Math.random() * (rangeMax - rangeMin) + rangeMin
+        );
+
+        const tempServer = net.createServer();
+        tempServer.listen(portCandidate, () => {
+            tempServer.once('close', () => {
+                this.port = portCandidate;
+                callback();
+            });
+            tempServer.close();
+        });
+        tempServer.on('error', () => {
+            this.getRandomPort(callback);
+        });
+    }
 
     public async getPythonExecCommand(
         uri: vscode.Uri | undefined
@@ -194,10 +213,13 @@ implements MessageReceiverInterface {
             );
             const pyCmd: string = await this.getPythonExecCommand(scriptUri);
 
-            this.daemonTerminal?.sendText(
-                pyCmd + ' ' + scriptUri.fsPath + ' -p ' + this.port.toString()
-            );
-            this.pollDaemon(callback, true);
+            this.getRandomPort(() => {
+                this.daemonTerminal?.sendText(
+                    pyCmd + ' ' + scriptUri.fsPath + ' -p ' +
+                    this.port.toString()
+                );
+                this.pollDaemon(callback, true);
+            });
         } else {
             this.daemonBooting = false;
         }
