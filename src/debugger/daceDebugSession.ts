@@ -20,13 +20,45 @@ export interface DaceLaunchRequestArguments
     sdfgEdit?: boolean;
 }
 
-enum actionType {
+export enum sdfgEditMode {
     RUN = 'run',
     LOAD = 'load',
     TRANSFORM = 'transform',
     PROFILE = 'profile',
     ABORT = 'abort'
 }
+
+export interface ModeItem extends vscode.QuickPickItem {
+    mode: sdfgEditMode;
+}
+
+export const modeItems: ModeItem[] = [
+    {
+        label: "Run",
+        description: "Runs and terminates",
+        mode: sdfgEditMode.RUN,
+    },
+    {
+        label: "Load",
+        description: "Load SDFG from file",
+        mode: sdfgEditMode.LOAD,
+    },
+    {
+        label: "Transform",
+        description: "Allows transformation before codegeneration",
+        mode: sdfgEditMode.TRANSFORM,
+    },
+    {
+        label: "Profile",
+        description: "Profiles a run",
+        mode: sdfgEditMode.PROFILE,
+    },
+    {
+        label: "Abort",
+        description: "Terminates the Debugger",
+        mode: sdfgEditMode.ABORT,
+    }
+];
 
 export class DaceDebugSession extends LoggingDebugSession {
     private folder: vscode.WorkspaceFolder | undefined;
@@ -124,11 +156,11 @@ export class DaceDebugSession extends LoggingDebugSession {
         if (args.sdfgEdit) {
             const selection = await pickAction();
             switch (selection) {
-                case actionType.ABORT:
+                case sdfgEditMode.ABORT:
                     this.sendEvent(new TerminatedEvent());
                     this.sendResponse(response);
                     return;
-                case actionType.RUN:
+                case sdfgEditMode.RUN:
                     break;
                 default:
                     entirePyConfig.env.DACE_sdfg_edit = selection;
@@ -237,43 +269,11 @@ function nameDefinedInLaunch(name: string, launch: any) {
 }
 
 async function pickAction() {
-    interface MenuItem extends vscode.QuickPickItem {
-        type: actionType;
-    }
-
-    const items: MenuItem[] = [
-        {
-            label: "Run",
-            description: "Runs and terminates",
-            type: actionType.RUN,
-        },
-        {
-            label: "Load",
-            description: "Load SDFG from file",
-            type: actionType.LOAD,
-        },
-        {
-            label: "Transform",
-            description: "Allows transformation before codegeneration",
-            type: actionType.TRANSFORM,
-        },
-        {
-            label: "Profile",
-            description: "Profiles a run",
-            type: actionType.PROFILE,
-        },
-        {
-            label: "Abort",
-            description: "Terminates the Debugger",
-            type: actionType.ABORT,
-        }
-    ];
-
     const selection:
-        | MenuItem
-        | undefined = await vscode.window.showQuickPick(items, {
-            placeHolder: "Select a run type",
+        | ModeItem
+        | undefined = await vscode.window.showQuickPick(modeItems, {
+            placeHolder: "Select the first run mode",
         });
 
-    return selection ? selection.type : actionType.ABORT;
+    return selection ? selection.mode : sdfgEditMode.ABORT;
 }
