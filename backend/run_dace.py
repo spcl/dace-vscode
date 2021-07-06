@@ -1,6 +1,44 @@
 # Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
+#####################################################################
+# Before importing anything, try to take the ".env" file into account
+import os
+import re
+import sys
+try:
+    import dotenv
+    import re
+    import sys
+
+    # First, load the environment
+    dotenv.load_dotenv()
+    # Then, gather values
+    vals = dotenv.dotenv_values()
+except (ModuleNotFoundError, ImportError):
+    # Failsafe mode - try to load directly
+    vals = {}
+    if os.path.isfile('.env'):
+        with open('.env', 'r') as fp:
+            lines = fp.readlines()
+            for line in lines:
+                if '=' not in line:
+                    continue
+                pos = line.find('=')
+                envvar = line[:pos]
+                envval = line[pos + 1:]
+                vals[envvar] = envval
+
+            # First, load the environment
+            os.environ.update(vals)
+
+# Add any extra module paths from .env
+if 'PYTHONPATH' in vals:
+    paths = re.split(';|:', vals['PYTHONPATH'])
+    sys.path.extend(paths)
+#####################################################################
+
+# Then, load the rest of the modules
 import aenum
 from argparse import ArgumentParser
 import ast, astunparse
@@ -16,13 +54,13 @@ import sympy
 import sys
 import traceback
 
-
 # Prepare a whitelist of DaCe enumeration types
 enum_list = [
     typename
     for typename, dtype in inspect.getmembers(dace.dtypes, inspect.isclass)
     if issubclass(dtype, aenum.Enum)
 ]
+
 
 def count_matmul(node, symbols, state):
     A_memlet = next(e for e in state.in_edges(node) if e.dst_conn == '_a')
@@ -39,6 +77,7 @@ def count_matmul(node, symbols, state):
     result *= symeval(A_memlet.data.subset.size()[-1], symbols)
     return result
 
+
 def count_reduce(node, symbols, state):
     result = 0
     if node.wcr is not None:
@@ -52,6 +91,7 @@ def count_reduce(node, symbols, state):
     else:
         result = 0
     return result
+
 
 bigo = sympy.Function('bigo')
 UUID_SEPARATOR = '/'
@@ -70,6 +110,7 @@ LIBNODES_TO_ARITHMETICS = {
     Transpose: lambda *args: 0,
     Reduce: count_reduce,
 }
+
 
 class ArithmeticCounter(ast.NodeVisitor):
     def __init__(self):
@@ -103,9 +144,11 @@ class ArithmeticCounter(ast.NodeVisitor):
     def visit_While(self, node):
         raise NotImplementedError
 
-def ids_to_string(sdfg_id, state_id = -1, node_id = -1, edge_id = -1):
+
+def ids_to_string(sdfg_id, state_id=-1, node_id=-1, edge_id=-1):
     return (str(sdfg_id) + UUID_SEPARATOR + str(state_id) + UUID_SEPARATOR +
             str(node_id) + UUID_SEPARATOR + str(edge_id))
+
 
 def get_uuid(element, state=None):
     if isinstance(element, dace.SDFG):
@@ -114,11 +157,11 @@ def get_uuid(element, state=None):
         return ids_to_string(element.parent.sdfg_id,
                              element.parent.node_id(element))
     elif isinstance(element, dace.nodes.Node):
-        return ids_to_string(state.parent.sdfg_id,
-                             state.parent.node_id(state),
+        return ids_to_string(state.parent.sdfg_id, state.parent.node_id(state),
                              state.node_id(element))
     else:
         return ids_to_string(-1)
+
 
 def symeval(val, symbols):
     first_replacement = {
@@ -131,11 +174,13 @@ def symeval(val, symbols):
     }
     return val.subs(first_replacement).subs(second_replacement)
 
+
 def evaluate_symbols(base, new):
     result = {}
     for k, v in new.items():
         result[k] = symeval(v, base)
     return result
+
 
 def count_arithmetic_ops_code(code):
     ctr = ArithmeticCounter()
@@ -147,6 +192,7 @@ def count_arithmetic_ops_code(code):
     else:
         ctr.visit(code)
     return ctr.count
+
 
 def create_arith_ops_map_state(state, arith_map, symbols):
     scope_tree_root = state.scope_tree()[None]
@@ -163,10 +209,8 @@ def create_arith_ops_map_state(state, arith_map, symbols):
                 nested_syms = {}
                 nested_syms.update(symbols)
                 nested_syms.update(
-                    evaluate_symbols(symbols, node.symbol_mapping)
-                )
-                node_result += create_arith_ops_map(node.sdfg,
-                                                    arith_map,
+                    evaluate_symbols(symbols, node.symbol_mapping))
+                node_result += create_arith_ops_map(node.sdfg, arith_map,
                                                     nested_syms)
             elif isinstance(node, dace.nodes.LibraryNode):
                 node_result += LIBNODES_TO_ARITHMETICS[type(node)](node,
@@ -191,25 +235,29 @@ def create_arith_ops_map_state(state, arith_map, symbols):
             elif isinstance(node, dace.nodes.MapExit):
                 # Don't do anything for map exists.
                 pass
-            elif isinstance(node, (dace.nodes.CodeNode, dace.nodes.AccessNode)):
+            elif isinstance(node,
+                            (dace.nodes.CodeNode, dace.nodes.AccessNode)):
                 for oedge in state.out_edges(node):
                     if oedge.data.wcr is not None:
-                        node_result += count_arithmetic_ops_code(oedge.data.wcr)
+                        node_result += count_arithmetic_ops_code(
+                            oedge.data.wcr)
 
             arith_map[get_uuid(node, state)] = str(node_result)
             traversal_result += node_result
         return repetitions * traversal_result
+
     state_result = traverse(scope_tree_root)
 
     if state.executions is not None:
         if (state.dynamic_executions is not None and state.dynamic_executions
-            and state.executions == 0):
+                and state.executions == 0):
             state_result = 0
         else:
             state_result *= state.executions
 
     arith_map[get_uuid(state)] = str(state_result)
     return state_result
+
 
 def create_arith_ops_map(sdfg, arith_map, symbols):
     sdfg_ops = 0
@@ -223,8 +271,10 @@ def create_arith_ops_map(sdfg, arith_map, symbols):
 
     return sdfg_ops
 
+
 def get_exception_message(exception):
     return '%s: %s' % (type(exception).__name__, exception)
+
 
 def load_sdfg_from_file(path):
     # We lazy import SDFGs, not to break cyclic imports, but to avoid any large
@@ -248,6 +298,7 @@ def load_sdfg_from_file(path):
         'error': error,
         'sdfg': sdfg,
     }
+
 
 def load_sdfg_from_json(json):
     # We lazy import SDFGs, not to break cyclic imports, but to avoid any large
@@ -283,6 +334,7 @@ def load_sdfg_from_json(json):
         'error': error,
         'sdfg': sdfg,
     }
+
 
 def expand_library_node(json_in):
     """
@@ -335,6 +387,7 @@ def expand_library_node(json_in):
         'sdfg': new_sdfg,
     }
 
+
 def reapply_history_until(sdfg_json, index):
     """
     Rewind a given SDFG back to a specific point in its history by reapplying
@@ -358,20 +411,21 @@ def reapply_history_until(sdfg_json, index):
     for i in range(index + 1):
         transformation = history[i]
         try:
-            if isinstance(transformation, dace.transformation.transformation.SubgraphTransformation):
+            if isinstance(
+                    transformation,
+                    dace.transformation.transformation.SubgraphTransformation):
                 transformation.apply(
-                    original_sdfg.sdfg_list[transformation.sdfg_id]
-                )
+                    original_sdfg.sdfg_list[transformation.sdfg_id])
             else:
                 transformation.apply_pattern(
-                    original_sdfg.sdfg_list[transformation.sdfg_id]
-                )
+                    original_sdfg.sdfg_list[transformation.sdfg_id])
         except Exception as e:
             print(traceback.format_exc(), file=sys.stderr)
             sys.stderr.flush()
             return {
                 'error': {
-                    'message': 'Failed to play back the transformation history',
+                    'message':
+                    'Failed to play back the transformation history',
                     'details': get_exception_message(e),
                 },
             }
@@ -381,6 +435,7 @@ def reapply_history_until(sdfg_json, index):
     return {
         'sdfg': new_sdfg,
     }
+
 
 def apply_transformation(sdfg_json, transformation_json):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
@@ -407,7 +462,9 @@ def apply_transformation(sdfg_json, transformation_json):
         }
     try:
         target_sdfg = sdfg.sdfg_list[transformation.sdfg_id]
-        if isinstance(transformation, dace.transformation.transformation.SubgraphTransformation):
+        if isinstance(
+                transformation,
+                dace.transformation.transformation.SubgraphTransformation):
             sdfg.append_transformation(transformation)
             transformation.apply(target_sdfg)
         else:
@@ -428,12 +485,14 @@ def apply_transformation(sdfg_json, transformation_json):
         'sdfg': new_sdfg,
     }
 
+
 def sdfg_find_state(sdfg, element):
     graph = sdfg.sdfg_list[element['sdfg_id']]
     if element['id'] >= 0:
         return graph.nodes()[element['id']]
     else:
         return None
+
 
 def sdfg_find_node(sdfg, element):
     graph = sdfg.sdfg_list[element['sdfg_id']]
@@ -446,6 +505,7 @@ def sdfg_find_node(sdfg, element):
         node = graph.nodes()[element['id']]
         node.state = None
         return node
+
 
 def get_arith_ops(sdfg_json):
     loaded = load_sdfg_from_json(sdfg_json)
@@ -460,6 +520,7 @@ def get_arith_ops(sdfg_json):
     return {
         'arith_ops_map': arith_map,
     }
+
 
 def get_transformations(sdfg_json, selected_elements):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
@@ -487,16 +548,16 @@ def get_transformations(sdfg_json, selected_elements):
         docstrings[type(transformation).__name__] = transformation.__doc__
 
     selected_states = [
-        sdfg_find_state(sdfg, n)
-        for n in selected_elements if n['type'] == 'state'
+        sdfg_find_state(sdfg, n) for n in selected_elements
+        if n['type'] == 'state'
     ]
     selected_nodes = [
-        sdfg_find_node(sdfg, n)
-        for n in selected_elements if n['type'] == 'node'
+        sdfg_find_node(sdfg, n) for n in selected_elements
+        if n['type'] == 'node'
     ]
     subgraph = None
     if len(selected_states) > 0:
-       subgraph = SubgraphView(sdfg, selected_states)
+        subgraph = SubgraphView(sdfg, selected_states)
     else:
         violated = False
         state = None
@@ -528,6 +589,7 @@ def get_transformations(sdfg_json, selected_elements):
         'docstrings': docstrings,
     }
 
+
 def get_enum(name):
     if name not in enum_list:
         return {
@@ -536,7 +598,10 @@ def get_enum(name):
                 'details': 'Enum type "' + str(name) + '" is not in whitelist',
             },
         }
-    return {'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]}
+    return {
+        'enum': [str(e).split('.')[-1] for e in getattr(dace.dtypes, name)]
+    }
+
 
 def get_property_metdata():
     """ Generate a dictionary of class properties and their metadata.
@@ -566,7 +631,7 @@ def get_property_metdata():
         if hasattr(t, '__properties__'):
             meta_key = typename
             if (issubclass(t, dace.sdfg.nodes.LibraryNode)
-                and not t == dace.sdfg.nodes.LibraryNode):
+                    and not t == dace.sdfg.nodes.LibraryNode):
                 meta_key = full_class_path(t)
 
             meta_dict[meta_key] = {}
@@ -579,15 +644,12 @@ def get_property_metdata():
                 if hasattr(prop, 'key_type') and hasattr(prop, 'value_type'):
                     # For dictionary properties, add their key and value types.
                     meta_dict[meta_key][propname][
-                        'key_type'
-                    ] = prop.key_type.__name__
+                        'key_type'] = prop.key_type.__name__
                     meta_dict[meta_key][propname][
-                        'value_type'
-                    ] = prop.value_type.__name__
+                        'value_type'] = prop.value_type.__name__
                 elif hasattr(prop, 'element_type'):
                     meta_dict[meta_key][propname][
-                        'element_type'
-                    ] = prop.element_type.__name__
+                        'element_type'] = prop.element_type.__name__
 
                 if prop.choices is not None:
                     # If there are specific choices for this property (i.e. this
@@ -601,12 +663,11 @@ def get_property_metdata():
                                     choices.append(choice_short)
                             meta_dict[meta_key][propname]['choices'] = choices
                 elif (propname == 'implementation'
-                    and libnode_implementations is not None):
+                      and libnode_implementations is not None):
                     # For implementation properties, add all library
                     # implementations as choices.
                     meta_dict[meta_key][propname][
-                        'choices'
-                    ] = libnode_implementations
+                        'choices'] = libnode_implementations
 
                 # Create a reverse lookup method for each meta type. This allows
                 # us to get meta information about things other than properties
@@ -615,8 +676,7 @@ def get_property_metdata():
                     meta_type = meta_dict[meta_key][propname]['metatype']
                     if not meta_type in meta_dict['__reverse_type_lookup__']:
                         meta_dict['__reverse_type_lookup__'][
-                            meta_type
-                        ] = meta_dict[meta_key][propname]
+                            meta_type] = meta_dict[meta_key][propname]
 
             # For library nodes we want to make sure they are all easily
             # accessible under '__libs__', to be able to list them all out.
@@ -642,6 +702,7 @@ def get_property_metdata():
         'meta_dict': meta_dict,
     }
 
+
 def _sdfg_remove_instrumentations(sdfg: dace.sdfg.SDFG):
     sdfg.instrument = dace.dtypes.InstrumentationType.No_Instrumentation
     for state in sdfg.nodes():
@@ -651,11 +712,12 @@ def _sdfg_remove_instrumentations(sdfg: dace.sdfg.SDFG):
             if isinstance(node, dace.sdfg.nodes.NestedSDFG):
                 _sdfg_remove_instrumentations(node.sdfg)
 
+
 def compile_sdfg(path, suppress_instrumentation=False):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
     # delays when booting in daemon mode.
     from dace import serialize
-    from dace.codegen.compiled_sdfg import CompiledSDFG;
+    from dace.codegen.compiled_sdfg import CompiledSDFG
     old_meta = serialize.JSON_STORE_METADATA
     serialize.JSON_STORE_METADATA = False
 
@@ -673,6 +735,7 @@ def compile_sdfg(path, suppress_instrumentation=False):
     return {
         'filename': compiled_sdfg.filename,
     }
+
 
 def recursively_find_graph(graph, graph_id, ns_node = None):
     if graph.sdfg_id == graph_id:
@@ -891,6 +954,7 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid, edge_a_uuid):
         'uuid': uuid,
     }
 
+
 def run_daemon(port):
     from logging.config import dictConfig
     from flask import Flask, request
@@ -900,14 +964,19 @@ def run_daemon(port):
     # https://stackoverflow.com/questions/56905756
     dictConfig({
         'version': 1,
-        'formatters': {'default': {
-            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
-        }},
-        'handlers': {'wsgi': {
-            'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout',
-            'formatter': 'default',
-        }},
+        'formatters': {
+            'default': {
+                'format':
+                '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+            }
+        },
+        'handlers': {
+            'wsgi': {
+                'class': 'logging.StreamHandler',
+                'stream': 'ext://sys.stdout',
+                'formatter': 'default',
+            }
+        },
         'root': {
             'level': 'INFO',
             'handlers': ['wsgi'],
@@ -956,10 +1025,8 @@ def run_daemon(port):
     @daemon.route('/compile_sdfg_from_file', methods=['POST'])
     def _compile_sdfg_from_file():
         request_json = request.get_json()
-        return compile_sdfg(
-            request_json['path'],
-            request_json['suppress_instrumentation']
-        )
+        return compile_sdfg(request_json['path'],
+                            request_json['suppress_instrumentation'])
 
     @daemon.route('/insert_sdfg_element', methods=['POST'])
     def _insert_sdfg_element():
@@ -980,9 +1047,9 @@ def run_daemon(port):
 
     daemon.run(port=port)
 
+
 if __name__ == '__main__':
     parser = ArgumentParser()
-
     '''
     parser.add_argument('-d',
                         '--daemon',
