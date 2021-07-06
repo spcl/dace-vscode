@@ -3,8 +3,6 @@
 
 class VSCodeRenderer extends daceSDFGRenderer {
 
-    bpIndicator;
-
     constructor(sdfg, container, on_mouse_event = null, user_transform = null,
         debug_draw = false, background = null, mode_buttons = null) {
 
