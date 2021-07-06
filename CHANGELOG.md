@@ -2,6 +2,10 @@
 
 ## 0.3
 
+### 0.3.5
+
+- Allow adding of SDFG elements
+
 ### 0.3.4
 
 - Support breakpoints in SDFGs
