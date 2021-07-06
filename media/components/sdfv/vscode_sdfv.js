@@ -268,7 +268,7 @@ function attr_table_put_bool(
     key, subkey, val, elem, xform, target, cell, dtype
 ) {
     const bool_input_container = $('<div>', {
-        'class': 'form-check form-switch',
+        'class': 'form-check form-switch sdfv-property-bool',
     }).appendTo(cell);
     const input = $('<input>', {
         'type': 'checkbox',
@@ -289,6 +289,7 @@ function attr_table_put_text(
 ) {
     const input = $('<input>', {
         'type': 'text',
+        'class': 'sdfv-property-text',
         'value': val,
     }).appendTo(cell);
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
@@ -340,6 +341,7 @@ function attr_table_put_number(
 ) {
     const input = $('<input>', {
         'type': 'number',
+        'class': 'sdfv-property-number',
         'value': val,
     }).appendTo(cell);
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
@@ -395,6 +397,7 @@ function attr_table_put_typeclass(
     }).appendTo(cell);
     const input = $('<input>', {
         'list': key + '-native-typeclasses',
+        'class': 'sdfv-property-text',
         'value': daceSDFGTypeclassToString(val),
     }).appendTo(container);
     if (choices) {
@@ -645,7 +648,7 @@ function attr_table_put_range(
 
                 const range_start_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': range.start,
                 });
                 const range_start_container = $('<div>', {
@@ -663,7 +666,7 @@ function attr_table_put_range(
 
                 const range_end_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': range.end,
                 });
                 $('<div>', {
@@ -675,7 +678,7 @@ function attr_table_put_range(
 
                 const range_step_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': range.step,
                 });
                 $('<div>', {
@@ -687,7 +690,7 @@ function attr_table_put_range(
 
                 const range_tile_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': range.tile,
                 });
                 $('<div>', {
@@ -730,7 +733,7 @@ function attr_table_put_range(
 
                 const range_start_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': '',
                 });
                 const range_start_container = $('<div>', {
@@ -748,7 +751,7 @@ function attr_table_put_range(
 
                 const range_end_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': '',
                 });
                 $('<div>', {
@@ -760,7 +763,7 @@ function attr_table_put_range(
 
                 const range_step_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': '',
                 });
                 $('<div>', {
@@ -772,7 +775,7 @@ function attr_table_put_range(
 
                 const range_tile_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': '',
                 });
                 $('<div>', {
@@ -841,7 +844,7 @@ function attribute_table_put_entry(
         }).appendTo(row);
         const key_input = $('<input>', {
             'type': 'text',
-            'class': 'property-key-input',
+            'class': 'property-key-input sdfv-property-text',
             'value': key,
         }).appendTo(key_cell);
 

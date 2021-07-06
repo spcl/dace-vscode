@@ -385,15 +385,6 @@ pre.code {
   cursor: pointer;
 }
 
-.sdfv-property-dropdown {
-  background-color: black;
-  color: white;
-  font-family: "Segoe UI", Arial, sans-serif;
-  font-size: 1rem;
-  background-color:#1e1e1e;
-  border: none;
-}
-
 /* End info container/box */
 
 /* Context menu */
@@ -457,6 +448,23 @@ pre.code {
 
 .sdfv-property-code {
   resize: none;
+  margin-right: .5rem;
+}
+
+.sdfv-property-text,
+.sdfv-property-code,
+.sdfv-property-number {
+  border-width: 1px;
+  border-style: solid;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border-color: var(--vscode-input-border);
+}
+
+.sdfv-property-dropdown {
+  background-color: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border-color: var(--vscode-dropdown-border);
 }
 
 .sdfv-property-expand-libnode-btn {
