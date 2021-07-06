@@ -62,10 +62,15 @@ implements MessageReceiverInterface {
             case 'get_flops':
                 this.getFlops();
                 break;
-            case 'get_enum':
-                if (message.name)
-                    this.getEnum(message.name, origin);
+            case 'insert_node':
+                this.insertSDFGElement(
+                    message.sdfg, message.add_type, message.parent,
+                    message.edge_a, origin
+                );
                 break;
+            case 'remove_nodes':
+                if (message.sdfg && message.uuids)
+                    this.removeGraphElements(message.sdfg, message.uuids);
             case 'query_sdfg_metadata':
                 this.querySdfgMetadata();
                 break;
@@ -177,9 +182,10 @@ implements MessageReceiverInterface {
 
     public async startDaemonInTerminal(callback?: CallableFunction) {
         if (this.daemonTerminal === undefined)
-            this.daemonTerminal = vscode.window.createTerminal(
-                'SDFG Optimizer'
-            );
+            this.daemonTerminal = vscode.window.createTerminal({
+                hideFromUser: false,
+                name: 'SDFG Optimizer',
+            });
 
         const scriptUri = this.getRunDaceScriptUri();
         if (scriptUri) {
@@ -496,6 +502,9 @@ implements MessageReceiverInterface {
         this.daemonBooting = true;
 
         const callback = () => {
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'daemon_connected',
+            });
             TransformationHistoryProvider.getInstance()?.refresh();
             TransformationListProvider.getInstance()?.refresh(true);
             this.querySdfgMetadata();
@@ -787,16 +796,46 @@ implements MessageReceiverInterface {
         );
     }
 
-    public getEnum(name: string, origin: vscode.Webview) {
-        if (this.daemonRunning)
-            this.sendGetRequest('/get_enum/' + name, (response: any) => {
-                if (response.enum)
-                    origin.postMessage({
-                        'type': 'get_enum_callback',
-                        'name': name,
-                        'enum': response.enum,
-                    });
+    public insertSDFGElement(
+        sdfg: string, type: string, parent: string, edge_a: string,
+        origin: vscode.Webview
+    ): void {
+        function callback(data: any) {
+            origin.postMessage({
+                'type': 'added_node',
+                'sdfg': data.sdfg,
+                'uuid': data.uuid,
             });
+        }
+
+        if (!edge_a)
+            edge_a = 'NONE';
+
+        this.sendPostRequest(
+            '/insert_sdfg_element',
+            {
+                'sdfg': JSON.parse(sdfg),
+                'type': type,
+                'parent': parent,
+                'edge_a': edge_a,
+            },
+            callback
+        );
+    }
+
+    public removeGraphElements(sdfg: string, uuids: string): void {
+        function callback(data: any) {
+            DaCeInterface.getInstance().writeToActiveDocument(data.sdfg);
+        }
+
+        this.sendPostRequest(
+            '/remove_sdfg_elements',
+            {
+                'sdfg': JSON.parse(sdfg),
+                'uuids': uuids,
+            },
+            callback
+        );
     }
 
     public isRunning() {
