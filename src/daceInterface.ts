@@ -113,7 +113,8 @@ implements MessageReceiverInterface {
     }
 
     public async getPythonExecCommand(
-        uri: vscode.Uri | undefined
+        uri: vscode.Uri | undefined,
+        spaceSafe = true
     ): Promise<string> {
         try {
             let pyExt = vscode.extensions.getExtension('ms-python.python');
@@ -134,20 +135,21 @@ implements MessageReceiverInterface {
                 if (pyCmd) {
                     // Ensure spaces in the python command don't trip up the
                     // terminal.
-                    switch (os.platform()) {
-                        case 'win32':
-                            for (let i = 0; i < pyCmd.length; i++) {
-                                if (/\s/g.test(pyCmd[i]))
-                                    pyCmd[i] = '& "' + pyCmd[i] + '"';
-                            }
-                            break;
-                        default:
-                            for (let i = 0; i < pyCmd.length; i++) {
-                                if (/\s/g.test(pyCmd[i]))
-                                    pyCmd[i] = '"' + pyCmd[i] + '"';
-                            }
-                            break;
-                    }
+                    if (spaceSafe)
+                        switch (os.platform()) {
+                            case 'win32':
+                                for (let i = 0; i < pyCmd.length; i++) {
+                                    if (/\s/g.test(pyCmd[i]))
+                                        pyCmd[i] = '& "' + pyCmd[i] + '"';
+                                }
+                                break;
+                            default:
+                                for (let i = 0; i < pyCmd.length; i++) {
+                                    if (/\s/g.test(pyCmd[i]))
+                                        pyCmd[i] = '"' + pyCmd[i] + '"';
+                                }
+                                break;
+                        }
                     return pyCmd.join(' ');
                 } else {
                     return 'python';
@@ -211,7 +213,9 @@ implements MessageReceiverInterface {
             vscode.window.setStatusBarMessage(
                 'Trying to start and connect to a DaCe daemon', 5000
             );
-            const pyCmd: string = await this.getPythonExecCommand(scriptUri);
+            const pyCmd: string = await this.getPythonExecCommand(
+                scriptUri, true
+            );
 
             this.getRandomPort(() => {
                 this.daemonTerminal?.sendText(

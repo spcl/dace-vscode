@@ -222,8 +222,10 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
 
         this.sendEvent('output', 'Running wrapper: ' + path, 'console');
 
-        const pythonCommand =
-            await DaCeInterface.getInstance().getPythonExecCommand(undefined);
+        let pythonCommand =
+            await DaCeInterface.getInstance().getPythonExecCommand(
+                undefined, false
+            );
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
         let workspaceRoot: string | undefined = undefined;
@@ -269,6 +271,8 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
                     if (this.profile)
                         env.DACE_profiling = '1';
 
+                    console.log(pythonCommand, path);
+                    
                     const child = cp.spawn(pythonCommand, [path], {
                         cwd: workspaceRoot,
                         env: env,
