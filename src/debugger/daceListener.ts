@@ -5,6 +5,7 @@ import * as Net from 'net';
 import * as vscode from 'vscode';
 import { BreakpointHandler } from './breakpointHandler';
 import { SdfgViewerProvider } from '../components/sdfgViewer';
+import { sdfgEditMode, modeItems, ModeItem } from './daceDebugSession';
 
 export var PORT: number = 0;
 
@@ -29,7 +30,11 @@ export class DaceListener extends vscode.Disposable {
 
             socket.on('data', data => {
                 let dataStr = String.fromCharCode(...data);
-                this.handleData(JSON.parse(dataStr));
+                this.handleData(JSON.parse(dataStr)).then(reply => {
+                    if (reply) {
+                        socket.write(Buffer.from(JSON.stringify(reply)));
+                    }
+                });
             });
         });
 
@@ -49,7 +54,7 @@ export class DaceListener extends vscode.Disposable {
         return server;
     }
 
-    protected handleData(data: any | undefined) {
+    protected async handleData(data: any | undefined) {
         if (!data) {
             return;
         }
@@ -69,12 +74,57 @@ export class DaceListener extends vscode.Disposable {
                     }
                 }
                 break;
+            case "loadSDFG":
+                interface MenuItem extends vscode.QuickPickItem {
+                    uri: vscode.Uri;
+                }
+                const files = await vscode.workspace.findFiles("**/*.sdfg");
+                let chosenFile = 'none';
+
+                if (files.length > 0) {
+                    let items: MenuItem[] = [];
+                    for (const file of files) {
+                        items.push({
+                            label: file.path,
+                            uri: file
+                        });
+                    }
+
+                    const selection:
+                        | MenuItem
+                        | undefined = await vscode.window.showQuickPick(items, {
+                            placeHolder: "Select an SDFG to load",
+                        });
+                    if (selection)
+                        chosenFile = selection.uri.fsPath;
+                }
+                else {
+                    const msg = "There is no SDFG available in your working " +
+                        "directory. The process will continue without " +
+                        "loading an SDFG";
+                    vscode.window.showInformationMessage(msg);
+                }
+
+                vscode.debug.activeDebugSession?.customRequest('continue');
+                return { 'filename': chosenFile };
+            case "sdfgEditMode":
+                let selected_mode = sdfgEditMode.ABORT;
+                const mode:
+                    | ModeItem
+                    | undefined = await vscode.window.showQuickPick(modeItems, {
+                        placeHolder: "Select the next run mode",
+                    });
+                if (mode)
+                    selected_mode = mode.mode;
+
+                vscode.debug.activeDebugSession?.customRequest('continue');
+                return { 'filename': selected_mode };
             case "openSDFG":
                 SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
-
             default:
                 break;
         }
+        return undefined;
     }
 
 }
