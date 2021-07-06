@@ -9,7 +9,7 @@ from dace_vscode.utils import (
     find_graph_element_by_uuid,
     get_uuid,
 )
-from pydoc import locate
+import pydoc
 
 
 def remove_sdfg_elements(sdfg_json, uuids):
@@ -108,7 +108,7 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid, edge_a_uuid):
                     'details': 'Must provide a valid library node type',
                 },
             }
-        libnode_class = locate(libname)
+        libnode_class = pydoc.locate(libname)
         libnode = libnode_class()
         parent.add_node(libnode)
         uuid = [get_uuid(libnode, parent)]

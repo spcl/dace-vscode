@@ -2,7 +2,7 @@
 
 ## 0.3
 
-### 0.3.5
+### 0.3.6
 
 - Allow adding of SDFG elements
 
