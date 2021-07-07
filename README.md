@@ -25,13 +25,6 @@ of larger graphs.
 
 ![sdfg-editor-example](images/sdfg_editor.gif)
 
-Graph elements can be dynamically added and moved around, allowing the creation
-of entire SDFGs from scratch.
-
-<!--
-![sdfg-editor-adding-elements-example](images/sdfg_adding_elements.gif)
--->
-
 ## SDFG Optimization / Transformations
 
 With the SDFG Editor, data-centric applications can be optimized interactively using transformations.
@@ -53,20 +46,28 @@ SDFGs can be statically analyzed for memory or compute bottlenecks using a
 series of overlays, which highlight the number of arithmetic operations or the
 amount of memory moved per graph element.
 
-![sdfg-analysis-example](images/analysis.png)
+![sdfg-analysis-example](images/analysis.gif)
 
 ## Profiling
 
 A built-in profiling run configuration allows SDFG programs to be run multiple
-times<sup>1</sup> while recording the mean runtime for each execution. This mean
-runtime is then reported back to you. Additionally, individual graph elements
-can be instrumented with timers, which generates a detailed profiling report
-after an SDFG's execution. This report can be loaded in an displayed via
+times<sup>1</sup> while recording the median runtime for each execution. This
+median runtime is then reported back to you. Additionally, individual graph
+elements can be instrumented with timers, which generates a detailed profiling
+report after an SDFG's execution. This report can be loaded in an displayed via
 overlay on top of the SDFG.
 
 <sup>1</sup> The number of executions per profiling run can be configured in
 the `.dace.config`. This can be opened by typing `Open .dace.config` into the
 command bar.
+
+
+## Building SDFGs
+
+Graph elements can be dynamically added and moved around, allowing the creation
+of entire SDFGs from scratch.
+
+![sdfg-editor-adding-elements-example](images/sdfg_adding_elements.gif)
 
 ## Debugging
 
