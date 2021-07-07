@@ -25,13 +25,15 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
     daceRenderer;
 
     constructor(daceRenderer) {
-
-        super(daceRenderer.overlay_manager, daceRenderer, daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS);
+        super(
+            daceRenderer.overlay_manager, daceRenderer,
+            daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
+        );
         this.daceRenderer = daceRenderer;
         this.breakpoints = new Map();
         vscode.postMessage({
             type: 'bp_handler.get_saved_nodes',
-            sdfg_name: this.daceRenderer.sdfg.attributes.name
+            sdfg_name: this.daceRenderer.sdfg.attributes.name,
         });
         this.refresh();
     }
@@ -44,12 +46,10 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
 
         if (element instanceof NestedSDFG) {
             sdfg_id = element.data.node.attributes.sdfg.sdfg_list_id;
-        }
-        else if (element instanceof State) {
+        } else if (element instanceof State) {
             sdfg_id = element.sdfg.sdfg_list_id;
             state_id = element.id;
-        }
-        else if (element instanceof SDFGNode) {
+        } else if (element instanceof SDFGNode) {
             sdfg_id = element.sdfg.sdfg_list_id;
             state_id = element.parent_id;
             node_id = element.id;
@@ -59,7 +59,7 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
             return {
                 sdfg_id: sdfg_id,
                 state_id: state_id,
-                node_id: node_id
+                node_id: node_id,
             };
         else
             return (
@@ -151,7 +151,9 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
 
     erase_breakpoint(node, ctx) {
         // Draw on top of the Breakpoint
-        let background = node.getCssProperty(daceRenderer, '--state-background-color');
+        let background = node.getCssProperty(
+            daceRenderer, '--state-background-color'
+        );
         this.draw_breakpoint_circle(node, ctx, background, background);
     }
 
@@ -164,14 +166,16 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
         ctx.beginPath();
         (node instanceof State) ?
             ctx.arc(topleft.x + 10, topleft.y + 20, 4, 0, 2 * Math.PI) :
-            ctx.arc(topleft.x - 10, topleft.y + node.height / 2.0, 4, 0, 2 * Math.PI);
+            ctx.arc(topleft.x - 10, topleft.y + node.height / 2.0, 4, 0,
+                2 * Math.PI);
         ctx.stroke();
         ctx.fill();
     }
 
     draw_tooltip(node, msg) {
         if (this.daceRenderer.mousepos &&
-            node.intersect(this.daceRenderer.mousepos.x, this.daceRenderer.mousepos.y)) {
+            node.intersect(this.daceRenderer.mousepos.x,
+                this.daceRenderer.mousepos.y)) {
             this.daceRenderer.tooltip = () => {
                 this.daceRenderer.tooltip_container.innerText = (msg);
                 this.daceRenderer.tooltip_container.className = 'sdfvtooltip';
@@ -236,9 +240,11 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
             node.state_id + '/' +
             node.node_id
         );
+
         if (this.breakpoints.has(elem_uuid)) {
             this.breakpoints.set(elem_uuid, BreakpointEnum.UNBOUND);
         }
+
         this.draw();
         this.daceRenderer.draw_async();
     }

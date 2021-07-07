@@ -12,6 +12,59 @@ function vscode_handle_event(event, data) {
     }
 }
 
+function create_single_use_modal(title, with_confirm, body_class) {
+    const prop_edit_modal = $('<div>', {
+        'class': 'modal fade',
+        'role': 'dialog',
+    }).appendTo('body');
+
+    const modal_document = $('<div>', {
+        'class': 'modal-dialog modal-dialog-centered',
+        'role': 'document',
+    }).appendTo(prop_edit_modal);
+    const modal_content = $('<div>', {
+        'class': 'modal-content',
+    }).appendTo(modal_document);
+    const modal_header = $('<div>', {
+        'class': 'modal-header',
+    }).appendTo(modal_content);
+
+    $('<h5>', {
+        'class': 'modal-title',
+        'text': title,
+    }).appendTo(modal_header);
+
+    const modal_body = $('<div>', {
+        'class': 'modal-body' + (body_class !== undefined ? ' ' + body_class : ''),
+    }).appendTo(modal_content);
+
+    const modal_footer = $('<div>', {
+        'class': 'modal-footer',
+    }).appendTo(modal_content);
+    $('<button>', {
+        'class': 'btn btn-secondary',
+        'type': 'button',
+        'data-bs-dismiss': 'modal',
+        'text': 'Close',
+    }).appendTo(modal_footer);
+
+    let modal_confirm_btn = undefined;
+    if (with_confirm)
+        modal_confirm_btn = $('<button>', {
+            'class': 'btn btn-primary',
+            'type': 'button',
+            'text': 'Ok',
+        }).appendTo(modal_footer);
+
+    prop_edit_modal.on('hidden.bs.modal', () => prop_edit_modal.remove());
+
+    return {
+        modal: prop_edit_modal,
+        body: modal_body,
+        confirm_btn: modal_confirm_btn,
+    };
+}
+
 function compute_scope_label(scope_entry) {
     const attributes = scope_entry.data.node.attributes;
     const base_label = attributes.label;
@@ -45,9 +98,10 @@ function compute_scope_label(scope_entry) {
 }
 
 function element_update_label(element, attributes) {
-    if (element.data && attributes.label) {
+    if (element.data) {
         if (element.data.node) {
-            element.data.node.label = attributes.label;
+            if (attributes.label)
+                element.data.node.label = attributes.label;
 
             if (element instanceof ScopeNode) {
                 // In scope nodes the range is attached.
@@ -77,6 +131,8 @@ function element_update_label(element, attributes) {
                             element.data.node.label;
                     }
                 }
+            } else if (element instanceof AccessNode && attributes.data) {
+                element.data.node.label = attributes.data;
             }
         }
     }
@@ -212,7 +268,7 @@ function attr_table_put_bool(
     key, subkey, val, elem, xform, target, cell, dtype
 ) {
     const bool_input_container = $('<div>', {
-        'class': 'form-check form-switch',
+        'class': 'form-check form-switch sdfv-property-bool',
     }).appendTo(cell);
     const input = $('<input>', {
         'type': 'checkbox',
@@ -233,6 +289,7 @@ function attr_table_put_text(
 ) {
     const input = $('<input>', {
         'type': 'text',
+        'class': 'sdfv-property-text',
         'value': val,
     }).appendTo(cell);
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
@@ -284,6 +341,7 @@ function attr_table_put_number(
 ) {
     const input = $('<input>', {
         'type': 'number',
+        'class': 'sdfv-property-number',
         'value': val,
     }).appendTo(cell);
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
@@ -339,6 +397,7 @@ function attr_table_put_typeclass(
     }).appendTo(cell);
     const input = $('<input>', {
         'list': key + '-native-typeclasses',
+        'class': 'sdfv-property-text',
         'value': daceSDFGTypeclassToString(val),
     }).appendTo(container);
     if (choices) {
@@ -357,59 +416,6 @@ function attr_table_put_typeclass(
     return new TypeclassProperty(
         elem, xform, target, key, subkey, dtype, input
     );
-}
-
-function create_and_show_property_edit_modal(title, with_confirm) {
-    const prop_edit_modal = $('<div>', {
-        'class': 'modal fade',
-        'role': 'dialog',
-    }).appendTo('body');
-
-    const modal_document = $('<div>', {
-        'class': 'modal-dialog modal-dialog-centered',
-        'role': 'document',
-    }).appendTo(prop_edit_modal);
-    const modal_content = $('<div>', {
-        'class': 'modal-content',
-    }).appendTo(modal_document);
-    const modal_header = $('<div>', {
-        'class': 'modal-header',
-    }).appendTo(modal_content);
-
-    $('<h5>', {
-        'class': 'modal-title',
-        'text': title,
-    }).appendTo(modal_header);
-
-    const modal_body = $('<div>', {
-        'class': 'modal-body property-edit-modal-body',
-    }).appendTo(modal_content);
-
-    const modal_footer = $('<div>', {
-        'class': 'modal-footer',
-    }).appendTo(modal_content);
-    $('<button>', {
-        'class': 'btn btn-secondary',
-        'type': 'button',
-        'data-bs-dismiss': 'modal',
-        'text': 'Close',
-    }).appendTo(modal_footer);
-
-    let modal_confirm_btn = undefined;
-    if (with_confirm)
-        modal_confirm_btn = $('<button>', {
-            'class': 'btn btn-primary',
-            'type': 'button',
-            'text': 'Ok',
-        }).appendTo(modal_footer);
-
-    prop_edit_modal.on('hidden.bs.modal', () => prop_edit_modal.remove());
-
-    return {
-        modal: prop_edit_modal,
-        body: modal_body,
-        confirm_btn: modal_confirm_btn,
-    };
 }
 
 function attr_table_put_dict(
@@ -432,7 +438,9 @@ function attr_table_put_dict(
     dict_edit_btn.on('click', () => {
         prop.properties = [];
 
-        const modal = create_and_show_property_edit_modal(key, true);
+        const modal = create_single_use_modal(
+            key, true, 'property-edit-modal-body'
+        );
 
         const rowbox = $('<div>', {
             'class': 'container-fluid',
@@ -529,7 +537,9 @@ function attr_table_put_list(
     list_cell_edit_btn.on('click', () => {
         prop.properties_list = [];
 
-        const modal = create_and_show_property_edit_modal(key, true);
+        const modal = create_single_use_modal(
+            key, true, 'property-edit-modal-body'
+        );
 
         const rowbox = $('<div>', {
             'class': 'container-fluid',
@@ -623,7 +633,9 @@ function attr_table_put_range(
     range_edit_btn.on('click', () => {
         prop.range_input_list = [];
 
-        const modal = create_and_show_property_edit_modal(key, true);
+        const modal = create_single_use_modal(
+            key, true, 'property-edit-modal-body'
+        );
 
         const rowbox = $('<div>', {
             'class': 'container-fluid',
@@ -636,7 +648,7 @@ function attr_table_put_range(
 
                 const range_start_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': range.start,
                 });
                 const range_start_container = $('<div>', {
@@ -654,7 +666,7 @@ function attr_table_put_range(
 
                 const range_end_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': range.end,
                 });
                 $('<div>', {
@@ -666,7 +678,7 @@ function attr_table_put_range(
 
                 const range_step_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': range.step,
                 });
                 $('<div>', {
@@ -678,7 +690,7 @@ function attr_table_put_range(
 
                 const range_tile_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': range.tile,
                 });
                 $('<div>', {
@@ -721,7 +733,7 @@ function attr_table_put_range(
 
                 const range_start_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': '',
                 });
                 const range_start_container = $('<div>', {
@@ -739,7 +751,7 @@ function attr_table_put_range(
 
                 const range_end_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': '',
                 });
                 $('<div>', {
@@ -751,7 +763,7 @@ function attr_table_put_range(
 
                 const range_step_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': '',
                 });
                 $('<div>', {
@@ -763,7 +775,7 @@ function attr_table_put_range(
 
                 const range_tile_input = $('<input>', {
                     'type': 'text',
-                    'class': 'range-input',
+                    'class': 'range-input sdfv-property-text',
                     'value': '',
                 });
                 $('<div>', {
@@ -832,7 +844,7 @@ function attribute_table_put_entry(
         }).appendTo(row);
         const key_input = $('<input>', {
             'type': 'text',
-            'class': 'property-key-input',
+            'class': 'property-key-input sdfv-property-text',
             'value': key,
         }).appendTo(key_cell);
 
@@ -843,6 +855,9 @@ function attribute_table_put_entry(
             'text': key,
         }).appendTo(row);
     }
+
+    if (meta && meta['desc'])
+        row.attr('title', meta['desc']);
 
     if (add_delete_button) {
         key_cell.addClass('attr-table-cell-nopad');
@@ -1028,7 +1043,7 @@ function generate_attributes_table(elem, xform, root) {
         if (k === 'layout' || k === 'sdfg' || k === 'sdfg_id' ||
             k === 'state_id' || k === 'expr_index' || k === 'type' ||
             k === 'transformation' || k === 'docstring' ||
-            k === 'is_collapsed' || k === 'orig_sdfg' ||
+            k === 'is_collapsed' || k === 'orig_sdfg' || k === 'position' ||
             k === 'transformation_hist' || k.startsWith('_'))
             return;
 

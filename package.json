@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Editor",
     "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "0.3.4",
+    "version": "1.0.0",
     "engines": {
         "vscode": "^1.55.0"
     },
@@ -26,6 +26,7 @@
     ],
     "main": "./out/extension.js",
     "publisher": "phschaad",
+    "author": "SPCL at ETH Zurich",
     "bugs": {
         "url": "https://github.com/spcl/dace-vscode/issues"
     },
@@ -160,12 +161,6 @@
             {
                 "title": "DaCe SDFG Optimizer",
                 "properties": {
-                    "dace.interface.port": {
-                        "type": "integer",
-                        "default": 5000,
-                        "description": "Run the DaCe backend on a different port",
-                        "scope": "machine-overridable"
-                    },
                     "dace.sdfv.layout": {
                         "type": "string",
                         "default": "horizontal",

@@ -94,61 +94,82 @@ pre.code {
 
 /* End view splitter */
 
-/* Search bar */
+/* Top bar */
 
-#search-bar {
-  margin: .5rem 0;
+#top-bar {
   display: flex;
   flex-direction: row;
   font-size: .9rem;
 }
 
-#search-bar #search {
-  padding: .2rem .3rem;
-  margin-right: .3rem;
+#top-bar #search-bar-wrapper {
+  height: 100%;
+}
+
+#top-bar #search-bar-wrapper #search-bar {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+#top-bar #search-bar #search {
+  padding: .3rem .1rem;
+  margin-right: .2rem;
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-placeholderForeground);
 }
 
-#search-bar #search::placeholder {
+#top-bar #search-bar #search::placeholder {
   color: var(--vscode-input-placeholderForeground);
 }
 
-#search-bar #search-case-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#search-bar #search-case-container label {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#search-bar #search-case-container label input {
-  margin-right: .3rem;
-}
-
-#search-bar #search-case {
+#search-case-sensitive-btn {
   height: 1.3rem;
   width: 1.3rem;
-  vertical-align: middle;
-  background-color: var(--vscode-checkbox-background);
-  color: var(--vscode-checkbox-foreground);
-  border-color: var(--vscode-checkbox-border);
+  margin-left: -1.6rem;
+  margin-top: 0.2rem;
+  padding: -0.3rem 1rem;
+  border-radius: 0;
+  user-select: none;
+  outline: 0 none;
 }
 
-#search-bar .button {
-  margin-left: .5rem;
+#search-case-text {
+  margin-left: -0.2rem;
+  color: var(--vscode-input-placeholderForeground);
 }
 
-#search-bar #run-btn {
+#top-bar #button-bar-wrapper {
+  flex-grow: 1;
+}
+
+#top-bar #button-bar {
+  margin: .5rem 0;
+  display: flex;
+  flex-direction: row;
+}
+
+#button-bar .button {
+  margin: 0 .1rem;
+  user-select: none;
+}
+
+#button-bar .spacer {
+  width: .6rem;
+  height: 100%;
+  display: block;
+  background-color: transparent;
+  color: transparent;
+  user-select: none;
+}
+
+#button-bar #breakpoint-btn {
   margin-left: auto;
 }
 
-/* End search bar */
+/* End top bar */
 
 /* Processing overlay */
 
@@ -427,6 +448,23 @@ pre.code {
 
 .sdfv-property-code {
   resize: none;
+  margin-right: .5rem;
+}
+
+.sdfv-property-text,
+.sdfv-property-code,
+.sdfv-property-number {
+  border-width: 1px;
+  border-style: solid;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border-color: var(--vscode-input-border);
+}
+
+.sdfv-property-dropdown {
+  background-color: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border-color: var(--vscode-dropdown-border);
 }
 
 .sdfv-property-expand-libnode-btn {
