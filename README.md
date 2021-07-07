@@ -37,7 +37,7 @@ of entire SDFGs from scratch.
 With the SDFG Editor, data-centric applications can be optimized with a simple,
 click-based, interactive process using transformations.
 
-- A set of applicable performance optimizing transformations are shown in a
+- A set of applicable performance optimizing transformations is shown in a
   sorted list in the side panel for each valid SDFG program.
 - A description provides more information about each transformation.
 - Transformations can be previewed before applying them to the SDFG.
