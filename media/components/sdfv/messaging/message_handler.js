@@ -93,6 +93,7 @@ class MessageHandler {
                 get_applicable_transformations();
                 break;
             case 'get_applicable_transformations_callback':
+                daemon_connected = true;
                 if (message.transformations !== undefined)
                     transformations = [[], [], [], message.transformations];
                 else
@@ -167,15 +168,11 @@ class MessageHandler {
             case 'clear_selected_transformation':
                 clear_selected_transformation();
                 break;
-            case 'get_enum_callback':
-                if (message.enum)
-                    switch (message.name) {
-                        case 'InstrumentationType':
-                            window.instruments = message.enum;
-                            break;
-                        default:
-                            break;
-                    }
+            case 'added_node':
+                if (message.uuid !== 'error') {
+                    daceRenderer.set_sdfg(message.sdfg);
+                    daceRenderer.update_new_element(message.uuid);
+                }
                 break;
             case 'set_sdfg_metadata':
                 if (message.meta_dict)
@@ -203,6 +200,9 @@ class MessageHandler {
                 break;
             case 'display_breakpoints':
                 displayBreakpoints(message.display);
+                break;
+            case 'daemon_connected':
+                daemon_connected = true;
                 break;
         }
     }

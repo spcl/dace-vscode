@@ -1,17 +1,24 @@
 # Change Log
 
+## 1.0
+
+### 1.0.0
+
+- Allow adding of SDFG elements.
+- Various bugfixes.
+
 ## 0.3
 
 ### 0.3.4
 
-- Support breakpoints in SDFGs
-  - Adds a breakpoint overlay to active SDFGs in the editor
-  - Allows the execution of SDFGs in debug mode, halting at breakpoints
+- Support breakpoints in SDFGs.
+  - Adds a breakpoint overlay to active SDFGs in the editor.
+  - Allows the execution of SDFGs in debug mode, halting at breakpoints.
 
 ### 0.3.3
 
-- Allow editing of transformation properties before applying
-- Support expansion of library nodes
+- Allow editing of transformation properties before applying.
+- Support expansion of library nodes.
 
 ### 0.3.2
 

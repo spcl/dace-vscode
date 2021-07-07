@@ -1,4 +1,4 @@
-# DaCe SDFG Viewer (SDFV) in VS Code
+# DaCe SDFG Editor for Visual Studio Code
 
 [![](https://vsmarketplacebadge.apphb.com/version-short/phschaad.sdfv.svg
 )](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
@@ -9,28 +9,78 @@
 [![](https://vsmarketplacebadge.apphb.com/rating-short/phschaad.sdfv.svg
 )](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
 
-This VS Code extension aims to provide a viewing panel for
-[SDFGs](http://spcl.inf.ethz.ch/Research/DAPP/) inside of VS Code. It
-serves as a wrapper for the SDFG Viewer SDFV, found in the current version
-of [DaCe](https://github.com/spcl/dace). Additionally, some features geared
-towards working with and editing SDFGs are provided.
+This Visual Studio Code extension provides a rich editor for
+[SDFGs](http://spcl.inf.ethz.ch/dace/) with included profiling and
+debugging, static analysis, and interactive optimization.
 
-## Features
+# Features
 
-Provides an SDFG viewing panel which:
-- opens automatically, when you open up a valid SDFG file
-  (file ending in `.sdfg`, JSON formatted).
-- Auto-updates the SDFG Viewer when the file changed on disk.
+## SDFG Editor
 
-You can switch between the custom SDFG viewer and a standard text editor
-by clicking the option `Reopen with...` in the editor's three-dot-menu in
-the top right.
+The SDFG editor allows changing of all editable SDFG properties and elements.
+To allow for easier exploration of large graphs, most graph elements can be
+collapsed into a smaller, more compact representation. A number of viewing
+options, like the hiding of access nodes, can further assist with the editing
+of larger graphs.
 
-When viewing a tasklet referencing a piece of Python code, you can jump to the
-corresponding lines of Python code with a button click.
+![sdfg-editor-example](images/sdfg_editor.gif)
 
-A separate side panel is provided in which applicable transformations to the
-currently open SDFG can be browsed, previewed, and directly applied. A history
-of previously applied transformations is being kept, allowing you to preview
-previous states of the SDFG as well as giving you the option to travel back in
-time.
+## SDFG Optimization / Transformations
+
+With the SDFG Editor, data-centric applications can be optimized interactively using transformations.
+
+- A set of applicable performance optimizing transformations is shown in a
+  sorted list in the side panel for each valid SDFG program.
+- A description provides more information about each transformation.
+- Transformations can be previewed before applying them to the SDFG.
+- The transformation history allows easy undoing/redoing of specific
+  optimization steps.
+
+<br>
+
+![sdfg-optimization-example](images/sdfg_optimization.gif)
+
+## Static Analysis
+
+SDFGs can be statically analyzed for memory or compute bottlenecks using a
+series of overlays, which highlight the number of arithmetic operations or the
+amount of memory moved per graph element.
+
+![sdfg-analysis-example](images/analysis.gif)
+
+## Debugging
+
+SDFGs can be run with a debugger, allowing the setting of breakpoints on the
+graph. For this purpose, the extension will install the
+[Python / C++ Debugger](https://marketplace.visualstudio.com/items?itemName=benjamin-simmonds.pythoncpp-debug)
+extension.
+
+![debugging-example](images/debugging.gif)
+
+## Profiling
+
+A built-in profiling run configuration allows SDFG programs to be run multiple
+times<sup>1</sup> while recording the median runtime for each execution. This
+median runtime is then reported back to you. Additionally, individual graph
+elements can be instrumented with timers, which generates a detailed profiling
+report after an SDFG's execution. This report can be loaded in an displayed via
+overlay on top of the SDFG.
+
+<sup>1</sup> The number of executions per profiling run can be configured in
+the `.dace.config`. This can be opened by typing `Open .dace.config` into the
+command bar.
+
+
+## Building SDFGs
+
+Graph elements can be dynamically added and moved around, allowing the creation
+of entire SDFGs from scratch.
+
+![sdfg-editor-adding-elements-example](images/sdfg_adding_elements.gif)
+
+# Questions, Issues, Feature Requests, and Contributions
+
+If you have questions about how to achieve something with the extension, want
+to report an issue, or request a new feature, please use the
+[issues page](https://github.com/spcl/dace-vscode/issues) on GitHub.
+Contributions are always welcome!
