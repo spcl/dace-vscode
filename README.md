@@ -32,22 +32,29 @@ of entire SDFGs from scratch.
 ![sdfg-editor-adding-elements-example](images/sdfg_adding_elements.gif)
 -->
 
+## SDFG Optimization / Transformations
+
+With the SDFG Editor, data-centric applications can be optimized with a simple,
+click-based, interactive process using transformations.
+
+- A set of applicable performance optimizing transformations are shown in a
+  sorted list in the side panel for each valid SDFG program.
+- A description provides more information about each transformation.
+- Transformations can be previewed before applying them to the SDFG.
+- The transformation history allows easy undoing/redoing of specific
+  optimization steps.
+
+<br>
+
+![sdfg-optimization-example](images/sdfg_optimization.gif)
+
 ## Static Analysis
 
 SDFGs can be statically analyzed for memory or compute bottlenecks using a
 series of overlays, which highlight the number of arithmetic operations or the
 amount of memory moved per graph element.
 
-<!--
 ![sdfg-analysis-example](images/analysis.png)
--->
-
-## SDFG Optimization
-
-A set of applicable performance optimizing transformations are shown in a sorted
-list in the side panel for each valid SDFG program. A description provides more
-information about each transformation. Transformations can be previewed before
-applying them to the SDFG.
 
 ## Profiling
 
