@@ -10,7 +10,7 @@
 )](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
 
 This Visual Studio Code extension provides a rich editor for
-[SDFGs](http://spcl.inf.ethz.ch/Research/DAPP/) with included profiling and
+[SDFGs](http://spcl.inf.ethz.ch/dace/) with included profiling and
 debugging, static analysis, and interactive optimization.
 
 # Features
