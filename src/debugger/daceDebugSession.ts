@@ -24,8 +24,7 @@ export enum sdfgEditMode {
     RUN = 'run',
     LOAD = 'load',
     TRANSFORM = 'transform',
-    PROFILE = 'profile',
-    ABORT = 'abort'
+    PROFILE = 'profile'
 }
 
 export interface ModeItem extends vscode.QuickPickItem {
@@ -52,11 +51,6 @@ export const modeItems: ModeItem[] = [
         label: "Profile",
         description: "Profiles a run",
         mode: sdfgEditMode.PROFILE,
-    },
-    {
-        label: "Abort",
-        description: "Terminates the Debugger",
-        mode: sdfgEditMode.ABORT,
     }
 ];
 
@@ -154,18 +148,8 @@ export class DaceDebugSession extends LoggingDebugSession {
                 DACE_compiler_codegen_lineinfo = daceDev ? "true" : "false";
 
         if (args.sdfgEdit) {
-            const selection = await pickAction();
-            switch (selection) {
-                case sdfgEditMode.ABORT:
-                    this.sendEvent(new TerminatedEvent());
-                    this.sendResponse(response);
-                    return;
-                case sdfgEditMode.RUN:
-                    break;
-                default:
-                    entirePyConfig.env.DACE_sdfg_edit = selection;
-                    break;
-            }
+            entirePyConfig.env.DACE_sdfg_edit = 'true';
+            entirePyConfig.justMyCode = false;
         }
 
         /**
@@ -266,14 +250,4 @@ function nameDefinedInLaunch(name: string, launch: any) {
         i++;
     }
     return undefined;
-}
-
-async function pickAction() {
-    const selection:
-        | ModeItem
-        | undefined = await vscode.window.showQuickPick(modeItems, {
-            placeHolder: "Select the first run mode",
-        });
-
-    return selection ? selection.mode : sdfgEditMode.ABORT;
 }
