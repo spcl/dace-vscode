@@ -48,6 +48,15 @@ amount of memory moved per graph element.
 
 ![sdfg-analysis-example](images/analysis.gif)
 
+## Debugging
+
+SDFGs can be run with a debugger, allowing the setting of breakpoints on the
+graph. For this purpose, the extension will install the
+[Python / C++ Debugger](https://marketplace.visualstudio.com/items?itemName=benjamin-simmonds.pythoncpp-debug)
+extension.
+
+![debugging-example](images/debugging.gif)
+
 ## Profiling
 
 A built-in profiling run configuration allows SDFG programs to be run multiple
@@ -68,13 +77,6 @@ Graph elements can be dynamically added and moved around, allowing the creation
 of entire SDFGs from scratch.
 
 ![sdfg-editor-adding-elements-example](images/sdfg_adding_elements.gif)
-
-## Debugging
-
-SDFGs can be run with a debugger, allowing the setting of breakpoints on the
-graph. For this purpose, the extension will install the
-[Python / C++ Debugger](https://marketplace.visualstudio.com/items?itemName=benjamin-simmonds.pythoncpp-debug)
-extension.
 
 # Questions, Issues, Feature Requests, and Contributions
 
