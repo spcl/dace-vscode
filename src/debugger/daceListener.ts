@@ -17,10 +17,13 @@ export class DaceListener extends vscode.Disposable {
     // message maximally once per activation 
     hasIndicatedRestricted: boolean;
 
+    lastResult: any;
+
     constructor() {
         super(() => { this.server.close(); });
         this.server = this.startListening();
         this.hasIndicatedRestricted = false;
+        this.lastResult = {};
     }
 
     public startListening() {
@@ -104,11 +107,12 @@ export class DaceListener extends vscode.Disposable {
                         "loading an SDFG";
                     vscode.window.showInformationMessage(msg);
                 }
-
+                this.lastResult = { 'filename': chosenFile };
                 vscode.debug.activeDebugSession?.customRequest('continue');
-                return { 'filename': chosenFile };
+                break;
+
             case "sdfgEditMode":
-                let selected_mode = sdfgEditMode.ABORT;
+                let selected_mode = sdfgEditMode.RUN;
                 const mode:
                     | ModeItem
                     | undefined = await vscode.window.showQuickPick(modeItems, {
@@ -117,10 +121,14 @@ export class DaceListener extends vscode.Disposable {
                 if (mode)
                     selected_mode = mode.mode;
 
+                this.lastResult = { 'mode': selected_mode };
                 vscode.debug.activeDebugSession?.customRequest('continue');
-                return { 'filename': selected_mode };
+                break;
             case "openSDFG":
                 SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
+                break;
+            case "lastResult":
+                return this.lastResult;
             default:
                 break;
         }
