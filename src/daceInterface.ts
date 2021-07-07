@@ -4,6 +4,7 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { request } from 'http';
+import * as net from 'net';
 
 import { DaCeVSCode } from './extension';
 import { SdfgViewerProvider } from './components/sdfgViewer';
@@ -89,12 +90,31 @@ implements MessageReceiverInterface {
     private daemonRunning = false;
     private daemonBooting = false;
 
-    private port: number = vscode.workspace.getConfiguration(
-        'dace.interface'
-    ).port;
+    private port: number = -1;
+
+    private getRandomPort(callback: CallableFunction) {
+        const rangeMin = 1024;
+        const rangeMax = 65535;
+        const portCandidate = Math.floor(
+            Math.random() * (rangeMax - rangeMin) + rangeMin
+        );
+
+        const tempServer = net.createServer();
+        tempServer.listen(portCandidate, () => {
+            tempServer.once('close', () => {
+                this.port = portCandidate;
+                callback();
+            });
+            tempServer.close();
+        });
+        tempServer.on('error', () => {
+            this.getRandomPort(callback);
+        });
+    }
 
     public async getPythonExecCommand(
-        uri: vscode.Uri | undefined
+        uri: vscode.Uri | undefined,
+        spaceSafe = true
     ): Promise<string> {
         try {
             let pyExt = vscode.extensions.getExtension('ms-python.python');
@@ -115,20 +135,21 @@ implements MessageReceiverInterface {
                 if (pyCmd) {
                     // Ensure spaces in the python command don't trip up the
                     // terminal.
-                    switch (os.platform()) {
-                        case 'win32':
-                            for (let i = 0; i < pyCmd.length; i++) {
-                                if (/\s/g.test(pyCmd[i]))
-                                    pyCmd[i] = '& "' + pyCmd[i] + '"';
-                            }
-                            break;
-                        default:
-                            for (let i = 0; i < pyCmd.length; i++) {
-                                if (/\s/g.test(pyCmd[i]))
-                                    pyCmd[i] = '"' + pyCmd[i] + '"';
-                            }
-                            break;
-                    }
+                    if (spaceSafe)
+                        switch (os.platform()) {
+                            case 'win32':
+                                for (let i = 0; i < pyCmd.length; i++) {
+                                    if (/\s/g.test(pyCmd[i]))
+                                        pyCmd[i] = '& "' + pyCmd[i] + '"';
+                                }
+                                break;
+                            default:
+                                for (let i = 0; i < pyCmd.length; i++) {
+                                    if (/\s/g.test(pyCmd[i]))
+                                        pyCmd[i] = '"' + pyCmd[i] + '"';
+                                }
+                                break;
+                        }
                     return pyCmd.join(' ');
                 } else {
                     return 'python';
@@ -192,12 +213,17 @@ implements MessageReceiverInterface {
             vscode.window.setStatusBarMessage(
                 'Trying to start and connect to a DaCe daemon', 5000
             );
-            const pyCmd: string = await this.getPythonExecCommand(scriptUri);
-
-            this.daemonTerminal?.sendText(
-                pyCmd + ' ' + scriptUri.fsPath + ' -p ' + this.port.toString()
+            const pyCmd: string = await this.getPythonExecCommand(
+                scriptUri, true
             );
-            this.pollDaemon(callback, true);
+
+            this.getRandomPort(() => {
+                this.daemonTerminal?.sendText(
+                    pyCmd + ' ' + scriptUri.fsPath + ' -p ' +
+                    this.port.toString()
+                );
+                this.pollDaemon(callback, true);
+            });
         } else {
             this.daemonBooting = false;
         }
