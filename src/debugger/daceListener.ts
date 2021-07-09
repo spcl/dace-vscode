@@ -109,8 +109,7 @@ export class DaceListener extends vscode.Disposable {
                 }
                 this.lastResult = { 'filename': chosenFile };
                 vscode.debug.activeDebugSession?.customRequest('continue');
-                break;
-
+                return this.lastResult;
             case "sdfgEditMode":
                 let selected_mode = sdfgEditMode.RUN;
                 const mode:
@@ -123,7 +122,7 @@ export class DaceListener extends vscode.Disposable {
 
                 this.lastResult = { 'mode': selected_mode };
                 vscode.debug.activeDebugSession?.customRequest('continue');
-                break;
+                return this.lastResult;
             case "openSDFG":
                 SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
                 break;
