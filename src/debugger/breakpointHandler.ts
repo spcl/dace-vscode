@@ -33,6 +33,21 @@ export class Node {
             this.state_id === node.state_id &&
             this.node_id === node.node_id;
     }
+
+    public nodeInfo() {
+        return {
+            sdfg_id: this.sdfg_id,
+            state_id: this.state_id,
+            node_id: this.node_id,
+
+            sdfg_name: this.sdfg_name,
+            cache: this.cache,
+            target: this.target,
+
+            sdfg_path: this.cache ?
+                path.join(this.cache, 'program.sdfg') : undefined,
+        };
+    }
 }
 
 interface ISavedBP {
@@ -522,7 +537,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 this.savedNodes[sdfgName].push(node);
                 SdfgBreakpointProvider.getInstance()?.handleMessage({
                     'type': 'add_sdfg_breakpoint',
-                    'node': node
+                    'node': node.nodeInfo()
                 });
                 return;
             }
@@ -530,11 +545,11 @@ export class BreakpointHandler extends vscode.Disposable {
         if (unbound) {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 'type': 'unbound_breakpoint',
-                'node': node
+                'node': node.nodeInfo()
             });
             SdfgBreakpointProvider.getInstance()?.handleMessage({
                 'type': 'unbound_sdfg_breakpoint',
-                'node': node
+                'node': node.nodeInfo()
             });
         }
         this.saveState();
@@ -653,13 +668,7 @@ export class BreakpointHandler extends vscode.Disposable {
         for (const nodes of Object.values(this.savedNodes)) {
             for (const node of nodes) {
                 if (node.cache)
-                    allNodes.push({
-                        sdfg_name: node.sdfg_name,
-                        sdfg_path: path.join(node.cache, 'program.sdfg'),
-                        sdfg_id: node.sdfg_id,
-                        state_id: node.state_id,
-                        node_id: node.node_id
-                    });
+                    allNodes.push(node.nodeInfo());
             }
         }
         return allNodes;

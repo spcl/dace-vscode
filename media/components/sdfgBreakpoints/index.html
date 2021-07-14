@@ -65,7 +65,8 @@
                 'class': 'list-element',
                 'label': node.sdfg_path,
                 'title': node.sdfg_path
-            }).click(_ => {
+            }).click(e => {
+                if ($(e.target).is('.remove-bp')) return
                 vscode.postMessage({
                     type: 'sdfv.go_to_sdfg',
                     path: node.sdfg_path,
