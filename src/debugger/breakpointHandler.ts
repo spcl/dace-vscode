@@ -656,6 +656,7 @@ export class BreakpointHandler extends vscode.Disposable {
                     allNodes.push({
                         sdfg_name: node.sdfg_name,
                         sdfg_path: path.join(node.cache, 'program.sdfg'),
+                        cache_path: node.cache,
                         sdfg_id: node.sdfg_id,
                         state_id: node.state_id,
                         node_id: node.node_id
@@ -734,7 +735,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 Buffer.from(data, 'utf8')
             );
         } catch (error) {
-            console.error("Error while writting to the save file:\n", error);
+            console.error("Error while writing to the save file:\n", error);
         }
     }
 
@@ -844,7 +845,7 @@ async function jsonFromPath(fileUri: vscode.Uri) {
     } catch (error) {
         // If the file doesn't exist, the program might
         // not have been compiled yet, so we don't throw
-        // an errror
+        // an error
         return undefined;
     }
 
