@@ -76,6 +76,7 @@
             }).contextmenu(_ => {
                 vscode.postMessage({
                     type: 'sdfv.go_to_cpp',
+                    cache_path: node.cache_path,
                     sdfg_name: node.sdfg_name,
                     sdfg_id: node.sdfg_id,
                     state_id: node.state_id,

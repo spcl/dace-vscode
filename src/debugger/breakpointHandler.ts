@@ -743,7 +743,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 Buffer.from(data, 'utf8')
             );
         } catch (error) {
-            console.error("Error while writting to the save file:\n", error);
+            console.error("Error while writing to the save file:\n", error);
         }
     }
 
@@ -853,7 +853,7 @@ async function jsonFromPath(fileUri: vscode.Uri) {
     } catch (error) {
         // If the file doesn't exist, the program might
         // not have been compiled yet, so we don't throw
-        // an errror
+        // an error
         return undefined;
     }
 
