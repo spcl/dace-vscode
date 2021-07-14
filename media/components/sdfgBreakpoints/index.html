@@ -65,8 +65,7 @@
                 'class': 'list-element',
                 'label': node.sdfg_path,
                 'title': node.sdfg_path
-            }).click(e => {
-                if ($(e.target).is('.remove-bp')) return
+            }).click(_ => {
                 vscode.postMessage({
                     type: 'sdfv.go_to_sdfg',
                     path: node.sdfg_path,
@@ -105,7 +104,7 @@
             const remove_bp = $('<div>', {
                 'class': 'remove-bp'
             }).text('X');
-            remove_bp.click(_ => {
+            remove_bp.click(e => {
                 vscode.postMessage({
                     type: 'bp_handler.remove_breakpoint',
                     node: node,
@@ -116,6 +115,7 @@
                     node: node,
                     sdfg_name: node.sdfg_name
                 });
+                e.stopPropagation();
             });
 
             const sdfg_identifier = $('<div>', {
