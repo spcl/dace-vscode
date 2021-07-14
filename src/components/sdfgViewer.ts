@@ -183,21 +183,9 @@ export class SdfgViewerProvider
                         .getActiveSdfgFileName();
                     if (!SdfgFileName)
                         return;
+
                     const sdfgFilePath = vscode.Uri.file(SdfgFileName).fsPath;
-
-                    // Get windows directory path
-                    cachePath = sdfgFilePath.substring(
-                        0,
-                        sdfgFilePath.lastIndexOf("\\")
-                    );
-                    if (cachePath.length === 0) {
-                        // Get linux directory path
-                        cachePath = sdfgFilePath.substring(
-                            0,
-                            sdfgFilePath.lastIndexOf("/")
-                        );
-                    }
-
+                    cachePath = path.dirname(sdfgFilePath);
                 }
 
                 let mapPath = path.join(
