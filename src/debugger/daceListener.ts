@@ -3,7 +3,6 @@
 
 import * as Net from 'net';
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { BreakpointHandler } from './breakpointHandler';
 import { SdfgViewerProvider } from '../components/sdfgViewer';
 import { sdfgEditMode, modeItems, ModeItem } from './daceDebugSession';
@@ -18,13 +17,10 @@ export class DaceListener extends vscode.Disposable {
     // message maximally once per activation 
     hasIndicatedRestricted: boolean;
 
-    lastResult: any;
-
     constructor() {
         super(() => { this.server.close(); });
         this.server = this.startListening();
         this.hasIndicatedRestricted = false;
-        this.lastResult = {};
     }
 
     public startListening() {
@@ -82,6 +78,7 @@ export class DaceListener extends vscode.Disposable {
                 let dialogOptions: vscode.OpenDialogOptions = {
                     filters: { 'SDFG': ['sdfg'] },
                     openLabel: 'load SDFG',
+                    title: 'load SDFG',
                     canSelectMany: false
                 };
 
@@ -90,12 +87,21 @@ export class DaceListener extends vscode.Disposable {
                     dialogOptions.defaultUri = WFs[0].uri;
 
                 const chosenUri = await vscode.window.showOpenDialog(dialogOptions);
-                const chosenFile = chosenUri && chosenUri.length > 0 ?
-                    chosenUri[0].fsPath : 'none';
+                return (chosenUri && chosenUri.length > 0) ?
+                    { 'filename': chosenUri[0].fsPath } : {};
+            case "saveSDFG":
+                let saveOptions: vscode.SaveDialogOptions = {
+                    filters: { 'SDFG': ['sdfg'] },
+                    saveLabel: 'save SDFG',
+                    title: 'save SDFG'
+                };
 
-                this.lastResult = { 'filename': chosenFile };
-                vscode.debug.activeDebugSession?.customRequest('continue');
-                return this.lastResult;
+                const WFolders = vscode.workspace.workspaceFolders;
+                if (WFolders && WFolders.length > 0)
+                    saveOptions.defaultUri = WFolders[0].uri;
+
+                const uri = await vscode.window.showSaveDialog(saveOptions);
+                return uri ? { 'filename': uri.fsPath } : {};
             case "sdfgEditMode":
                 let selected_mode = sdfgEditMode.RUN;
                 const mode:
@@ -106,14 +112,22 @@ export class DaceListener extends vscode.Disposable {
                 if (mode)
                     selected_mode = mode.mode;
 
-                this.lastResult = { 'mode': selected_mode };
-                vscode.debug.activeDebugSession?.customRequest('continue');
-                return this.lastResult;
+                return { 'mode': selected_mode };
+            case "stopAndTransform":
+                SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
+
+                const opt = await vscode.window.showInformationMessage(
+                    'Click continue when you want to proceed with the transformation',
+                    'continue'
+                );
+                switch (opt) {
+                    case 'continue':
+                        return {};
+                }
+                break;
             case "openSDFG":
                 SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
                 break;
-            case "lastResult":
-                return this.lastResult;
             default:
                 break;
         }
