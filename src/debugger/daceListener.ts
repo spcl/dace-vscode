@@ -3,6 +3,7 @@
 
 import * as Net from 'net';
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { BreakpointHandler } from './breakpointHandler';
 import { SdfgViewerProvider } from '../components/sdfgViewer';
 import { sdfgEditMode, modeItems, ModeItem } from './daceDebugSession';
@@ -78,35 +79,20 @@ export class DaceListener extends vscode.Disposable {
                 }
                 break;
             case "loadSDFG":
-                interface MenuItem extends vscode.QuickPickItem {
-                    uri: vscode.Uri;
-                }
-                const files = await vscode.workspace.findFiles("**/*.sdfg");
-                let chosenFile = 'none';
+                let dialogOptions: vscode.OpenDialogOptions = {
+                    filters: { 'SDFG': ['sdfg'] },
+                    openLabel: 'load SDFG',
+                    canSelectMany: false
+                };
 
-                if (files.length > 0) {
-                    let items: MenuItem[] = [];
-                    for (const file of files) {
-                        items.push({
-                            label: file.path,
-                            uri: file
-                        });
-                    }
+                const WFs = vscode.workspace.workspaceFolders;
+                if (WFs && WFs.length > 0)
+                    dialogOptions.defaultUri = WFs[0].uri;
 
-                    const selection:
-                        | MenuItem
-                        | undefined = await vscode.window.showQuickPick(items, {
-                            placeHolder: "Select an SDFG to load",
-                        });
-                    if (selection)
-                        chosenFile = selection.uri.fsPath;
-                }
-                else {
-                    const msg = "There is no SDFG available in your working " +
-                        "directory. The process will continue without " +
-                        "loading an SDFG";
-                    vscode.window.showInformationMessage(msg);
-                }
+                const chosenUri = await vscode.window.showOpenDialog(dialogOptions);
+                const chosenFile = chosenUri && chosenUri.length > 0 ?
+                    chosenUri[0].fsPath : 'none';
+
                 this.lastResult = { 'filename': chosenFile };
                 vscode.debug.activeDebugSession?.customRequest('continue');
                 return this.lastResult;
