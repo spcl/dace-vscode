@@ -175,12 +175,18 @@ export class SdfgViewerProvider
                 );
                 break;
             case 'go_to_cpp':
-                // We want to jump to a specific cpp file
-                let cachePath = path.normalize(
-                    vscode.workspace.rootPath +
-                    '/.dacecache/' +
-                    message.sdfg_name
-                );
+                // If the message passes a cache path then use that path, otherwise
+                // get the cache directory of the currently opened SDFG
+                let cachePath: string = message.cache_path;
+                if (!cachePath) {
+                    const SdfgFileName = DaCeVSCode.getInstance()
+                        .getActiveSdfgFileName();
+                    if (!SdfgFileName)
+                        return;
+
+                    const sdfgFilePath = vscode.Uri.file(SdfgFileName).fsPath;
+                    cachePath = path.dirname(sdfgFilePath);
+                }
 
                 let mapPath = path.join(
                     cachePath,
@@ -205,7 +211,7 @@ export class SdfgViewerProvider
 
                 getCppRange(node, cppMapUri).then(lineRange => {
                     // If there is no matching location we just goto the file
-                    // without highlighting and indicte it with a message
+                    // without highlighting and indicate it with a message
                     if (!lineRange || !lineRange.from) {
                         lineRange = {};
                         lineRange.from = 1;
@@ -215,7 +221,7 @@ export class SdfgViewerProvider
                         );
                     }
 
-                    // Subtract 1 as we don't want to heighlight the first line
+                    // Subtract 1 as we don't want to highlight the first line
                     // as the 'to' value is inclusive 
                     if (!lineRange.to) {
                         lineRange.to = lineRange.from - 1;
