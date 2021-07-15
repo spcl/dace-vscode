@@ -23,8 +23,9 @@ export interface DaceLaunchRequestArguments
 export enum sdfgEditMode {
     RUN = 'run',
     LOAD = 'load',
+    SAVE = 'save',
     TRANSFORM = 'transform',
-    PROFILE = 'profile'
+    PROFILE = 'profile',
 }
 
 export interface ModeItem extends vscode.QuickPickItem {
@@ -41,6 +42,11 @@ export const modeItems: ModeItem[] = [
         label: "Load",
         description: "Load SDFG from file",
         mode: sdfgEditMode.LOAD,
+    },
+    {
+        label: "Save",
+        description: "Save the current SDFG",
+        mode: sdfgEditMode.SAVE,
     },
     {
         label: "Transform",
