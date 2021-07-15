@@ -115,7 +115,8 @@
                     node: node,
                     sdfg_name: node.sdfg_name
                 });
-                e.stopPropagation();
+                // Stops propagating the click 
+                return false
             });
 
             const sdfg_identifier = $('<div>', {
