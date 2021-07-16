@@ -50,7 +50,7 @@ export const modeItems: ModeItem[] = [
     },
     {
         label: "Transform",
-        description: "Allows transformation before codegeneration",
+        description: "Transform the SDFG before continuing",
         mode: sdfgEditMode.TRANSFORM,
     },
     {
