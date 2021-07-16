@@ -304,14 +304,18 @@
                 "command": "sdfg.goto.sdfg",
                 "title": "Open the SDFG file",
                 "category": "SDFV",
-                "enablement": "!inDebugMode",
                 "icon": "$(preview)"
             },
             {
                 "command": "sdfg.goto.cpp",
                 "title": "Open the C++ file",
                 "category": "SDFV",
-                "enablement": "!inDebugMode",
+                "icon": "$(code)"
+            },
+            {
+                "command": "sdfg.goto.py",
+                "title": "Open the source file",
+                "category": "SDFV",
                 "icon": "$(code)"
             },
             {
@@ -423,25 +427,35 @@
                 },
                 {
                     "command": "sdfg.goto.sdfg",
-                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "when": "sdfg.showMenu.goto.sdfg == true",
                     "group": "1_run@10"
                 },
                 {
                     "command": "sdfg.goto.cpp",
-                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "when": "sdfg.showMenu.goto.cpp == true",
                     "group": "1_run@20"
+                },
+                {
+                    "command": "sdfg.goto.py",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@30"
                 }
             ],
             "editor/context": [
                 {
                     "command": "sdfg.goto.sdfg",
-                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "when": "sdfg.showMenu.goto.sdfg == true",
                     "group": "1_run@10"
                 },
                 {
                     "command": "sdfg.goto.cpp",
-                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "when": "sdfg.showMenu.goto.cpp == true",
                     "group": "1_run@20"
+                },
+                {
+                    "command": "sdfg.goto.py",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@30"
                 }
             ],
             "view/title": [
