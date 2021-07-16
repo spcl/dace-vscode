@@ -195,17 +195,67 @@ export class BreakpointHandler extends vscode.Disposable {
             ),
             vscode.commands.registerCommand(
                 'sdfg.goto.py',
-                async (resource: vscode.Uri) => {
+                (resource: vscode.Uri) => {
                     if (resource) {
                         const BPHinstance = BreakpointHandler.getInstance();
 
                         if (BPHinstance && BPHinstance.currentFunc) {
-                            console.log(BPHinstance.currentFunc);
                             SdfgViewerProvider.getInstance()?.goToFileLocation(
                                 BPHinstance.currentFunc.source_files[0],
                                 0, 0, 0, 0
                             );
                         }
+                    }
+                }
+            ),
+            vscode.commands.registerCommand(
+                'sdfg.sourcefiles',
+                async (resource: vscode.Uri) => {
+                    if (resource) {
+                        const BPHinstance = BreakpointHandler.getInstance();
+
+                        if (BPHinstance && BPHinstance.currentFunc) {
+
+                            interface MenuItem extends vscode.QuickPickItem {
+                                uri: vscode.Uri;
+                            }
+
+                            let items: MenuItem[] = [];
+                            for (const src of BPHinstance.currentFunc.source_files) {
+                                items.push({
+                                    label: src.path,
+                                    uri: src
+                                });
+                            }
+
+                            const selection:
+                                | MenuItem
+                                | undefined = await vscode.window.showQuickPick(items, {
+                                    placeHolder: "Open sourcefile",
+                                });
+                            if (selection)
+                                SdfgViewerProvider.getInstance()?.goToFileLocation(
+                                    selection.uri,
+                                    0, 0, 0, 0
+                                );
+                        }
+                    }
+                }
+            ),
+            vscode.commands.registerCommand(
+                'dace.debug.clearState',
+                (resource: vscode.Uri) => {
+                    const BPHInstance = BreakpointHandler.getInstance();
+                    if (BPHInstance) {
+                        BPHInstance.files = {};
+                        BPHInstance.savedNodes = {};
+                        // Delete save file
+                        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+                        if (!workspace) return;
+                        const fileUri = vscode.Uri.file(path.join(workspace, SAVE_DIR,
+                            SAVE_FILE));
+
+                        vscode.workspace.fs.delete(fileUri);
                     }
                 }
             ),
