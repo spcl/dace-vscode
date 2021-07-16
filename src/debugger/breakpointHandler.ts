@@ -217,8 +217,12 @@ export class BreakpointHandler extends vscode.Disposable {
                     const currentFile = normalizePath(pathName);
                     for (const functions of Object.values(files)) {
                         for (const func of functions) {
-                            const matchFile = path.join(func.cache, 'src',
-                                func.target_name, func.name + '.cpp');
+                            const matchFile = path.join(
+                                func.cache,
+                                'src',
+                                func.target_name,
+                                func.name + '.cpp'
+                            );
                             if (normalizePath(matchFile) === currentFile) {
                                 BPHInstance.currentFunc = func;
                                 return;
