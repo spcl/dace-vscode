@@ -155,7 +155,7 @@ export class DaceDebugSession extends LoggingDebugSession {
 
         if (args.sdfgEdit) {
             entirePyConfig.env.DACE_sdfg_edit = 'true';
-            entirePyConfig.justMyCode = false;
+            entirePyConfig.env.DACE_instrumentation_report_each_invocation = 'false';
         }
 
         /**
