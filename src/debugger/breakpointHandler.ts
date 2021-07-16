@@ -44,6 +44,7 @@ interface IFunction {
     name: string,
     cache: string,
     target_name: string,
+    source_files: vscode.Uri[],
     made_with_api: boolean,
     codegen_map: boolean
 }
@@ -54,6 +55,12 @@ interface IHashFiles {
 
 interface IHashNodes {
     [key: string]: Node[];
+}
+
+enum Menus {
+    GOTO_SDFG = 'goto_sdfg',
+    GOTO_PYTHON = 'goto_python',
+    GOTO_CPP = 'goto_cpp'
 }
 
 const SAVE_DIR = ".vscode";
@@ -110,19 +117,36 @@ export class BreakpointHandler extends vscode.Disposable {
                 'sdfg.goto.sdfg',
                 (resource: vscode.Uri) => {
                     if (resource) {
-                        let files = BreakpointHandler.getInstance()?.files;
-                        let filePath = normalizePath(resource.fsPath);
+                        const BPHinstance = BreakpointHandler.getInstance();
 
-                        // Check if there is a corresponding SDFG file saved
-                        // If thats the case, display the SDFG
-                        if (files && filePath && files[filePath].length !== 0) {
-                            // TODO: look through list for the right file as one 
-                            //      src file might have multiple Dace programs
-                            const sdfgPath = path.join(
-                                files[filePath][0].cache,
-                                "program.sdfg"
-                            );
-                            SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(sdfgPath));
+                        if (resource.fsPath.endsWith('.py')) {
+                            let files = BPHinstance?.files;
+                            let filePath = normalizePath(resource.fsPath);
+
+                            // Check if there is a corresponding SDFG file saved
+                            // If thats the case, display the SDFG
+                            if (files && filePath && files[filePath].length !== 0) {
+                                // TODO: look through list for the right file as one 
+                                //      src file might have multiple Dace programs
+                                const sdfgPath = path.join(
+                                    files[filePath][0].cache,
+                                    "program.sdfg"
+                                );
+                                SdfgViewerProvider.getInstance()?.openViewer(
+                                    vscode.Uri.file(sdfgPath)
+                                );
+                            }
+                        }
+                        else if (resource.fsPath.endsWith('.cpp')) {
+                            if (BPHinstance && BPHinstance.currentFunc) {
+                                const sdfgPath = path.join(
+                                    BPHinstance.currentFunc.cache,
+                                    "program.sdfg"
+                                );
+                                SdfgViewerProvider.getInstance()?.openViewer(
+                                    vscode.Uri.file(sdfgPath)
+                                );
+                            }
                         }
                     }
                 }
@@ -165,6 +189,73 @@ export class BreakpointHandler extends vscode.Disposable {
                                 location ? location.line : 0, 0
                             );
                         }
+
+                    }
+                }
+            ),
+            vscode.commands.registerCommand(
+                'sdfg.goto.py',
+                (resource: vscode.Uri) => {
+                    if (resource) {
+                        const BPHinstance = BreakpointHandler.getInstance();
+
+                        if (BPHinstance && BPHinstance.currentFunc) {
+                            SdfgViewerProvider.getInstance()?.goToFileLocation(
+                                BPHinstance.currentFunc.source_files[0],
+                                0, 0, 0, 0
+                            );
+                        }
+                    }
+                }
+            ),
+            vscode.commands.registerCommand(
+                'sdfg.sourcefiles',
+                async (resource: vscode.Uri) => {
+                    if (resource) {
+                        const BPHinstance = BreakpointHandler.getInstance();
+
+                        if (BPHinstance && BPHinstance.currentFunc) {
+
+                            interface MenuItem extends vscode.QuickPickItem {
+                                uri: vscode.Uri;
+                            }
+
+                            let items: MenuItem[] = [];
+                            for (const src of BPHinstance.currentFunc.source_files) {
+                                items.push({
+                                    label: src.path,
+                                    uri: src
+                                });
+                            }
+
+                            const selection:
+                                | MenuItem
+                                | undefined = await vscode.window.showQuickPick(items, {
+                                    placeHolder: "Open sourcefile",
+                                });
+                            if (selection)
+                                SdfgViewerProvider.getInstance()?.goToFileLocation(
+                                    selection.uri,
+                                    0, 0, 0, 0
+                                );
+                        }
+                    }
+                }
+            ),
+            vscode.commands.registerCommand(
+                'dace.debug.clearState',
+                (resource: vscode.Uri) => {
+                    const BPHInstance = BreakpointHandler.getInstance();
+                    if (BPHInstance) {
+                        BPHInstance.files = {};
+                        BPHInstance.savedNodes = {};
+                        // Delete save file
+                        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+                        if (!workspace) return;
+                        const fileUri = vscode.Uri.file(path.join(workspace, SAVE_DIR,
+                            SAVE_FILE));
+
+                        vscode.workspace.fs.delete(fileUri);
                     }
                 }
             ),
@@ -183,6 +274,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 }
 
                 const BPHInstance = BreakpointHandler.getInstance();
+                BPHInstance?.showMenu(false);
 
                 if (pathName.endsWith(".py") && BPHInstance) {
                     let files = BPHInstance.files;
@@ -203,24 +295,27 @@ export class BreakpointHandler extends vscode.Disposable {
                             await vscode.workspace.fs.stat(
                                 vscode.Uri.file(filepath)
                             );
-                            BPHInstance.showMenu(true);
+                            BPHInstance.showMenu(true, [Menus.GOTO_SDFG, Menus.GOTO_CPP]);
                         } catch (error) {
-                            BPHInstance.showMenu(false);
+                            // Do nothing
                         }
                         return;
                     }
                 }
-                BPHInstance?.showMenu(false);
-
-                if (pathName.endsWith(".cpp") && BPHInstance) {
+                else if (pathName.endsWith(".cpp") && BPHInstance) {
                     const files = BPHInstance.files;
                     const currentFile = normalizePath(pathName);
                     for (const functions of Object.values(files)) {
                         for (const func of functions) {
-                            const matchFile = path.join(func.cache, 'src',
-                                func.target_name, func.name + '.cpp');
+                            const matchFile = path.join(
+                                func.cache,
+                                'src',
+                                func.target_name,
+                                func.name + '.cpp'
+                            );
                             if (normalizePath(matchFile) === currentFile) {
                                 BPHInstance.currentFunc = func;
+                                BPHInstance.showMenu(true, [Menus.GOTO_SDFG, Menus.GOTO_PYTHON]);
                                 return;
                             }
                         }
@@ -302,24 +397,23 @@ export class BreakpointHandler extends vscode.Disposable {
                         name: funcName,
                         cache: cachePath,
                         target_name: targetName ? targetName : 'cpu',
+                        source_files: filePaths.map(file => vscode.Uri.file(file)),
                         made_with_api: madeWithApi ? madeWithApi : false,
                         codegen_map: codegenMap ? codegenMap : false,
                     }
                 );
             }
-            // In case the user changes it's cache settings or changes the target
-            else if (alreadySaved.cache !== cachePath ||
-                alreadySaved.target_name !== targetName) {
+            else {
                 alreadySaved.cache = cachePath;
                 alreadySaved.target_name = targetName ? targetName : 'cpu';
-            }
-            else if (alreadySaved.codegen_map !== codegenMap) {
                 alreadySaved.codegen_map = codegenMap ? codegenMap : false;
+                alreadySaved.made_with_api = madeWithApi ? madeWithApi : false;
+                alreadySaved.source_files = filePaths.map(file => vscode.Uri.file(file));
             }
         }
         this.setAllBreakpoints();
         vscode.debug.activeDebugSession?.customRequest("continue");
-        this.showMenu(true);
+        this.showMenu(true, [Menus.GOTO_SDFG, Menus.GOTO_CPP]);
         this.saveState();
     }
 
@@ -674,12 +768,39 @@ export class BreakpointHandler extends vscode.Disposable {
             });
     }
 
-    public showMenu(show: boolean) {
-        vscode.commands.executeCommand(
-            'setContext',
-            'sdfg.showMenuCommands',
-            show
-        );
+    public showMenu(show: boolean, menus: Menus[] | undefined = undefined) {
+        // If menus is undefined, do same for all
+        if (!menus)
+            menus = Object.values(Menus);
+
+        menus.forEach(menu => {
+            switch (menu) {
+                case Menus.GOTO_SDFG:
+                    vscode.commands.executeCommand(
+                        'setContext',
+                        'sdfg.showMenu.goto.sdfg',
+                        show
+                    );
+                    break;
+                case Menus.GOTO_CPP:
+                    vscode.commands.executeCommand(
+                        'setContext',
+                        'sdfg.showMenu.goto.cpp',
+                        show
+                    );
+                    break;
+                case Menus.GOTO_PYTHON:
+                    vscode.commands.executeCommand(
+                        'setContext',
+                        'sdfg.showMenu.goto.py',
+                        show
+                    );
+                    break;
+                default:
+                    break;
+            }
+        });
+
     }
 
     private async saveState() {
