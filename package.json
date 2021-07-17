@@ -309,14 +309,24 @@
                 "command": "sdfg.goto.sdfg",
                 "title": "Open the SDFG file",
                 "category": "SDFV",
-                "enablement": "!inDebugMode",
                 "icon": "$(preview)"
             },
             {
                 "command": "sdfg.goto.cpp",
                 "title": "Open the C++ file",
                 "category": "SDFV",
-                "enablement": "!inDebugMode",
+                "icon": "$(code)"
+            },
+            {
+                "command": "sdfg.goto.py",
+                "title": "Open the source file",
+                "category": "SDFV",
+                "icon": "$(code)"
+            },
+            {
+                "command": "sdfg.sourcefiles",
+                "title": "All source files",
+                "category": "SDFV",
                 "icon": "$(code)"
             },
             {
@@ -377,7 +387,11 @@
             },
             {
                 "command": "dace.config",
-                "title": "Open .dace.config"
+                "title": "DaCe: Open .dace.config"
+            },
+            {
+                "command": "dace.debug.clearState",
+                "title": "DaCe: Clear debug state"
             }
         ],
         "menus": {
@@ -428,25 +442,45 @@
                 },
                 {
                     "command": "sdfg.goto.sdfg",
-                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "when": "sdfg.showMenu.goto.sdfg == true",
                     "group": "1_run@10"
                 },
                 {
                     "command": "sdfg.goto.cpp",
-                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "when": "sdfg.showMenu.goto.cpp == true",
                     "group": "1_run@20"
+                },
+                {
+                    "command": "sdfg.goto.py",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@30"
+                },
+                {
+                    "command": "sdfg.sourcefiles",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@40"
                 }
             ],
             "editor/context": [
                 {
                     "command": "sdfg.goto.sdfg",
-                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "when": "sdfg.showMenu.goto.sdfg == true",
                     "group": "1_run@10"
                 },
                 {
                     "command": "sdfg.goto.cpp",
-                    "when": "sdfg.showMenuCommands == true && resourceLangId == python",
+                    "when": "sdfg.showMenu.goto.cpp == true",
                     "group": "1_run@20"
+                },
+                {
+                    "command": "sdfg.goto.py",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@30"
+                },
+                {
+                    "command": "sdfg.sourcefiles",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@40"
                 }
             ],
             "view/title": [
