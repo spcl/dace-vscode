@@ -1,7 +1,7 @@
 # Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
-from dace import SDFG, SDFGState, nodes
+from dace import SDFG, SDFGState, nodes, serialize
 import sys
 import traceback
 
@@ -175,3 +175,16 @@ def load_sdfg_from_json(json):
         'error': error,
         'sdfg': sdfg,
     }
+
+
+def disable_save_metadata():
+    old_meta = False
+    if hasattr(serialize, 'JSON_STORE_METADATA'):
+        old_meta = serialize.JSON_STORE_METADATA
+        serialize.JSON_STORE_METADATA = False
+    return old_meta
+
+
+def restore_save_metadata(old_meta):
+    if hasattr(serialize, 'JSON_STORE_METADATA'):
+        serialize.JSON_STORE_METADATA = old_meta
