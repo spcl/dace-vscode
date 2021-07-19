@@ -8,6 +8,8 @@ from dace_vscode.utils import (
     load_sdfg_from_json,
     find_graph_element_by_uuid,
     get_uuid,
+    disable_save_metadata,
+    restore_save_metadata,
 )
 import pydoc
 
@@ -15,8 +17,7 @@ import pydoc
 def remove_sdfg_elements(sdfg_json, uuids):
     from dace.sdfg.graph import Edge
 
-    old_meta = serialize.JSON_STORE_METADATA
-    serialize.JSON_STORE_METADATA = False
+    old_meta = disable_save_metadata()
 
     loaded = load_sdfg_from_json(sdfg_json)
     if loaded['error'] is not None:
@@ -45,7 +46,7 @@ def remove_sdfg_elements(sdfg_json, uuids):
             }
 
     new_sdfg = sdfg.to_json()
-    serialize.JSON_STORE_METADATA = old_meta
+    restore_save_metadata(old_meta)
 
     return {
         'sdfg': new_sdfg,
@@ -146,10 +147,9 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid, edge_a_uuid):
         else:
             raise ValueError('No edge starting point provided')
 
-    old_meta = serialize.JSON_STORE_METADATA
-    serialize.JSON_STORE_METADATA = False
+    old_meta = disable_save_metadata()
     new_sdfg_str = sdfg.to_json()
-    serialize.JSON_STORE_METADATA = old_meta
+    restore_save_metadata(old_meta)
 
     return {
         'sdfg': new_sdfg_str,
