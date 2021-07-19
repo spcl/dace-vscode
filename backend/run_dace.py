@@ -50,6 +50,8 @@ sys.path.append(path.abspath(path.dirname(__file__)))
 
 from dace_vscode.utils import (
     load_sdfg_from_file,
+    disable_save_metadata,
+    restore_save_metadata,
 )
 from dace_vscode import transformations, editing, arith_ops
 
@@ -168,14 +170,12 @@ def _sdfg_remove_instrumentations(sdfg: dace.sdfg.SDFG):
             if isinstance(node, dace.sdfg.nodes.NestedSDFG):
                 _sdfg_remove_instrumentations(node.sdfg)
 
-
 def compile_sdfg(path, suppress_instrumentation=False):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
     # delays when booting in daemon mode.
-    from dace import serialize
     from dace.codegen.compiled_sdfg import CompiledSDFG
-    old_meta = serialize.JSON_STORE_METADATA
-    serialize.JSON_STORE_METADATA = False
+
+    old_meta = disable_save_metadata()
 
     loaded = load_sdfg_from_file(path)
     if loaded['error'] is not None:
@@ -187,7 +187,7 @@ def compile_sdfg(path, suppress_instrumentation=False):
 
     compiled_sdfg: CompiledSDFG = sdfg.compile()
 
-    serialize.JSON_STORE_METADATA = old_meta
+    restore_save_metadata(old_meta)
     return {
         'filename': compiled_sdfg.filename,
     }
