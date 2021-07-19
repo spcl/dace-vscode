@@ -13,8 +13,7 @@ def expand_library_node(json_in):
     is provided, expand all library nodes in the given SDFG.
     :param json_in:  The entire provided request JSON.
     """
-    old_meta = serialize.JSON_STORE_METADATA
-    serialize.JSON_STORE_METADATA = False
+    old_meta = utils.disable_save_metadata()
 
     sdfg = None
     try:
@@ -52,7 +51,7 @@ def expand_library_node(json_in):
             }
 
     new_sdfg = sdfg.to_json()
-    serialize.JSON_STORE_METADATA = old_meta
+    utils.restore_save_metadata(old_meta)
     return {
         'sdfg': new_sdfg,
     }
@@ -66,8 +65,7 @@ def reapply_history_until(sdfg_json, index):
     :param sdfg_json:  The SDFG to rewind.
     :param index:      Index of the last history item to apply.
     """
-    old_meta = serialize.JSON_STORE_METADATA
-    serialize.JSON_STORE_METADATA = False
+    old_meta = utils.disable_save_metadata()
 
     loaded = utils.load_sdfg_from_json(sdfg_json)
     if loaded['error'] is not None:
@@ -98,15 +96,14 @@ def reapply_history_until(sdfg_json, index):
             }
 
     new_sdfg = original_sdfg.to_json()
-    serialize.JSON_STORE_METADATA = old_meta
+    utils.restore_save_metadata(old_meta)
     return {
         'sdfg': new_sdfg,
     }
 
 
 def apply_transformation(sdfg_json, transformation_json):
-    old_meta = serialize.JSON_STORE_METADATA
-    serialize.JSON_STORE_METADATA = False
+    old_meta = utils.disable_save_metadata()
 
     loaded = utils.load_sdfg_from_json(sdfg_json)
     if loaded['error'] is not None:
@@ -142,7 +139,7 @@ def apply_transformation(sdfg_json, transformation_json):
         }
 
     new_sdfg = sdfg.to_json()
-    serialize.JSON_STORE_METADATA = old_meta
+    utils.restore_save_metadata(old_meta)
     return {
         'sdfg': new_sdfg,
     }
@@ -154,8 +151,7 @@ def get_transformations(sdfg_json, selected_elements):
     from dace.transformation.optimizer import SDFGOptimizer
     from dace.sdfg.graph import SubgraphView
 
-    old_meta = serialize.JSON_STORE_METADATA
-    serialize.JSON_STORE_METADATA = False
+    old_meta = utils.disable_save_metadata()
 
     loaded = utils.load_sdfg_from_json(sdfg_json)
     if loaded['error'] is not None:
@@ -207,7 +203,7 @@ def get_transformations(sdfg_json, selected_elements):
                 transformations.append(xform_obj.to_json())
                 docstrings[xform.__name__] = xform_obj.__doc__
 
-    serialize.JSON_STORE_METADATA = old_meta
+    utils.restore_save_metadata(old_meta)
     return {
         'transformations': transformations,
         'docstrings': docstrings,

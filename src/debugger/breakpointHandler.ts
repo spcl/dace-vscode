@@ -33,6 +33,21 @@ export class Node {
             this.state_id === node.state_id &&
             this.node_id === node.node_id;
     }
+
+    public nodeInfo() {
+        return {
+            sdfg_id: this.sdfg_id,
+            state_id: this.state_id,
+            node_id: this.node_id,
+
+            sdfg_name: this.sdfg_name,
+            cache: this.cache,
+            target: this.target,
+
+            sdfg_path: this.cache ?
+                path.join(this.cache, 'program.sdfg') : undefined,
+        };
+    }
 }
 
 interface ISavedBP {
@@ -62,9 +77,6 @@ enum Menus {
     GOTO_PYTHON = 'goto_python',
     GOTO_CPP = 'goto_cpp'
 }
-
-const SAVE_DIR = ".vscode";
-const SAVE_FILE = "daceDebugState.json";
 
 export class BreakpointHandler extends vscode.Disposable {
 
@@ -249,13 +261,10 @@ export class BreakpointHandler extends vscode.Disposable {
                     if (BPHInstance) {
                         BPHInstance.files = {};
                         BPHInstance.savedNodes = {};
-                        // Delete save file
-                        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-                        if (!workspace) return;
-                        const fileUri = vscode.Uri.file(path.join(workspace, SAVE_DIR,
-                            SAVE_FILE));
-
-                        vscode.workspace.fs.delete(fileUri);
+                        DaCeVSCode.getExtensionContext()?.workspaceState
+                            .update('files', {});
+                        DaCeVSCode.getExtensionContext()?.workspaceState
+                            .update('savedNodes', {});
                     }
                 }
             ),
@@ -616,7 +625,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 this.savedNodes[sdfgName].push(node);
                 SdfgBreakpointProvider.getInstance()?.handleMessage({
                     'type': 'add_sdfg_breakpoint',
-                    'node': node
+                    'node': node.nodeInfo()
                 });
                 return;
             }
@@ -624,11 +633,11 @@ export class BreakpointHandler extends vscode.Disposable {
         if (unbound) {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 'type': 'unbound_breakpoint',
-                'node': node
+                'node': node.nodeInfo()
             });
             SdfgBreakpointProvider.getInstance()?.handleMessage({
                 'type': 'unbound_sdfg_breakpoint',
-                'node': node
+                'node': node.nodeInfo()
             });
         }
         this.saveState();
@@ -747,14 +756,7 @@ export class BreakpointHandler extends vscode.Disposable {
         for (const nodes of Object.values(this.savedNodes)) {
             for (const node of nodes) {
                 if (node.cache)
-                    allNodes.push({
-                        sdfg_name: node.sdfg_name,
-                        sdfg_path: path.join(node.cache, 'program.sdfg'),
-                        cache_path: node.cache,
-                        sdfg_id: node.sdfg_id,
-                        state_id: node.state_id,
-                        node_id: node.node_id
-                    });
+                    allNodes.push(node.nodeInfo());
             }
         }
         return allNodes;
@@ -804,96 +806,17 @@ export class BreakpointHandler extends vscode.Disposable {
     }
 
     private async saveState() {
-        // Don't save if there is nothing to save or
-        // the user doesn't have a Folder open
-        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-        if (
-            Object.keys(this.files).length === 0 &&
-            Object.keys(this.savedNodes).length === 0 ||
-            !workspace
-        ) {
-            return;
-        }
-
-        const dirUri = vscode.Uri.file(path.join(workspace, SAVE_DIR));
-        const fileUri = vscode.Uri.file(path.join(workspace, SAVE_DIR,
-            SAVE_FILE));
-
-        // Check if the SAVE DIR exists, otherwise create it
-        try {
-            await vscode.workspace.fs.stat(dirUri);
-        } catch (error) {
-            try {
-                await vscode.workspace.fs.createDirectory(dirUri);
-            } catch (err) {
-                console.error("Error while creating the save folder:\n", err);
-            }
-        }
-
-        // Check if the SAVE FILE exists, otherwise create it
-        try {
-            await vscode.workspace.fs.stat(fileUri);
-        } catch (error) {
-            const we = new vscode.WorkspaceEdit();
-            we.createFile(fileUri);
-            try {
-                await vscode.workspace.applyEdit(we);
-            } catch (err) {
-                console.error("Error while creating the save file:\n", err);
-                return;
-            }
-        }
-
-        let data = JSON.stringify({
-            "files": this.files,
-            "savedNodes": this.savedNodes
-        });
-
-        // Write to the SAVE FILE 
-        try {
-            await vscode.workspace.fs.writeFile(
-                fileUri,
-                Buffer.from(data, 'utf8')
-            );
-        } catch (error) {
-            console.error("Error while writing to the save file:\n", error);
-        }
+        DaCeVSCode.getExtensionContext()?.workspaceState
+            .update('files', this.files);
+        DaCeVSCode.getExtensionContext()?.workspaceState
+            .update('savedNodes', this.savedNodes);
     }
 
     private async retrieveState() {
-        let workspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-        if (!workspace)
-            return;
-
-        const fileUri = vscode.Uri.file(
-            path.join(workspace, SAVE_DIR, SAVE_FILE)
-        );
-        try {
-            // Check if a save file exists
-            await vscode.workspace.fs.stat(fileUri);
-        } catch (error) {
-            return;
-        }
-
-        try {
-            vscode.workspace.fs.readFile(fileUri).then(dataBuffer => {
-
-                let dataStr = Buffer.from(dataBuffer).toString();
-                let dataJson = JSON.parse(dataStr);
-
-                let dataFiles = dataJson.files;
-                if (dataFiles) {
-                    this.files = dataFiles;
-                }
-
-                let savedNodes = dataJson.savedNodes;
-                if (savedNodes) {
-                    this.savedNodes = savedNodes;
-                }
-            });
-        } catch (error) {
-            return;
-        }
+        const context = DaCeVSCode.getExtensionContext();
+        if (!context) return;
+        this.savedNodes = context.workspaceState.get('savedNodes', {});
+        this.files = context.workspaceState.get('files', {});
     }
 
     public disposeFunction() {
