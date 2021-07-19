@@ -4,6 +4,8 @@
 import * as Net from 'net';
 import * as vscode from 'vscode';
 import { BreakpointHandler } from './breakpointHandler';
+import { SdfgViewerProvider } from '../components/sdfgViewer';
+import { sdfgEditMode, modeItems, ModeItem } from './daceDebugSession';
 
 export var PORT: number = 0;
 
@@ -28,7 +30,11 @@ export class DaceListener extends vscode.Disposable {
 
             socket.on('data', data => {
                 let dataStr = String.fromCharCode(...data);
-                this.handleData(JSON.parse(dataStr));
+                this.handleData(JSON.parse(dataStr)).then(reply => {
+                    if (reply) {
+                        socket.write(Buffer.from(JSON.stringify(reply)));
+                    }
+                });
             });
         });
 
@@ -48,7 +54,7 @@ export class DaceListener extends vscode.Disposable {
         return server;
     }
 
-    protected handleData(data: any | undefined) {
+    protected async handleData(data: any | undefined) {
         if (!data) {
             return;
         }
@@ -68,9 +74,64 @@ export class DaceListener extends vscode.Disposable {
                     }
                 }
                 break;
+            case "loadSDFG":
+                let dialogOptions: vscode.OpenDialogOptions = {
+                    filters: { 'SDFG': ['sdfg'] },
+                    openLabel: 'load SDFG',
+                    title: 'load SDFG',
+                    canSelectMany: false
+                };
+
+                const WFs = vscode.workspace.workspaceFolders;
+                if (WFs && WFs.length > 0)
+                    dialogOptions.defaultUri = WFs[0].uri;
+
+                const chosenUri = await vscode.window.showOpenDialog(dialogOptions);
+                return (chosenUri && chosenUri.length > 0) ?
+                    { 'filename': chosenUri[0].fsPath } : {};
+            case "saveSDFG":
+                let saveOptions: vscode.SaveDialogOptions = {
+                    filters: { 'SDFG': ['sdfg'] },
+                    saveLabel: 'save SDFG',
+                    title: 'save SDFG'
+                };
+
+                const WFolders = vscode.workspace.workspaceFolders;
+                if (WFolders && WFolders.length > 0)
+                    saveOptions.defaultUri = WFolders[0].uri;
+
+                const uri = await vscode.window.showSaveDialog(saveOptions);
+                return uri ? { 'filename': uri.fsPath } : {};
+            case "sdfgEditMode":
+                let selected_mode = sdfgEditMode.RUN;
+                const mode:
+                    | ModeItem
+                    | undefined = await vscode.window.showQuickPick(modeItems, {
+                        placeHolder: "Select the next run mode",
+                    });
+                if (mode)
+                    selected_mode = mode.mode;
+
+                return { 'mode': selected_mode };
+            case "stopAndTransform":
+                SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
+
+                const opt = await vscode.window.showInformationMessage(
+                    'Click continue when you want to proceed with the transformation',
+                    'continue'
+                );
+                switch (opt) {
+                    case 'continue':
+                        return {};
+                }
+                break;
+            case "openSDFG":
+                SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
+                break;
             default:
                 break;
         }
+        return undefined;
     }
 
 }
