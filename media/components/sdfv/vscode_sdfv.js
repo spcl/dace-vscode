@@ -873,9 +873,14 @@ function attribute_table_put_entry(
     }).appendTo(row);
 
     if (dtype === undefined) {
-        value_cell.html(daceSDFGPropertyToString(
-            val, daceRenderer.view_settings()
-        ));
+        // Implementations that are set to null should still be visible. Other
+        // null properties should be shown as an empty field.
+        if (key === 'implementation' && val === null)
+            value_cell.html('null');
+        else
+            value_cell.html(daceSDFGPropertyToString(
+                val, daceRenderer.view_settings()
+            ));
     } else {
         switch (dtype) {
             case 'typeclass':
