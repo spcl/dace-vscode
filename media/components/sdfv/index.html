@@ -291,6 +291,11 @@
                         new SDFG(daceRenderer.sdfg)
                     );
             }
+
+            vscode.postMessage({
+                type: "sdfv.handle_messages",
+                sdfgName: daceRenderer.sdfg.attributes.name,
+            });
         }
 
         function resetRendererContent() {
