@@ -68,6 +68,7 @@
             }).click(_ => {
                 vscode.postMessage({
                     type: 'sdfv.go_to_sdfg',
+                    sdfg_name: node.sdfg_name,
                     path: node.sdfg_path,
                     zoom_to: `${node.sdfg_id}/${node.state_id}/-1/-1`,
                     display_bps: true,
