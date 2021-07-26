@@ -17,7 +17,48 @@ export interface DaceLaunchRequestArguments
     cppConfig?: string;
     buildType?: string;
     daCeDev?: boolean;
+    sdfgEdit?: boolean;
 }
+
+export enum sdfgEditMode {
+    RUN = 'run',
+    LOAD = 'load',
+    SAVE = 'save',
+    TRANSFORM = 'transform',
+    PROFILE = 'profile',
+}
+
+export interface ModeItem extends vscode.QuickPickItem {
+    mode: sdfgEditMode;
+}
+
+export const modeItems: ModeItem[] = [
+    {
+        label: "Run",
+        description: "Runs and terminates",
+        mode: sdfgEditMode.RUN,
+    },
+    {
+        label: "Load",
+        description: "Load SDFG from file",
+        mode: sdfgEditMode.LOAD,
+    },
+    {
+        label: "Save",
+        description: "Save the current SDFG",
+        mode: sdfgEditMode.SAVE,
+    },
+    {
+        label: "Transform",
+        description: "Transform the SDFG before continuing",
+        mode: sdfgEditMode.TRANSFORM,
+    },
+    {
+        label: "Profile",
+        description: "Profiles a run",
+        mode: sdfgEditMode.PROFILE,
+    }
+];
 
 export class DaceDebugSession extends LoggingDebugSession {
     private folder: vscode.WorkspaceFolder | undefined;
@@ -35,10 +76,10 @@ export class DaceDebugSession extends LoggingDebugSession {
         this.folder = folders[0];
     }
 
-    protected launchRequest(
+    protected async launchRequest(
         response: DebugProtocol.LaunchResponse,
         args: DaceLaunchRequestArguments
-    ): Thenable<void> | void {
+    ): Promise<Thenable<void> | void> {
         if (!this.folder) {
             let msg = "Working folder not found, open a folder and try again";
             return vscode.window.showErrorMessage(msg).then((_) => {
@@ -68,11 +109,7 @@ export class DaceDebugSession extends LoggingDebugSession {
                 type: "python",
                 request: "launch",
                 program: "${file}",
-                console: "integratedTerminal",
-                env: {
-                    DACE_compiler_build_type: buildType,
-                    DACE_port: portNum
-                },
+                console: "integratedTerminal"
             };
         } else {
             if (!args.pythonLaunchName) {
@@ -101,29 +138,28 @@ export class DaceDebugSession extends LoggingDebugSession {
                         return; // abort launch
                     });
                 }
-
-                /**
-                 * Depending on if the user set an environment variable
-                 * or not we either add it to the variables
-                 * or create an 'env' attribute
-                 */
-                if (entirePyConfig.env) {
-                    entirePyConfig.env.DACE_compiler_build_type = buildType;
-                    entirePyConfig.env.DACE_port = portNum;
-                } else {
-                    entirePyConfig.env = {
-                        DACE_compiler_build_type: buildType,
-                        DACE_port: portNum
-                    };
-                }
             }
         }
 
+        if (!entirePyConfig.env) {
+            entirePyConfig.env = {};
+        }
+        entirePyConfig.env.DACE_compiler_build_type = buildType;
+        entirePyConfig.env.DACE_port = portNum;
+
         // We don't want to override the value in .dace.config if the
         // dev doesn't define daceDev
-        if (daceDev !== undefined)
+        if (daceDev !== undefined) {
             entirePyConfig.env.
                 DACE_compiler_codegen_lineinfo = daceDev ? "true" : "false";
+            entirePyConfig.env.
+                justMyCode = daceDev ? "true" : "false";
+        }
+
+        if (args.sdfgEdit) {
+            entirePyConfig.env.DACE_sdfg_edit = 'true';
+            entirePyConfig.env.DACE_instrumentation_report_each_invocation = 'false';
+        }
 
         /**
          * Default:
