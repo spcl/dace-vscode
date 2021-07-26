@@ -115,6 +115,33 @@ class ValueProperty extends Property {
 
 }
 
+class ComboboxProperty extends ValueProperty {
+
+    constructor (
+        element, xform, target, key, subkey, datatype, input, background_input
+    ) {
+        super(element, xform, target, key, subkey, datatype, input);
+
+        this.background_input = background_input;
+    }
+
+    get_value() {
+        let original_value = undefined;
+
+        if (this.subkey !== undefined)
+            original_value = this.target[this.key][this.subkey];
+        else
+            original_value = this.target[this.key];
+
+        const value = this.background_input.val();
+        return {
+            value: value,
+            value_changed: original_value !== value,
+        };
+    }
+
+}
+
 class CodeProperty extends Property {
 
     constructor(
@@ -147,25 +174,30 @@ class CodeProperty extends Property {
 
 }
 
-class TypeclassProperty extends Property {
+class TypeclassProperty extends ComboboxProperty {
 
-    constructor(element, xform, target, key, subkey, datatype, input) {
-        super(element, xform, target, key, subkey, datatype);
-
-        this.input = input;
+    constructor(
+        element, xform, target, key, subkey, datatype, input, background_input
+    ) {
+        super(
+            element, xform, target, key, subkey, datatype, input,
+            background_input
+        );
     }
 
     get_value() {
-        return {
-            value: daceStringToSDFGTypeclass(this.input.val()),
-            value_changed: true,
-        };
-    }
+        let original_value = undefined;
 
-    update() {
-        const res = this.get_value();
-        super.write_back(res.value);
-        return res.value_changed;
+        if (this.subkey !== undefined)
+            original_value = this.target[this.key][this.subkey];
+        else
+            original_value = this.target[this.key];
+
+        const value = daceStringToSDFGTypeclass(this.background_input.val());
+        return {
+            value: value,
+            value_changed: original_value !== value,
+        };
     }
 
 }

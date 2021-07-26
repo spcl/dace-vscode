@@ -299,61 +299,6 @@ implements MessageReceiverInterface {
                     this.daemonBooting = false;
                     clearInterval(connectionIntervalId);
 
-                    if (vscode.workspace.getConfiguration(
-                            'dace.interface'
-                        ).terminalMode === true
-                    ) {
-                        if (terminalMode !== true) {
-                            vscode.window.showInformationMessage(
-                                'DaCe successfully started as a subprocess, ' +
-                                'but you have it configured to start in ' +
-                                'terminal mode. Do you want to update this ' +
-                                'setting?',
-                                'Yes',
-                                'No'
-                            ).then((opt) => {
-                                switch (opt) {
-                                    case 'Yes':
-                                        vscode.workspace.getConfiguration(
-                                            'dace.interface'
-                                        ).update(
-                                            'terminalMode', false,
-                                            vscode.ConfigurationTarget.Global
-                                        );
-                                        break;
-                                    case 'No':
-                                    default:
-                                        break;
-                                }
-                            });
-                        }
-                    } else {
-                        if (terminalMode === true) {
-                            vscode.window.showInformationMessage(
-                                'DaCe successfully started in terminal mode, ' +
-                                'but you have it configured to start as a ' +
-                                'subprocess. Do you want to update this ' +
-                                'setting?',
-                                'Yes',
-                                'No'
-                            ).then((opt) => {
-                                switch (opt) {
-                                    case 'Yes':
-                                        vscode.workspace.getConfiguration(
-                                            'dace.interface'
-                                        ).update(
-                                            'terminalMode', true,
-                                            vscode.ConfigurationTarget.Global
-                                        );
-                                        break;
-                                    case 'No':
-                                    default:
-                                        break;
-                                }
-                            });
-                        }
-                    }
-
                     // If a callback was provided, continue execution there.
                     if (callback)
                         callback();
