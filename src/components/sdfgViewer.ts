@@ -11,7 +11,41 @@ import { AnalysisProvider } from './analysis';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 import { TransformationListProvider } from './transformationList';
-import { BreakpointHandler, getCppRange, Node } from '../debugger/breakpointHandler';
+import { getCppRange, Node } from '../debugger/breakpointHandler';
+
+class Message {
+    timeStamp: Date;
+    sdfgName: string;
+    message: any;
+
+    constructor(sdfgName: string, message: any) {
+        this.sdfgName = sdfgName;
+        this.timeStamp = new Date();
+        this.message = message;
+    }
+
+    public checkTimestamp(): boolean {
+        // Checks if the msg isn't too old. We give the webview
+        // 30s to handle a msg otherwise its outdated
+        return new Date().getTime() < this.timeStamp.getTime() + 30000;
+    }
+
+    public sendMessage() {
+        DaCeVSCode.getInstance().getActiveEditor()?.postMessage(this.message);
+    }
+
+    public executeMessage(sdfgName: string): boolean {
+        // Sends the msg if it corresponds to the SDFG and is not outdated
+        // Returns true if the Message can be deleted
+        if (sdfgName === this.sdfgName) {
+            if (this.checkTimestamp())
+                this.sendMessage();
+            return true;
+        }
+        return false;
+    }
+
+}
 
 export class SdfgViewer {
 
@@ -31,6 +65,8 @@ export class SdfgViewerProvider
     implements vscode.CustomTextEditorProvider {
 
     public static INSTANCE: SdfgViewerProvider | undefined = undefined;
+
+    private messages: Message[] = [];
 
     public static getInstance(): SdfgViewerProvider | undefined {
         return this.INSTANCE;
@@ -131,8 +167,8 @@ export class SdfgViewerProvider
         return undefined;
     }
 
-    public removeOpenEditor(webview: vscode.Webview) {
-        const editor = this.findEditorForWebview(webview);
+    public removeOpenEditor(document: vscode.TextDocument) {
+        const editor = this.findEditorForPath(document.uri);
         if (editor)
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
     }
@@ -237,11 +273,32 @@ export class SdfgViewerProvider
                 });
                 break;
             case 'go_to_sdfg':
+                const msgs = [];
+                if (message.zoom_to) {
+                    msgs.push(
+                        new Message(message.sdfg_name, {
+                            type: 'zoom_to_node',
+                            uuid: message.zoom_to,
+                        })
+                    );
+                }
+                if (message.display_bps) {
+                    msgs.push(
+                        new Message(message.sdfg_name, {
+                            type: 'display_breakpoints',
+                            display: message.display_bps,
+                        })
+                    );
+                }
                 SdfgViewerProvider.getInstance()?.openViewer(
                     vscode.Uri.file(message.path),
-                    message.zoom_to,
-                    message.display_bps
+                    msgs
                 );
+                break;
+            case 'process_queued_messages':
+                if (message.sdfgName) {
+                    this.sendMessages(message.sdfgName);
+                }
                 break;
             default:
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
@@ -284,20 +341,42 @@ export class SdfgViewerProvider
         );
     }
 
-    public openViewer(uri: vscode.Uri, zoom_to: string | undefined = undefined,
-        display_bps: boolean = false) {
-        vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType).then(_ => {
-            if (zoom_to)
-                this.handleMessage({
-                    type: 'zoom_to_node',
-                    uuid: zoom_to,
+    public openViewer(uri: vscode.Uri, messages: Message[] = []) {
+        // If the SDFG is currently open, then execute the messages
+        // otherwise store them to execute as soon as the SDFG is loaded
+        let editorIsLoaded = false;
+        for (const editor of this.getOpenEditors()) {
+            if (editor.document.uri.fsPath === uri.fsPath) {
+                editorIsLoaded = true;
+                break;
+            }
+        }
+        if (!editorIsLoaded) {
+            // The SDFG isn't yet loaded so we store the msgs
+            // to execute after the SDFG is loaded (calls 'process_queued_messages')
+            for (const msg of messages) {
+                this.messages.push(msg);
+            }
+            vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType);
+        }
+        else
+            // The SDFG is already loaded so we can just jump to it
+            // and send the messages
+            vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType).then(_ => {
+                messages.forEach(msg => {
+                    msg.sendMessage();
                 });
-            if (display_bps)
-                this.handleMessage({
-                    type: 'display_breakpoints',
-                    display: display_bps
-                });
-        });
+            });
+
+    }
+
+    private sendMessages(sdfgName: string) {
+        let keep_msgs: Message[] = [];
+        for (const msg of this.messages) {
+            if (!msg.executeMessage(sdfgName))
+                keep_msgs.push(msg);
+        }
+        this.messages = keep_msgs;
     }
 
     public async resolveCustomTextEditor(
@@ -312,7 +391,7 @@ export class SdfgViewerProvider
         // it from the open editors list.
         webviewPanel.onDidDispose(() => {
             SdfgViewerProvider.getInstance()?.removeOpenEditor(
-                webviewPanel.webview
+                document
             );
         });
 
