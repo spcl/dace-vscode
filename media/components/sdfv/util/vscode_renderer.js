@@ -150,20 +150,15 @@ class VSCodeRenderer extends daceSDFGRenderer {
         const lib_input_wrapper = $('<div>', {
             'class': 'col-9',
         }).appendTo(row);
-        const lib_input = $('<input>', {
-            'type': 'text',
+        const lib_input = $('<select>', {
+            'id': 'lib-selection-input-list',
+            'class': 'sdfv-property-dropdown',
             'style': 'width: 100%;',
-            'list': 'lib-selection-input-list',
-            'value': '',
             'placeholder': 'Type to search...'
         }).appendTo(lib_input_wrapper);
 
-        const datalist = $('<datalist>', {
-            'id': 'lib-selection-input-list',
-        }).appendTo(lib_input_wrapper);
-
         Object.keys(libraries).forEach(libname => {
-            datalist.append(new Option(
+            lib_input.append(new Option(
                 libname,
                 libraries[libname],
                 false,
@@ -171,13 +166,21 @@ class VSCodeRenderer extends daceSDFGRenderer {
             ));
         });
 
+        lib_input.editableSelect({
+            filter: false,
+            effects: 'fade',
+            duration: 'fast',
+        });
+
+        const background_lib_input = $('#lib-selection-input-list');
+
         modal_ret.confirm_btn.on('click', () => {
-            if (lib_input.val()) {
+            if (background_lib_input.val()) {
                 callback();
-                this.add_mode_lib = lib_input.val();
+                this.add_mode_lib = libraries[background_lib_input.val()];
                 modal_ret.modal.modal('hide');
             } else {
-                lib_input.addClass('is-invalid');
+                background_lib_input.addClass('is-invalid');
             }
         });
 
