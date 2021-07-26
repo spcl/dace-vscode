@@ -25,7 +25,7 @@ class Message {
     }
 
     public checkTimestamp(): boolean {
-        // Checks if the msg isn't to old. We give the webview
+        // Checks if the msg isn't too old. We give the webview
         // 30s to handle a msg otherwise its outdated
         return new Date().getTime() < this.timeStamp.getTime() + 30000;
     }
