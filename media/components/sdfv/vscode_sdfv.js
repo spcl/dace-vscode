@@ -392,29 +392,37 @@ function attr_table_put_select(
 function attr_table_put_typeclass(
     key, subkey, val, elem, xform, target, cell, dtype, choices
 ) {
-    const container = $('<div>', {
-        'style': 'position: relative;',
+    const input = $('<select>', {
+        'id': key + '-typeclass-dropdown',
+        'class': 'sdfv-property-dropdown',
     }).appendTo(cell);
-    const input = $('<input>', {
-        'list': key + '-native-typeclasses',
-        'class': 'sdfv-property-text',
-        'value': daceSDFGTypeclassToString(val),
-    }).appendTo(container);
+    let found = false;
     if (choices) {
-        const datalist = $('<datalist>', {
-            'id': key + '-native-typeclasses',
-        }).appendTo(container);
         choices.forEach(array => {
-            datalist.append(new Option(
+            input.append(new Option(
                 array,
                 array,
-                false,
-                false
+                array === val,
+                array === val
             ));
+
+            if (array === val)
+                found = true;
         });
     }
+
+    if (!found)
+        input.append(new Option(val, val, true, true));
+
+    input.editableSelect({
+        filter: false,
+        effects: 'fade',
+        duration: 'fast',
+    });
+
     return new TypeclassProperty(
-        elem, xform, target, key, subkey, dtype, input
+        elem, xform, target, key, subkey, dtype, input,
+        $('#' + key + '-typeclass-dropdown')
     );
 }
 
@@ -873,9 +881,14 @@ function attribute_table_put_entry(
     }).appendTo(row);
 
     if (dtype === undefined) {
-        value_cell.html(daceSDFGPropertyToString(
-            val, daceRenderer.view_settings()
-        ));
+        // Implementations that are set to null should still be visible. Other
+        // null properties should be shown as an empty field.
+        if (key === 'implementation' && val === null)
+            value_cell.html('null');
+        else
+            value_cell.html(daceSDFGPropertyToString(
+                val, daceRenderer.view_settings()
+            ));
     } else {
         switch (dtype) {
             case 'typeclass':
@@ -972,11 +985,24 @@ function attribute_table_put_entry(
 
     if (update_on_change && val_prop !== undefined) {
         if (val_prop.input !== undefined) {
-            val_prop.input.on('change', () => {
-                val_prop.update();
-                if (!xform)
-                    vscode_write_graph(daceRenderer.sdfg);
-            });
+            if (val_prop instanceof ComboboxProperty) {
+                val_prop.input.on('hidden.editable-select', () => {
+                    const value_changed = val_prop.update();
+                    if (!xform && value_changed)
+                        vscode_write_graph(daceRenderer.sdfg);
+                });
+                val_prop.input.on('select.editable-select', () => {
+                    const value_changed = val_prop.update();
+                    if (!xform && value_changed)
+                        vscode_write_graph(daceRenderer.sdfg);
+                });
+            } else {
+                val_prop.input.on('change', () => {
+                    val_prop.update();
+                    if (!xform)
+                        vscode_write_graph(daceRenderer.sdfg);
+                });
+            }
         } else if (val_prop.code_input !== undefined &&
                    val_prop.lang_input !== undefined) {
             val_prop.code_input.on('change', () => {

@@ -486,3 +486,8 @@ pre.code {
   flex-direction: row;
   align-items: center;
 }
+
+.es-list {
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+}
