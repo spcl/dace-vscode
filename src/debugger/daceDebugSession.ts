@@ -149,9 +149,12 @@ export class DaceDebugSession extends LoggingDebugSession {
 
         // We don't want to override the value in .dace.config if the
         // dev doesn't define daceDev
-        if (daceDev !== undefined)
+        if (daceDev !== undefined) {
             entirePyConfig.env.
                 DACE_compiler_codegen_lineinfo = daceDev ? "true" : "false";
+            entirePyConfig.env.
+                justMyCode = daceDev ? "true" : "false";
+        }
 
         if (args.sdfgEdit) {
             entirePyConfig.env.DACE_sdfg_edit = 'true';
