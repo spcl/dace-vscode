@@ -295,7 +295,7 @@ export class SdfgViewerProvider
                     msgs
                 );
                 break;
-            case 'handle_messages':
+            case 'process_queued_messages':
                 if (message.sdfgName) {
                     this.sendMessages(message.sdfgName);
                 }
@@ -352,12 +352,16 @@ export class SdfgViewerProvider
             }
         }
         if (!editorIsLoaded) {
+            // The SDFG isn't yet loaded so we store the msgs
+            // to execute after the SDFG is loaded (calls 'process_queued_messages')
             for (const msg of messages) {
                 this.messages.push(msg);
             }
             vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType);
         }
         else
+            // The SDFG is already loaded so we can just jump to it
+            // and send the messages
             vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType).then(_ => {
                 messages.forEach(msg => {
                     msg.sendMessage();
