@@ -40,11 +40,12 @@ implements vscode.WebviewViewProvider {
         return this.INSTANCE;
     }
 
-    resolveWebviewView(
+    public resolveWebviewView(
         webviewView: vscode.WebviewView,
         _context: vscode.WebviewViewResolveContext<unknown>,
         _token: vscode.CancellationToken
     ): void | Thenable<void> {
+        // If the DaCe interface has not been started yet, start it here.
         DaCeInterface.getInstance().start();
 
         this.view = webviewView;
@@ -54,6 +55,9 @@ implements vscode.WebviewViewProvider {
             localResourceRoots: [
                 vscode.Uri.file(path.join(
                     this.context.extensionPath, 'media'
+                )),
+                vscode.Uri.file(path.join(
+                    this.context.extensionPath, 'node_modules'
                 )),
             ],
         };
@@ -68,11 +72,18 @@ implements vscode.WebviewViewProvider {
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
             this.context.extensionPath, 'media'
         ));
+        const fpNodeModulesFolder: vscode.Uri = vscode.Uri.file(
+            path.join(this.context.extensionPath, 'node_modules')
+        );
         vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
             let baseHtml = data.toString();
             baseHtml = baseHtml.replace(
                 this.csrSrcIdentifier,
                 webviewView.webview.asWebviewUri(fpMediaFolder).toString()
+            );
+            baseHtml = baseHtml.replace(
+                this.nodeModulesIdentifier,
+                webviewView.webview.asWebviewUri(fpNodeModulesFolder).toString()
             );
             webviewView.webview.html = baseHtml;
 
@@ -85,8 +96,10 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public handleMessage(message: any,
-                         origin: vscode.Webview | undefined = undefined): void {
+    public handleMessage(
+        message: any,
+        origin: vscode.Webview | undefined = undefined
+    ): void {
         switch (message.type) {
             default:
                 this.view?.webview.postMessage(message);
