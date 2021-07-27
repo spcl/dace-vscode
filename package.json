@@ -529,8 +529,10 @@
         "vscode-test": "^1.5.2"
     },
     "dependencies": {
+        "@spcl/sdfv": "^1.0.0",
         "bootstrap": "^5.0.2",
         "jquery-editable-select": "^2.2.5",
+        "material-icons": "^1.0.0",
         "monaco-editor": "^0.26.1",
         "split.js": "^1.6.4",
         "vscode-debugadapter": "^1.46.0"

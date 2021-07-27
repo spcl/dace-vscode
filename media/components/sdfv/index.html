@@ -11,9 +11,10 @@
 
     <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/jquery-editable-select/dist/jquery-editable-select.min.css"></script>
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/material-icons/iconfont/material-icons.css">
 
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/@spcl/sdfv/sdfv.css">
+
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
 
     <script>
@@ -25,11 +26,12 @@
         const csp_src = "{{ CSP_SRC }}";
     </script>
 
-    <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/pdfkit.standalone.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/blob-stream.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
+    <script src="{{ NODE_MODULES }}/jquery/dist/jquery.min.js"></script>
+
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/pdfkit.standalone.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/blob-stream.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/canvas2pdf.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/renderer_dir/global_vars.js"></script>
 
     <script src="{{ NODE_MODULES }}/split.js/dist/split.min.js"></script>
     <script src="{{ NODE_MODULES }}/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
@@ -221,7 +223,8 @@
         var transformations = [[], [], [], []];
         var daemon_connected = false;
     </script>
-    <script src="{{ CSP_SRC }}/webclient/dist/sdfv.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/dist/sdfv.js"></script>
+
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/vscode_sdfv.js"></script>
 
