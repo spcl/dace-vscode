@@ -9,8 +9,8 @@ import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
 export class SdfgBreakpointProvider
-    extends BaseComponent
-    implements vscode.WebviewViewProvider {
+extends BaseComponent
+implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = 'sdfgBreakpoints';
 
@@ -40,7 +40,7 @@ export class SdfgBreakpointProvider
         webviewView: vscode.WebviewView,
         _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
-    ) {
+    ): void | Thenable<void> {
         this.view = webviewView;
 
         webviewView.webview.options = {
@@ -48,6 +48,9 @@ export class SdfgBreakpointProvider
             localResourceRoots: [
                 vscode.Uri.file(path.join(
                     this.context.extensionPath, 'media'
+                )),
+                vscode.Uri.file(path.join(
+                    this.context.extensionPath, 'node_modules'
                 )),
             ],
         };
@@ -62,11 +65,18 @@ export class SdfgBreakpointProvider
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
             this.context.extensionPath, 'media'
         ));
+        const fpNodeModulesFolder: vscode.Uri = vscode.Uri.file(
+            path.join(this.context.extensionPath, 'node_modules')
+        );
         vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
             let baseHtml = data.toString();
             baseHtml = baseHtml.replace(
                 this.csrSrcIdentifier,
                 webviewView.webview.asWebviewUri(fpMediaFolder).toString()
+            );
+            baseHtml = baseHtml.replace(
+                this.nodeModulesIdentifier,
+                webviewView.webview.asWebviewUri(fpNodeModulesFolder).toString()
             );
             webviewView.webview.html = baseHtml;
 
