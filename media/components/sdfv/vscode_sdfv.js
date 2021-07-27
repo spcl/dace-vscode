@@ -298,31 +298,22 @@ function attr_table_put_text(
 function attr_table_put_code(
     key, subkey, val, elem, xform, target, cell, dtype
 ) {
-    const input = $('<textarea>', {
-        'class': 'sdfv-property-code',
-        'wrap': 'soft',
-        'rows': 3,
-        'cols': 81,
-        'text': val,
+    const lang = target[key]['language'];
+
+    const container = $('<div>', {
+        'class': 'sdfv-property-code-container',
     }).appendTo(cell);
-    /*
-    //TODO: Switch to monaco editor.
+
     const input = $('<div>', {
-        width: '300px',
-        height: '50px',
-    }).appendTo(cell);
-    window.monaco.editor.create(input.get(0), {
-        value: val,
-        language: "python",
-        theme: 'vs-dark',
-    });
-    */
+        'class': 'sdfv-property-monaco',
+    }).appendTo(container);
+
     const languages = window.sdfg_meta_dict['__reverse_type_lookup__'][
         'Language'
     ].choices;
     const language_input = $('<select>', {
         'class': 'sdfv-property-dropdown',
-    }).appendTo(cell);
+    }).appendTo(container);
     languages.forEach(lang => {
         language_input.append(new Option(
             lang,
@@ -331,8 +322,25 @@ function attr_table_put_code(
             lang === target[key]['language']
         ));
     });
+
+    console.log(val);
+    const editor = window.monaco.editor.create(input.get(0), {
+        'value': val,
+        'language': lang === undefined ? 'python' : lang.toLowerCase(),
+        'theme': 'vs-dark', // TODO: inherit theme - define custom theme maybe?
+        'lineDecorationsWidth': 0,
+        'lineNumbersMinChars': 2,
+        'minimap': {
+            'enabled': false,
+        },
+        'padding': {
+            'top': 0,
+            'bottom': 0,
+        },
+    });
+
     return new CodeProperty(
-        elem, xform, target, key, subkey, dtype, input, language_input
+        elem, xform, target, key, subkey, dtype, input, language_input, editor
     );
 }
 
