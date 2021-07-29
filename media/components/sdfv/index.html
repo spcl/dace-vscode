@@ -260,6 +260,18 @@
         require(["vs/editor/editor.main"], function () {
             window.monaco = monaco;
         });
+
+        function getMonacoThemeName() {
+            switch ($('body').attr('data-vscode-theme-kind')) {
+                case 'vscode-light':
+                    return 'vs';
+                case 'vscode-high-contrast':
+                    return 'hs-black';
+                case 'vscode-dark':
+                default:
+                    return 'vs-dark';
+            }
+        }
     </script>
     <script>
         vscode = acquireVsCodeApi();

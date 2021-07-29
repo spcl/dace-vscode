@@ -328,7 +328,7 @@ function attr_table_put_code(
     const editor = window.monaco.editor.create(input.get(0), {
         'value': val,
         'language': lang === undefined ? 'python' : lang.toLowerCase(),
-        'theme': 'vs-dark', // TODO: inherit theme - define custom theme maybe?
+        'theme': getMonacoThemeName(),
         'glyphMargin': 0,
         'lineDecorationsWidth': 0,
         'lineNumbers': 'off',
