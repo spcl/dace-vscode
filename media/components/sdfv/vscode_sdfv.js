@@ -298,7 +298,9 @@ function attr_table_put_text(
 function attr_table_put_code(
     key, subkey, val, elem, xform, target, cell, dtype
 ) {
-    const lang = target[key]['language'];
+    let lang = 'Python';
+    if (target[key])
+        lang = target[key]['language'];
 
     const container = $('<div>', {
         'class': 'sdfv-property-code-container',
@@ -314,22 +316,23 @@ function attr_table_put_code(
     const language_input = $('<select>', {
         'class': 'sdfv-property-dropdown',
     }).appendTo(container);
-    languages.forEach(lang => {
+    languages.forEach(l => {
         language_input.append(new Option(
-            lang,
-            lang,
+            l,
+            l,
             false,
-            lang === target[key]['language']
+            l === lang
         ));
     });
 
-    console.log(val);
     const editor = window.monaco.editor.create(input.get(0), {
         'value': val,
         'language': lang === undefined ? 'python' : lang.toLowerCase(),
         'theme': 'vs-dark', // TODO: inherit theme - define custom theme maybe?
+        'glyphMargin': 0,
         'lineDecorationsWidth': 0,
-        'lineNumbersMinChars': 2,
+        'lineNumbers': 'off',
+        'lineNumbersMinChars': 0,
         'minimap': {
             'enabled': false,
         },
@@ -477,6 +480,16 @@ function attr_table_put_dict(
                 prop.properties.push(attr_prop);
         });
 
+        // If code editors (monaco editors) are part of this dictionary, they
+        // need to be resized again as soon as the modal is shown in order to
+        // properly fill the container.
+        modal.modal.on('shown.bs.modal', () => {
+            for (const property of prop.properties) {
+                if (property.val_prop instanceof CodeProperty)
+                    property.val_prop.editor.layout();
+            }
+        });
+
         const add_item_container = $('<div>', {
             'class': 'container-fluid',
         }).appendTo(modal.body);
@@ -560,7 +573,7 @@ function attr_table_put_list(
         const rowbox = $('<div>', {
             'class': 'container-fluid',
         }).appendTo(modal.body);
-        if (val)
+        if (val) {
             for (let i = 0; i < val.length; i++) {
                 const v = val[i];
                 const attr_prop = attribute_table_put_entry(
@@ -580,6 +593,17 @@ function attr_table_put_list(
                 if (attr_prop && attr_prop.val_prop)
                     prop.properties_list.push(attr_prop.val_prop);
             }
+
+            // If code editors (monaco editors) are part of this list, they
+            // need to be resized again as soon as the modal is shown in order
+            // to properly fill the container.
+            modal.modal.on('shown.bs.modal', () => {
+                for (const property of prop.properties_list) {
+                    if (property instanceof CodeProperty)
+                        property.editor.layout();
+                }
+            });
+        }
 
         const add_item_container = $('<div>', {
             'class': 'container-fluid',
