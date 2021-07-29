@@ -145,16 +145,18 @@ class ComboboxProperty extends ValueProperty {
 class CodeProperty extends Property {
 
     constructor(
-        element, xform, target, key, subkey, dtype, code_input, lang_input
+        element, xform, target, key, subkey, dtype, code_input, lang_input,
+        editor
     ) {
         super(element, xform, target, key, subkey, dtype);
 
         this.code_input = code_input;
         this.lang_input = lang_input;
+        this.editor = editor;
     }
 
     get_value() {
-        let code_val = this.code_input.val();
+        let code_val = this.editor.getModel().getValue();
         let lang_val = this.lang_input.val();
 
         return {
