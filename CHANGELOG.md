@@ -2,6 +2,11 @@
 
 ## 1.0
 
+### 1.0.1
+
+- Various bugfixes.
+- Transitions to the monaco editor for code property editing.
+
 ### 1.0.0
 
 - Allow adding of SDFG elements.
