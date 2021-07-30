@@ -204,20 +204,18 @@ export class DaCeVSCode {
 
         // Register necessary commands.
         this.registerCommand('transformationList.sync', () => {
-            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                    type: 'get_applicable_transformations',
-                });
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                type: 'get_applicable_transformations',
+            });
         });
         this.registerCommand('transformationHistory.sync', () => {
             if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
                 TransformationHistoryProvider.getInstance()?.refresh();
         });
         this.registerCommand('sdfgAnalysis.sync', () => {
-            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                    type: 'refresh_analysis_pane',
-                });
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                type: 'refresh_analysis_pane',
+            });
         });
         this.registerCommand('sdfgBreakpoints.sync', () => {
             SdfgBreakpointProvider.getInstance()?.handleMessage({
@@ -225,10 +223,14 @@ export class DaCeVSCode {
             });
         });
         this.registerCommand('sdfgOutline.sync', () => {
-            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                    type: 'refresh_outline',
-                });
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                type: 'refresh_outline',
+            });
+        });
+        this.registerCommand('sdfg.sync', () => {
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                type: 'refresh_sdfg',
+            });
         });
         this.registerCommand('sdfg.applyTransformation',
             (t) => DaCeInterface.getInstance().applyTransformation(t));

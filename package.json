@@ -365,6 +365,10 @@
                 }
             },
             {
+                "command": "sdfg.sync",
+                "title": "Refresh SDFG"
+            },
+            {
                 "command": "sdfg.previewTransformation",
                 "title": "Preview"
             },
@@ -397,6 +401,10 @@
                 },
                 {
                     "command": "sdfg.debug.profile",
+                    "when": "resourceLangId == sdfg"
+                },
+                {
+                    "command": "sdfg.sync",
                     "when": "resourceLangId == sdfg"
                 },
                 {
@@ -434,6 +442,11 @@
                     "command": "sdfg.debug.profile",
                     "when": "resourceLangId == sdfg",
                     "group": "1_run@20"
+                },
+                {
+                    "command": "sdfg.sync",
+                    "when": "resourceLangId == sdfg",
+                    "group": "1_run@30"
                 },
                 {
                     "command": "sdfg.goto.sdfg",

@@ -88,6 +88,9 @@ class MessageHandler {
                 else
                     get_applicable_transformations();
                 break;
+            case 'refresh_sdfg':
+                refreshSdfg();
+                break;
             case 'get_applicable_transformations':
                 clear_selected_transformation();
                 get_applicable_transformations();
