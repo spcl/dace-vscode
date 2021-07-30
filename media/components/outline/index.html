@@ -53,6 +53,7 @@
                     item['collapsed'],
                     item['uuid']
                 );
+                outline_item.list = outline_list;
 
                 if (item['children'] !== undefined && item['children'].length)
                     set_outline_list_recursive(item['children'], outline_item);
