@@ -3,8 +3,10 @@
 
 class TreeViewItem {
 
-    constructor(label, tooltip, icon, init_collapsed, unfold_dblclick,
-                label_style = undefined, icon_style = undefined) {
+    constructor(
+        label, tooltip, icon, init_collapsed, unfold_dblclick,
+        label_style = undefined, icon_style = undefined
+    ) {
         this.label = label;
         this.tooltip = tooltip;
         this.icon = icon;
@@ -13,6 +15,7 @@ class TreeViewItem {
         // Parent item, undefined if directly under list root.
         this.parent_item = undefined;
         this.children = undefined;
+        this.list = undefined;
 
         this.label_style = label_style;
         this.icon_style = icon_style;
@@ -25,6 +28,7 @@ class TreeViewItem {
             this.children = [];
         this.children.push(child);
         child.parent_item = this;
+        child.list = this.list;
     }
 
     generate_html() {
@@ -58,23 +62,30 @@ class TreeViewItem {
                 'class': 'tree-view-list',
             });
 
-            this.children.forEach(child => {
-                nested_list.append(child.generate_html());
-            });
+            if (!this.collapsed)
+                this.children.forEach(child => {
+                    nested_list.append(child.generate_html());
+                });
 
             if (this.unfold_dblclick) {
-                nested_label.dblclick((event) => {
+                nested_label.on('dblclick', (event) => {
                     nested_list.toggle();
                     nested_label.toggleClass('tree-view-expanded');
                     this.collapsed = !this.collapsed;
+
+                    if (this.list)
+                        this.list.notify_data_changed();
 
                     event.stopPropagation();
                 });
             } else {
-                nested_label.click((event) => {
+                nested_label.on('click', (event) => {
                     nested_list.toggle();
                     nested_label.toggleClass('tree-view-expanded');
                     this.collapsed = !this.collapsed;
+
+                    if (this.list)
+                        this.list.notify_data_changed();
 
                     event.stopPropagation();
                 });
@@ -143,6 +154,7 @@ class TreeView {
     add_item(item) {
         this.items.push(item);
         item.parent_item = undefined;
+        item.list = this;
     }
 
     clear() {

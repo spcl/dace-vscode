@@ -3,20 +3,25 @@
 
 class TransformationListItem extends TreeViewItem {
 
-    constructor(label, tooltip, icon, init_collapsed, unfold_dblclck,
-                label_style, icon_style) {
-        super(label, tooltip, icon, init_collapsed, unfold_dblclck,
-              label_style, icon_style);
+    constructor(
+        label, tooltip, icon, init_collapsed, unfold_dblclck, label_style,
+        icon_style
+    ) {
+        super(
+            label, tooltip, icon, init_collapsed, unfold_dblclck, label_style,
+            icon_style
+        );
     }
 
 }
 
 class TransformationCategory extends TransformationListItem {
 
-    constructor(name, tooltip) {
-        super(name, tooltip, '', false, false,
-              'font-style: italic; font-size: 1.2rem;',
-              '');
+    constructor(name, tooltip, init_collapsed) {
+        super(
+            name, tooltip, '', init_collapsed, false,
+            'font-style: italic; font-size: 1.2rem;', ''
+        );
     }
 
 }
@@ -59,7 +64,7 @@ class Transformation extends TransformationListItem {
     generate_html() {
         const item = super.generate_html();
 
-        item.click(() => {
+        item.on('click', () => {
             if (vscode) {
                 if (this.list !== undefined) {
                     this.list.selected_item = this;
@@ -72,7 +77,7 @@ class Transformation extends TransformationListItem {
             }
         });
 
-        item.mouseover(() => {
+        item.on('mouseover', () => {
             if (vscode)
                 vscode.postMessage({
                     type: 'sdfv.highlight_elements',
@@ -97,24 +102,28 @@ class TransformationList extends TreeView {
 
         const cat_selection = new TransformationCategory(
             'Selection',
-            'Transformations relevant to the current selection'
+            'Transformations relevant to the current selection',
+            false
         );
-        cat_selection.children = [];
+        cat_selection.list = this;
         const cat_viewport = new TransformationCategory(
             'Viewport',
-            'Transformations relevant to the current viewport'
+            'Transformations relevant to the current viewport',
+            true
         );
-        cat_viewport.children = [];
+        cat_viewport.list = this;
         const cat_global = new TransformationCategory(
             'Global',
-            'Transformations relevant on a global scale'
+            'Transformations relevant on a global scale',
+            true
         );
-        cat_global.children = [];
+        cat_global.list = this;
         const cat_uncat = new TransformationCategory(
             'Uncategorized',
-            'Uncategorized Transformations'
+            'Uncategorized Transformations',
+            true
         );
-        cat_uncat.children = [];
+        cat_uncat.list = this;
 
         this.items = [cat_selection, cat_viewport, cat_global, cat_uncat];
 
@@ -163,7 +172,7 @@ class TransformationList extends TreeView {
             const category = transformations[i];
             for (let j = 0; j < category.length; j++) {
                 const transformation = category[j];
-                this.items[i].children.push(
+                this.items[i].add_item(
                     new Transformation(transformation, this)
                 );
             }
