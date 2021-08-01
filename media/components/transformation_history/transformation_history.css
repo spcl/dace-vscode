@@ -29,16 +29,32 @@ body {
 
 .tree-view-item-label {
     flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.tree-view-item-label-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .transformation-history-apply-button {
     display: none;
 }
 
+.transformation-history-current-badge,
 .tree-view-item.hover .transformation-history-apply-button {
     display: flex;
     flex-direction: row;
     align-items: center;
+    background-color: var(--vscode-list-hoverBackground);
+    padding-left: .8rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: visible;
 }
 
 .tree-view-list {
