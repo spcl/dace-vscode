@@ -106,7 +106,10 @@ class MessageHandler {
                 break;
             case 'flopsCallback':
                 if (daceRenderer && daceRenderer.overlay_manager &&
-                    daceRenderer.overlay_manager.static_flops_overlay_active) {
+                    daceRenderer.overlay_manager.is_overlay_active(
+                        daceGenericSDFGOverlay.OVERLAY_TYPE.STATIC_FLOPS
+                    )
+                ) {
                     const overlay = daceRenderer.overlay_manager.get_overlay(
                         daceGenericSDFGOverlay.OVERLAY_TYPE.STATIC_FLOPS
                     );
