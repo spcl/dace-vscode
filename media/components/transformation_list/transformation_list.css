@@ -92,6 +92,11 @@ body {
     background-color: var(--vscode-list-activeSelectionBackground) !important;
 }
 
+.tree-view-item.selected .transformation-list-quick-apply {
+    color: var(--vscode-list-activeSelectionForeground) !important;
+    background-color: var(--vscode-list-activeSelectionBackground) !important;
+}
+
 .transformation-list-item-label-container {
     display: flex;
     flex-direction: row;

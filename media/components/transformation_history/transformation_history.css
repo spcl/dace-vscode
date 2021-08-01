@@ -57,6 +57,16 @@ body {
     overflow: visible;
 }
 
+.tree-view-item.selected .transformation-history-apply-button {
+    color: var(--vscode-list-activeSelectionForeground) !important;
+    background-color: var(--vscode-list-activeSelectionBackground) !important;
+}
+
+.tree-view-item.selected .transformation-history-current-badge {
+    color: var(--vscode-list-activeSelectionForeground) !important;
+    background-color: var(--vscode-list-activeSelectionBackground) !important;
+}
+
 .tree-view-list {
     width: 100%;
 }
