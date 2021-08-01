@@ -91,3 +91,29 @@ body {
     color: var(--vscode-list-activeSelectionForeground) !important;
     background-color: var(--vscode-list-activeSelectionBackground) !important;
 }
+
+.transformation-list-item-label-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.transformation-list-item-label-container > .tree-view-item-label {
+    overflow: hidden;
+    flex-shrink: 1;
+    flex-grow: 1;
+}
+
+.transformation-list-quick-apply {
+    display: none;
+}
+
+.transformation-list-item-label-container.hover-direct .transformation-list-quick-apply {
+    padding-left: .8rem;
+    background-color: var(--vscode-list-hoverBackground);
+    display: block;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: visible;
+}

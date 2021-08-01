@@ -77,12 +77,32 @@ class Transformation extends TransformationListItem {
             }
         });
 
+        const label_container = item.find('.tree-view-item-label-container');
+        label_container.addClass('transformation-list-item-label-container');
+
+        $('<div>', {
+            'class': 'transformation-list-quick-apply',
+            'text': 'Quick Apply',
+            'title': 'Apply transformation with default parameters',
+            'click': () => {
+                vscode.postMessage({
+                    type: 'dace.apply_transformation',
+                    transformation: this.json,
+                });
+            },
+        }).appendTo(label_container);
+
         item.on('mouseover', () => {
+            label_container.addClass('hover-direct');
             if (vscode)
                 vscode.postMessage({
                     type: 'sdfv.highlight_elements',
                     elements: this.get_affected_element_uuids(),
                 });
+        });
+
+        item.on('mouseout', () => {
+            label_container.removeClass('hover-direct');
         });
 
         return item;
