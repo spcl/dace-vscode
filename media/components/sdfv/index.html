@@ -343,18 +343,17 @@
         }
 
         function displayBreakpoints(value) {
-            let type = daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS;
-            let already_active = daceRenderer.overlay_manager.get_overlay(type);
+            let already_active = daceRenderer.overlay_manager.get_overlay(
+                BreakpointIndicator
+            );
             if (value && already_active === undefined) {
                 vscode.postMessage({
                     type: 'sdfv.register_breakpointindicator',
                 });
                 $('#display-bps').html('Hide Breakpoints');
-            }
-            else if (!value) {
+            } else if (!value) {
                 vscode.postMessage({
-                    type: 'sdfv.deregister_overlay',
-                    overlay: daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS,
+                    type: 'sdfv.deregister_breakpointindicator',
                 });
                 $('#display-bps').html('Display Breakpoints');
             }

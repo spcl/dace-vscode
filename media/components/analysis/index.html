@@ -249,7 +249,7 @@
                     break;
                 case 'autoload_report':
                     let cb = $(
-                        'input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]'
+                        'input[type="checkbox"][value="daceStaticFlopsOverlay"]'
                     );
                     let rtReportLabel = $('#runtime-report-filename-label');
                     rtReportLabel.val(message.path);
@@ -272,7 +272,7 @@
             let rtReportLabel = $('#runtime-report-filename-label');
             rtReportLabel.val('Load runtime report');
             rtReportLabel.prop('title', '');
-            $('input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]').prop(
+            $('input[type="checkbox"][value="daceStaticFlopsOverlay"]').prop(
                 'disabled', false
             );
             if (vscode)
@@ -298,7 +298,7 @@
                         rtReportLabel.val(this.files[0].name);
                         rtReportLabel.prop('title', this.files[0].path);
                         let cb = $(
-                            'input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]'
+                            'input[type="checkbox"][value="daceStaticFlopsOverlay"]'
                         );
                         cb.prop('checked', false);
                         cb.prop('disabled', true);

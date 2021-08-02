@@ -6,16 +6,13 @@ function refresh_breakpoints() {
         && vscode !== undefined) {
         let is_active = false;
         for (const active_overlay of daceRenderer.overlay_manager.overlays) {
-            if (active_overlay.type === daceGenericSDFGOverlay.
-                OVERLAY_TYPE.BREAKPOINTS) {
+            if (active_overlay instanceof BreakpointIndicator) {
                 is_active = true;
                 break;
             }
         }
     }
 }
-
-daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS = 'OVERLAY_TYPE_BREAKPOINTS';
 
 const BreakpointEnum = Object.freeze({ "BOUND": 0, "UNBOUND": 1 });
 
@@ -25,10 +22,7 @@ class BreakpointIndicator extends daceGenericSDFGOverlay {
     daceRenderer;
 
     constructor(daceRenderer) {
-        super(
-            daceRenderer.overlay_manager, daceRenderer,
-            daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
-        );
+        super(daceRenderer.overlay_manager, daceRenderer);
         this.daceRenderer = daceRenderer;
         this.breakpoints = new Map();
         vscode.postMessage({

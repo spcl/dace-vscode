@@ -10,14 +10,14 @@ class MessageHandler {
         switch (message.type) {
             case 'load_instrumentation_report':
                 daceRenderer.overlay_manager.deregister_overlay(
-                    daceGenericSDFGOverlay.OVERLAY_TYPE.STATIC_FLOPS
+                    daceStaticFlopsOverlay
                 );
                 instrumentation_report_read_complete(message.result);
             // Fall through to set the criterium.
             case 'instrumentation_report_change_criterium':
                 if (message.criterium) {
                     const ol = daceRenderer.overlay_manager.get_overlay(
-                        daceGenericSDFGOverlay.OVERLAY_TYPE.STATIC_FLOPS
+                        daceStaticFlopsOverlay
                     );
                     if (ol) {
                         ol.criterium = message.criterium;
@@ -27,7 +27,7 @@ class MessageHandler {
                 break;
             case 'clear_instrumentation_report':
                 daceRenderer.overlay_manager.deregister_overlay(
-                    daceGenericSDFGOverlay.OVERLAY_TYPE.RUNTIME_US
+                    daceRuntimeMicroSecondsOverlay
                 );
                 break;
             case 'symbol_value_changed':
@@ -46,19 +46,25 @@ class MessageHandler {
             case 'register_overlay':
                 if (message.overlay !== undefined && daceRenderer)
                     daceRenderer.overlay_manager.register_overlay(
-                        message.overlay
+                        window[message.overlay]
                     );
                 break;
             case 'deregister_overlay':
                 if (message.overlay !== undefined && daceRenderer)
                     daceRenderer.overlay_manager.deregister_overlay(
-                        message.overlay
+                        window[message.overlay]
                     );
                 break;
             case 'register_breakpointindicator':
                 if (daceRenderer)
                     daceRenderer.overlay_manager.register_overlay(
                         new BreakpointIndicator(daceRenderer)
+                    );
+                break;
+            case 'deregister_breakpointindicator':
+                if (daceRenderer)
+                    daceRenderer.overlay_manager.deregister_overlay(
+                        BreakpointIndicator
                     );
                 break;
             case 'refresh_symbol_list':
@@ -106,9 +112,12 @@ class MessageHandler {
                 break;
             case 'flopsCallback':
                 if (daceRenderer && daceRenderer.overlay_manager &&
-                    daceRenderer.overlay_manager.static_flops_overlay_active) {
+                    daceRenderer.overlay_manager.is_overlay_active(
+                        daceStaticFlopsOverlay
+                    )
+                ) {
                     const overlay = daceRenderer.overlay_manager.get_overlay(
-                        daceGenericSDFGOverlay.OVERLAY_TYPE.STATIC_FLOPS
+                        daceStaticFlopsOverlay
                     );
                     if (overlay !== undefined && message.map !== undefined)
                         overlay.update_flops_map(message.map);
@@ -183,13 +192,13 @@ class MessageHandler {
                 break;
             case 'unbound_breakpoint':
                 daceRenderer.overlay_manager.get_overlay(
-                    daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
+                    BreakpointIndicator
                 ).unbound_breakpoint(message.node);
                 break;
             case 'remove_breakpoint':
                 if (daceRenderer.sdfg.attributes.name === message.node.sdfg_name) {
                     const ol = daceRenderer.overlay_manager.get_overlay(
-                        daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
+                        BreakpointIndicator
                     );
                     // This can can be called while the SDFG isn't displayed
                     if (ol !== undefined && ol !== null)
@@ -198,7 +207,7 @@ class MessageHandler {
                 break;
             case 'saved_nodes':
                 daceRenderer.overlay_manager.get_overlay(
-                    daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS
+                    BreakpointIndicator
                 ).set_saved_nodes(message.nodes);
                 break;
             case 'display_breakpoints':
