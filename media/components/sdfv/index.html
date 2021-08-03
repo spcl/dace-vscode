@@ -8,30 +8,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/combobox/jquery-editable-select.min.css">
-    </script>
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
+    <<<<<<< HEAD <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/combobox/jquery-editable-select.min.css">
+        </script>
+        <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
+        <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
+        =======
 
-    <script>
-        // Reference to the VSCode API.
-        let vscode = undefined;
+        <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/bootstrap/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css"
+            href="{{ NODE_MODULES }}/jquery-editable-select/dist/jquery-editable-select.min.css">
+        </script>
+        <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/material-icons/iconfont/material-icons.css">
 
-        let message_handler = undefined;
+        <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/@spcl/sdfv/sdfv.css">
 
-        const csp_src = "{{ CSP_SRC }}";
-    </script>
+        >>>>>>> 78c47232a64342c74baeff01af4c43c64bb2707c
+        <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
 
-    <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/pdfkit.standalone.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/blob-stream.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
-    <script src="{{ CSP_SRC }}/lib/split.min.js"></script>
-    <script src="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.bundle.min.js"></script>
-    <script src="{{ CSP_SRC }}/lib/combobox/jquery-editable-select.min.js"></script>
+        <script>
+            // Reference to the VSCode API.
+            let vscode = undefined;
+
+            let message_handler = undefined;
+
+            const csp_src = "{{ CSP_SRC }}";
+        </script>
+
+        <script src="{{ NODE_MODULES }}/jquery/dist/jquery.min.js"></script>
+
+        <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/pdfkit.standalone.js"></script>
+        <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/blob-stream.js"></script>
+        <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/canvas2pdf.js"></script>
+        <script src="{{ NODE_MODULES }}/@spcl/sdfv/renderer_dir/global_vars.js"></script>
+
+        <script src="{{ NODE_MODULES }}/split.js/dist/split.min.js"></script>
+        <script src="{{ NODE_MODULES }}/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="{{ NODE_MODULES }}/jquery-editable-select/dist/jquery-editable-select.min.js"></script>
 
 </head>
 
@@ -162,15 +175,9 @@
                         Continue
                     </span>
                 </div>
-                <div id="breakpoint-btn" class="button" onclick="displayBreakpoints(!showBps);">
+                <div id="breakpoint-btn" class="button text-nowrap" onclick="displayBreakpoints(!showBps);">
                     <span id="display-bps">
                         Display Breakpoints
-                    </span>
-                </div>
-                <div class="spacer"></div>
-                <div id="refresh-btn" class="button" onclick="refreshSdfg();">
-                    <span>
-                        Refresh SDFG
                     </span>
                 </div>
             </div>
@@ -224,7 +231,8 @@
         var transformations = [[], [], [], []];
         var daemon_connected = false;
     </script>
-    <script src="{{ CSP_SRC }}/webclient/dist/sdfv.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/dist/sdfv.js"></script>
+
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/vscode_sdfv.js"></script>
 
@@ -239,24 +247,40 @@
 
     <!-- Load in the monaco editor. -->
     <script>
-        var require = { paths: { 'vs': '{{ CSP_SRC }}/lib/vs' } };
+        var require = {
+            paths: {
+                'vs': '{{ NODE_MODULES }}/monaco-editor/min/vs',
+            },
+        };
     </script>
-    <script src="{{ CSP_SRC }}/lib/vs/loader.js"></script>
-    <script src="{{ CSP_SRC }}/lib/vs/editor/editor.main.nls.js"></script>
-    <script src="{{ CSP_SRC }}/lib/vs/editor/editor.main.js"></script>
+    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/loader.js"></script>
+    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
+    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/editor/editor.main.js"></script>
     <script>
         window.MonacoEnvironment = { getWorkerUrl: () => proxy };
 
         let proxy = URL.createObjectURL(new Blob([`
             self.MonacoEnvironment = {
-                baseUrl: '{{ CSP_SRC }}/lib/vs'
+                baseUrl: '{{ NODE_MODULES }}/monaco-editor/min/vs'
             };
-            importScripts('{{ CSP_SRC }}/lib/vs/base/worker/workerMain.js');
+            importScripts('{{ NODE_MODULES }}/monaco-editor/min/vs/base/worker/workerMain.js');
         `], { type: 'text/javascript' }));
 
         require(["vs/editor/editor.main"], function () {
             window.monaco = monaco;
         });
+
+        function getMonacoThemeName() {
+            switch ($('body').attr('data-vscode-theme-kind')) {
+                case 'vscode-light':
+                    return 'vs';
+                case 'vscode-high-contrast':
+                    return 'hs-black';
+                case 'vscode-dark':
+                default:
+                    return 'vs-dark';
+            }
+        }
     </script>
     <script>
         vscode = acquireVsCodeApi();
@@ -334,18 +358,17 @@
         }
 
         function displayBreakpoints(value) {
-            let type = daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS;
-            let already_active = daceRenderer.overlay_manager.get_overlay(type);
+            let already_active = daceRenderer.overlay_manager.get_overlay(
+                BreakpointIndicator
+            );
             if (value && already_active === undefined) {
                 vscode.postMessage({
                     type: 'sdfv.register_breakpointindicator',
                 });
                 $('#display-bps').html('Hide Breakpoints');
-            }
-            else if (!value) {
+            } else if (!value) {
                 vscode.postMessage({
-                    type: 'sdfv.deregister_overlay',
-                    overlay: daceGenericSDFGOverlay.OVERLAY_TYPE.BREAKPOINTS,
+                    type: 'sdfv.deregister_breakpointindicator',
                 });
                 $('#display-bps').html('Display Breakpoints');
             }

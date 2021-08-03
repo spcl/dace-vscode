@@ -298,41 +298,52 @@ function attr_table_put_text(
 function attr_table_put_code(
     key, subkey, val, elem, xform, target, cell, dtype
 ) {
-    const input = $('<textarea>', {
-        'class': 'sdfv-property-code',
-        'wrap': 'soft',
-        'rows': 3,
-        'cols': 81,
-        'text': val,
+    let lang = 'Python';
+    if (target[key])
+        lang = target[key]['language'];
+
+    const container = $('<div>', {
+        'class': 'sdfv-property-code-container',
     }).appendTo(cell);
-    /*
-    //TODO: Switch to monaco editor.
+
     const input = $('<div>', {
-        width: '300px',
-        height: '50px',
-    }).appendTo(cell);
-    window.monaco.editor.create(input.get(0), {
-        value: val,
-        language: "python",
-        theme: 'vs-dark',
-    });
-    */
+        'class': 'sdfv-property-monaco',
+    }).appendTo(container);
+
     const languages = window.sdfg_meta_dict['__reverse_type_lookup__'][
         'Language'
     ].choices;
     const language_input = $('<select>', {
         'class': 'sdfv-property-dropdown',
-    }).appendTo(cell);
-    languages.forEach(lang => {
+    }).appendTo(container);
+    languages.forEach(l => {
         language_input.append(new Option(
-            lang,
-            lang,
+            l,
+            l,
             false,
-            lang === target[key]['language']
+            l === lang
         ));
     });
+
+    const editor = window.monaco.editor.create(input.get(0), {
+        'value': val,
+        'language': lang === undefined ? 'python' : lang.toLowerCase(),
+        'theme': getMonacoThemeName(),
+        'glyphMargin': 0,
+        'lineDecorationsWidth': 0,
+        'lineNumbers': 'off',
+        'lineNumbersMinChars': 0,
+        'minimap': {
+            'enabled': false,
+        },
+        'padding': {
+            'top': 0,
+            'bottom': 0,
+        },
+    });
+
     return new CodeProperty(
-        elem, xform, target, key, subkey, dtype, input, language_input
+        elem, xform, target, key, subkey, dtype, input, language_input, editor
     );
 }
 
@@ -469,6 +480,16 @@ function attr_table_put_dict(
                 prop.properties.push(attr_prop);
         });
 
+        // If code editors (monaco editors) are part of this dictionary, they
+        // need to be resized again as soon as the modal is shown in order to
+        // properly fill the container.
+        modal.modal.on('shown.bs.modal', () => {
+            for (const property of prop.properties) {
+                if (property.val_prop instanceof CodeProperty)
+                    property.val_prop.editor.layout();
+            }
+        });
+
         const add_item_container = $('<div>', {
             'class': 'container-fluid',
         }).appendTo(modal.body);
@@ -552,7 +573,7 @@ function attr_table_put_list(
         const rowbox = $('<div>', {
             'class': 'container-fluid',
         }).appendTo(modal.body);
-        if (val)
+        if (val) {
             for (let i = 0; i < val.length; i++) {
                 const v = val[i];
                 const attr_prop = attribute_table_put_entry(
@@ -572,6 +593,17 @@ function attr_table_put_list(
                 if (attr_prop && attr_prop.val_prop)
                     prop.properties_list.push(attr_prop.val_prop);
             }
+
+            // If code editors (monaco editors) are part of this list, they
+            // need to be resized again as soon as the modal is shown in order
+            // to properly fill the container.
+            modal.modal.on('shown.bs.modal', () => {
+                for (const property of prop.properties_list) {
+                    if (property instanceof CodeProperty)
+                        property.editor.layout();
+                }
+            });
+        }
 
         const add_item_container = $('<div>', {
             'class': 'container-fluid',

@@ -60,6 +60,21 @@ class VSCodeRenderer extends daceSDFGRenderer {
             const node = nodes[i];
             const uuid = daceGetUUIDGraphElement(node);
             uuids.push(uuid);
+
+            // If we're deleting a scope node, we want to remove the
+            // corresponding entry/exit node as well.
+            let other_uuid = undefined;
+            if (node instanceof EntryNode)
+                other_uuid = node.sdfg.sdfg_list_id + '/' +
+                    node.parent_id + '/' +
+                    node.data.node.scope_exit + '/-1';
+            else if (node instanceof ExitNode)
+                other_uuid = node.sdfg.sdfg_list_id + '/' +
+                    node.parent_id + '/' +
+                    node.data.node.scope_entry + '/-1';
+
+            if (other_uuid)
+                uuids.push(other_uuid);
         }
 
         vscode.postMessage({

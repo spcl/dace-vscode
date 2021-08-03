@@ -102,8 +102,10 @@ export class SdfgViewerProvider
      * @param document      Active SDFG document.
      * @param webview       Active SDFG editor webview.
      */
-    private updateActiveEditor(document: vscode.TextDocument,
-        webview: vscode.Webview): void {
+    private updateActiveEditor(
+        document: vscode.TextDocument,
+        webview: vscode.Webview
+    ): void {
         DaCeVSCode.getInstance().updateActiveSdfg(document.fileName, webview);
     }
 
@@ -116,9 +118,11 @@ export class SdfgViewerProvider
      * @param document      SDFG document with updated contents.
      * @param webviewPanel  SDFG editor webview panel to update.
      */
-    private updateWebview(document: vscode.TextDocument,
+    private updateWebview(
+        document: vscode.TextDocument,
         webview: vscode.Webview,
-        preventRefreshes: boolean = false): void {
+        preventRefreshes: boolean = false
+    ): void {
         webview.postMessage({
             type: 'update',
             text: document.getText(),
@@ -136,8 +140,10 @@ export class SdfgViewerProvider
      * @param document      Changed document.
      * @param webview       Attached webview.
      */
-    private documentChanged(document: vscode.TextDocument,
-        webview: vscode.Webview): void {
+    private documentChanged(
+        document: vscode.TextDocument,
+        webview: vscode.Webview
+    ): void {
         this.updateWebview(document, webview);
         if (DaCeVSCode.getInstance().getActiveEditor() === webview) {
             TransformationListProvider.getInstance()?.refresh();
@@ -173,8 +179,10 @@ export class SdfgViewerProvider
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
     }
 
-    public async handleMessage(message: any,
-        origin: vscode.Webview | undefined = undefined): Promise<void> {
+    public async handleMessage(
+        message: any,
+        origin: vscode.Webview | undefined = undefined
+    ): Promise<void> {
         let node: any;
         switch (message.type) {
             case 'get_current_sdfg':
@@ -358,8 +366,7 @@ export class SdfgViewerProvider
                 this.messages.push(msg);
             }
             vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType);
-        }
-        else
+        } else {
             // The SDFG is already loaded so we can just jump to it
             // and send the messages
             vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType).then(_ => {
@@ -367,6 +374,7 @@ export class SdfgViewerProvider
                     msg.sendMessage();
                 });
             });
+        }
 
     }
 
@@ -400,7 +408,10 @@ export class SdfgViewerProvider
             localResourceRoots: [
                 vscode.Uri.file(path.join(
                     this.context.extensionPath, 'media'
-                ))
+                )),
+                vscode.Uri.file(path.join(
+                    this.context.extensionPath, 'node_modules'
+                )),
             ],
         };
         this.getHtml(webviewPanel.webview).then((html) => {
@@ -472,6 +483,15 @@ export class SdfgViewerProvider
         const mediaFolderUri = webview.asWebviewUri(fpMediaFolder);
         baseHtml = baseHtml.replace(
             this.csrSrcIdentifier, mediaFolderUri.toString()
+        );
+
+        // Set the node-module base-path in the HTML.
+        const fpNodeModulesFolder: vscode.Uri = vscode.Uri.file(
+            path.join(this.context.extensionPath, 'node_modules')
+        );
+        const nodeModulesFolder = webview.asWebviewUri(fpNodeModulesFolder);
+        baseHtml = baseHtml.replace(
+            this.nodeModulesIdentifier, nodeModulesFolder.toString()
         );
 
         // If the settings indicate it, split the webview vertically and put

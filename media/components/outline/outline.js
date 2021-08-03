@@ -19,7 +19,7 @@ class OutlineItem extends TreeViewItem {
     generate_html() {
         const item = super.generate_html();
 
-        item.click((e) => {
+        item.on('click', (e) => {
             if (vscode)
                 vscode.postMessage({
                     type: 'sdfv.zoom_to_node',
@@ -28,7 +28,7 @@ class OutlineItem extends TreeViewItem {
             e.stopPropagation();
         });
 
-        item.mouseover(() => {
+        item.on('mouseover', () => {
             if (vscode)
                 vscode.postMessage({
                     type: 'sdfv.highlight_elements',
