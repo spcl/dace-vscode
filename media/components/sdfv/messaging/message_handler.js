@@ -201,6 +201,15 @@ class MessageHandler {
             case 'display_breakpoints':
                 displayBreakpoints(message.display);
                 break;
+            case 'sdfg_edit_show_continue':
+                sdfgEditContinueShow(message.socketNumber);
+                break;
+            case 'correctness_report':
+                if (daceRenderer)
+                    daceRenderer.overlay_manager.register_overlay(
+                        new CorrectnessOverlay(daceRenderer, message.reports)
+                    );
+                break;
             case 'daemon_connected':
                 daemon_connected = true;
                 break;

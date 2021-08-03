@@ -26,6 +26,8 @@ export enum sdfgEditMode {
     SAVE = 'save',
     TRANSFORM = 'transform',
     PROFILE = 'profile',
+    REPORT = 'report',
+    VERIFICATION = 'verification',
 }
 
 export interface ModeItem extends vscode.QuickPickItem {
@@ -57,6 +59,16 @@ export const modeItems: ModeItem[] = [
         label: "Profile",
         description: "Profiles a run",
         mode: sdfgEditMode.PROFILE,
+    },
+    {
+        label: "Accuracy Report",
+        description: "Create a accuracy Report",
+        mode: sdfgEditMode.REPORT
+    },
+    {
+        label: "Verification",
+        description: "Create an accuracy verification",
+        mode: sdfgEditMode.VERIFICATION
     }
 ];
 

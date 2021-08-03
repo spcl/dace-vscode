@@ -165,6 +165,10 @@ pre.code {
   user-select: none;
 }
 
+#button-bar #sdfg-edit-continue-btn {
+  background-color: green;
+}
+
 #button-bar #breakpoint-btn {
   margin-left: auto;
 }

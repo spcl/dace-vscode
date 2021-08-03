@@ -4,14 +4,18 @@
 import * as Net from 'net';
 import * as vscode from 'vscode';
 import { BreakpointHandler } from './breakpointHandler';
-import { SdfgViewerProvider } from '../components/sdfgViewer';
+import { SdfgViewerProvider, Message } from '../components/sdfgViewer';
 import { sdfgEditMode, modeItems, ModeItem } from './daceDebugSession';
 
 export var PORT: number = 0;
 
 export class DaceListener extends vscode.Disposable {
 
+    private static INSTANCE: DaceListener | undefined = undefined;
+
     server: Net.Server;
+
+    sockets: Map<Number, Net.Socket>;
 
     // To not spam the user with messages only indicate the restricted features
     // message maximally once per activation 
@@ -21,6 +25,16 @@ export class DaceListener extends vscode.Disposable {
         super(() => { this.server.close(); });
         this.server = this.startListening();
         this.hasIndicatedRestricted = false;
+        this.sockets = new Map<number, Net.Socket>();
+    }
+
+    public static getInstance(): DaceListener | undefined {
+        return this.INSTANCE;
+    }
+
+    public static activate() {
+        DaceListener.INSTANCE = new DaceListener();
+        return DaceListener.INSTANCE;
     }
 
     public startListening() {
@@ -30,11 +44,7 @@ export class DaceListener extends vscode.Disposable {
 
             socket.on('data', data => {
                 let dataStr = String.fromCharCode(...data);
-                this.handleData(JSON.parse(dataStr)).then(reply => {
-                    if (reply) {
-                        socket.write(Buffer.from(JSON.stringify(reply)));
-                    }
-                });
+                this.handleData(JSON.parse(dataStr), socket);
             });
         });
 
@@ -54,7 +64,7 @@ export class DaceListener extends vscode.Disposable {
         return server;
     }
 
-    protected async handleData(data: any | undefined) {
+    protected async handleData(data: any | undefined, socket: Net.Socket) {
         if (!data) {
             return;
         }
@@ -87,8 +97,12 @@ export class DaceListener extends vscode.Disposable {
                     dialogOptions.defaultUri = WFs[0].uri;
 
                 const chosenUri = await vscode.window.showOpenDialog(dialogOptions);
-                return (chosenUri && chosenUri.length > 0) ?
-                    { 'filename': chosenUri[0].fsPath } : {};
+                this.send(
+                    socket,
+                    (chosenUri && chosenUri.length > 0) ?
+                        { 'filename': chosenUri[0].fsPath } : {}
+                );
+                break;
             case "saveSDFG":
                 let saveOptions: vscode.SaveDialogOptions = {
                     filters: { 'SDFG': ['sdfg'] },
@@ -101,7 +115,8 @@ export class DaceListener extends vscode.Disposable {
                     saveOptions.defaultUri = WFolders[0].uri;
 
                 const uri = await vscode.window.showSaveDialog(saveOptions);
-                return uri ? { 'filename': uri.fsPath } : {};
+                this.send(socket, uri ? { 'filename': uri.fsPath } : {});
+                break;
             case "sdfgEditMode":
                 let selected_mode = sdfgEditMode.RUN;
                 const mode:
@@ -112,26 +127,90 @@ export class DaceListener extends vscode.Disposable {
                 if (mode)
                     selected_mode = mode.mode;
 
-                return { 'mode': selected_mode };
+                this.send(socket, { 'mode': selected_mode });
+                break;
             case "stopAndTransform":
-                SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
-
-                const opt = await vscode.window.showInformationMessage(
-                    'Click continue when you want to proceed with the transformation',
-                    'continue'
+                const socketNumber = new Date().valueOf();
+                this.sockets.set(socketNumber, socket);
+                const msgs: Message[] = [
+                    new Message(data.sdfgName, {
+                        type: 'sdfg_edit_show_continue',
+                        socketNumber: socketNumber
+                    })
+                ];
+                SdfgViewerProvider.getInstance()?.openViewer(
+                    vscode.Uri.file(data.filename),
+                    msgs
                 );
-                switch (opt) {
-                    case 'continue':
-                        return {};
-                }
+                break;
+            case "pick_report":
+                let reportOptions: vscode.OpenDialogOptions = {
+                    canSelectFiles: false,
+                    canSelectFolders: true,
+                    title: 'select Report',
+                    openLabel: 'select Report',
+                    canSelectMany: false
+                };
+
+                const folders = vscode.workspace.workspaceFolders;
+                if (folders && folders.length > 0)
+                    reportOptions.defaultUri = folders[0].uri;
+
+                const Uri1 = await vscode.window.showOpenDialog(reportOptions);
+                const Uri2 = await vscode.window.showOpenDialog(reportOptions);
+                this.send(
+                    socket,
+                    (Uri1 && Uri1.length > 0 && Uri2 && Uri2.length > 0) ?
+                        {
+                            'foldername1': Uri1[0].fsPath,
+                            'foldername2': Uri2[0].fsPath
+                        } : {}
+                );
+                break;
+            case 'correctness_report':
+                const reports = data['reports'];
+                if (!reports) return;
+                const sockNumber = new Date().valueOf();
+                this.sockets.set(sockNumber, socket);
+                const messagess: Message[] = [
+                    new Message(data.sdfgName, {
+                        type: 'sdfg_edit_show_continue',
+                        socketNumber: sockNumber
+                    }),
+                    new Message(data.sdfgName, {
+                        type: 'correctness_report',
+                        reports: reports
+                    })
+                ];
+                SdfgViewerProvider.getInstance()?.openViewer(
+                    vscode.Uri.file(data.filename),
+                    messagess
+                );
                 break;
             case "openSDFG":
-                SdfgViewerProvider.getInstance()?.openViewer(vscode.Uri.file(data.filename));
+                SdfgViewerProvider.getInstance()?.openViewer(
+                    vscode.Uri.file(data.filename)
+                );
                 break;
             default:
                 break;
         }
-        return undefined;
+    }
+
+    public handleMessage(message: any, origin: vscode.Webview) {
+        switch (message.type) {
+            case 'sdfg_edit_continue':
+                const socket = this.sockets.get(message.socketNumber);
+                if (socket)
+                    this.send(socket, {});
+                break;
+            default:
+                break;
+        }
+    }
+
+    public send(socket: Net.Socket, response: any) {
+        socket.write(Buffer.from(JSON.stringify(response)));
     }
 
 }

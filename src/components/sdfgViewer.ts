@@ -13,7 +13,7 @@ import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 import { TransformationListProvider } from './transformationList';
 import { getCppRange, Node } from '../debugger/breakpointHandler';
 
-class Message {
+export class Message {
     timeStamp: Date;
     sdfgName: string;
     message: any;

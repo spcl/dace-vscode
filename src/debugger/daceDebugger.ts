@@ -23,7 +23,7 @@ export function activateDaceDebug(context: vscode.ExtensionContext) {
     );
 
     const BPHandler = BreakpointHandler.activate(context);
-    const daceListener = new DaceListener();
+    const daceListener = DaceListener.activate();
 
     context.subscriptions.push(
         BPHandler,

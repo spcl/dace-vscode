@@ -11,6 +11,7 @@ import { SdfgBreakpointProvider } from "../sdfgBreakpoints";
 import { TransformationListProvider } from '../transformationList';
 import { TransformationHistoryProvider } from '../transformationHistory';
 import { BreakpointHandler } from '../../debugger/breakpointHandler';
+import { DaceListener } from '../../debugger/daceListener';
 
 export class ComponentMessageHandler {
 
@@ -70,6 +71,12 @@ export class ComponentMessageHandler {
                     break;
                 case 'bp_handler':
                     BreakpointHandler.getInstance()?.handleMessage(
+                        message,
+                        origin
+                    );
+                    break;
+                case 'dace_listener':
+                    DaceListener.getInstance()?.handleMessage(
                         message,
                         origin
                     );

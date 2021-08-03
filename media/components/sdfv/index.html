@@ -9,7 +9,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/bootstrap5/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/combobox/jquery-editable-select.min.css"></script>
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/lib/combobox/jquery-editable-select.min.css">
+    </script>
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
@@ -156,6 +157,11 @@
                         <line x1="20" y1="20" x2="180" y2="180" marker-end="url(#arrowhead)" />
                     </svg>
                 </div>
+                <div id="sdfg-edit-continue-btn" class="button" style="display: none;">
+                    <span>
+                        Continue
+                    </span>
+                </div>
                 <div id="breakpoint-btn" class="button" onclick="displayBreakpoints(!showBps);">
                     <span id="display-bps">
                         Display Breakpoints
@@ -228,6 +234,7 @@
     <script src="{{ CSP_SRC }}/components/sdfv/properties/properties.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/transformation/transformation.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/breakpoints/breakpoints.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/correctness/correctness.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/util/vscode_renderer.js"></script>
 
     <!-- Load in the monaco editor. -->
@@ -343,6 +350,19 @@
                 $('#display-bps').html('Display Breakpoints');
             }
             showBps = value;
+        }
+
+        function sdfgEditContinueHide(socketNumber) {
+            vscode.postMessage({
+                type: 'dace_listener.sdfg_edit_continue',
+                socketNumber: socketNumber
+            });
+            $('#sdfg-edit-continue-btn').hide();
+        }
+
+        function sdfgEditContinueShow(socketNumber) {
+            $('#sdfg-edit-continue-btn').click(() => { sdfgEditContinueHide(socketNumber); });
+            $('#sdfg-edit-continue-btn').show();
         }
 
         // Add a listener to update the content when the extension calls for it.
