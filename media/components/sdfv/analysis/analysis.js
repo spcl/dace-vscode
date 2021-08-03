@@ -49,9 +49,8 @@ function refresh_analysis_pane() {
             symbols: map,
             badness_scale_method: daceRenderer.overlay_manager.badness_scale_method,
             available_overlays: {
-                'Memory Volume':
-                    daceGenericSDFGOverlay.OVERLAY_TYPE.MEMORY_VOLUME,
-                'Static FLOP': daceGenericSDFGOverlay.OVERLAY_TYPE.STATIC_FLOPS,
+                'Memory Volume': 'daceMemoryVolumeOverlay',
+                'Static FLOP': 'daceStaticFlopsOverlay',
             },
             active_overlays: active_overlays,
         });

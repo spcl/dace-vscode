@@ -40,7 +40,8 @@ implements vscode.WebviewViewProvider {
         webviewView: vscode.WebviewView,
         _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
-    ) {
+    ): void | Thenable<void> {
+        // If the DaCe interface has not been started yet, start it here.
         DaCeInterface.getInstance().start();
 
         this.view = webviewView;
@@ -50,6 +51,9 @@ implements vscode.WebviewViewProvider {
             localResourceRoots: [
                 vscode.Uri.file(path.join(
                     this.context.extensionPath, 'media'
+                )),
+                vscode.Uri.file(path.join(
+                    this.context.extensionPath, 'node_modules'
                 )),
             ],
         };
@@ -64,11 +68,18 @@ implements vscode.WebviewViewProvider {
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
             this.context.extensionPath, 'media'
         ));
+        const fpNodeModulesFolder: vscode.Uri = vscode.Uri.file(
+            path.join(this.context.extensionPath, 'node_modules')
+        );
         vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
             let baseHtml = data.toString();
             baseHtml = baseHtml.replace(
                 this.csrSrcIdentifier,
                 webviewView.webview.asWebviewUri(fpMediaFolder).toString()
+            );
+            baseHtml = baseHtml.replace(
+                this.nodeModulesIdentifier,
+                webviewView.webview.asWebviewUri(fpNodeModulesFolder).toString()
             );
             webviewView.webview.html = baseHtml;
 
