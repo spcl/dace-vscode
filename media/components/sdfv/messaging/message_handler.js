@@ -8,6 +8,10 @@ class MessageHandler {
     handle_message(message) {
         let el = undefined;
         switch (message.type) {
+            case 'apply_transformation':
+                if (message.transformation)
+                    apply_transformation(message.transformation);
+                break;
             case 'load_instrumentation_report':
                 daceRenderer.overlay_manager.deregister_overlay(
                     daceStaticFlopsOverlay
