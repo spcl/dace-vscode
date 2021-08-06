@@ -80,10 +80,12 @@ def reapply_history_until(sdfg_json, index):
         try:
             if isinstance(transformation, SubgraphTransformation):
                 transformation.apply(
-                    original_sdfg.sdfg_list[transformation.sdfg_id])
+                    original_sdfg.sdfg_list[transformation.sdfg_id]
+                )
             else:
                 transformation.apply_pattern(
-                    original_sdfg.sdfg_list[transformation.sdfg_id])
+                    original_sdfg.sdfg_list[transformation.sdfg_id]
+                )
         except Exception as e:
             print(traceback.format_exc(), file=sys.stderr)
             sys.stderr.flush()
@@ -175,9 +177,20 @@ def get_transformations(sdfg_json, selected_elements):
         utils.sdfg_find_node_from_element(sdfg, n) for n in selected_elements
         if n['type'] == 'node'
     ]
+    selected_sdfg_ids = list(set(elem['sdfg_id'] for elem in selected_elements))
+    selected_sdfg = sdfg
+    if len(selected_sdfg_ids) > 1:
+        return {
+            'transformations': transformations,
+            'docstrings': docstrings,
+            'warnings': 'More than one SDFG selected, ignoring subgraph',
+        }
+    elif len(selected_sdfg_ids) == 1:
+        selected_sdfg = sdfg.sdfg_list[selected_sdfg_ids[0]]
+
     subgraph = None
     if len(selected_states) > 0:
-        subgraph = SubgraphView(sdfg, selected_states)
+        subgraph = SubgraphView(selected_sdfg, selected_states)
     else:
         violated = False
         state = None
@@ -199,7 +212,7 @@ def get_transformations(sdfg_json, selected_elements):
                 len(selected_states) > 0):
                 continue
             xform_obj = xform(subgraph)
-            if xform_obj.can_be_applied(sdfg, subgraph):
+            if xform_obj.can_be_applied(selected_sdfg, subgraph):
                 transformations.append(xform_obj.to_json())
                 docstrings[xform.__name__] = xform_obj.__doc__
 
