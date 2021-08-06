@@ -183,7 +183,7 @@ def get_transformations(sdfg_json, selected_elements):
         return {
             'transformations': transformations,
             'docstrings': docstrings,
-            'warnings': 'More then one SDFG selected, ignoring subgraph',
+            'warnings': 'More than one SDFG selected, ignoring subgraph',
         }
     elif len(selected_sdfg_ids) == 1:
         selected_sdfg = sdfg.sdfg_list[selected_sdfg_ids[0]]
