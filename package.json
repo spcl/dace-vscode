@@ -1,8 +1,8 @@
 {
     "name": "sdfv",
-    "displayName": "DaCe SDFG Viewer (SDFV)",
-    "description": "DaCe SDFG Viewer (SDFV) for VS Code",
-    "version": "0.2.16",
+    "displayName": "DaCe SDFG Editor",
+    "description": "Transform and optimize data-centric programs with a click of a button",
+    "version": "1.0.1",
     "engines": {
         "vscode": "^1.55.0"
     },
@@ -21,10 +21,12 @@
         "onView:transformationList",
         "onView:transformationHistory",
         "onView:sdfgAnalysis",
+        "onView:sdfgBreakpoints",
         "onView:sdfgOutline"
     ],
     "main": "./dist/extension.js",
     "publisher": "phschaad",
+    "author": "SPCL at ETH Zurich",
     "bugs": {
         "url": "https://github.com/spcl/dace-vscode/issues"
     },
@@ -95,28 +97,28 @@
                         "properties": {
                             "pythonLaunchName": {
                                 "type": "string",
-                                "description": "The name of your python launch config if `pythonConfig: manual`",
+                                "description": "The name of your python launch config if `pythonConfig: custom`",
                                 "default": "Python: Current File"
                             },
                             "cppAttachName": {
                                 "type": "string",
-                                "description": "The name of your C++ attach config if `cppConfig: manual`",
+                                "description": "The name of your C++ attach config if `cppConfig: custom`",
                                 "default": "(Windows) Attach"
                             },
                             "pythonConfig": {
                                 "enum": [
-                                    "manual",
+                                    "custom",
                                     "default"
                                 ],
-                                "description": "Pick manual to manaully define the python Attach config, otherwise the default python configuration will be used",
+                                "description": "Pick custom to manually define the python Attach config, otherwise the default python configuration will be used",
                                 "default": "default"
                             },
                             "cppConfig": {
                                 "enum": [
-                                    "manual",
+                                    "custom",
                                     "default"
                                 ],
-                                "description": "Pick manual to manually define the C++ Attach config, otherwise based on your operating system either (Windows) Attach or (gdb) Attach will be used",
+                                "description": "Pick custom to manually define the C++ Attach config, otherwise based on your operating system either (Windows) Attach or (gdb) Attach will be used",
                                 "default": "default"
                             },
                             "buildType": {
@@ -126,6 +128,11 @@
                                 ],
                                 "description": "Setting the build type to RelWithDebInfo will optimize the compilation, however, there is no guaranty that every breakpoint will hit.",
                                 "default": "Debug"
+                            },
+                            "daCeDev": {
+                                "type": "boolean",
+                                "description": "Adds some DaCe developer features. Example: creates CODEGEN map",
+                                "default": "false"
                             }
                         }
                     }
@@ -149,18 +156,6 @@
             {
                 "title": "DaCe SDFG Optimizer",
                 "properties": {
-                    "dace.interface.terminalMode": {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Run the DaCe backend in a new terminal instead of a subprocess",
-                        "scope": "machine-overridable"
-                    },
-                    "dace.interface.port": {
-                        "type": "integer",
-                        "default": 5000,
-                        "description": "Run the DaCe backend on a different port",
-                        "scope": "machine-overridable"
-                    },
                     "dace.sdfv.layout": {
                         "type": "string",
                         "default": "horizontal",
@@ -262,6 +257,14 @@
                     "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Outline"
                 }
+            ],
+            "debug": [
+                {
+                    "id": "sdfgBreakpoints",
+                    "type": "webview",
+                    "name": "SDFG Breakpoints",
+                    "contextualTitle": "SDFG Breakpoints"
+                }
             ]
         },
         "viewsWelcome": [
@@ -298,6 +301,30 @@
                 "icon": "$(watch)"
             },
             {
+                "command": "sdfg.goto.sdfg",
+                "title": "Open the SDFG file",
+                "category": "SDFV",
+                "icon": "$(preview)"
+            },
+            {
+                "command": "sdfg.goto.cpp",
+                "title": "Open the C++ file",
+                "category": "SDFV",
+                "icon": "$(code)"
+            },
+            {
+                "command": "sdfg.goto.py",
+                "title": "Open the source file",
+                "category": "SDFV",
+                "icon": "$(code)"
+            },
+            {
+                "command": "sdfg.sourcefiles",
+                "title": "All source files",
+                "category": "SDFV",
+                "icon": "$(code)"
+            },
+            {
                 "command": "transformationList.sync",
                 "title": "Refresh Transformations",
                 "icon": {
@@ -322,12 +349,24 @@
                 }
             },
             {
+                "command": "sdfgBreakpoints.sync",
+                "title": "Refresh SDFG Breakpoints",
+                "icon": {
+                    "dark": "media/resources/icons/dark/refresh.svg",
+                    "light": "media/resources/icons/light/refresh.svg"
+                }
+            },
+            {
                 "command": "sdfgOutline.sync",
                 "title": "Refresh Outline",
                 "icon": {
                     "dark": "media/resources/icons/dark/refresh.svg",
                     "light": "media/resources/icons/light/refresh.svg"
                 }
+            },
+            {
+                "command": "sdfg.sync",
+                "title": "Refresh SDFG"
             },
             {
                 "command": "sdfg.previewTransformation",
@@ -344,6 +383,14 @@
             {
                 "command": "sdfg.applyHistoryPoint",
                 "title": "Revert To"
+            },
+            {
+                "command": "dace.config",
+                "title": "DaCe: Open .dace.config"
+            },
+            {
+                "command": "dace.debug.clearState",
+                "title": "DaCe: Clear debug state"
             }
         ],
         "menus": {
@@ -355,6 +402,18 @@
                 {
                     "command": "sdfg.debug.profile",
                     "when": "resourceLangId == sdfg"
+                },
+                {
+                    "command": "sdfg.sync",
+                    "when": "resourceLangId == sdfg"
+                },
+                {
+                    "command": "sdfg.goto.sdfg",
+                    "when": "resourceLangId == python"
+                },
+                {
+                    "command": "sdfg.goto.cpp",
+                    "when": "resourceLangId == python"
                 },
                 {
                     "command": "sdfg.previewTransformation",
@@ -383,6 +442,53 @@
                     "command": "sdfg.debug.profile",
                     "when": "resourceLangId == sdfg",
                     "group": "1_run@20"
+                },
+                {
+                    "command": "sdfg.sync",
+                    "when": "resourceLangId == sdfg",
+                    "group": "1_run@30"
+                },
+                {
+                    "command": "sdfg.goto.sdfg",
+                    "when": "sdfg.showMenu.goto.sdfg == true",
+                    "group": "1_run@10"
+                },
+                {
+                    "command": "sdfg.goto.cpp",
+                    "when": "sdfg.showMenu.goto.cpp == true",
+                    "group": "1_run@20"
+                },
+                {
+                    "command": "sdfg.goto.py",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@30"
+                },
+                {
+                    "command": "sdfg.sourcefiles",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@40"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "sdfg.goto.sdfg",
+                    "when": "sdfg.showMenu.goto.sdfg == true",
+                    "group": "1_run@10"
+                },
+                {
+                    "command": "sdfg.goto.cpp",
+                    "when": "sdfg.showMenu.goto.cpp == true",
+                    "group": "1_run@20"
+                },
+                {
+                    "command": "sdfg.goto.py",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@30"
+                },
+                {
+                    "command": "sdfg.sourcefiles",
+                    "when": "sdfg.showMenu.goto.py == true",
+                    "group": "1_run@40"
                 }
             ],
             "view/title": [
@@ -402,6 +508,10 @@
                     "group": "navigation"
                 },
                 {
+                    "command": "sdfgBreakpoints.sync",
+                    "when": "view == sdfgBreakpoints"
+                },
+                {
                     "command": "sdfgOutline.sync",
                     "when": "view == sdfgOutline",
                     "group": "navigation"
@@ -419,6 +529,7 @@
     },
     "devDependencies": {
         "@types/glob": "^7.1.3",
+        "@types/jquery-editable-select": "^2.2.1",
         "@types/mocha": "^7.0.1",
         "@types/node": "^12.20.7",
         "@types/vscode": "^1.55.0",
@@ -435,6 +546,12 @@
         "webpack-cli": "^4.6.0"
     },
     "dependencies": {
+        "@spcl/sdfv": "^1.0.0",
+        "bootstrap": "^5.0.2",
+        "jquery-editable-select": "^2.2.5",
+        "material-icons": "^1.0.0",
+        "monaco-editor": "^0.26.1",
+        "split.js": "^1.6.4",
         "vscode-debugadapter": "^1.46.0"
     }
 }

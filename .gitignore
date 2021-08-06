@@ -6,3 +6,4 @@ node_modules
 *.code-workspace
 .vscode
 .env
+__pycache__/

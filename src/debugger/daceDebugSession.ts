@@ -5,6 +5,8 @@ import { LoggingDebugSession, TerminatedEvent } from 'vscode-debugadapter';
 import * as vscode from 'vscode';
 import * as os from 'os';
 import { DebugProtocol } from 'vscode-debugprotocol';
+import { BreakpointHandler } from './breakpointHandler';
+import { PORT } from './daceListener';
 
 export interface DaceLaunchRequestArguments
     extends DebugProtocol.LaunchRequestArguments {
@@ -14,6 +16,7 @@ export interface DaceLaunchRequestArguments
     pythonConfig?: string;
     cppConfig?: string;
     buildType?: string;
+    daCeDev?: boolean;
 }
 
 export class DaceDebugSession extends LoggingDebugSession {
@@ -44,13 +47,15 @@ export class DaceDebugSession extends LoggingDebugSession {
             });
         }
 
-        let buildType = !args.buildType ? 'Debug' : args.buildType;
+        const buildType = !args.buildType ? 'Debug' : args.buildType;
+        const daceDev = args.daCeDev;
+        const portNum: string = String(PORT);
 
         /**
          * Default:
          *   We use the default Python configuration 'Python: Current File'
          *   and set the environment variable: build_type
-         * Manual:
+         * Custom:
          *   Otherwise, the user specifies the the configuration manually
          *   by passing the name of the configuration to pythonLaunchName.
          *   We then get that configuration in the launch.json file and
@@ -66,6 +71,7 @@ export class DaceDebugSession extends LoggingDebugSession {
                 console: 'integratedTerminal',
                 env: {
                     DACE_compiler_build_type: buildType,
+                    DACE_port: portNum
                 },
             };
         } else {
@@ -97,26 +103,34 @@ export class DaceDebugSession extends LoggingDebugSession {
                 }
 
                 /**
-                 * Deppending on if the user set an environment variable
+                 * Depending on if the user set an environment variable
                  * or not we either add it to the variables
                  * or create an 'env' attribute
                  */
                 if (entirePyConfig.env) {
                     entirePyConfig.env.DACE_compiler_build_type = buildType;
+                    entirePyConfig.env.DACE_port = portNum;
                 } else {
                     entirePyConfig.env = {
                         DACE_compiler_build_type: buildType,
+                        DACE_port: portNum
                     };
                 }
             }
         }
+
+        // We don't want to override the value in .dace.config if the
+        // dev doesn't define daceDev
+        if (daceDev !== undefined)
+            entirePyConfig.env.
+                DACE_compiler_codegen_lineinfo = daceDev ? "true" : "false";
 
         /**
          * Default:
          *   We detect the operating system and set
          *   'cppConfig: default (win/gdb) Attach'
          *   in the 'Python C++ Debugger configuration'
-         * Manual:
+         * Custom:
          *   Otherwise, the user specifies the the configuration manually
          *   by passing the name of the configuration to cppAttachName.
          *   We then pass the name to the 'Python C++ Debugger'.
@@ -153,6 +167,9 @@ export class DaceDebugSession extends LoggingDebugSession {
             entirePythonConfig: entirePyConfig,
         };
         pyCppDebuggerConfig[cppAttribute] = cppValue;
+
+        // Map and Set the Breakpoints
+        BreakpointHandler.getInstance()?.setAllBreakpoints();
 
         vscode.debug.startDebugging(
             this.folder,

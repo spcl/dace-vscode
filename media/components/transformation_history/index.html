@@ -8,14 +8,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Transformation List</title>
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/elements/treeview/treeview.css">
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/components/transformation_history/transformation_history.css">
+
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/material-icons/iconfont/material-icons.css">
+
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/elements/treeview/treeview.css">
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/transformation_history/transformation_history.css">
 
     <script>
         // Reference to the VSCode API.
@@ -24,8 +22,9 @@
         const csp_src = "{{ CSP_SRC }}";
     </script>
 
-    <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
-    <script src="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.bundle.min.js"></script>
+    <script src="{{ NODE_MODULES }}/jquery/dist/jquery.min.js"></script>
+    <script src="{{ NODE_MODULES }}/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="{{ CSP_SRC }}/elements/treeview/treeview.js"></script>
     <script src="{{ CSP_SRC }}/components/transformation_history/transformation_history.js"></script>
 </head>

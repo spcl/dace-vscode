@@ -3,21 +3,21 @@
 
 class MessageHandler {
 
-    constructor() {}
+    constructor() { }
 
     handle_message(message) {
         let el = undefined;
         switch (message.type) {
             case 'load_instrumentation_report':
-                renderer.overlay_manager.deregister_overlay(
-                    GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS
+                daceRenderer.overlay_manager.deregister_overlay(
+                    daceStaticFlopsOverlay
                 );
                 instrumentation_report_read_complete(message.result);
-                // Fall through to set the criterium.
+            // Fall through to set the criterium.
             case 'instrumentation_report_change_criterium':
                 if (message.criterium) {
-                    const ol = renderer.overlay_manager.get_overlay(
-                        GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS
+                    const ol = daceRenderer.overlay_manager.get_overlay(
+                        daceStaticFlopsOverlay
                     );
                     if (ol) {
                         ol.criterium = message.criterium;
@@ -26,30 +26,46 @@ class MessageHandler {
                 }
                 break;
             case 'clear_instrumentation_report':
-                renderer.overlay_manager.deregister_overlay(
-                    GenericSdfgOverlay.OVERLAY_TYPE.RUNTIME_US
+                daceRenderer.overlay_manager.deregister_overlay(
+                    daceRuntimeMicroSecondsOverlay
                 );
                 break;
             case 'symbol_value_changed':
-                if (message.symbol !== undefined && renderer)
-                    renderer.overlay_manager.symbol_value_changed(
+                if (message.symbol !== undefined && daceRenderer)
+                    daceRenderer.overlay_manager.symbol_value_changed(
                         message.symbol,
                         message.value
                     );
                 break;
             case 'update_badness_scale_method':
-                if (message.method !== undefined && renderer)
-                    renderer.overlay_manager.update_badness_scale_method(
+                if (message.method !== undefined && daceRenderer)
+                    daceRenderer.overlay_manager.update_badness_scale_method(
                         message.method
                     );
                 break;
             case 'register_overlay':
-                if (message.overlay !== undefined && renderer)
-                    renderer.overlay_manager.register_overlay(message.overlay);
+                if (message.overlay !== undefined && daceRenderer)
+                    daceRenderer.overlay_manager.register_overlay(
+                        window[message.overlay]
+                    );
                 break;
             case 'deregister_overlay':
-                if (message.overlay !== undefined && renderer)
-                    renderer.overlay_manager.deregister_overlay(message.overlay);
+                if (message.overlay !== undefined && daceRenderer)
+                    daceRenderer.overlay_manager.deregister_overlay(
+                        window[message.overlay]
+                    );
+                break;
+            case 'register_breakpointindicator':
+                if (daceRenderer)
+                    daceRenderer.overlay_manager.register_overlay(
+                        new BreakpointIndicator(daceRenderer)
+                    );
+                break;
+            case 'deregister_breakpointindicator':
+                if (daceRenderer)
+                    daceRenderer.overlay_manager.deregister_overlay(
+                        BreakpointIndicator
+                    );
                 break;
             case 'refresh_symbol_list':
                 analysis_pane_refresh_symbols();
@@ -57,9 +73,15 @@ class MessageHandler {
             case 'refresh_analysis_pane':
                 refresh_analysis_pane();
                 break;
+            case 'refresh_breakpoints':
+                refresh_breakpoints();
+                break;
+            case 'refresh_sdfg_breakpoints':
+                refresh_sdfg_breakpoints();
+                break;
             case 'refresh_outline':
-                if (renderer)
-                    outline(renderer, renderer.graph);
+                if (daceRenderer)
+                    embedded_outline(daceRenderer, daceRenderer.graph);
                 break;
             case 'refresh_transformation_list':
                 refresh_transformation_list();
@@ -72,11 +94,15 @@ class MessageHandler {
                 else
                     get_applicable_transformations();
                 break;
+            case 'refresh_sdfg':
+                refreshSdfg();
+                break;
             case 'get_applicable_transformations':
                 clear_selected_transformation();
                 get_applicable_transformations();
                 break;
             case 'get_applicable_transformations_callback':
+                daemon_connected = true;
                 if (message.transformations !== undefined)
                     transformations = [[], [], [], message.transformations];
                 else
@@ -85,10 +111,13 @@ class MessageHandler {
                 sort_transformations(refresh_transformation_list, hide_loading);
                 break;
             case 'flopsCallback':
-                if (renderer && renderer.overlay_manager &&
-                    renderer.overlay_manager.static_flops_overlay_active) {
-                    const overlay = renderer.overlay_manager.get_overlay(
-                        GenericSdfgOverlay.OVERLAY_TYPE.STATIC_FLOPS
+                if (daceRenderer && daceRenderer.overlay_manager &&
+                    daceRenderer.overlay_manager.is_overlay_active(
+                        daceStaticFlopsOverlay
+                    )
+                ) {
+                    const overlay = daceRenderer.overlay_manager.get_overlay(
+                        daceStaticFlopsOverlay
                     );
                     if (overlay !== undefined && message.map !== undefined)
                         overlay.update_flops_map(message.map);
@@ -151,15 +180,41 @@ class MessageHandler {
             case 'clear_selected_transformation':
                 clear_selected_transformation();
                 break;
-            case 'get_enum_callback':
-                if (message.enum)
-                    switch (message.name) {
-                        case 'InstrumentationType':
-                            window.instruments = message.enum;
-                            break;
-                        default:
-                            break;
-                    }
+            case 'added_node':
+                if (message.uuid !== 'error') {
+                    daceRenderer.set_sdfg(message.sdfg);
+                    daceRenderer.update_new_element(message.uuid);
+                }
+                break;
+            case 'set_sdfg_metadata':
+                if (message.meta_dict)
+                    window.sdfg_meta_dict = message.meta_dict;
+                break;
+            case 'unbound_breakpoint':
+                daceRenderer.overlay_manager.get_overlay(
+                    BreakpointIndicator
+                ).unbound_breakpoint(message.node);
+                break;
+            case 'remove_breakpoint':
+                if (daceRenderer.sdfg.attributes.name === message.node.sdfg_name) {
+                    const ol = daceRenderer.overlay_manager.get_overlay(
+                        BreakpointIndicator
+                    );
+                    // This can can be called while the SDFG isn't displayed
+                    if (ol !== undefined && ol !== null)
+                        ol.remove_breakpoint(message.node);
+                }
+                break;
+            case 'saved_nodes':
+                daceRenderer.overlay_manager.get_overlay(
+                    BreakpointIndicator
+                ).set_saved_nodes(message.nodes);
+                break;
+            case 'display_breakpoints':
+                displayBreakpoints(message.display);
+                break;
+            case 'daemon_connected':
+                daemon_connected = true;
                 break;
         }
     }

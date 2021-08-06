@@ -8,12 +8,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Analysis</title>
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css"
-          href="{{ CSP_SRC }}/components/analysis/analysis.css">
+
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/material-icons/iconfont/material-icons.css">
+
+    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/analysis/analysis.css">
 
     <script>
         // Reference to the VSCode API.
@@ -24,8 +23,9 @@
         const csp_src = "{{ CSP_SRC }}";
     </script>
 
-    <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
-    <script src="{{ CSP_SRC }}/lib/bootstrap4/bootstrap.bundle.min.js"></script>
+    <script src="{{ NODE_MODULES }}/jquery/dist/jquery.min.js"></script>
+    <script src="{{ NODE_MODULES }}/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="{{ CSP_SRC }}/components/analysis/analysis.js"></script>
 </head>
 
@@ -98,13 +98,11 @@
                             </button>
                         </div>
                         <div class="input-group">
-                            <div class="input-group-prepend">
-                                <label class="input-group-text"
-                                       for="runtime-time-criterium-select">
-                                    Runtime visualization criterium:
-                                </label>
-                            </div>
-                            <select class="custom-select"
+                            <label class="input-group-text"
+                                    for="runtime-time-criterium-select">
+                                Runtime visualization criterium:
+                            </label>
+                            <select class="form-select"
                                  id="runtime-time-criterium-select">
                                 <option
                                     value="min">
@@ -251,7 +249,7 @@
                     break;
                 case 'autoload_report':
                     let cb = $(
-                        'input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]'
+                        'input[type="checkbox"][value="daceStaticFlopsOverlay"]'
                     );
                     let rtReportLabel = $('#runtime-report-filename-label');
                     rtReportLabel.val(message.path);
@@ -274,7 +272,7 @@
             let rtReportLabel = $('#runtime-report-filename-label');
             rtReportLabel.val('Load runtime report');
             rtReportLabel.prop('title', '');
-            $('input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]').prop(
+            $('input[type="checkbox"][value="daceStaticFlopsOverlay"]').prop(
                 'disabled', false
             );
             if (vscode)
@@ -300,7 +298,7 @@
                         rtReportLabel.val(this.files[0].name);
                         rtReportLabel.prop('title', this.files[0].path);
                         let cb = $(
-                            'input[type="checkbox"][value="OVERLAY_TYPE_STATIC_FLOPS"]'
+                            'input[type="checkbox"][value="daceStaticFlopsOverlay"]'
                         );
                         cb.prop('checked', false);
                         cb.prop('disabled', true);

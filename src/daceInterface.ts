@@ -1,10 +1,10 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as path from 'path';
+import * as os from 'os';
 import * as vscode from 'vscode';
-import * as cp from 'child_process';
 import { request } from 'http';
+import * as net from 'net';
 
 import { DaCeVSCode } from './extension';
 import { SdfgViewerProvider } from './components/sdfgViewer';
@@ -35,6 +35,9 @@ implements MessageReceiverInterface {
                 if (message.name !== undefined)
                     this.runSdfgInTerminal(message.name, undefined, origin);
                 break;
+            case 'expand_library_node':
+                this.expandLibraryNode(message.nodeid);
+                break;
             case 'apply_transformation':
                 if (message.transformation !== undefined)
                     this.applyTransformation(message.transformation);
@@ -60,9 +63,17 @@ implements MessageReceiverInterface {
             case 'get_flops':
                 this.getFlops();
                 break;
-            case 'get_enum':
-                if (message.name)
-                    this.getEnum(message.name, origin);
+            case 'insert_node':
+                this.insertSDFGElement(
+                    message.sdfg, message.add_type, message.parent,
+                    message.edge_a, origin
+                );
+                break;
+            case 'remove_nodes':
+                if (message.sdfg && message.uuids)
+                    this.removeGraphElements(message.sdfg, message.uuids);
+            case 'query_sdfg_metadata':
+                this.querySdfgMetadata();
                 break;
             default:
                 break;
@@ -74,37 +85,81 @@ implements MessageReceiverInterface {
     }
 
     private runTerminal?: vscode.Terminal = undefined;
+    private daemonTerminal?: vscode.Terminal = undefined;
 
     private daemonRunning = false;
     private daemonBooting = false;
 
-    private port: number = vscode.workspace.getConfiguration(
-        'dace.interface'
-    ).port;
+    private port: number = -1;
 
-    public async getPythonPath(
-        document: vscode.TextDocument | null
+    private getRandomPort(callback: CallableFunction) {
+        const rangeMin = 1024;
+        const rangeMax = 65535;
+        const portCandidate = Math.floor(
+            Math.random() * (rangeMax - rangeMin) + rangeMin
+        );
+
+        const tempServer = net.createServer();
+        tempServer.listen(portCandidate, () => {
+            tempServer.once('close', () => {
+                this.port = portCandidate;
+                callback();
+            });
+            tempServer.close();
+        });
+        tempServer.on('error', () => {
+            this.getRandomPort(callback);
+        });
+    }
+
+    public async getPythonExecCommand(
+        uri: vscode.Uri | undefined,
+        spaceSafe = true
     ): Promise<string> {
         try {
             let pyExt = vscode.extensions.getExtension('ms-python.python');
-            if (!pyExt)
+            if (!pyExt) {
+                // TODO: do we want to tell the user that using the python
+                // plugin might be advisable here?
                 return 'python';
+            }
 
             if (pyExt.packageJSON?.featureFlags?.usingNewInterpreterStorage) {
                 if (!pyExt.isActive)
                     await pyExt.activate();
-                const pythonPath = pyExt.exports.settings.getExecutionDetails ?
+                const pyCmd = pyExt.exports.settings.getExecutionDetails ?
                     pyExt.exports.settings.getExecutionDetails(
-                        document?.uri
+                        uri
                     ).execCommand :
-                    pyExt.exports.settings.getExecutionCommand(document?.uri);
-                return pythonPath ? pythonPath.join(' ') : 'python';
+                    pyExt.exports.settings.getExecutionCommand(uri);
+                if (pyCmd) {
+                    // Ensure spaces in the python command don't trip up the
+                    // terminal.
+                    if (spaceSafe)
+                        switch (os.platform()) {
+                            case 'win32':
+                                for (let i = 0; i < pyCmd.length; i++) {
+                                    if (/\s/g.test(pyCmd[i]))
+                                        pyCmd[i] = '& "' + pyCmd[i] + '"';
+                                }
+                                break;
+                            default:
+                                for (let i = 0; i < pyCmd.length; i++) {
+                                    if (/\s/g.test(pyCmd[i]))
+                                        pyCmd[i] = '"' + pyCmd[i] + '"';
+                                }
+                                break;
+                        }
+                    return pyCmd.join(' ');
+                } else {
+                    return 'python';
+                }
             } else {
                 let path = undefined;
-                if (document)
+                if (uri)
                     path = vscode.workspace.getConfiguration(
                         'python',
-                        document.uri
+                        uri
                     ).get<string>('pythonPath');
                 else
                     path = vscode.workspace.getConfiguration(
@@ -134,49 +189,41 @@ implements MessageReceiverInterface {
         }
     }
 
-    private genericBackendErrorPopup() {
-        vscode.window.showErrorMessage(
-            'Encountered an error in the DaCe daemon! ',
-            'Show Error Output',
-            'Retry in Terminal Mode'
-        ).then((opt) => {
-            switch (opt) {
-                case 'Show Error Output':
-                    DaCeVSCode.getInstance().getOutputChannel().show();
-                    break;
-                case 'Retry in Terminal Mode':
-                    vscode.commands.executeCommand(
-                        'dace.openOptimizerInTerminal'
-                    );
-                    break;
-            }
-        });
-    }
-
-    private getRunDaceScriptPath(): string | undefined{
-        const extensionPath =
-            DaCeVSCode.getInstance().getExtensionContext()?.extensionPath;
-        if (!extensionPath) {
-            DaCeVSCode.getInstance().getOutputChannel().append(
+    private getRunDaceScriptUri(): vscode.Uri | undefined{
+        const extensionUri =
+            DaCeVSCode.getInstance().getExtensionContext()?.extensionUri;
+        if (!extensionUri) {
+            vscode.window.showErrorMessage(
                 'Failed to load the file path to the extension'
             );
-            this.genericBackendErrorPopup();
             return undefined;
         }
-        return path.join(
-            extensionPath, 'backend', 'run_dace.py'
-        );
+        return vscode.Uri.joinPath(extensionUri, 'backend', 'run_dace.py');
     }
 
-    public startDaemonInTerminal(callback?: CallableFunction) {
-        const term = vscode.window.createTerminal('SDFG Optimizer');
-        term.show();
-        const scriptPath = this.getRunDaceScriptPath();
-        if (scriptPath) {
-            term.sendText(
-                'python ' + scriptPath + ' -p ' + this.port.toString()
+    public async startDaemonInTerminal(callback?: CallableFunction) {
+        if (this.daemonTerminal === undefined)
+            this.daemonTerminal = vscode.window.createTerminal({
+                hideFromUser: false,
+                name: 'SDFG Optimizer',
+            });
+
+        const scriptUri = this.getRunDaceScriptUri();
+        if (scriptUri) {
+            vscode.window.setStatusBarMessage(
+                'Trying to start and connect to a DaCe daemon', 5000
             );
-            this.pollDaemon(callback, true);
+            const pyCmd: string = await this.getPythonExecCommand(
+                scriptUri, true
+            );
+
+            this.getRandomPort(() => {
+                this.daemonTerminal?.sendText(
+                    pyCmd + ' ' + scriptUri.fsPath + ' -p ' +
+                    this.port.toString()
+                );
+                this.pollDaemon(callback, true);
+            });
         } else {
             this.daemonBooting = false;
         }
@@ -252,61 +299,6 @@ implements MessageReceiverInterface {
                     this.daemonBooting = false;
                     clearInterval(connectionIntervalId);
 
-                    if (vscode.workspace.getConfiguration(
-                            'dace.interface'
-                        ).terminalMode === true
-                    ) {
-                        if (terminalMode !== true) {
-                            vscode.window.showInformationMessage(
-                                'DaCe successfully started as a subprocess, ' +
-                                'but you have it configured to start in ' +
-                                'terminal mode. Do you want to update this ' +
-                                'setting?',
-                                'Yes',
-                                'No'
-                            ).then((opt) => {
-                                switch (opt) {
-                                    case 'Yes':
-                                        vscode.workspace.getConfiguration(
-                                            'dace.interface'
-                                        ).update(
-                                            'terminalMode', false,
-                                            vscode.ConfigurationTarget.Global
-                                        );
-                                        break;
-                                    case 'No':
-                                    default:
-                                        break;
-                                }
-                            });
-                        }
-                    } else {
-                        if (terminalMode === true) {
-                            vscode.window.showInformationMessage(
-                                'DaCe successfully started in terminal mode, ' +
-                                'but you have it configured to start as a ' +
-                                'subprocess. Do you want to update this ' +
-                                'setting?',
-                                'Yes',
-                                'No'
-                            ).then((opt) => {
-                                switch (opt) {
-                                    case 'Yes':
-                                        vscode.workspace.getConfiguration(
-                                            'dace.interface'
-                                        ).update(
-                                            'terminalMode', true,
-                                            vscode.ConfigurationTarget.Global
-                                        );
-                                        break;
-                                    case 'No':
-                                    default:
-                                        break;
-                                }
-                            });
-                        }
-                    }
-
                     // If a callback was provided, continue execution there.
                     if (callback)
                         callback();
@@ -324,22 +316,12 @@ implements MessageReceiverInterface {
                     'Unable to start and connect to DaCe. Do you have it ' +
                     'installed?',
                     'Retry',
-                    'Retry in Terminal Mode',
                     'Install DaCe'
                 ).then(opt => {
                     switch (opt) {
                         case 'Retry':
                             clearInterval(connectionIntervalId);
-                            this.startPythonDaemon();
-                            break;
-                        case 'Retry in Terminal Mode':
-                            vscode.commands.executeCommand(
-                                'dace.openOptimizerInTerminal'
-                            );
-                            // Do not clear the connection interval immediately
-                            setTimeout(() => {
-                                clearInterval(connectionIntervalId);
-                            }, 10000);
+                            this.startDaemonInTerminal();
                             break;
                         case 'Install DaCe':
                             clearInterval(connectionIntervalId);
@@ -351,49 +333,6 @@ implements MessageReceiverInterface {
                 clearInterval(connectionIntervalId);
             }
         }, 10000);
-    }
-
-    private async startPythonDaemon(callback?: CallableFunction) {
-        if (this.daemonRunning) {
-            if (callback)
-                callback();
-            return;
-        }
-
-        vscode.window.setStatusBarMessage(
-            'Trying to start and connect to a DaCe daemon', 5000
-        );
-
-        const pythonPath = await this.getPythonPath(null);
-        const scriptPath = this.getRunDaceScriptPath();
-        if (!scriptPath)
-            return;
-
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        let workspaceRoot = undefined;
-        if (workspaceFolders)
-            workspaceRoot = workspaceFolders[0].uri.fsPath;
-
-        const daemon = cp.spawn(
-            pythonPath,
-            [scriptPath, '-p', this.port.toString()], {
-                cwd: workspaceRoot,
-            }
-        );
-
-        daemon.on('exit', (_code, _signal) => {
-            this.daemonRunning = false;
-            this.daemonBooting = false;
-        });
-
-        daemon.stderr.on('data', data => {
-            DaCeVSCode.getInstance().getOutputChannel().append(
-                data.toString()
-            );
-            this.genericBackendErrorPopup();
-        });
-
-        this.pollDaemon(callback, false);
     }
 
     private sendRequest(url: string,
@@ -515,7 +454,7 @@ implements MessageReceiverInterface {
         ).then(opt => {
             switch (opt) {
                 case 'Yes':
-                    DaCeInterface.getInstance().startPythonDaemon();
+                    DaCeInterface.getInstance().startDaemonInTerminal();
                     break;
                 case 'No':
                     break;
@@ -534,16 +473,14 @@ implements MessageReceiverInterface {
         this.daemonBooting = true;
 
         const callback = () => {
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'daemon_connected',
+            });
             TransformationHistoryProvider.getInstance()?.refresh();
             TransformationListProvider.getInstance()?.refresh(true);
+            this.querySdfgMetadata();
         };
-        if (vscode.workspace.getConfiguration(
-                'dace.interface'
-            ).terminalMode === true
-        )
-            this.startDaemonInTerminal(callback);
-        else
-            this.startPythonDaemon(callback);
+        this.startDaemonInTerminal(callback);
     }
 
     public previewSdfg(sdfg: any, history_mode: boolean = false) {
@@ -599,6 +536,25 @@ implements MessageReceiverInterface {
                         transformation: transformation,
                     },
                     callback
+                );
+            }
+        });
+    }
+
+    public expandLibraryNode(nodeid: any) {
+        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (sdfg) {
+                this.showSpinner('Expanding library node');
+                this.sendPostRequest(
+                    '/expand_library_node',
+                    {
+                        sdfg: sdfg,
+                        nodeid: nodeid,
+                    },
+                    (data: any) => {
+                        this.hideSpinner();
+                        this.writeToActiveDocument(data.sdfg);
+                    }
                 );
             }
         });
@@ -760,6 +716,21 @@ implements MessageReceiverInterface {
         );
     }
 
+    public async querySdfgMetadata() {
+        async function callback(data: any) {
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'set_sdfg_metadata',
+                meta_dict: data.meta_dict,
+            });
+        };
+
+        if (this.daemonRunning)
+            this.sendGetRequest(
+                '/get_metadata',
+                callback
+            );
+    }
+
     public async loadTransformations(sdfg: any, selectedElements: any) {
         TransformationListProvider.getInstance()?.handleMessage({
             type: 'show_loading',
@@ -796,16 +767,46 @@ implements MessageReceiverInterface {
         );
     }
 
-    public getEnum(name: string, origin: vscode.Webview) {
-        if (this.daemonRunning)
-            this.sendGetRequest('/get_enum/' + name, (response: any) => {
-                if (response.enum)
-                    origin.postMessage({
-                        'type': 'get_enum_callback',
-                        'name': name,
-                        'enum': response.enum,
-                    });
+    public insertSDFGElement(
+        sdfg: string, type: string, parent: string, edge_a: string,
+        origin: vscode.Webview
+    ): void {
+        function callback(data: any) {
+            origin.postMessage({
+                'type': 'added_node',
+                'sdfg': data.sdfg,
+                'uuid': data.uuid,
             });
+        }
+
+        if (!edge_a)
+            edge_a = 'NONE';
+
+        this.sendPostRequest(
+            '/insert_sdfg_element',
+            {
+                'sdfg': JSON.parse(sdfg),
+                'type': type,
+                'parent': parent,
+                'edge_a': edge_a,
+            },
+            callback
+        );
+    }
+
+    public removeGraphElements(sdfg: string, uuids: string): void {
+        function callback(data: any) {
+            DaCeInterface.getInstance().writeToActiveDocument(data.sdfg);
+        }
+
+        this.sendPostRequest(
+            '/remove_sdfg_elements',
+            {
+                'sdfg': JSON.parse(sdfg),
+                'uuids': uuids,
+            },
+            callback
+        );
     }
 
     public isRunning() {

@@ -8,8 +8,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/external_lib/material/material-icons.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/webclient/sdfv.css">
+
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/jquery-editable-select/dist/jquery-editable-select.min.css"></script>
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/material-icons/iconfont/material-icons.css">
+
+    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/@spcl/sdfv/sdfv.css">
+
     <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
 
     <script>
@@ -21,43 +26,146 @@
         const csp_src = "{{ CSP_SRC }}";
     </script>
 
-    <script src="{{ CSP_SRC }}/webclient/renderer_dir/dagre.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/jquery.min.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/pdfkit.standalone.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/blob-stream.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/canvas2pdf.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/external_lib/math.min.js"></script>
-    <script src="{{ CSP_SRC }}/lib/split.min.js"></script>
+    <script src="{{ NODE_MODULES }}/jquery/dist/jquery.min.js"></script>
 
-    <script src="{{ CSP_SRC }}/webclient/renderer_dir/global_vars.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/renderer_elements.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/context_menu.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/sdfg_utils.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/overlay_manager.js"></script>
-    <script src="{{ CSP_SRC }}/webclient/renderer.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/pdfkit.standalone.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/blob-stream.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/canvas2pdf.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/renderer_dir/global_vars.js"></script>
+
+    <script src="{{ NODE_MODULES }}/split.js/dist/split.min.js"></script>
+    <script src="{{ NODE_MODULES }}/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ NODE_MODULES }}/jquery-editable-select/dist/jquery-editable-select.min.js"></script>
+
 </head>
 
 <body onresize="rendererSendResize();">
     <div id="top-bar">
-        <div id="search-bar">
-            <div id="search-container">
-                <input id="search" type="text" placeholder="Search the graph">
+        <div id="search-bar-wrapper">
+            <div id="search-bar" class="container">
+                <div id="search-container">
+                    <input id="search" type="text" placeholder="Search the graph">
+                </div>
+                <button id="search-case-sensitive-btn" checked="false" title="Case sensitive"
+                    style="background-color: transparent; cursor: pointer;">
+                    <div id="search-case-text">Aa</div>
+                </button>
             </div>
-            <div id="search-case-container">
-                <label for="search-case">
-                    <input id="search-case" type="checkbox">
-                    Case Sensitive
-                </label>
-            </div>
-            <div id="search-btn" class="button">
-                <span>
-                    Search
-                </span>
-            </div>
-            <div id="refresh-btn" class="button" onclick="refreshSdfg();">
-                <span>
-                    Refresh SDFG
-                </span>
+        </div>
+        <div id="button-bar-wrapper">
+            <div id="button-bar">
+                <div class="spacer"></div>
+                <div id="pan-btn" class="button" title="Pan mode">
+                    <em class="material-icons">pan_tool</em>
+                </div>
+                <div id="move-btn" class="button" title="Move mode">
+                    <em class="material-icons">open_with</em>
+                </div>
+                <div id="select-btn" class="button" title="Select mode">
+                    <svg width="1.3rem" height="1.3rem" viewBox="0 0 800 800" stroke="white" version="1.1"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <rect x="100" y="100" width="500" height="500" fill="transparent" stroke-width="50" />
+                        <path d="M620 620 L800 620 L740 680 L840 780 L780 840 L680 740 L620 800 Z" fill="white" />
+                    </svg>
+                </div>
+                <div class="spacer"></div>
+                <div id="elem_access_node" class="button" title="Add access node" type="AccessNode">
+                    <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10"
+                        version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="100" r="90" fill="none" />
+                    </svg>
+                </div>
+                <div class="spacer"></div>
+                <div id="elem_map" class="button" title="Add map" type="Map">
+                    <svg width="5.2rem" height="1.3rem" viewBox="0 0 800 200" stroke="white" stroke-width="10"
+                        version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="10" x2="190" y1="190" y2="10" />
+                        <line x1="190" x2="600" y1="10" y2="10" />
+                        <line x1="600" x2="790" y1="10" y2="190" />
+                        <line x1="790" x2="10" y1="190" y2="190" />
+                    </svg>
+                </div>
+                <div id="elem_consume" class="button" title="Add consume" type="Consume">
+                    <svg width="5.2rem" height="1.3rem" viewBox="0 0 800 200" stroke="white" stroke-width="10"
+                        stroke-dasharray="60,25" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="10" x2="190" y1="190" y2="10" />
+                        <line x1="190" x2="600" y1="10" y2="10" />
+                        <line x1="600" x2="790" y1="10" y2="190" />
+                        <line x1="790" x2="10" y1="190" y2="190" />
+                    </svg>
+                </div>
+                <div class="spacer"></div>
+                <div id="elem_tasklet" class="button" title="Add tasklet" type="Tasklet">
+                    <svg width="2.6rem" height="1.3rem" viewBox="0 0 400 200" stroke="white" stroke-width="10"
+                        version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="10" x2="70" y1="130" y2="190" />
+                        <line x1="70" x2="330" y1="190" y2="190" />
+                        <line x1="330" x2="390" y1="190" y2="130" />
+                        <line x1="390" x2="390" y1="130" y2="70" />
+                        <line x1="390" x2="330" y1="70" y2="10" />
+                        <line x1="330" x2="70" y1="10" y2="10" />
+                        <line x1="70" x2="10" y1="10" y2="70" />
+                        <line x1="10" x2="10" y1="70" y2="130" />
+                    </svg>
+                </div>
+                <div id="elem_nested_sdfg" class="button" title="Add nested SDFG" type="NestedSDFG">
+                    <svg width="2.6rem" height="1.3rem" viewBox="0 0 400 200" stroke="white" stroke-width="10"
+                        version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="40" x2="80" y1="120" y2="160" />
+                        <line x1="80" x2="320" y1="160" y2="160" />
+                        <line x1="320" x2="360" y1="160" y2="120" />
+                        <line x1="360" x2="360" y1="120" y2="80" />
+                        <line x1="360" x2="320" y1="80" y2="40" />
+                        <line x1="320" x2="80" y1="40" y2="40" />
+                        <line x1="80" x2="40" y1="40" y2="80" />
+                        <line x1="40" x2="40" y1="80" y2="120" />
+
+                        <line x1="10" x2="70" y1="130" y2="190" />
+                        <line x1="70" x2="330" y1="190" y2="190" />
+                        <line x1="330" x2="390" y1="190" y2="130" />
+                        <line x1="390" x2="390" y1="130" y2="70" />
+                        <line x1="390" x2="330" y1="70" y2="10" />
+                        <line x1="330" x2="70" y1="10" y2="10" />
+                        <line x1="70" x2="10" y1="10" y2="70" />
+                        <line x1="10" x2="10" y1="70" y2="130" />
+                    </svg>
+                </div>
+                <div id="elem_libnode" class="button" title="Add library node" type="LibraryNode">
+                    <svg width="2.6rem" height="1.3rem" viewBox="0 0 400 200" stroke="white" stroke-width="10"
+                        version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="10" x2="10" y1="10" y2="190" />
+                        <line x1="10" x2="390" y1="190" y2="190" />
+                        <line x1="390" x2="390" y1="190" y2="55" />
+                        <line x1="390" x2="345" y1="55" y2="10" />
+                        <line x1="345" x2="10" y1="10" y2="10" />
+                        <line x1="345" x2="345" y1="10" y2="55" />
+                        <line x1="345" x2="390" y1="55" y2="55" />
+                    </svg>
+                </div>
+                <div class="spacer"></div>
+                <div id="elem_state" class="button" title="Add state" type="SDFGState">
+                    <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10"
+                        version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="20" y="20" width="160" height="160" style="fill:#deebf7;" />
+                    </svg>
+                </div>
+                <div class="spacer"></div>
+                <div id="elem_edge" class="button" title="Add edge" type="Edge">
+                    <svg width="1.3rem" height="1.3rem" viewBox="0 0 200 200" stroke="white" stroke-width="10"
+                        version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" />
+                            </marker>
+                        </defs>
+                        <line x1="20" y1="20" x2="180" y2="180" marker-end="url(#arrowhead)" />
+                    </svg>
+                </div>
+                <div id="breakpoint-btn" class="button text-nowrap" onclick="displayBreakpoints(!showBps);">
+                    <span id="display-bps">
+                        Display Breakpoints
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -80,11 +188,16 @@
         <div id="info-container">
             <div id="info-header">
                 <div id="info-title-container">
-                    <h3 id="info-title"></h3>
+                    <h5 id="info-title"></h5>
                 </div>
                 <div id="goto-source-btn" class="hidden button">
                     <span>
                         Go to source
+                    </span>
+                </div>
+                <div id="goto-cpp-btn" class="hidden button">
+                    <span>
+                        Go to Generated Code
                     </span>
                 </div>
                 <div class="flex-spacer"></div>
@@ -102,28 +215,77 @@
     <script>
         var sdfg_json = '';
         var transformations = [[], [], [], []];
+        var daemon_connected = false;
     </script>
-    <script src="{{ CSP_SRC }}/webclient/sdfv.js"></script>
+    <script src="{{ NODE_MODULES }}/@spcl/sdfv/dist/sdfv.js"></script>
+
     <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/vscode_sdfv.js"></script>
 
     <script src="{{ CSP_SRC }}/components/sdfv/util/helpers.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/messaging/message_handler.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/analysis/analysis.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/properties/properties.js"></script>
     <script src="{{ CSP_SRC }}/components/sdfv/transformation/transformation.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/breakpoints/breakpoints.js"></script>
+    <script src="{{ CSP_SRC }}/components/sdfv/util/vscode_renderer.js"></script>
+
+    <!-- Load in the monaco editor. -->
+    <script>
+        var require = {
+            paths: {
+                'vs': '{{ NODE_MODULES }}/monaco-editor/min/vs',
+            },
+        };
+    </script>
+    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/loader.js"></script>
+    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
+    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/editor/editor.main.js"></script>
+    <script>
+        window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+
+        let proxy = URL.createObjectURL(new Blob([`
+            self.MonacoEnvironment = {
+                baseUrl: '{{ NODE_MODULES }}/monaco-editor/min/vs'
+            };
+            importScripts('{{ NODE_MODULES }}/monaco-editor/min/vs/base/worker/workerMain.js');
+        `], { type: 'text/javascript' }));
+
+        require(["vs/editor/editor.main"], function () {
+            window.monaco = monaco;
+        });
+
+        function getMonacoThemeName() {
+            switch ($('body').attr('data-vscode-theme-kind')) {
+                case 'vscode-light':
+                    return 'vs';
+                case 'vscode-high-contrast':
+                    return 'hs-black';
+                case 'vscode-dark':
+                default:
+                    return 'vs-dark';
+            }
+        }
+    </script>
     <script>
         vscode = acquireVsCodeApi();
         message_handler = new MessageHandler();
         var debug_draw = false;
+        var showBps = false;
 
         function setRendererContent(sdfg, previewing = false,
-                                    prevent_refreshes = false) {
-            parsed_sdfg = parse_sdfg(sdfg);
+            prevent_refreshes = false) {
+            parsed_sdfg = daceParseSDFG(sdfg);
 
-            if (renderer)
-                renderer.set_sdfg(parsed_sdfg);
-            else
-                init_sdfv(parsed_sdfg, null, debug_draw);
+            if (daceRenderer) {
+                daceRenderer.set_sdfg(parsed_sdfg);
+            } else {
+                if (parsed_sdfg !== null)
+                    daceRenderer = new VSCodeRenderer(
+                        parsed_sdfg, document.getElementById('contents'),
+                        daceMouseEvent, null, debug_draw, null, null
+                    );
+            }
 
             if (!previewing) {
                 sdfg_json = sdfg;
@@ -131,19 +293,46 @@
                     get_applicable_transformations();
             }
 
-            outline(renderer, renderer.graph);
+            embedded_outline(daceRenderer, daceRenderer.graph);
             refresh_analysis_pane();
+            refresh_breakpoints();
+
+            if (daceRenderer) {
+                if (daceRenderer.selected_elements &&
+                    daceRenderer.selected_elements.length === 1)
+                    reselect_renderer_element(
+                        daceRenderer.selected_elements[0]
+                    );
+                else if ((!daceRenderer.selected_elements) ||
+                    daceRenderer.selected_elements.length === 0)
+                    fill_info_embedded(
+                        new SDFG(daceRenderer.sdfg)
+                    );
+            }
+
+            vscode.postMessage({
+                type: "sdfv.process_queued_messages",
+                sdfgName: daceRenderer.sdfg.attributes.name,
+            });
         }
 
         function resetRendererContent() {
             let user_transform = null;
-            if (renderer) {
-                user_transform = renderer.canvas_manager.user_transform;
-                renderer.destroy();
+            if (daceRenderer) {
+                user_transform = daceRenderer.canvas_manager.user_transform;
+                daceRenderer.destroy();
             }
-            init_sdfv(parse_sdfg(sdfg_json), user_transform, debug_draw);
-            outline(renderer, renderer.graph);
+
+            parsed_sdfg = daceParseSDFG(sdfg_json);
+            if (parsed_sdfg !== null)
+                daceRenderer = new VSCodeRenderer(
+                    parsed_sdfg, document.getElementById('contents'),
+                    daceMouseEvent, user_transform, debug_draw, null, null
+                );
+
+            embedded_outline(daceRenderer, daceRenderer.graph);
             refresh_analysis_pane();
+            refresh_breakpoints();
         }
 
         function refreshSdfg() {
@@ -151,6 +340,24 @@
                 vscode.postMessage({
                     type: 'sdfv.get_current_sdfg',
                 });
+        }
+
+        function displayBreakpoints(value) {
+            let already_active = daceRenderer.overlay_manager.get_overlay(
+                BreakpointIndicator
+            );
+            if (value && already_active === undefined) {
+                vscode.postMessage({
+                    type: 'sdfv.register_breakpointindicator',
+                });
+                $('#display-bps').html('Hide Breakpoints');
+            } else if (!value) {
+                vscode.postMessage({
+                    type: 'sdfv.deregister_breakpointindicator',
+                });
+                $('#display-bps').html('Display Breakpoints');
+            }
+            showBps = value;
         }
 
         // Add a listener to update the content when the extension calls for it.
@@ -171,12 +378,24 @@
             });
         }
 
+        // Send a request to the extension to jump to the
+        // generated code location of the current Node
+        function gotoCpp(sdfgName, sdfgId, stateId, nodeId) {
+            vscode.postMessage({
+                type: 'sdfv.go_to_cpp',
+                sdfg_name: sdfgName,
+                sdfg_id: sdfgId,
+                state_id: stateId,
+                node_id: nodeId
+            });
+        }
+
         // Resize the canvas correctly if the renderer exists. This gets
         // called whenever the body's size changes.
         function rendererSendResize() {
-            if (renderer) {
-                renderer.onresize();
-                renderer.draw_async();
+            if (daceRenderer) {
+                daceRenderer.onresize();
+                daceRenderer.draw_async();
             }
         }
 
@@ -191,10 +410,6 @@
             $('#processing-overlay').hide();
             vscode.postMessage({
                 type: 'sdfv.get_current_sdfg',
-            });
-            vscode.postMessage({
-                type: 'dace.get_enum',
-                name: 'InstrumentationType',
             });
         });
     </script>

@@ -11,13 +11,48 @@ import { AnalysisProvider } from './analysis';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 import { TransformationListProvider } from './transformationList';
+import { getCppRange, Node } from '../debugger/breakpointHandler';
+
+class Message {
+    timeStamp: Date;
+    sdfgName: string;
+    message: any;
+
+    constructor(sdfgName: string, message: any) {
+        this.sdfgName = sdfgName;
+        this.timeStamp = new Date();
+        this.message = message;
+    }
+
+    public checkTimestamp(): boolean {
+        // Checks if the msg isn't too old. We give the webview
+        // 30s to handle a msg otherwise its outdated
+        return new Date().getTime() < this.timeStamp.getTime() + 30000;
+    }
+
+    public sendMessage() {
+        DaCeVSCode.getInstance().getActiveEditor()?.postMessage(this.message);
+    }
+
+    public executeMessage(sdfgName: string): boolean {
+        // Sends the msg if it corresponds to the SDFG and is not outdated
+        // Returns true if the Message can be deleted
+        if (sdfgName === this.sdfgName) {
+            if (this.checkTimestamp())
+                this.sendMessage();
+            return true;
+        }
+        return false;
+    }
+
+}
 
 export class SdfgViewer {
 
     public constructor(
         public readonly webview: vscode.Webview,
         public readonly document: vscode.TextDocument
-    ) {}
+    ) { }
 
     public wrapperFile?: string = undefined;
     public argv?: string[] = undefined;
@@ -26,10 +61,12 @@ export class SdfgViewer {
 }
 
 export class SdfgViewerProvider
-extends BaseComponent
-implements vscode.CustomTextEditorProvider {
+    extends BaseComponent
+    implements vscode.CustomTextEditorProvider {
 
     public static INSTANCE: SdfgViewerProvider | undefined = undefined;
+
+    private messages: Message[] = [];
 
     public static getInstance(): SdfgViewerProvider | undefined {
         return this.INSTANCE;
@@ -65,8 +102,10 @@ implements vscode.CustomTextEditorProvider {
      * @param document      Active SDFG document.
      * @param webview       Active SDFG editor webview.
      */
-    private updateActiveEditor(document: vscode.TextDocument,
-                               webview: vscode.Webview): void {
+    private updateActiveEditor(
+        document: vscode.TextDocument,
+        webview: vscode.Webview
+    ): void {
         DaCeVSCode.getInstance().updateActiveSdfg(document.fileName, webview);
     }
 
@@ -79,9 +118,11 @@ implements vscode.CustomTextEditorProvider {
      * @param document      SDFG document with updated contents.
      * @param webviewPanel  SDFG editor webview panel to update.
      */
-    private updateWebview(document: vscode.TextDocument,
-                          webview: vscode.Webview,
-                          preventRefreshes: boolean = false): void {
+    private updateWebview(
+        document: vscode.TextDocument,
+        webview: vscode.Webview,
+        preventRefreshes: boolean = false
+    ): void {
         webview.postMessage({
             type: 'update',
             text: document.getText(),
@@ -99,8 +140,10 @@ implements vscode.CustomTextEditorProvider {
      * @param document      Changed document.
      * @param webview       Attached webview.
      */
-    private documentChanged(document: vscode.TextDocument,
-                            webview: vscode.Webview): void {
+    private documentChanged(
+        document: vscode.TextDocument,
+        webview: vscode.Webview
+    ): void {
         this.updateWebview(document, webview);
         if (DaCeVSCode.getInstance().getActiveEditor() === webview) {
             TransformationListProvider.getInstance()?.refresh();
@@ -130,14 +173,17 @@ implements vscode.CustomTextEditorProvider {
         return undefined;
     }
 
-    public removeOpenEditor(webview: vscode.Webview) {
-        const editor = this.findEditorForWebview(webview);
+    public removeOpenEditor(document: vscode.TextDocument) {
+        const editor = this.findEditorForPath(document.uri);
         if (editor)
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
     }
 
-    public handleMessage(message: any,
-                         origin: vscode.Webview | undefined = undefined): void {
+    public async handleMessage(
+        message: any,
+        origin: vscode.Webview | undefined = undefined
+    ): Promise<void> {
+        let node: any;
         switch (message.type) {
             case 'get_current_sdfg':
                 const instance = SdfgViewerProvider.getInstance();
@@ -163,37 +209,182 @@ implements vscode.CustomTextEditorProvider {
                         vscode.workspace.rootPath + '/' + message.file_path
                     );
 
-                // Load the file and show it in a new editor, highlighting the
-                // indicated range.
                 const fileUri: vscode.Uri = vscode.Uri.file(filePath);
-                vscode.workspace.openTextDocument(fileUri).then(
-                    (doc: vscode.TextDocument) => {
-                        const startPos = new vscode.Position(
-                            message.startRow, message.startChar
-                        );
-                        const endPos = new vscode.Position(
-                            message.endRow, message.endChar
-                        );
-                        const range = new vscode.Range(
-                            startPos, endPos
-                        );
-                        vscode.window.showTextDocument(
-                            doc, {
-                                preview: true,
-                                selection: range,
-                            }
-                        );
-                    }, (reason) => {
+                this.goToFileLocation(
+                    fileUri,
+                    message.startRow,
+                    message.startChar,
+                    message.endRow,
+                    message.endChar
+                );
+                break;
+            case 'go_to_cpp':
+                // If the message passes a cache path then use that path, otherwise
+                // get the cache directory of the currently opened SDFG
+                let cachePath: string = message.cache_path;
+                if (!cachePath) {
+                    const SdfgFileName = DaCeVSCode.getInstance()
+                        .getActiveSdfgFileName();
+                    if (!SdfgFileName)
+                        return;
+
+                    const sdfgFilePath = vscode.Uri.file(SdfgFileName).fsPath;
+                    cachePath = path.dirname(sdfgFilePath);
+                }
+
+                let mapPath = path.join(
+                    cachePath,
+                    'map',
+                    'map_cpp.json'
+                );
+
+                let cppPath = path.join(
+                    cachePath,
+                    'src',
+                    'cpu',
+                    message.sdfg_name + '.cpp'
+                );
+
+                const cppMapUri = vscode.Uri.file(mapPath);
+                const cppFileUri = vscode.Uri.file(cppPath);
+                node = new Node(
+                    message.sdfg_id,
+                    message.state_id,
+                    message.node_id,
+                );
+
+                getCppRange(node, cppMapUri).then(lineRange => {
+                    // If there is no matching location we just goto the file
+                    // without highlighting and indicate it with a message
+                    if (!lineRange || !lineRange.from) {
+                        lineRange = {};
+                        lineRange.from = 1;
                         vscode.window.showInformationMessage(
-                            'Could not open file ' + filePath + ', ' + reason
+                            'Could not find a specific line for Node:' +
+                            node.printer()
                         );
                     }
+
+                    // Subtract 1 as we don't want to highlight the first line
+                    // as the 'to' value is inclusive 
+                    if (!lineRange.to) {
+                        lineRange.to = lineRange.from - 1;
+                    }
+
+                    this.goToFileLocation(
+                        cppFileUri,
+                        lineRange.from - 1,
+                        0,
+                        lineRange.to,
+                        0
+                    );
+                });
+                break;
+            case 'go_to_sdfg':
+                const msgs = [];
+                if (message.zoom_to) {
+                    msgs.push(
+                        new Message(message.sdfg_name, {
+                            type: 'zoom_to_node',
+                            uuid: message.zoom_to,
+                        })
+                    );
+                }
+                if (message.display_bps) {
+                    msgs.push(
+                        new Message(message.sdfg_name, {
+                            type: 'display_breakpoints',
+                            display: message.display_bps,
+                        })
+                    );
+                }
+                SdfgViewerProvider.getInstance()?.openViewer(
+                    vscode.Uri.file(message.path),
+                    msgs
                 );
+                break;
+            case 'process_queued_messages':
+                if (message.sdfgName) {
+                    this.sendMessages(message.sdfgName);
+                }
                 break;
             default:
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
                 break;
         }
+    }
+
+    public goToFileLocation(
+        fileUri: vscode.Uri,
+        startLine: number,
+        startCol: number,
+        endLine: number,
+        endCol: number
+    ) {
+        /* Load the file and show it in a new editor, highlighting the
+        indicated range. */
+        vscode.workspace.openTextDocument(fileUri).then(
+            (doc: vscode.TextDocument) => {
+
+                const startPos = new vscode.Position(
+                    startLine, startCol
+                );
+                const endPos = new vscode.Position(
+                    endLine, endCol
+                );
+                const range = new vscode.Range(
+                    startPos, endPos
+                );
+                vscode.window.showTextDocument(
+                    doc, {
+                    preview: false,
+                    selection: range,
+                }
+                );
+            }, (reason) => {
+                vscode.window.showInformationMessage(
+                    'Could not open file ' + fileUri.fsPath + ', ' + reason
+                );
+            }
+        );
+    }
+
+    public openViewer(uri: vscode.Uri, messages: Message[] = []) {
+        // If the SDFG is currently open, then execute the messages
+        // otherwise store them to execute as soon as the SDFG is loaded
+        let editorIsLoaded = false;
+        for (const editor of this.getOpenEditors()) {
+            if (editor.document.uri.fsPath === uri.fsPath) {
+                editorIsLoaded = true;
+                break;
+            }
+        }
+        if (!editorIsLoaded) {
+            // The SDFG isn't yet loaded so we store the msgs
+            // to execute after the SDFG is loaded (calls 'process_queued_messages')
+            for (const msg of messages) {
+                this.messages.push(msg);
+            }
+            vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType);
+        } else {
+            // The SDFG is already loaded so we can just jump to it
+            // and send the messages
+            vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType).then(_ => {
+                messages.forEach(msg => {
+                    msg.sendMessage();
+                });
+            });
+        }
+
+    }
+
+    private sendMessages(sdfgName: string) {
+        let keep_msgs: Message[] = [];
+        for (const msg of this.messages) {
+            if (!msg.executeMessage(sdfgName))
+                keep_msgs.push(msg);
+        }
+        this.messages = keep_msgs;
     }
 
     public async resolveCustomTextEditor(
@@ -208,7 +399,7 @@ implements vscode.CustomTextEditorProvider {
         // it from the open editors list.
         webviewPanel.onDidDispose(() => {
             SdfgViewerProvider.getInstance()?.removeOpenEditor(
-                webviewPanel.webview
+                document
             );
         });
 
@@ -217,7 +408,10 @@ implements vscode.CustomTextEditorProvider {
             localResourceRoots: [
                 vscode.Uri.file(path.join(
                     this.context.extensionPath, 'media'
-                ))
+                )),
+                vscode.Uri.file(path.join(
+                    this.context.extensionPath, 'node_modules'
+                )),
             ],
         };
         this.getHtml(webviewPanel.webview).then((html) => {
@@ -238,7 +432,8 @@ implements vscode.CustomTextEditorProvider {
             // We want to update our webview if that happens.
             const docChangeSubs = vscode.workspace.onDidChangeTextDocument(
                 e => {
-                    if (e.document.uri.toString() === document.uri.toString())
+                    if (e.document.uri.toString() === document.uri.toString() &&
+                        e.contentChanges.length > 0)
                         this.documentChanged(document, webviewPanel.webview);
                 }
             );
@@ -290,11 +485,20 @@ implements vscode.CustomTextEditorProvider {
             this.csrSrcIdentifier, mediaFolderUri.toString()
         );
 
+        // Set the node-module base-path in the HTML.
+        const fpNodeModulesFolder: vscode.Uri = vscode.Uri.file(
+            path.join(this.context.extensionPath, 'node_modules')
+        );
+        const nodeModulesFolder = webview.asWebviewUri(fpNodeModulesFolder);
+        baseHtml = baseHtml.replace(
+            this.nodeModulesIdentifier, nodeModulesFolder.toString()
+        );
+
         // If the settings indicate it, split the webview vertically and put
         // the info container to the right instead of at the bottom.
         if (vscode.workspace.getConfiguration(
-                'dace.sdfv'
-            ).layout === 'vertical'
+            'dace.sdfv'
+        ).layout === 'vertical'
         ) {
             baseHtml = baseHtml.replace(
                 '<div id="split-container" class="split-container-vertical">',

@@ -3,51 +3,44 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DaCeInterface } from '../daceInterface';
-import { DaCeVSCode } from '../extension';
+import { BreakpointHandler } from '../debugger/breakpointHandler';
 
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
-export class TransformationHistoryProvider
+export class SdfgBreakpointProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'transformationHistory';
+    private static readonly viewType: string = 'sdfgBreakpoints';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: TransformationHistoryProvider | undefined = undefined;
-
-    public activeHistoryItemIndex: Number | undefined = undefined;
+    private static INSTANCE: SdfgBreakpointProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        TransformationHistoryProvider.INSTANCE =
-            new TransformationHistoryProvider(ctx, this.viewType);
+        SdfgBreakpointProvider.INSTANCE = new SdfgBreakpointProvider(ctx, this.viewType);
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
-            TransformationHistoryProvider.viewType,
-            TransformationHistoryProvider.INSTANCE,
+            SdfgBreakpointProvider.viewType,
+            SdfgBreakpointProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): TransformationHistoryProvider | undefined {
+    public static getInstance(): SdfgBreakpointProvider | undefined {
         return this.INSTANCE;
     }
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
-        _context: vscode.WebviewViewResolveContext<unknown>,
+        _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
     ): void | Thenable<void> {
-        // If the DaCe interface has not been started yet, start it here.
-        DaCeInterface.getInstance().start();
-
         this.view = webviewView;
 
         webviewView.webview.options = {
@@ -66,7 +59,7 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'transformation_history',
+            'sdfgBreakpoints',
             'index.html'
         ));
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
@@ -96,40 +89,6 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public handleMessage(message: any,
-                         origin: vscode.Webview | undefined = undefined): void {
-        switch (message.type) {
-            case 'refresh':
-                if (message.reset_active)
-                    this.activeHistoryItemIndex = undefined;
-                this.refresh();
-                break;
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
-    }
-
-    public clearList(reason: string | undefined) {
-        this.view?.webview.postMessage({
-            type: 'clear_history',
-            reason: reason,
-        });
-    }
-
-    public async refresh() {
-        this.clearList(undefined);
-        const sdfg = await DaCeVSCode.getInstance().getActiveSdfg();
-        if (sdfg !== undefined) {
-            const history = sdfg.attributes.transformation_hist;
-            this.view?.webview.postMessage({
-                type: 'set_history',
-                history: history,
-                active_index: this.activeHistoryItemIndex,
-            });
-        }
-    }
-
     public show() {
         this.view?.show();
     }
@@ -138,6 +97,28 @@ implements vscode.WebviewViewProvider {
         if (this.view === undefined)
             return false;
         return this.view.visible;
+    }
+
+    public handleMessage(message: any, origin?: vscode.Webview): void {
+        switch (message.type) {
+            case 'refresh_sdfg_breakpoints':
+                message.nodes = BreakpointHandler.getInstance()?.getAllNodes();
+            // Fallthrough to send to the webview
+            default:
+                this.view?.webview.postMessage(message);
+                break;
+        }
+    }
+
+    public clear(reason: string | undefined) {
+        this.view?.webview.postMessage({
+            type: 'clear',
+            reason: reason,
+        });
+    }
+
+    public refresh() {
+        vscode.commands.executeCommand('sdfgBreakpoints.sync');
     }
 
 }
