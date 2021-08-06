@@ -86,7 +86,7 @@ class Transformation extends TransformationListItem {
             'title': 'Apply transformation with default parameters',
             'click': () => {
                 vscode.postMessage({
-                    type: 'dace.apply_transformation',
+                    type: 'sdfv.apply_transformation',
                     transformation: this.json,
                 });
             },

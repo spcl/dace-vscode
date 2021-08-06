@@ -2,6 +2,15 @@
 
 ## 1.0
 
+### 1.0.2
+
+- Fixes transformation refreshes and application.
+- Allow transformation quick-apply with default parameters.
+- Fixes deletion of scope nodes.
+- Prevent UI elements from expanding the top bar vertically.
+- Prevent tansformation list categories from losing their collapse state on
+  refresh.
+
 ### 1.0.1
 
 - Various bugfixes.

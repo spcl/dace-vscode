@@ -202,4 +202,8 @@ class VSCodeRenderer extends daceSDFGRenderer {
         modal_ret.modal.modal('show');
     }
 
+    clear_selected_items() {
+        this.selected_elements = [];
+    }
+
 }
