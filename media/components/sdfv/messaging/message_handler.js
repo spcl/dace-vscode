@@ -217,10 +217,18 @@ class MessageHandler {
                 sdfgEditContinueShow(message.socketNumber);
                 break;
             case 'correctness_report':
-                if (daceRenderer)
-                    daceRenderer.overlay_manager.register_overlay(
-                        new CorrectnessOverlay(daceRenderer, message.reports)
+                if (daceRenderer) {
+                    const ol = new CorrectnessOverlay(
+                        daceRenderer,
+                        message.reports
                     );
+                    daceRenderer.overlay_manager.register_overlay(ol);
+                    if (message.diffText !== undefined && message.diffText !== null)
+                        ol.diff = parseFloat(message.diffText);
+                    ol.diffRange = message.diffRange;
+                    ol.diffText = message.diffText;
+                    sdfgEditDifferenceShow();
+                }
                 break;
             case 'daemon_connected':
                 daemon_connected = true;

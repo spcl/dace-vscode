@@ -168,6 +168,11 @@
                         Continue
                     </span>
                 </div>
+                <div id="sdfg-edit-diff-btn" class="button" style="display: none;">
+                    <span>
+                        Difference
+                    </span>
+                </div>
                 <div id="breakpoint-btn" class="button text-nowrap" onclick="displayBreakpoints(!showBps);">
                     <span id="display-bps">
                         Display Breakpoints
@@ -374,11 +379,23 @@
                 socketNumber: socketNumber
             });
             $('#sdfg-edit-continue-btn').hide();
+            $('#sdfg-edit-diff-btn').hide();
         }
 
         function sdfgEditContinueShow(socketNumber) {
             $('#sdfg-edit-continue-btn').click(() => { sdfgEditContinueHide(socketNumber); });
             $('#sdfg-edit-continue-btn').show();
+        }
+
+        function sdfgEditDifferenceShow() {
+            let btn = $('#sdfg-edit-diff-btn');
+            btn.click(() => {
+                const ol = daceRenderer.overlay_manager.get_overlay(
+                    CorrectnessOverlay
+                );
+                changeDiff(ol.diffRange, ol.diffText);
+            });
+            btn.show();
         }
 
         // Add a listener to update the content when the extension calls for it.

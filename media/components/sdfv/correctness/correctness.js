@@ -10,18 +10,75 @@ function getTempColor(val) {
     return 'hsl(' + hue + ',100%,50%)';
 }
 
-daceGenericSDFGOverlay.OVERLAY_TYPE.CORRECTNESS = 'OVERLAY_TYPE_CORRECTNESS';
+function changeTextInput(val) {
+    const diffInput = document.getElementById('diffInputText');
+    if (diffInput !== null)
+        diffInput.value = val !== '0' ? '1e-' + val : '1';
+}
+
+function changeDiff(diffRange, diffText) {
+    if (diffRange === undefined || diffRange === null)
+        diffRange = 5;
+    if (diffText === undefined || diffText === null)
+        diffText = '1e-5';
+
+    const modal = create_single_use_modal(
+        'Change correctness difference',
+        true,
+        ''
+    );
+    $('<input>', {
+        type: 'range',
+        id: 'diffInputRange',
+        min: 0,
+        max: 10,
+        value: diffRange,
+        onchange: "changeTextInput(this.value);",
+    }).appendTo(modal.body);
+    $('<input>', {
+        type: 'text',
+        id: 'diffInputText',
+        value: diffText,
+        style: 'margin-left:2rem;'
+    }).appendTo(modal.body);
+    modal.confirm_btn.on('click', () => {
+        const valText = document.getElementById('diffInputText').value;
+        const val = parseFloat(valText);
+        const valRange = document.getElementById('diffInputRange').value;
+
+        const ol = daceRenderer.overlay_manager.get_overlay(
+            CorrectnessOverlay
+        );
+        ol.diff = val;
+        ol.diffRange = valRange;
+        ol.diffText = valText;
+        ol.refresh();
+
+        if (diffRange !== valRange || diffText !== valText)
+            vscode.postMessage({
+                type: 'bp_handler.changeDiffValue',
+                diffRange: valRange,
+                diffText: valText,
+            });
+        modal.modal.modal('hide');
+    });
+    modal.modal.modal('show');
+}
 
 class CorrectnessOverlay extends daceGenericSDFGOverlay {
 
     breakpoints;
     daceRenderer;
-    reports;
+    reports_states;
+    reports_nodes;
+    arrays;
+    diff;
+    diffRange;
+    diffText;
 
     constructor(daceRenderer, reports) {
         super(
-            daceRenderer.overlay_manager, daceRenderer,
-            daceGenericSDFGOverlay.OVERLAY_TYPE.CORRECTNESS
+            daceRenderer.overlay_manager, daceRenderer
         );
         this.daceRenderer = daceRenderer;
         this.new_reports(reports);
@@ -60,32 +117,59 @@ class CorrectnessOverlay extends daceGenericSDFGOverlay {
     }
 
     new_reports(arrays) {
-        this.reports = new Map();
+        this.reports_states = new Map();
+        this.reports_nodes = new Map();
+
+        if (arrays === null || arrays === undefined) return;
+
         arrays.forEach(array => {
-            const identifer = `${array.sdfg_id}/${array.state_id}/-1`;
-            let state_arrays = this.reports.get(identifer);
+            const id_state = `${array.sdfg_id}/${array.state_id}/-1`;
+            const id_node = `${array.sdfg_id}/${array.state_id}/${array.node_id}`;
+            let state_arrays = this.reports_states.get(id_state);
             if (state_arrays === undefined || state_arrays === null)
                 state_arrays = [];
+            array.diff = parseFloat(array.diff);
             state_arrays.push(array);
-            this.reports.set(identifer, state_arrays);
+            this.reports_states.set(id_state, state_arrays);
+            this.reports_nodes.set(id_node, {
+                msg: array.msg,
+                diff: array.diff
+            });
         });
     }
 
-    check_correctness(state, ctx) {
+    check_correctness_state(state, ctx) {
         const identifier = this.get_sdfg_element(state, true);
-        const arrays = this.reports.get(identifier);
-        console.log(arrays);
+        const arrays = this.reports_states.get(identifier);
         if (arrays === null || arrays === undefined) return;
         let err_fraction = 1.;
-        let err_msgs = '';
         for (const arr of arrays) {
-            if (!arr['correct']) {
+            if (arr.diff > this.diff) {
                 err_fraction /= 2.;
-                err_msgs += `${arr['array_name']}: ${arr['error_msg']}\n`;
             }
         }
-        this.draw_tooltip(state, err_msgs);
-        state.shade(this.daceRenderer, ctx, getTempColor(1 - err_fraction));
+        if (err_fraction !== 1.)
+            this.stateOutline(state, ctx, 'red');
+    }
+
+    check_correctness_node(node, ctx) {
+        const identifier = this.get_sdfg_element(node, true);
+        const node_report = this.reports_nodes.get(identifier);
+        if (node_report === null || node_report === undefined) return;
+        this.draw_tooltip(node, node_report.msg);
+        node.shade(this.daceRenderer, ctx,
+            node_report.diff <= this.diff ?
+                'green' : 'red'
+        );
+    }
+
+    stateOutline(state, ctx, color) {
+        const topleft = state.topleft();
+        const oldLineWidth = ctx.lineWidth;
+        ctx.lineWidth = Math.floor(state.width / 50);
+        ctx.strokeStyle = color;
+        ctx.strokeRect(topleft.x, topleft.y, state.width, state.height);
+        ctx.lineWidth = oldLineWidth;
     }
 
     draw() {
@@ -102,11 +186,17 @@ class CorrectnessOverlay extends daceGenericSDFGOverlay {
     draw_tooltip(node, msg) {
         if (this.daceRenderer.mousepos &&
             node.intersect(this.daceRenderer.mousepos.x,
-                this.daceRenderer.mousepos.y) && msg !== '') {
-            this.daceRenderer.tooltip = () => {
-                this.daceRenderer.tooltip_container.innerText = (msg);
-                this.daceRenderer.tooltip_container.className = 'sdfvtooltip';
-            };
+                this.daceRenderer.mousepos.y)) {
+            if (msg === '')
+                this.daceRenderer.tooltip = () => {
+                    this.daceRenderer.tooltip_container
+                        .className = 'sdfvtooltip_hide';
+                };
+            else
+                this.daceRenderer.tooltip = () => {
+                    this.daceRenderer.tooltip_container.innerText = (msg);
+                    this.daceRenderer.tooltip_container.className = 'sdfvtooltip';
+                };
         }
     }
 
@@ -126,7 +216,7 @@ class CorrectnessOverlay extends daceGenericSDFGOverlay {
                 state.data.state.attributes.is_collapsed) {
                 // Currently we don't do anything
             } else {
-                this.check_correctness(state, ctx);
+                this.check_correctness_state(state, ctx) + '\n';
                 let state_graph = state.data.graph;
                 if (state_graph) {
                     state_graph.nodes().forEach(v => {
@@ -136,6 +226,10 @@ class CorrectnessOverlay extends daceGenericSDFGOverlay {
                         if (ctx.lod && !node.intersect(visible_rect.x,
                             visible_rect.y, visible_rect.w, visible_rect.h))
                             return;
+
+                        if (node instanceof AccessNode) {
+                            this.check_correctness_node(node, ctx);
+                        }
 
                         // Check if the node is a NestedSDFG and if
                         // it should be visited

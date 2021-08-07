@@ -165,7 +165,8 @@ pre.code {
   user-select: none;
 }
 
-#button-bar #sdfg-edit-continue-btn {
+#button-bar #sdfg-edit-continue-btn,
+#button-bar #sdfg-edit-diff-btn {
   background-color: green;
 }
 

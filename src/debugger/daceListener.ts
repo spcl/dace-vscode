@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { BreakpointHandler } from './breakpointHandler';
 import { SdfgViewerProvider, Message } from '../components/sdfgViewer';
 import { sdfgEditMode, modeItems, ModeItem } from './daceDebugSession';
+import { DaCeVSCode } from '../extension';
 
 export var PORT: number = 0;
 
@@ -16,6 +17,8 @@ export class DaceListener extends vscode.Disposable {
     server: Net.Server;
 
     sockets: Map<Number, Net.Socket>;
+
+
 
     // To not spam the user with messages only indicate the restricted features
     // message maximally once per activation 
@@ -172,6 +175,7 @@ export class DaceListener extends vscode.Disposable {
                 if (!reports) return;
                 const sockNumber = new Date().valueOf();
                 this.sockets.set(sockNumber, socket);
+                console.log(DaCeVSCode.getExtensionContext()?.workspaceState);
                 const messagess: Message[] = [
                     new Message(data.sdfgName, {
                         type: 'sdfg_edit_show_continue',
@@ -179,7 +183,11 @@ export class DaceListener extends vscode.Disposable {
                     }),
                     new Message(data.sdfgName, {
                         type: 'correctness_report',
-                        reports: reports
+                        reports: reports,
+                        diffText: DaCeVSCode.getExtensionContext()?.
+                            workspaceState.get('diffText', null),
+                        diffRange: DaCeVSCode.getExtensionContext()?.
+                            workspaceState.get('diffRange', null)
                     })
                 ];
                 SdfgViewerProvider.getInstance()?.openViewer(
@@ -203,6 +211,7 @@ export class DaceListener extends vscode.Disposable {
                 const socket = this.sockets.get(message.socketNumber);
                 if (socket)
                     this.send(socket, {});
+                vscode.commands.executeCommand('workbench.action.closeActiveEditor');
                 break;
             default:
                 break;

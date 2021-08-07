@@ -451,6 +451,13 @@ export class BreakpointHandler extends vscode.Disposable {
             case 'has_saved_nodes':
                 BreakpointHandler.getInstance()?.hasSavedNodes(message.sdfg_name);
                 break;
+            case 'changeDiffValue':
+                console.log(message);
+                DaCeVSCode.getExtensionContext()?.workspaceState
+                    .update('diffText', message.diffText);
+                DaCeVSCode.getExtensionContext()?.workspaceState
+                    .update('diffRange', message.diffRange);
+                break;
             default:
                 break;
         }
