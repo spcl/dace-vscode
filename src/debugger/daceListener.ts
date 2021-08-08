@@ -159,15 +159,11 @@ export class DaceListener extends vscode.Disposable {
                 if (folders && folders.length > 0)
                     reportOptions.defaultUri = folders[0].uri;
 
-                const Uri1 = await vscode.window.showOpenDialog(reportOptions);
-                const Uri2 = await vscode.window.showOpenDialog(reportOptions);
+                const Uri = await vscode.window.showOpenDialog(reportOptions);
                 this.send(
                     socket,
-                    (Uri1 && Uri1.length > 0 && Uri2 && Uri2.length > 0) ?
-                        {
-                            'foldername1': Uri1[0].fsPath,
-                            'foldername2': Uri2[0].fsPath
-                        } : {}
+                    (Uri && Uri.length > 0) ?
+                        { 'foldername': Uri[0].fsPath } : {}
                 );
                 break;
             case 'correctness_report':
@@ -175,7 +171,6 @@ export class DaceListener extends vscode.Disposable {
                 if (!reports) return;
                 const sockNumber = new Date().valueOf();
                 this.sockets.set(sockNumber, socket);
-                console.log(DaCeVSCode.getExtensionContext()?.workspaceState);
                 const messagess: Message[] = [
                     new Message(data.sdfgName, {
                         type: 'sdfg_edit_show_continue',
@@ -211,7 +206,7 @@ export class DaceListener extends vscode.Disposable {
                 const socket = this.sockets.get(message.socketNumber);
                 if (socket)
                     this.send(socket, {});
-                vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+                //vscode.commands.executeCommand('workbench.action.closeActiveEditor');
                 break;
             default:
                 break;
