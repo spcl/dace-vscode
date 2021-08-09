@@ -4,7 +4,7 @@
 function vscode_handle_event(event, data) {
     switch (event) {
         case 'on_renderer_selection_changed':
-            if (daceRenderer && daceRenderer.selected_elements.length > 1)
+            if (data && data.multi_selection_changed)
                 get_applicable_transformations();
             else
                 sort_transformations(refresh_transformation_list);
