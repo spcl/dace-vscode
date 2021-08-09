@@ -374,6 +374,9 @@
         }
 
         function sdfgEditContinueHide(socketNumber) {
+            daceRenderer.overlay_manager.deregister_overlay(
+                CorrectnessOverlay
+            );
             vscode.postMessage({
                 type: 'dace_listener.sdfg_edit_continue',
                 socketNumber: socketNumber
