@@ -291,16 +291,7 @@ function show_transformation_details(trafo) {
     $('<div>', {
         'class': 'button',
         'click': () => {
-            if (vscode) {
-                clear_info_box();
-                el = document.getElementById('exit-preview-button');
-                if (el)
-                    el.className = 'button hidden';
-                vscode.postMessage({
-                    type: 'dace.apply_transformation',
-                    transformation: trafo,
-                });
-            }
+            apply_transformation(trafo);
         },
         'mouseenter': () => {
             highlight_uuids(transformation_get_affected_uuids(trafo));
@@ -316,4 +307,18 @@ function show_transformation_details(trafo) {
     generate_attributes_table(undefined, trafo, info_contents);
 
     $('#info-clear-btn').show();
+}
+
+function apply_transformation(xform) {
+    if (vscode) {
+        daceRenderer.clear_selected_items();
+        clear_info_box();
+        el = document.getElementById('exit-preview-button');
+        if (el)
+            el.className = 'button hidden';
+        vscode.postMessage({
+            type: 'dace.apply_transformation',
+            transformation: xform,
+        });
+    }
 }
