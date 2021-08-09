@@ -120,18 +120,6 @@ export class DaceListener extends vscode.Disposable {
                 const uri = await vscode.window.showSaveDialog(saveOptions);
                 this.send(socket, uri ? { 'filename': uri.fsPath } : {});
                 break;
-            case "sdfgEditMode":
-                let selected_mode = sdfgEditMode.RUN;
-                const mode:
-                    | ModeItem
-                    | undefined = await vscode.window.showQuickPick(modeItems, {
-                        placeHolder: "Select the next run mode",
-                    });
-                if (mode)
-                    selected_mode = mode.mode;
-
-                this.send(socket, { 'mode': selected_mode });
-                break;
             case "stopAndTransform":
                 const socketNumber = new Date().valueOf();
                 this.sockets.set(socketNumber, socket);
@@ -146,7 +134,19 @@ export class DaceListener extends vscode.Disposable {
                     msgs
                 );
                 break;
-            case "pick_report":
+            case "sdfgEditMode":
+                let selected_mode = sdfgEditMode.RUN;
+                const mode:
+                    | ModeItem
+                    | undefined = await vscode.window.showQuickPick(modeItems, {
+                        placeHolder: "Select the next run mode",
+                    });
+                if (mode)
+                    selected_mode = mode.mode;
+                if (selected_mode !== sdfgEditMode.VERIFICATION) {
+                    this.send(socket, { 'mode': selected_mode });
+                    break;
+                }
                 let reportOptions: vscode.OpenDialogOptions = {
                     canSelectFiles: false,
                     canSelectFolders: true,
@@ -163,7 +163,7 @@ export class DaceListener extends vscode.Disposable {
                 this.send(
                     socket,
                     (Uri && Uri.length > 0) ?
-                        { 'foldername': Uri[0].fsPath } : {}
+                        { 'mode': selected_mode, 'foldername': Uri[0].fsPath } : {}
                 );
                 break;
             case 'correctness_report':
