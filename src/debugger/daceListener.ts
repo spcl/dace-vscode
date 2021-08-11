@@ -180,9 +180,9 @@ export class DaceListener extends vscode.Disposable {
                         type: 'correctness_report',
                         reports: reports,
                         diffText: DaCeVSCode.getExtensionContext()?.
-                            workspaceState.get('diffText', null),
+                            workspaceState.get('diffText'),
                         diffRange: DaCeVSCode.getExtensionContext()?.
-                            workspaceState.get('diffRange', null)
+                            workspaceState.get('diffRange')
                     })
                 ];
                 SdfgViewerProvider.getInstance()?.openViewer(
