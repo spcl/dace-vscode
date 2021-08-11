@@ -59,6 +59,9 @@ implements vscode.WebviewViewProvider {
                 vscode.Uri.file(path.join(
                     this.context.extensionPath, 'node_modules'
                 )),
+                vscode.Uri.file(path.join(
+                    this.context.extensionPath, 'out', 'webclients'
+                )),
             ],
         };
 
@@ -66,7 +69,7 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'transformation_list',
+            'transformations',
             'index.html'
         ));
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
@@ -74,6 +77,9 @@ implements vscode.WebviewViewProvider {
         ));
         const fpNodeModulesFolder: vscode.Uri = vscode.Uri.file(
             path.join(this.context.extensionPath, 'node_modules')
+        );
+        const fpScriptFolder: vscode.Uri = vscode.Uri.file(
+            path.join(this.context.extensionPath, 'out', 'webclients')
         );
         vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
             let baseHtml = data.toString();
@@ -84,6 +90,10 @@ implements vscode.WebviewViewProvider {
             baseHtml = baseHtml.replace(
                 this.nodeModulesIdentifier,
                 webviewView.webview.asWebviewUri(fpNodeModulesFolder).toString()
+            );
+            baseHtml = baseHtml.replace(
+                this.scriptSrcIdentifier,
+                webviewView.webview.asWebviewUri(fpScriptFolder).toString()
             );
             webviewView.webview.html = baseHtml;
 

@@ -412,6 +412,9 @@ export class SdfgViewerProvider
                 vscode.Uri.file(path.join(
                     this.context.extensionPath, 'node_modules'
                 )),
+                vscode.Uri.file(path.join(
+                    this.context.extensionPath, 'out', 'webclients'
+                )),
             ],
         };
         this.getHtml(webviewPanel.webview).then((html) => {
@@ -492,6 +495,14 @@ export class SdfgViewerProvider
         const nodeModulesFolder = webview.asWebviewUri(fpNodeModulesFolder);
         baseHtml = baseHtml.replace(
             this.nodeModulesIdentifier, nodeModulesFolder.toString()
+        );
+
+        const fpScriptFolder: vscode.Uri = vscode.Uri.file(
+            path.join(this.context.extensionPath, 'out', 'webclients')
+        );
+        const scriptsFolder = webview.asWebviewUri(fpScriptFolder);
+        baseHtml = baseHtml.replace(
+            this.scriptSrcIdentifier, scriptsFolder.toString()
         );
 
         // If the settings indicate it, split the webview vertically and put

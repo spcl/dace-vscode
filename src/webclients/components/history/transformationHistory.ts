@@ -1,27 +1,31 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-class TransformationHistoryItem extends TreeViewItem {
+class TransformationHistoryItem extends CustomTreeViewItem {
 
-    constructor(label, tooltip, index, list, disabled) {
+    public constructor(
+        label: string,
+        tooltip: string | undefined,
+        private index: number | undefined,
+        list: TransformationHistoryList,
+        private disabled: boolean
+    ) {
         super(label, tooltip, '', false, false);
-        this.index = index;
         this.list = list;
-        this.disabled = disabled;
     }
 
     // No nesting allowed.
-    add_item() {}
+    public addItem(item: CustomTreeViewItem): void {}
 
-    generate_html() {
-        const item = super.generate_html();
+    public generateHtml(): JQuery<HTMLElement> {
+        const item = super.generateHtml();
 
         if (!this.disabled)
-            item.click(() => {
+            item.on('click', () => {
                 if (vscode) {
                     if (this.list !== undefined) {
-                        this.list.selected_item = this;
-                        this.list.generate_html();
+                        this.list.selectedItem = this;
+                        this.list.generateHtml();
                     }
                     vscode.postMessage({
                         type: 'dace.preview_history_point',
@@ -32,14 +36,14 @@ class TransformationHistoryItem extends TreeViewItem {
         else
             item.addClass('disabled');
 
-        const label_container = item.find('.tree-view-item-label-container');
+        const labelContainer = item.find('.tree-view-item-label-container');
 
         if (this.index !== undefined && !this.disabled) {
             $('<div>', {
                 'class': 'transformation-history-apply-button',
                 'html': '<i class="material-icons">restore</i>&nbsp;Revert To',
                 'title': '',
-                'click': (e) => {
+                'click': (e: MouseEvent) => {
                     if (vscode)
                         vscode.postMessage({
                             type: 'dace.apply_history_point',
@@ -47,17 +51,18 @@ class TransformationHistoryItem extends TreeViewItem {
                         });
                     e.stopPropagation();
                 },
-            }).appendTo(label_container);
+            }).appendTo(labelContainer);
         } else if (this.index === undefined) {
             $('<div>', {
                 'class': 'transformation-history-current-badge',
                 'text': 'Current SDFG',
                 'title': '',
-            }).appendTo(label_container);
+            }).appendTo(labelContainer);
         }
 
-        if (this.list !== undefined && this.list.selected_item !== undefined &&
-            this.list.selected_item === this)
+        if (this.list !== undefined &&
+            this.list.selectedItem !== undefined &&
+            this.list.selectedItem === this)
             item.addClass('selected');
 
         return item;
@@ -65,24 +70,30 @@ class TransformationHistoryItem extends TreeViewItem {
 
 }
 
-class TransformationHistoryList extends TreeView {
+class TransformationHistoryList extends CustomTreeView {
 
-    constructor(root_element) {
-        super(root_element);
-        this.clear_text = 'No previously applied transformations';
-        this.selected_item = undefined;
+    private clearText: string = 'No previously applied transformations';
+
+    public constructor(rootElement: JQuery) {
+        super(rootElement);
     }
 
-    clear(clear_text = 'No previously applied transformations', notify = true) {
-        this.clear_text = clear_text;
+    public clear(
+        clearText: string = 'No previously applied transformations',
+        notify: boolean = true
+    ): void {
+        this.clearText = clearText;
         super.clear();
         if (notify)
-            this.notify_data_changed();
+            this.notifyDataChanged();
     }
 
-    parse_history(history, active_index = undefined) {
+    public parseHistory(
+        history: any,
+        activeIndex: number | undefined = undefined
+    ): void {
         super.clear();
-        let encountered_dummy = false;
+        let encounteredDummy = false;
         for (let i = 0; i < history.length; i++) {
             const item = history[i];
             const current = (i === history.length - 1);
@@ -90,69 +101,71 @@ class TransformationHistoryList extends TreeView {
                 continue;
 
             if (current) {
-                const item_current_state = new TransformationHistoryItem(
+                const itemCurrentState = new TransformationHistoryItem(
                     item['transformation'],
                     'Current SDFG',
                     undefined,
-                    this
+                    this,
+                    false
                 );
-                if (active_index === undefined)
-                    this.selected_item = item_current_state;
-                this.items.unshift(item_current_state);
+                if (activeIndex === undefined)
+                    this.selectedItem = itemCurrentState;
+                this.items.unshift(itemCurrentState);
             } else {
                 let disabled = false;
                 let tooltip = 'Preview';
 
                 if (item['dace_unregistered']) {
                     disabled = true;
-                    encountered_dummy = true;
+                    encounteredDummy = true;
                     tooltip = 'This transformation is not available in your ' +
                         'instance of DaCe.';
-                } else if (encountered_dummy) {
+                } else if (encounteredDummy) {
                     disabled = true;
                     tooltip = 'A transformation before this one is not ' +
                         'available in your instance of DaCe.';
                 }
 
-                const history_item = new TransformationHistoryItem(
+                const historyItem = new TransformationHistoryItem(
                     item['transformation'],
                     tooltip,
                     i,
                     this,
                     disabled
                 );
-                if (active_index === i)
-                    this.selected_item = history_item;
-                this.items.unshift(history_item);
+                if (activeIndex === i)
+                    this.selectedItem = historyItem;
+                this.items.unshift(historyItem);
             }
         }
 
         if (history.length) {
-            const item_orig_sdfg = new TransformationHistoryItem(
+            const itemOrigSDFG = new TransformationHistoryItem(
                 'Original SDFG',
                 'Preview',
                 -1,
-                this
+                this,
+                false
             );
-            if (active_index === -1)
-                this.selected_item = item_orig_sdfg;
-            this.items.push(item_orig_sdfg);
+            if (activeIndex === -1)
+                this.selectedItem = itemOrigSDFG;
+            this.items.push(itemOrigSDFG);
         }
 
-        this.notify_data_changed();
+        this.notifyDataChanged();
     }
 
-    generate_html() {
-        super.generate_html();
+    public generateHtml(): void {
+        super.generateHtml();
         if (this.items.length === 0)
-            this.root_element.append($('<div>', {
+            this.rootElement.append($('<div>', {
                 'class': 'empty-transformation-history-text',
-                'text': this.clear_text,
+                'text': this.clearText,
             }));
 
-        if (this.selected_item !== undefined
-            && this.selected_item.element !== undefined)
-            this.selected_item.element.addClass('selected');
+        if (this.selectedItem !== undefined &&
+            this.selectedItem.element !== undefined)
+            this.selectedItem.element.addClass('selected');
     }
 
 }
