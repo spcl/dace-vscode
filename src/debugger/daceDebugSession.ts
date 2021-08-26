@@ -164,8 +164,7 @@ export class DaceDebugSession extends LoggingDebugSession {
         if (daceDev !== undefined) {
             entirePyConfig.env.
                 DACE_compiler_codegen_lineinfo = daceDev ? "true" : "false";
-            entirePyConfig.env.
-                justMyCode = daceDev ? "true" : "false";
+            entirePyConfig.justMyCode = daceDev ? "false" : "true";
         }
 
         if (args.sdfgEdit) {
