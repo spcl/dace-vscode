@@ -5,7 +5,7 @@ import * as Net from 'net';
 import * as vscode from 'vscode';
 import { BreakpointHandler } from './breakpointHandler';
 import { SdfgViewerProvider, Message } from '../components/sdfgViewer';
-import { sdfgEditMode, modeItems, ModeItem } from './daceDebugSession';
+import { sdfgEditMode, modeItems, ModeItem } from './daceDebuggingSession';
 import { DaCeVSCode } from '../extension';
 import { Report, ReportHandler } from './reportHandler';
 
