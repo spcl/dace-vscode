@@ -2,7 +2,7 @@
 // All rights reserved.
 
 import * as vscode from 'vscode';
-import { DaceDebugSession } from './daceDebugSession';
+import { DaceDebuggingSession } from './daceDebuggingSession';
 import { DaCeInterface } from '../daceInterface';
 import { BreakpointHandler } from './breakpointHandler';
 import { ReportHandler } from './reportHandler';
@@ -169,7 +169,7 @@ class DaceInlineFactory
         _executable: vscode.DebugAdapterExecutable | undefined
     ): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
         return new vscode.DebugAdapterInlineImplementation(
-            new DaceDebugSession()
+            new DaceDebuggingSession()
         );
     }
 
