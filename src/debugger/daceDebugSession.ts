@@ -21,13 +21,14 @@ export interface DaceLaunchRequestArguments
 }
 
 export enum sdfgEditMode {
-    RUN = 'run',
+    CONTINUE = 'continue',
     LOAD = 'load',
     SAVE = 'save',
     TRANSFORM = 'transform',
     PROFILE = 'profile',
     REPORT = 'report',
     VERIFICATION = 'verification',
+    RUN = 'run',
 }
 
 export interface ModeItem extends vscode.QuickPickItem {
@@ -36,9 +37,14 @@ export interface ModeItem extends vscode.QuickPickItem {
 
 export const modeItems: ModeItem[] = [
     {
-        label: "Run",
-        description: "Runs and terminates",
-        mode: sdfgEditMode.RUN,
+        label: "Continue",
+        description: "Runs the SDFG and continues the program",
+        mode: sdfgEditMode.CONTINUE,
+    },
+    {
+        label: "Run Once",
+        description: "Displays In- & Outputs of one SDFG Run",
+        mode: sdfgEditMode.RUN
     },
     {
         label: "Load",

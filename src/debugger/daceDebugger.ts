@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import { DaceDebugSession } from './daceDebugSession';
 import { DaCeInterface } from '../daceInterface';
 import { BreakpointHandler } from './breakpointHandler';
+import { ReportHandler } from './reportHandler';
 import { DaceListener } from './daceListener';
 import * as os from 'os';
 
@@ -22,12 +23,10 @@ export function activateDaceDebug(context: vscode.ExtensionContext) {
         )
     );
 
-    const BPHandler = BreakpointHandler.activate(context);
-    const daceListener = DaceListener.activate();
-
     context.subscriptions.push(
-        BPHandler,
-        daceListener
+        BreakpointHandler.activate(context),
+        DaceListener.activate(),
+        ReportHandler.activate()
     );
 
 }

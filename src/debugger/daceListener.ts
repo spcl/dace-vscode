@@ -7,6 +7,7 @@ import { BreakpointHandler } from './breakpointHandler';
 import { SdfgViewerProvider, Message } from '../components/sdfgViewer';
 import { sdfgEditMode, modeItems, ModeItem } from './daceDebugSession';
 import { DaCeVSCode } from '../extension';
+import { Report, ReportHandler } from './reportHandler';
 
 export var PORT: number = 0;
 
@@ -71,6 +72,7 @@ export class DaceListener extends vscode.Disposable {
         if (!data) {
             return;
         }
+        console.log(data);
         switch (data.type) {
             case "registerFunction":
                 BreakpointHandler.getInstance()?.registerFunction(data);
@@ -135,35 +137,29 @@ export class DaceListener extends vscode.Disposable {
                 );
                 break;
             case "sdfgEditMode":
-                let selected_mode = sdfgEditMode.RUN;
                 const mode:
                     | ModeItem
                     | undefined = await vscode.window.showQuickPick(modeItems, {
                         placeHolder: "Select the next run mode",
                     });
-                if (mode)
-                    selected_mode = mode.mode;
-                if (selected_mode !== sdfgEditMode.VERIFICATION) {
-                    this.send(socket, { 'mode': selected_mode });
-                    break;
+
+                let selected_mode = mode ? mode.mode : sdfgEditMode.CONTINUE;
+                let response: any = { 'mode': selected_mode };
+
+                if (selected_mode === sdfgEditMode.VERIFICATION) {
+                    const Uri = await ReportHandler.getInstance()?.pickVerificationReport();
+                    if (Uri && Uri.length > 0)
+                        response.foldername = Uri[0].fsPath;
+
                 }
-                let reportOptions: vscode.OpenDialogOptions = {
-                    canSelectFiles: false,
-                    canSelectFolders: true,
-                    title: 'select Report',
-                    openLabel: 'select Report',
-                    canSelectMany: false
-                };
-
-                const folders = vscode.workspace.workspaceFolders;
-                if (folders && folders.length > 0)
-                    reportOptions.defaultUri = folders[0].uri;
-
-                const Uri = await vscode.window.showOpenDialog(reportOptions);
-                this.send(
-                    socket,
-                    (Uri && Uri.length > 0) ?
-                        { 'mode': selected_mode, 'foldername': Uri[0].fsPath } : {}
+                this.send(socket, response);
+                break;
+            case 'accuracy_report':
+                const sdfgName = data['sdfgName'];
+                const path = data['reportFolder'];
+                if (!sdfgName || !path) return;
+                ReportHandler.getInstance()?.saveVerificationReport(
+                    new Report(sdfgName, path)
                 );
                 break;
             case 'correctness_report':

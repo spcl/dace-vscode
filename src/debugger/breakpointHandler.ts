@@ -463,6 +463,8 @@ export class BreakpointHandler extends vscode.Disposable {
         }
     }
 
+    // --- BREAKPOINTS --- //
+
     public setAllBreakpoints() {
         // Map and set all Breakpoints set in the dace (python) code
         vscode.debug.breakpoints.filter(pyFilter).forEach(bp => {
@@ -472,36 +474,7 @@ export class BreakpointHandler extends vscode.Disposable {
         // Map and set all Breakpoints set directly on the sdfg
         Object.entries(this.savedNodes).forEach(([sdfgName, nodes]) => {
             nodes.forEach(async node => {
-                if (!node.cache)
-                    return;
-
-                const cppMapPath = path.join(node.cache, "map", "map_cpp.json");
-                const range = await getCppRange(
-                    node,
-                    vscode.Uri.file(cppMapPath)
-                );
-                if (!range || !range.from)
-                    return;
-
-                let newBp = this.createBreakpoint(
-                    range.from,
-                    (node.cache) ? node.cache : '',
-                    sdfgName,
-                    node.target
-                );
-
-                let newIdentifier = this.bpIdentifier(newBp, sdfgName);
-                let alreadyExists = this.setBreakpoints.find((bp) => {
-                    return bp.identifier === newIdentifier;
-                });
-
-                if (!alreadyExists) {
-                    vscode.debug.addBreakpoints([newBp]);
-                    this.setBreakpoints.push({
-                        bp: newBp,
-                        identifier: newIdentifier
-                    });
-                }
+                this.createBpFromNode(node, sdfgName);
             });
         });
     }
@@ -603,68 +576,6 @@ export class BreakpointHandler extends vscode.Disposable {
         return undefined;
     }
 
-    public async handleNodeAdded(node: Node, sdfgName: string) {
-        // Search for the file with the corresponding function information
-        let unbound = false;
-        for (const functions of Object.values(this.files)) {
-            let funcDetails = functions.find(func => {
-                return func.name === sdfgName;
-            });
-
-            if (funcDetails) {
-                node.cache = funcDetails.cache;
-                node.sdfg_name = funcDetails.name;
-                node.target = funcDetails.target_name;
-
-                const cppMapPath = path.join(node.cache, "map", "map_cpp.json");
-                let range = await getCppRange(
-                    node,
-                    vscode.Uri.file(cppMapPath)
-                );
-
-                if (!range || !range.from) {
-                    unbound = true;
-                    continue;
-                }
-
-                if (!this.savedNodes[sdfgName])
-                    this.savedNodes[sdfgName] = [];
-                this.savedNodes[sdfgName].push(node);
-                SdfgBreakpointProvider.getInstance()?.handleMessage({
-                    'type': 'add_sdfg_breakpoint',
-                    'node': node.nodeInfo()
-                });
-                return;
-            }
-        }
-        if (unbound) {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                'type': 'unbound_breakpoint',
-                'node': node.nodeInfo()
-            });
-            SdfgBreakpointProvider.getInstance()?.handleMessage({
-                'type': 'unbound_sdfg_breakpoint',
-                'node': node.nodeInfo()
-            });
-        }
-        this.saveState();
-    }
-
-    public handleNodeRemoved(node: Node, sdfgName: string) {
-        if (this.savedNodes[sdfgName]) {
-            this.savedNodes[sdfgName].forEach((n, i, _) => {
-                if (node.isEqual(n)) {
-                    this.savedNodes[sdfgName].splice(i, 1);
-                    return;
-                }
-            });
-            this.saveState();
-            SdfgBreakpointProvider.getInstance()?.handleMessage({
-                'type': 'refresh_sdfg_breakpoints'
-            });
-        }
-    }
-
     private async getNode(
         line: number,
         path: vscode.Uri,
@@ -748,6 +659,109 @@ export class BreakpointHandler extends vscode.Disposable {
             range.end.character + '/';
     }
 
+    // --- SDFG BREAKPOINTS --- //
+
+    public async handleNodeAdded(node: Node, sdfgName: string) {
+        // Search for the file with the corresponding function information
+        let unbound = false;
+        for (const functions of Object.values(this.files)) {
+            let funcDetails = functions.find(func => {
+                return func.name === sdfgName;
+            });
+
+            if (funcDetails) {
+                node.cache = funcDetails.cache;
+                node.sdfg_name = funcDetails.name;
+                node.target = funcDetails.target_name;
+
+                const cppMapPath = path.join(node.cache, "map", "map_cpp.json");
+                let range = await getCppRange(
+                    node,
+                    vscode.Uri.file(cppMapPath)
+                );
+
+                if (!range || !range.from) {
+                    unbound = true;
+                    continue;
+                }
+
+                // If an active debug session is running, map the breakpoint
+                const session = vscode.debug.activeDebugSession;
+                console.log(session);
+                if (session && session.configuration.env?.DACE_port)
+                    this.createBpFromNode(node, sdfgName);
+
+                if (!this.savedNodes[sdfgName])
+                    this.savedNodes[sdfgName] = [];
+                this.savedNodes[sdfgName].push(node);
+                SdfgBreakpointProvider.getInstance()?.handleMessage({
+                    'type': 'add_sdfg_breakpoint',
+                    'node': node.nodeInfo()
+                });
+                return;
+            }
+        }
+        if (unbound) {
+            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                'type': 'unbound_breakpoint',
+                'node': node.nodeInfo()
+            });
+            SdfgBreakpointProvider.getInstance()?.handleMessage({
+                'type': 'unbound_sdfg_breakpoint',
+                'node': node.nodeInfo()
+            });
+        }
+        this.saveState();
+    }
+
+    public handleNodeRemoved(node: Node, sdfgName: string) {
+        if (this.savedNodes[sdfgName]) {
+            this.savedNodes[sdfgName].forEach((n, i, _) => {
+                if (node.isEqual(n)) {
+                    this.savedNodes[sdfgName].splice(i, 1);
+                    return;
+                }
+            });
+            this.saveState();
+            SdfgBreakpointProvider.getInstance()?.handleMessage({
+                'type': 'refresh_sdfg_breakpoints'
+            });
+        }
+    }
+
+    public async createBpFromNode(node: Node, sdfgName: string) {
+        if (!node.cache)
+            return;
+
+        const cppMapPath = path.join(node.cache, "map", "map_cpp.json");
+        const range = await getCppRange(
+            node,
+            vscode.Uri.file(cppMapPath)
+        );
+        if (!range || !range.from)
+            return;
+
+        let newBp = this.createBreakpoint(
+            range.from,
+            (node.cache) ? node.cache : '',
+            sdfgName,
+            node.target
+        );
+
+        let newIdentifier = this.bpIdentifier(newBp, sdfgName);
+        let alreadyExists = this.setBreakpoints.find((bp) => {
+            return bp.identifier === newIdentifier;
+        });
+
+        if (!alreadyExists) {
+            vscode.debug.addBreakpoints([newBp]);
+            this.setBreakpoints.push({
+                bp: newBp,
+                identifier: newIdentifier
+            });
+        }
+    }
+
     public getSavedNodes(sdfgName: string) {
         // Sends the corresponding saved Nodes to the SDFG viewer
         const nodes = this.savedNodes[sdfgName];
@@ -776,6 +790,8 @@ export class BreakpointHandler extends vscode.Disposable {
                 'type': 'has_nodes'
             });
     }
+
+    // --- VSCODE EXTENSION --- //
 
     public showMenu(show: boolean, menus: Menus[] | undefined = undefined) {
         // If menus is undefined, do same for all
