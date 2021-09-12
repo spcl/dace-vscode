@@ -38,6 +38,7 @@ export class ReportHandler extends vscode.Disposable {
 
     public async pickVerificationReport(): Promise<vscode.Uri[] | undefined> {
 
+        this.reports = await this.removeDeletedOrRepeatedReports(this.reports);
 
         interface ReportItem extends vscode.QuickPickItem {
             report: Report | undefined;
@@ -83,6 +84,25 @@ export class ReportHandler extends vscode.Disposable {
         this.saveReportsWorkspace();
     }
 
+    private async removeDeletedOrRepeatedReports(reports: Report[]) {
+        // Remove all none existing reports
+        for (let i = reports.length - 1; i >= 0; i--) {
+            try {
+                await vscode.workspace.fs.stat(reports[i].uri);
+            } catch (error) {
+                reports.splice(i, 1);
+                continue;
+            }
+            for (let j = reports.length - 1; j > i; j--) {
+                if (reports[i].uri.fsPath === reports[j].uri.fsPath) {
+                    reports.splice(i, 1);
+                    continue;
+                }
+            }
+        }
+        return reports;
+    }
+
     private saveReportsWorkspace() {
         DaCeVSCode.getExtensionContext()?.workspaceState
             .update('sdfgReports', this.reports);
@@ -93,14 +113,7 @@ export class ReportHandler extends vscode.Disposable {
         if (!context) return [];
         let reports = context.workspaceState.get('sdfgReports', []) as Report[];
 
-        // Remove all none existing reports
-        for (let i = reports.length - 1; i >= 0; i--) {
-            try {
-                await vscode.workspace.fs.stat(reports[i].uri);
-            } catch (error) {
-                reports.splice(i, 1);
-            }
-        }
+        reports = await this.removeDeletedOrRepeatedReports(reports);
         return reports;
     }
 }
