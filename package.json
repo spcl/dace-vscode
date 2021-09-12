@@ -151,7 +151,8 @@
                             "type": "dace-debug",
                             "request": "launch",
                             "pythonConfig": "default",
-                            "cppConfig": "default"
+                            "cppConfig": "default",
+                            "sdfgEdit": false
                         }
                     }
                 ]
