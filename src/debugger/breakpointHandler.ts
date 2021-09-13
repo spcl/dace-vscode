@@ -452,7 +452,6 @@ export class BreakpointHandler extends vscode.Disposable {
                 BreakpointHandler.getInstance()?.hasSavedNodes(message.sdfg_name);
                 break;
             case 'changeDiffValue':
-                console.log(message);
                 DaCeVSCode.getExtensionContext()?.workspaceState
                     .update('diffText', message.diffText);
                 DaCeVSCode.getExtensionContext()?.workspaceState
@@ -687,7 +686,6 @@ export class BreakpointHandler extends vscode.Disposable {
 
                 // If an active debug session is running, map the breakpoint
                 const session = vscode.debug.activeDebugSession;
-                console.log(session);
                 if (session && session.configuration.env?.DACE_port)
                     this.createBpFromNode(node, sdfgName);
 

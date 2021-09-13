@@ -202,7 +202,6 @@ export class DaceListener extends vscode.Disposable {
                 const socket = this.sockets.get(message.socketNumber);
                 if (socket)
                     this.send(socket, {});
-                //vscode.commands.executeCommand('workbench.action.closeActiveEditor');
                 break;
             default:
                 break;
