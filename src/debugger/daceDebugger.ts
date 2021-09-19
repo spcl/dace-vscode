@@ -132,6 +132,7 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
             request: "launch",
             pythonConfig: "default",
             cppConfig: "default",
+            sdfgEdit: false
         };
 
         switch (selection.type) {
