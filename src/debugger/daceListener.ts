@@ -72,7 +72,6 @@ export class DaceListener extends vscode.Disposable {
         if (!data) {
             return;
         }
-        console.log(data);
         switch (data.type) {
             case "registerFunction":
                 BreakpointHandler.getInstance()?.registerFunction(data);
