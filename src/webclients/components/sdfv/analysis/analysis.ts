@@ -3,6 +3,8 @@
 
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 
+declare const vscode: any;
+
 /**
  * Register all current SDFG's symbols in the analysis pane.
  */
@@ -48,15 +50,15 @@ export function refreshAnalysisPane(): void {
 
         const activeOverlays = [];
         for (const activeOverlay of overlayManager.get_overlays())
-            activeOverlays.push((typeof activeOverlay).toString());
+            activeOverlays.push(activeOverlay.constructor.name);
 
         vscode.postMessage({
             type: 'analysis.refresh_analysis_pane',
             symbols: map,
             badnessScaleMethod: overlayManager.get_badness_scale_method(),
             availableOverlays: {
-                'Memory Volume': 'daceMemoryVolumeOverlay',
-                'Static FLOP': 'daceStaticFlopsOverlay',
+                'Memory Volume': 'MemoryVolumeOverlay',
+                'Static FLOP': 'StaticFlopsOverlay',
             },
             activeOverlays: activeOverlays,
         });

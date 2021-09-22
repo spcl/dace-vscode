@@ -50,13 +50,7 @@ implements vscode.WebviewViewProvider {
             enableScripts: true,
             localResourceRoots: [
                 vscode.Uri.file(path.join(
-                    this.context.extensionPath, 'media'
-                )),
-                vscode.Uri.file(path.join(
-                    this.context.extensionPath, 'node_modules'
-                )),
-                vscode.Uri.file(path.join(
-                    this.context.extensionPath, 'out', 'webclients'
+                    this.context.extensionPath, 'dist', 'web'
                 )),
             ],
         };
@@ -68,25 +62,11 @@ implements vscode.WebviewViewProvider {
             'analysis',
             'index.html'
         ));
-        const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
-            this.context.extensionPath, 'media'
-        ));
-        const fpNodeModulesFolder: vscode.Uri = vscode.Uri.file(
-            path.join(this.context.extensionPath, 'node_modules')
-        );
         const fpScriptFolder: vscode.Uri = vscode.Uri.file(
-            path.join(this.context.extensionPath, 'out', 'webclients')
+            path.join(this.context.extensionPath, 'dist', 'web')
         );
         vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
             let baseHtml = data.toString();
-            baseHtml = baseHtml.replace(
-                this.csrSrcIdentifier,
-                webviewView.webview.asWebviewUri(fpMediaFolder).toString()
-            );
-            baseHtml = baseHtml.replace(
-                this.nodeModulesIdentifier,
-                webviewView.webview.asWebviewUri(fpNodeModulesFolder).toString()
-            );
             baseHtml = baseHtml.replace(
                 this.scriptSrcIdentifier,
                 webviewView.webview.asWebviewUri(fpScriptFolder).toString()

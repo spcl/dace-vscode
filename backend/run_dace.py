@@ -157,7 +157,7 @@ def get_property_metdata():
             }
 
     return {
-        'meta_dict': meta_dict,
+        'metaDict': meta_dict,
     }
 
 

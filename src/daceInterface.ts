@@ -36,7 +36,7 @@ implements MessageReceiverInterface {
                     this.runSdfgInTerminal(message.name, undefined, origin);
                 break;
             case 'expand_library_node':
-                this.expandLibraryNode(message.nodeid);
+                this.expandLibraryNode(message.nodeId);
                 break;
             case 'apply_transformation':
                 if (message.transformation !== undefined)
@@ -65,13 +65,14 @@ implements MessageReceiverInterface {
                 break;
             case 'insert_node':
                 this.insertSDFGElement(
-                    message.sdfg, message.add_type, message.parent,
-                    message.edge_a, origin
+                    message.sdfg, message.addType, message.parent,
+                    message.edgeA, origin
                 );
                 break;
             case 'remove_nodes':
                 if (message.sdfg && message.uuids)
                     this.removeGraphElements(message.sdfg, message.uuids);
+                break;
             case 'query_sdfg_metadata':
                 this.querySdfgMetadata();
                 break;
@@ -487,14 +488,14 @@ implements MessageReceiverInterface {
         DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'preview_sdfg',
             text: JSON.stringify(sdfg),
-            hist_state: history_mode,
+            histState: history_mode,
         });
     }
 
     public exitPreview(refreshTransformations: boolean = false) {
         DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
             type: 'exit_preview',
-            refresh_transformations: refreshTransformations,
+            refreshTransformations: refreshTransformations,
         });
     }
 
@@ -689,7 +690,7 @@ implements MessageReceiverInterface {
             function callback(data: any) {
                 DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                     type: 'flopsCallback',
-                    map: data.arith_ops_map,
+                    map: data.arithOpsMap,
                 });
                 DaCeInterface.getInstance().hideSpinner();
             }
@@ -720,7 +721,7 @@ implements MessageReceiverInterface {
         async function callback(data: any) {
             SdfgViewerProvider.getInstance()?.handleMessage({
                 type: 'set_sdfg_metadata',
-                meta_dict: data.meta_dict,
+                metaDict: data.metaDict,
             });
         };
 
@@ -773,9 +774,9 @@ implements MessageReceiverInterface {
     ): void {
         function callback(data: any) {
             origin.postMessage({
-                'type': 'added_node',
-                'sdfg': data.sdfg,
-                'uuid': data.uuid,
+                type: 'added_node',
+                sdfg: data.sdfg,
+                uuid: data.uuid,
             });
         }
 

@@ -10,13 +10,17 @@ import {
     get_uuid_graph_element,
     find_graph_element_by_uuid,
     SDFGElement,
+    SDFV,
 } from '@spcl/sdfv/out';
 import {
     createSingleUseModal,
     unGraphiphySdfg,
+    vscodeHandleEvent,
     VSCodeSDFV,
-    vscodeWriteGraph
+    vscodeWriteGraph,
 } from '../vscode_sdfv';
+
+declare const vscode: any;
 
 export class VSCodeRenderer extends SDFGRenderer {
 
@@ -35,16 +39,19 @@ export class VSCodeRenderer extends SDFGRenderer {
         backgroundColor: string | null | undefined = null,
         modeButtons: ModeButtons | null = null
     ): VSCodeRenderer {
-        VSCodeRenderer.destroy();
+        if (this.INSTANCE)
+            this.INSTANCE.destroy();
         this.INSTANCE = new VSCodeRenderer(
             sdfg, container, onMouseEvent, userTransform, debugDraw,
             backgroundColor, modeButtons
         );
+        SDFV.get_instance().set_renderer(this.INSTANCE);
+        this.INSTANCE.register_ext_event_handler(vscodeHandleEvent);
         return this.INSTANCE;
     }
 
-    public static destroy(): void {
-        this.INSTANCE = null;
+    public destroy(): void {
+        super.destroy();
     }
 
     private constructor(
@@ -73,7 +80,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                 'elem_edge',
             ];
 
-            for (const id in ids) {
+            for (const id of ids) {
                 const elem = document.getElementById(id);
                 if (elem)
                     addButtons.push(elem);
@@ -106,9 +113,9 @@ export class VSCodeRenderer extends SDFGRenderer {
         vscode.postMessage({
             type: 'dace.insert_node',
             sdfg: JSON.stringify(g),
-            add_type: addType,
+            addType: addType,
             parent: parent,
-            edge_a: edgeA,
+            edgeA: edgeA,
         });
     }
 
@@ -267,6 +274,10 @@ export class VSCodeRenderer extends SDFGRenderer {
 
     public clearSelectedItems(): void {
         this.selected_elements = [];
+    }
+
+    public setDaemonConnected(connected: boolean): void {
+        this.dace_daemon_connected = connected;
     }
 
 }

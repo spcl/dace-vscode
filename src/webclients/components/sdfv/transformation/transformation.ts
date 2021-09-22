@@ -11,7 +11,9 @@ declare const vscode: any;
 /**
  * Get the set of element uuids affected by a given transformation.
  */
-export function transformationGetAffectedUUIDs(transformation: any): string[] {
+export function transformationGetAffectedUUIDs(
+    transformation: JsonTransformation
+): string[] {
     const uuids = [];
     if (transformation._subgraph !== undefined)
         for (const id of Object.values(transformation._subgraph)) {
@@ -186,17 +188,9 @@ export async function sortTransformations(
             uncatXforms,
         ]);
 
-        // Call the callback function if one was provided. If additional
-        // arguments are provided, forward them to the callback function.
-        if (callback !== undefined) {
-            if (arguments.length > 1) {
-                let args = Array.from(arguments);
-                args.shift();
-                callback(...args);
-            } else {
-                callback();
-            }
-        }
+        // Call the callback function if one was provided.
+        if (callback !== undefined)
+            callback(...args);
     }, 0);
 }
 
@@ -209,13 +203,14 @@ export function refreshTransformationList(hideLoading: boolean = false): void {
         if (VSCodeSDFV.getInstance().getViewingHistoryState())
             vscode.postMessage({
                 type: 'transformation_list.clear_transformations',
-                reason: 'Can\'t show transformations while viewing a history state',
+                reason:
+                    'Can\'t show transformations while viewing a history state',
             });
         else
             vscode.postMessage({
                 type: 'transformation_list.set_transformations',
                 transformations: transformations,
-                hide_loading: hideLoading,
+                hideLoading: hideLoading,
             });
 }
 

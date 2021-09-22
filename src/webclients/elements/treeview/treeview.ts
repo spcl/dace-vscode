@@ -1,7 +1,7 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-class CustomTreeViewItem {
+export class CustomTreeViewItem {
 
     public parentItem: CustomTreeViewItem | undefined = undefined;
     public children: CustomTreeViewItem[] | undefined = undefined;
@@ -125,7 +125,7 @@ class CustomTreeViewItem {
                     iconElement.attr('style') + ';' + this.iconStyle
                 );
 
-            label.append("&nbsp;");
+            label.append('&nbsp;');
         }
 
         label.append(labelText);
@@ -141,7 +141,7 @@ class CustomTreeViewItem {
 
 }
 
-class CustomTreeView {
+export class CustomTreeView {
 
     protected items: CustomTreeViewItem[] = [];
     public selectedItem: CustomTreeViewItem | undefined = undefined;

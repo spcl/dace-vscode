@@ -2,7 +2,6 @@
 // All rights reserved.
 
 import {
-    GenericSdfgOverlay,
     instrumentation_report_read_complete,
     RuntimeMicroSecondsOverlay,
     StaticFlopsOverlay,
@@ -36,7 +35,7 @@ export class MessageHandler {
         return this.INSTANCE;
     }
 
-    public handle_message(message: any): void {
+    public handleMessage(message: any): void {
         let el = undefined;
         const renderer = VSCodeRenderer.getInstance();
         const sdfv = VSCodeSDFV.getInstance();
@@ -49,7 +48,10 @@ export class MessageHandler {
                 renderer?.get_overlay_manager().deregister_overlay(
                     StaticFlopsOverlay
                 );
-                instrumentation_report_read_complete(message.result);
+                if (message.result)
+                    instrumentation_report_read_complete(
+                        message.result, renderer
+                    );
             // Fall through to set the criterium.
             case 'instrumentation_report_change_criterium':
                 if (message.criterium) {
@@ -68,11 +70,10 @@ export class MessageHandler {
                 );
                 break;
             case 'symbol_value_changed':
-                renderer?.get_overlay_manager().get_symbol_resolver()
-                    .symbol_value_changed(
-                        message.symbol,
-                        message.value
-                    );
+                renderer?.get_overlay_manager().on_symbol_value_changed(
+                    message.symbol,
+                    message.value
+                );
                 break;
             case 'update_badness_scale_method':
                 renderer?.get_overlay_manager().update_badness_scale_method(
@@ -174,7 +175,7 @@ export class MessageHandler {
                 el = document.getElementById('exit-preview-button');
                 if (el)
                     el.className = 'button hidden';
-                if (message.prevent_refreshes)
+                if (message.preventRefreshes)
                     sdfv.setRendererContent(message.text, false, true);
                 else
                     sdfv.setRendererContent(message.text);
@@ -194,7 +195,7 @@ export class MessageHandler {
                 if (el)
                     el.className = 'button';
 
-                if (message.hist_state !== undefined && message.hist_state) {
+                if (message.histState !== undefined && message.histState) {
                     sdfv.clearInfoBox();
                     sdfv.setViewingHistoryState(true);
                     refreshTransformationList();
@@ -206,7 +207,7 @@ export class MessageHandler {
                 el = document.getElementById('exit-preview-button');
                 if (el)
                     el.className = 'button hidden';
-                if (message.refresh_transformations)
+                if (message.refreshTransformations)
                     refreshTransformationList();
                 break;
             case 'highlight_elements':
@@ -229,12 +230,12 @@ export class MessageHandler {
             case 'added_node':
                 if (message.uuid !== 'error') {
                     renderer?.set_sdfg(message.sdfg);
-                    renderer?.update_new_element(message.uuid);
+                    renderer?.updateNewElement(message.uuid);
                 }
                 break;
             case 'set_sdfg_metadata':
-                if (message.meta_dict)
-                    sdfv.setMetaDict(message.meta_dict);
+                if (message.metaDict)
+                    sdfv.setMetaDict(message.metaDict);
                 break;
             case 'unbound_breakpoint':
                 {

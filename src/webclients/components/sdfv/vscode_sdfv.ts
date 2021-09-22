@@ -1,6 +1,23 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+import * as $ from 'jquery';
+(window as any).jQuery = $;
+
+// JQuery Plugin to allow for editable selects.
+import 'jquery-editable-select';
+import 'jquery-editable-select/dist/jquery-editable-select.min.css';
+
+import '@popperjs/core';
+import 'bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+import 'material-icons/iconfont/material-icons.css';
+
+import '@spcl/sdfv/sdfv.css';
+
+import './vscode_sdfv.css';
+
 import {
     AccessNode,
     Connector,
@@ -30,10 +47,15 @@ import {
     StaticFlopsOverlay,
     traverse_sdfg_scopes,
 } from '@spcl/sdfv/out';
+import { editor as monaco_editor } from 'monaco-editor';
 import { Range } from '../../../types';
 import { JsonTransformation } from '../transformations/transformations';
 import { refreshAnalysisPane } from './analysis/analysis';
-import { BreakpointIndicator, refreshBreakpoints } from './breakpoints/breakpoints';
+import {
+    BreakpointIndicator,
+    refreshBreakpoints,
+} from './breakpoints/breakpoints';
+import { MessageHandler } from './messaging/message_handler';
 import {
     CodeProperty,
     ComboboxProperty,
@@ -53,6 +75,8 @@ import {
     sortTransformations,
 } from './transformation/transformation';
 
+declare const vscode: any;
+
 type CategorizedTransformationList = [
     JsonTransformation[],
     JsonTransformation[],
@@ -68,14 +92,30 @@ export class VSCodeSDFV {
 
     private constructor() {
         const sdfv = SDFV.get_instance();
-        sdfv.register_init_menu_handler(this.initInfoBox);
-        sdfv.register_close_menu_handler(this.clearInfoBox);
-        sdfv.register_sidebar_get_contents_handler(this.infoBoxGetContents);
-        sdfv.register_sidebar_show_handler(this.infoBoxShow);
-        sdfv.register_sidebar_set_title_handler(this.infoBoxSetTitle);
-        sdfv.register_outline_handler(this.outline);
-        sdfv.register_fill_info_handler(this.fillInfo);
-        sdfv.register_start_find_in_graph_handler(this.startFindInGraph);
+        sdfv.register_init_menu_handler(() => {
+            VSCodeSDFV.getInstance().initInfoBox();
+        });
+        sdfv.register_close_menu_handler(() => {
+            VSCodeSDFV.getInstance().clearInfoBox();
+        });
+        sdfv.register_sidebar_get_contents_handler(() => {
+            return VSCodeSDFV.getInstance().infoBoxGetContents();
+        });
+        sdfv.register_sidebar_show_handler(() => {
+            VSCodeSDFV.getInstance().infoBoxShow();
+        });
+        sdfv.register_sidebar_set_title_handler((title) => {
+            VSCodeSDFV.getInstance().infoBoxSetTitle(title);
+        });
+        sdfv.register_outline_handler((renderer, sdfg) => {
+            VSCodeSDFV.getInstance().outline(renderer, sdfg);
+        });
+        sdfv.register_fill_info_handler((elem) => {
+            VSCodeSDFV.getInstance().fillInfo(elem);
+        });
+        sdfv.register_start_find_in_graph_handler(() => {
+            VSCodeSDFV.getInstance().startFindInGraph();
+        });
     }
 
     public static getInstance(): VSCodeSDFV {
@@ -85,10 +125,10 @@ export class VSCodeSDFV {
     public static readonly OVERLAYS: {
         [key: string]: typeof GenericSdfgOverlay,
     } = {
-        'MEMORY_VOLUME_OVERLAY': MemoryVolumeOverlay,
-        'STATIC_FLOPS_OVERLAY': StaticFlopsOverlay,
-        'RUNTIME_MICRO_SECONDS_OVERLAY': RuntimeMicroSecondsOverlay,
-        'BREAKPOINT_INDICATOR': BreakpointIndicator,
+        'MemoryVolumeOverlay': MemoryVolumeOverlay,
+        'StaticFlopsOverlay': StaticFlopsOverlay,
+        'RuntimeMicroSecondsOverlay': RuntimeMicroSecondsOverlay,
+        'BreakpointIndicator': BreakpointIndicator,
     };
 
     private monaco: any | null = null;
@@ -137,7 +177,7 @@ export class VSCodeSDFV {
         this.selectedTransformation = null;
         if (vscode)
             vscode.postMessage({
-                'type': 'transformation_list.deselect',
+                type: 'transformation_list.deselect',
             });
     }
 
@@ -145,9 +185,9 @@ export class VSCodeSDFV {
         if (vscode === undefined)
             return;
 
-        const outline_list = [];
+        const outlineList = [];
 
-        const top_level_sdfg = {
+        const topLevelSDFG = {
             'icon': 'res:icon-theme/sdfg.svg',
             'type': 'SDFG',
             'label': `SDFG ${renderer.get_sdfg().attributes.name}`,
@@ -155,87 +195,91 @@ export class VSCodeSDFV {
             'uuid': get_uuid_graph_element(null),
             'children': [],
         };
-        outline_list.push(top_level_sdfg);
+        outlineList.push(topLevelSDFG);
 
-        const stack: any[] = [top_level_sdfg];
+        const stack: any[] = [topLevelSDFG];
 
-        traverse_sdfg_scopes(graph, (node: SDFGNode, _parent: SDFGElement): boolean => {
-            // Skip exit nodes when scopes are known.
-            if (node.type().endsWith('Exit') && node.data.node.scope_entry >= 0) {
-                stack.push(undefined);
+        traverse_sdfg_scopes(
+            graph, (node: SDFGNode, _parent: SDFGElement): boolean => {
+                // Skip exit nodes when scopes are known.
+                if (node.type().endsWith('Exit') &&
+                    node.data.node.scope_entry >= 0) {
+                    stack.push(undefined);
+                    return true;
+                }
+
+                // Create an entry.
+                let isCollapsed = node.attributes().is_collapsed;
+                isCollapsed = (isCollapsed === undefined) ?
+                    false : isCollapsed;
+                let nodeLabel = node.label();
+                if (node.type() === 'NestedSDFG')
+                    nodeLabel = node.data.node.label;
+
+                // If scope has children, remove the name "Entry" from the type.
+                let nodeType = node.type();
+                if (nodeType.endsWith('Entry')) {
+                    const state = node.parent_id !== null ?
+                        node.sdfg.nodes[node.parent_id] : null;
+                    if (state && state.scope_dict[node.id] !== undefined)
+                        nodeType = nodeType.slice(0, -5);
+                }
+
+                let icon;
+                switch (nodeType) {
+                    case 'Tasklet':
+                        icon = 'code';
+                        break;
+                    case 'Map':
+                        icon = 'call_split';
+                        break;
+                    case 'SDFGState':
+                        icon = 'crop_square';
+                        break;
+                    case 'AccessNode':
+                        icon = 'fiber_manual_record';
+                        break;
+                    case 'NestedSDFG':
+                        icon = 'res:icon-theme/sdfg.svg';
+                        break;
+                    default:
+                        icon = '';
+                        break;
+                }
+
+                stack.push({
+                    'icon': icon,
+                    'type': nodeType,
+                    'label': nodeLabel,
+                    'collapsed': isCollapsed,
+                    'uuid': get_uuid_graph_element(node),
+                    'children': [],
+                });
+
+                // If the node's collapsed we don't traverse any further.
+                if (isCollapsed)
+                    return false;
                 return true;
+            }, (_node: SDFGNode, _parent: SDFGElement) => {
+                // After scope ends, pop ourselves as the current element and
+                // add outselves to the parent.
+                const elem = stack.pop();
+                const elem_parent = stack[stack.length - 1];
+                if (elem !== undefined && elem_parent !== undefined)
+                    elem_parent['children'].push(elem);
             }
-
-            // Create an entry.
-            let is_collapsed = node.attributes().is_collapsed;
-            is_collapsed = (is_collapsed === undefined) ? false : is_collapsed;
-            let node_label = node.label();
-            if (node.type() === 'NestedSDFG')
-                node_label = node.data.node.label;
-
-            // If a scope has children, remove the name "Entry" from the type.
-            let node_type = node.type();
-            if (node_type.endsWith('Entry')) {
-                const state = node.parent_id !== null ?
-                    node.sdfg.nodes[node.parent_id] : null;
-                if (state && state.scope_dict[node.id] !== undefined)
-                    node_type = node_type.slice(0, -5);
-            }
-
-            let icon;
-            switch (node_type) {
-                case 'Tasklet':
-                    icon = 'code';
-                    break;
-                case 'Map':
-                    icon = 'call_split';
-                    break;
-                case 'SDFGState':
-                    icon = 'crop_square';
-                    break;
-                case 'AccessNode':
-                    icon = 'fiber_manual_record';
-                    break;
-                case 'NestedSDFG':
-                    icon = 'res:icon-theme/sdfg.svg';
-                    break;
-                default:
-                    icon = '';
-                    break;
-            }
-
-            stack.push({
-                'icon': icon,
-                'type': node_type,
-                'label': node_label,
-                'collapsed': is_collapsed,
-                'uuid': get_uuid_graph_element(node),
-                'children': [],
-            });
-
-            // If the node's collapsed we don't traverse any further.
-            if (is_collapsed)
-                return false;
-            return true;
-        }, (_node: SDFGNode, _parent: SDFGElement) => {
-            // After scope ends, pop ourselves as the current element and add
-            // outselves to the parent.
-            const elem = stack.pop();
-            const elem_parent = stack[stack.length - 1];
-            if (elem !== undefined && elem_parent !== undefined)
-                elem_parent['children'].push(elem);
-        });
+        );
 
         vscode.postMessage({
             type: 'outline.set_outline',
-            outline_list: outline_list,
+            outlineList: outlineList,
         });
     }
 
     /**
      * Fill out the info-box of the embedded layout with info about an element.
-     * This dynamically builds one or more tables showing all of the relevant info
-     * about a given element.
+     * This dynamically builds one or more tables showing all of the relevant
+     * info about a given element.
      */
     public fillInfo(elem: SDFGElement): void {
         const buttons = [
@@ -270,7 +314,7 @@ export class VSCodeSDFV {
             generateAttributesTable(elem, undefined, contents);
 
             if (elem instanceof AccessNode) {
-                // If we're processing an access node, add array information too.
+                // If we're processing an access node, add array info too.
                 const sdfg_array = elem.sdfg.attributes._arrays[
                     elem.attributes().data
                 ];
@@ -283,7 +327,7 @@ export class VSCodeSDFV {
                 generateAttributesTable(sdfg_array, undefined, contents);
             } else if (elem instanceof ScopeNode) {
                 // If we're processing a scope node, we want to append the exit
-                // node's properties when selecting an entry node, and vice versa.
+                // node's props when selecting an entry node, and vice versa.
                 let other_element = undefined;
 
                 let other_uuid = undefined;
@@ -329,7 +373,7 @@ export class VSCodeSDFV {
                 const searchVal = $('#search').val();
                 const graph = renderer.get_graph();
                 if (graph && searchVal !== undefined &&
-                    typeof searchVal === 'string')
+                    typeof searchVal === 'string' && searchVal.length > 0)
                     find_in_graph(
                         renderer, graph, searchVal,
                         $('#search-case-sensitive-btn').is(':checked')
@@ -390,7 +434,7 @@ export class VSCodeSDFV {
             );
 
         vscode.postMessage({
-            type: "sdfv.process_queued_messages",
+            type: 'sdfv.process_queued_messages',
             sdfgName: renderer.get_sdfg().attributes.name,
         });
     }
@@ -462,6 +506,10 @@ export class VSCodeSDFV {
         });
     }
 
+    public toggleBreakpoints(): void {
+        this.setShowingBreakpoints(!this.showingBreakpoints);
+    }
+
     public getMonaco(): any | null {
         return this.monaco;
     }
@@ -531,6 +579,7 @@ export class VSCodeSDFV {
 
     public setDaemonConnected(daemonConnected: boolean): void {
         this.daemonConnected = daemonConnected;
+        VSCodeRenderer.getInstance()?.setDaemonConnected(daemonConnected);
     }
 
     public setTransformations(
@@ -547,23 +596,55 @@ export class VSCodeSDFV {
 
 }
 
-export function vscodeHandleEvent(event: string, data: any) {
+export function vscodeHandleEvent(event: string, data: any): void {
     switch (event) {
-        case 'on_renderer_selection_changed':
+        case 'remove_graph_nodes':
+            if (data && data.nodes)
+                VSCodeRenderer.getInstance()?.removeGraphNodes(data.nodes);
+            break;
+        case 'add_graph_node':
+            if (data && data.type !== undefined && data.parent !== undefined &&
+                data.edgeA !== undefined)
+                VSCodeRenderer.getInstance()?.addNodeToGraph(
+                    data.type, data.parent, data.edgeA
+                );
+            break;
+        case 'libnode_select':
+            if (data && data.callback)
+                VSCodeRenderer.getInstance()?.showSelectLibraryNodeDialog(
+                    data.callback
+                );
+            break;
+        case 'warn_no_daemon':
+            VSCodeRenderer.getInstance()?.showNoDaemonDialog();
+            break;
+        case 'active_overlays_changed':
+            refreshAnalysisPane();
+            break;
+        case 'exit_preview':
+            VSCodeSDFV.getInstance().setViewingHistoryState(false);
+            break;
+        case 'collapse_state_changed':
+        case 'position_changed':
+            VSCodeRenderer.getInstance()?.sendNewSdfgToVscode();
+            break;
+        case 'renderer_selection_changed':
             if (data && data.multi_selection_changed)
                 getApplicableTransformations();
             else
-                sortTransformations(refreshTransformationList);
+                sortTransformations(refreshTransformationList, true);
             break;
     }
 }
 
 export function createSingleUseModal(
     title: string, withConfirm: boolean, bodyClass: string
-): { modal: any, body: JQuery, confirmBtn: JQuery | undefined } {
+): { modal: any, body: JQuery, confirmBtn: JQuery | undefined, modalId: string } {
+    const randomDivId = Math.random().toString(36).replace('0.', 'su-div-');
     const propEditModal = $('<div>', {
         'class': 'modal fade',
         'role': 'dialog',
+        'id': randomDivId,
     }).appendTo('body');
 
     const modalDoc = $('<div>', {
@@ -610,6 +691,7 @@ export function createSingleUseModal(
         modal: propEditModal,
         body: modalBody,
         confirmBtn: modalConfirmBtn,
+        modalId: randomDivId,
     };
 }
 
@@ -645,7 +727,9 @@ export function computeScopeLabel(scopeEntry: EntryNode): string {
     }
 }
 
-export function elementUpdateLabel(element: SDFGElement, attributes: any): void {
+export function elementUpdateLabel(
+    element: SDFGElement, attributes: any
+): void {
     if (element.data) {
         if (element.data.node) {
             if (attributes.label)
@@ -875,12 +959,12 @@ export function attrTablePutCode(
         ));
     });
 
-    const editor = VSCodeSDFV.getInstance().getMonaco().editor.create(
+    const editor = monaco_editor.create(
         input.get(0), {
             'value': val,
             'language': lang === undefined ? 'python' : lang.toLowerCase(),
             'theme': getMonacoThemeName(),
-            'glyphMargin': 0,
+            'glyphMargin': false,
             'lineDecorationsWidth': 0,
             'lineNumbers': 'off',
             'lineNumbersMinChars': 0,
@@ -943,7 +1027,7 @@ export function attrTablePutSelect(
                 if (vscode)
                     vscode.postMessage({
                         type: 'dace.expand_library_node',
-                        nodeid: [
+                        nodeId: [
                             elem.sdfg.sdfg_list_id,
                             elem.parent_id,
                             elem.id,
@@ -1841,3 +1925,52 @@ function getMonacoThemeName() {
             return 'vs-dark';
     }
 }
+
+$(() => {
+    $('#processing-overlay').hide();
+    vscode.postMessage({
+        type: 'sdfv.get_current_sdfg',
+    });
+
+    $('#search-case-sensitive-btn').on('click', function () {
+        const caseBtn = $('#search-case-sensitive-btn');
+        if (caseBtn) {
+            if (caseBtn)
+            if (caseBtn.css('background-color') === 'transparent') {
+                caseBtn.css('background-color', '#245779');
+                caseBtn.prop('checked', true);
+            } else {
+                caseBtn.css('background-color', 'transparent');
+                caseBtn.prop('checked', false);
+            }
+        }
+
+        VSCodeSDFV.getInstance().startFindInGraph();
+    });
+
+    $('#search').on('input', function (e) {
+        VSCodeSDFV.getInstance().startFindInGraph();
+    });
+
+    $('#breakpoint-btn').on('click', () => {
+        VSCodeSDFV.getInstance().toggleBreakpoints();
+    });
+
+    $('#info-clear-btn').on('click', () => {
+        VSCodeSDFV.getInstance().clearInfoBox();
+    });
+
+    window.addEventListener('message', (e) => {
+        MessageHandler.getInstance().handleMessage(e.data);
+    });
+
+    document.body.onresize = () => {
+        const renderer = VSCodeRenderer.getInstance();
+        if (renderer) {
+            renderer.onresize();
+            renderer.draw_async();
+        }
+    };
+
+    $('body').show();
+});

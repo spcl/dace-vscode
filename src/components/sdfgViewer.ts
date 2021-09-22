@@ -126,7 +126,7 @@ export class SdfgViewerProvider
         webview.postMessage({
             type: 'update',
             text: document.getText(),
-            prevent_refreshes: preventRefreshes,
+            preventRefreshes: preventRefreshes,
         });
     }
 
@@ -191,7 +191,7 @@ export class SdfgViewerProvider
                     const editor: SdfgViewer | undefined =
                         instance.findEditorForWebview(origin);
                     if (editor !== undefined) {
-                        if (message.prevent_refreshes)
+                        if (message.preventRefreshes)
                             this.updateWebview(editor.document, origin, true);
                         else
                             this.updateWebview(editor.document, origin);
@@ -201,12 +201,13 @@ export class SdfgViewerProvider
             case 'go_to_source':
                 // We want to jump to a specific file and location if it
                 // exists.
+                // TODO: remove deprecated root path method.
                 let filePath: string;
-                if (path.isAbsolute(message.file_path))
-                    filePath = message.file_path;
+                if (path.isAbsolute(message.filePath))
+                    filePath = message.filePath;
                 else
                     filePath = path.normalize(
-                        vscode.workspace.rootPath + '/' + message.file_path
+                        vscode.workspace.rootPath + '/' + message.filePath
                     );
 
                 const fileUri: vscode.Uri = vscode.Uri.file(filePath);
@@ -221,7 +222,7 @@ export class SdfgViewerProvider
             case 'go_to_cpp':
                 // If the message passes a cache path then use that path, otherwise
                 // get the cache directory of the currently opened SDFG
-                let cachePath: string = message.cache_path;
+                let cachePath: string = message.cachePath;
                 if (!cachePath) {
                     const SdfgFileName = DaCeVSCode.getInstance()
                         .getActiveSdfgFileName();
@@ -242,22 +243,22 @@ export class SdfgViewerProvider
                     cachePath,
                     'src',
                     'cpu',
-                    message.sdfg_name + '.cpp'
+                    message.sdfgName + '.cpp'
                 );
 
                 const cppMapUri = vscode.Uri.file(mapPath);
                 const cppFileUri = vscode.Uri.file(cppPath);
                 node = new Node(
-                    message.sdfg_id,
-                    message.state_id,
-                    message.node_id,
+                    message.sdfgId,
+                    message.stateId,
+                    message.nodeId,
                 );
 
                 getCppRange(node, cppMapUri).then(lineRange => {
                     // If there is no matching location we just goto the file
                     // without highlighting and indicate it with a message
                     if (!lineRange || !lineRange.from) {
-                        lineRange = {};
+                        lineRange = { to: Number.MAX_VALUE, from: 0 };
                         lineRange.from = 1;
                         vscode.window.showInformationMessage(
                             'Could not find a specific line for Node:' +
@@ -282,19 +283,19 @@ export class SdfgViewerProvider
                 break;
             case 'go_to_sdfg':
                 const msgs = [];
-                if (message.zoom_to) {
+                if (message.zoomTo) {
                     msgs.push(
-                        new Message(message.sdfg_name, {
+                        new Message(message.sdfgName, {
                             type: 'zoom_to_node',
-                            uuid: message.zoom_to,
+                            uuid: message.zoomTo,
                         })
                     );
                 }
-                if (message.display_bps) {
+                if (message.displayBps) {
                     msgs.push(
-                        new Message(message.sdfg_name, {
+                        new Message(message.sdfgName, {
                             type: 'display_breakpoints',
-                            display: message.display_bps,
+                            display: message.displayBps,
                         })
                     );
                 }
@@ -309,7 +310,9 @@ export class SdfgViewerProvider
                 }
                 break;
             default:
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage(message);
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage(
+                    message
+                );
                 break;
         }
     }
@@ -361,15 +364,19 @@ export class SdfgViewerProvider
         }
         if (!editorIsLoaded) {
             // The SDFG isn't yet loaded so we store the msgs
-            // to execute after the SDFG is loaded (calls 'process_queued_messages')
-            for (const msg of messages) {
+            // to execute after the SDFG is loaded (calls
+            // 'process_queued_messages')
+            for (const msg of messages)
                 this.messages.push(msg);
-            }
-            vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType);
+            vscode.commands.executeCommand(
+                'vscode.openWith', uri, SdfgViewerProvider.viewType
+            );
         } else {
             // The SDFG is already loaded so we can just jump to it
             // and send the messages
-            vscode.commands.executeCommand("vscode.openWith", uri, SdfgViewerProvider.viewType).then(_ => {
+            vscode.commands.executeCommand(
+                'vscode.openWith', uri, SdfgViewerProvider.viewType
+            ).then(_ => {
                 messages.forEach(msg => {
                     msg.sendMessage();
                 });
@@ -379,12 +386,12 @@ export class SdfgViewerProvider
     }
 
     private sendMessages(sdfgName: string) {
-        let keep_msgs: Message[] = [];
+        const keepMsgs: Message[] = [];
         for (const msg of this.messages) {
             if (!msg.executeMessage(sdfgName))
-                keep_msgs.push(msg);
+                keepMsgs.push(msg);
         }
-        this.messages = keep_msgs;
+        this.messages = keepMsgs;
     }
 
     public async resolveCustomTextEditor(
@@ -413,7 +420,7 @@ export class SdfgViewerProvider
                     this.context.extensionPath, 'node_modules'
                 )),
                 vscode.Uri.file(path.join(
-                    this.context.extensionPath, 'out', 'webclients'
+                    this.context.extensionPath, 'dist', 'web'
                 )),
             ],
         };
@@ -498,7 +505,7 @@ export class SdfgViewerProvider
         );
 
         const fpScriptFolder: vscode.Uri = vscode.Uri.file(
-            path.join(this.context.extensionPath, 'out', 'webclients')
+            path.join(this.context.extensionPath, 'dist', 'web')
         );
         const scriptsFolder = webview.asWebviewUri(fpScriptFolder);
         baseHtml = baseHtml.replace(

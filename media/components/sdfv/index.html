@@ -9,35 +9,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
 
-    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/jquery-editable-select/dist/jquery-editable-select.min.css"></script>
-    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/material-icons/iconfont/material-icons.css">
-
-    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/@spcl/sdfv/sdfv.css">
-
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
-
     <script>
         // Reference to the VSCode API.
         let vscode = undefined;
-
-        const csp_src = "{{ CSP_SRC }}";
     </script>
-
-    <script src="{{ NODE_MODULES }}/jquery/dist/jquery.min.js"></script>
 
     <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/pdfkit.standalone.js"></script>
     <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/blob-stream.js"></script>
     <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/canvas2pdf.js"></script>
-    <script src="{{ NODE_MODULES }}/@spcl/sdfv/renderer_dir/global_vars.js"></script>
 
     <script src="{{ NODE_MODULES }}/split.js/dist/split.min.js"></script>
-    <script src="{{ NODE_MODULES }}/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ NODE_MODULES }}/jquery-editable-select/dist/jquery-editable-select.min.js"></script>
-
 </head>
 
-<body onresize="rendererSendResize();">
+<body style="display: none;">
     <div id="top-bar">
         <div id="search-bar-wrapper">
             <div id="search-bar" class="container">
@@ -159,7 +143,7 @@
                         <line x1="20" y1="20" x2="180" y2="180" marker-end="url(#arrowhead)" />
                     </svg>
                 </div>
-                <div id="breakpoint-btn" class="button text-nowrap" onclick="displayBreakpoints(!showBps);">
+                <div id="breakpoint-btn" class="button text-nowrap">
                     <span id="display-bps">
                         Display Breakpoints
                     </span>
@@ -199,7 +183,7 @@
                     </span>
                 </div>
                 <div class="flex-spacer"></div>
-                <div id="info-clear-btn" class="hidden button" onclick="clear_info_box();">
+                <div id="info-clear-btn" class="hidden button">
                     <span>
                         Clear Info &times;
                     </span>
@@ -210,87 +194,16 @@
         </div>
     </div>
 
-    <script src="{{ NODE_MODULES }}/@spcl/sdfv/dist/sdfv.js"></script>
+    <script src="{{ SCRIPT_SRC }}/sdfv.js"></script>
 
-    <script src="{{ SCRIPT_SRC }}/components/sdfv/vscode_sdfv.js"></script>
-
-    <!-- Load in the monaco editor. -->
-    <script>
-        var require = {
-            paths: {
-                'vs': '{{ NODE_MODULES }}/monaco-editor/min/vs',
-            },
-        };
-    </script>
-    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/loader.js"></script>
-    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
-    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/editor/editor.main.js"></script>
-    <script>
-        window.MonacoEnvironment = { getWorkerUrl: () => proxy };
-
-        let proxy = URL.createObjectURL(new Blob([`
-            self.MonacoEnvironment = {
-                baseUrl: '{{ NODE_MODULES }}/monaco-editor/min/vs'
-            };
-            importScripts('{{ NODE_MODULES }}/monaco-editor/min/vs/base/worker/workerMain.js');
-        `], { type: 'text/javascript' }));
-
-        require(["vs/editor/editor.main"], function () {
-            window.monaco = monaco;
-            VSCodeSDFV.getInstance().setMonaco(monaco);
-        });
-    </script>
     <script>
         vscode = acquireVsCodeApi();
-
-        // Add a listener to update the content when the extension calls for it.
-        window.addEventListener('message', e => {
-            MessageHandler.getInstance().handleMessage(e.data);
-        });
-
-        // Resize the canvas correctly if the renderer exists. This gets
-        // called whenever the body's size changes.
-        function rendererSendResize() {
-            const renderer = VSCodeRenderer.getInstance();
-            if (renderer) {
-                renderer.onresize();
-                renderer.draw_async();
-            }
-        }
 
         Split(['#contents', '#info-container'], {
             sizes: [60, 40],
             minSize: [0, 0],
             snapOffset: 10,
             direction: 'vertical',
-        });
-
-        $(document).ready(() => {
-            $('#processing-overlay').hide();
-            vscode.postMessage({
-                type: 'sdfv.get_current_sdfg',
-            });
-
-            $('#search-case-sensitive-btn').on('click', function (e) {
-                let caseBtn = document.getElementById(
-                    'search-case-sensitive-btn'
-                );
-                if (caseBtn.style.backgroundColor === 'transparent') {
-                    caseBtn.style.backgroundColor = '#245779';
-                    caseBtn.checked = true;
-                } else {
-                    caseBtn.style.backgroundColor = 'transparent';
-                    caseBtn.checked = false;
-                }
-                if ($('#search').val().length > 0) {
-                    VSCodeSDFV.getIntance().startFindInGraph();
-                }
-            });
-
-            $("#search").on('input', function (e) {
-                if ($('#search').val().length > 0)
-                    VSCodeSDFV.getIntance().startFindInGraph();
-            });
         });
     </script>
 </body>

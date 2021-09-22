@@ -1,6 +1,26 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+import 'bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+import 'material-icons/iconfont/material-icons.css';
+
+import '../../elements/treeview/treeview.css';
+
+import './transformationHistory.css';
+
+import * as $ from 'jquery';
+
+import {
+    CustomTreeView,
+    CustomTreeViewItem,
+} from '../../elements/treeview/treeview';
+
+declare const vscode: any;
+
+let transformationHistList: TransformationHistoryList | null = null;
+
 class TransformationHistoryItem extends CustomTreeViewItem {
 
     public constructor(
@@ -169,3 +189,37 @@ class TransformationHistoryList extends CustomTreeView {
     }
 
 }
+
+$(() => {
+    transformationHistList = new TransformationHistoryList(
+        $('#transformation-list')
+    );
+    transformationHistList.generateHtml();
+    transformationHistList.show();
+
+    // Add a listener to receive messages from the extension.
+    window.addEventListener('message', e => {
+        const message = e.data;
+        switch (message.type) {
+            case 'set_history':
+                transformationHistList?.parseHistory(
+                    message.history,
+                    message.activeIndex
+                );
+                break;
+            case 'clear_history':
+                if (message.reason !== undefined)
+                    transformationHistList?.clear(message.reason);
+                else
+                    transformationHistList?.clear();
+                break;
+            default:
+                break;
+        }
+    });
+
+    if (vscode)
+        vscode.postMessage({
+            type: 'transformation_history.refresh',
+        });
+});

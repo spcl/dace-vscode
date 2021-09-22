@@ -9,24 +9,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Transformation List</title>
 
-    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/material-icons/iconfont/material-icons.css">
-
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/elements/treeview/treeview.css">
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/history/history.css">
-
     <script>
         // Reference to the VSCode API.
         let vscode = undefined;
-
-        const csp_src = "{{ CSP_SRC }}";
     </script>
-
-    <script src="{{ NODE_MODULES }}/jquery/dist/jquery.min.js"></script>
-    <script src="{{ NODE_MODULES }}/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script src="{{ SCRIPT_SRC }}/elements/treeview/treeview.js"></script>
-    <script src="{{ SCRIPT_SRC }}/components/history/transformationHistory.js"></script>
 </head>
 
 <body>
@@ -37,42 +23,9 @@
         </div>
     </div>
 
+    <script src="{{ SCRIPT_SRC }}/history.js"></script>
     <script>
         vscode = acquireVsCodeApi();
-
-        const transformation_list = new TransformationHistoryList(
-            $('#transformation-list')
-        );
-        transformation_list.generate_html();
-        transformation_list.show();
-
-        // Add a listener to receive messages from the extension.
-        window.addEventListener('message', e => {
-            const message = e.data;
-            switch (message.type) {
-                case 'set_history':
-                    transformation_list.parse_history(
-                        message.history,
-                        message.active_index
-                    );
-                    break;
-                case 'clear_history':
-                    if (message.reason !== undefined)
-                        transformation_list.clear(message.reason);
-                    else
-                        transformation_list.clear();
-                    break;
-                default:
-                    break;
-            }
-        });
-
-        $(document).ready(() => {
-            if (vscode)
-                vscode.postMessage({
-                    type: 'transformation_history.refresh',
-                });
-        });
     </script>
 </body>
 

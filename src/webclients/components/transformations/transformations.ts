@@ -1,6 +1,27 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+import 'bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+import 'material-icons/iconfont/material-icons.css';
+
+import '../../elements/treeview/treeview.css';
+
+import './transformations.css';
+
+import * as $ from 'jquery';
+
+import {
+    CustomTreeView,
+    CustomTreeViewItem,
+} from '../../elements/treeview/treeview';
+
+declare const vscode: any;
+
+let transformationList: TransformationList | null = null;
+let loadingIndicator: JQuery | null = null;
+
 class TransformationListItem extends CustomTreeViewItem {
 
     public constructor(
@@ -239,3 +260,54 @@ class TransformationList extends CustomTreeView {
     }
 
 }
+
+$(() => {
+    loadingIndicator = $('#transformation-loading-indicator');
+
+    transformationList = new TransformationList(
+        $('#transformation-list')
+    );
+    transformationList.generateHtml();
+    transformationList.show();
+
+    // Add a listener to receive messages from the extension.
+    window.addEventListener('message', e => {
+        const message = e.data;
+        switch (message.type) {
+            case 'deselect':
+                if (transformationList)
+                    transformationList.selectedItem = undefined;
+                transformationList?.generateHtml();
+                break;
+            case 'set_transformations':
+                transformationList?.setTransformations(
+                    message.transformations
+                );
+                if (message.hideLoading)
+                    loadingIndicator?.hide();
+                break;
+            case 'clear_transformations':
+                loadingIndicator?.hide();
+                if (message.reason !== undefined)
+                    transformationList?.clear(
+                        message.reason
+                    );
+                else
+                    transformationList?.clear();
+                break;
+            case 'show_loading':
+                loadingIndicator?.show();
+                break;
+            case 'hide_loading':
+                loadingIndicator?.hide();
+                break;
+            default:
+                break;
+        }
+    });
+
+    if (vscode)
+        vscode.postMessage({
+            type: 'sdfv.refresh_transformation_list',
+        });
+});

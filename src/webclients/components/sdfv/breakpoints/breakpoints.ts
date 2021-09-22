@@ -15,6 +15,8 @@ import {
 } from '@spcl/sdfv/out';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 
+declare const vscode: any;
+
 export function refreshBreakpoints(): void {
     const renderer = VSCodeRenderer.getInstance();
     if (renderer !== null && vscode !== undefined) {
@@ -49,7 +51,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
 
         vscode.postMessage({
             type: 'bp_handler.get_saved_nodes',
-            sdfg_name: this.renderer.get_sdfg().attributes.name,
+            sdfgName: this.renderer.get_sdfg().attributes.name,
         });
         this.refresh();
     }
@@ -118,7 +120,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
                     vscode.postMessage({
                         type: 'bp_handler.remove_breakpoint',
                         node: sdfgElem,
-                        sdfg_name: this.renderer.get_sdfg().attributes.name
+                        sdfgName: this.renderer.get_sdfg().attributes.name
                     });
                 }
                 else {
@@ -130,7 +132,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
                     vscode.postMessage({
                         type: 'bp_handler.add_breakpoint',
                         node: sdfgElem,
-                        sdfg_name: this.renderer.get_sdfg().attributes.name
+                        sdfgName: this.renderer.get_sdfg().attributes.name
                     });
                 }
 
