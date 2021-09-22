@@ -2,6 +2,10 @@
 
 ## 1.0
 
+### 1.03
+
+- Hotfix to address a windows file-system naming issue.
+
 ### 1.0.2
 
 - Fixes transformation refreshes and application.

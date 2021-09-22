@@ -1,11 +1,11 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { LoggingDebugSession, TerminatedEvent } from "vscode-debugadapter";
-import * as vscode from "vscode";
-import * as os from "os";
-import { DebugProtocol } from "vscode-debugprotocol";
-import { BreakpointHandler } from "./breakpointHandler";
+import { LoggingDebugSession, TerminatedEvent } from 'vscode-debugadapter';
+import * as vscode from 'vscode';
+import * as os from 'os';
+import { DebugProtocol } from 'vscode-debugprotocol';
+import { BreakpointHandler } from './breakpointHandler';
 import { PORT } from './daceListener';
 
 export interface DaceLaunchRequestArguments
@@ -19,7 +19,7 @@ export interface DaceLaunchRequestArguments
     daCeDev?: boolean;
 }
 
-export class DaceDebugSession extends LoggingDebugSession {
+export class DaceDebuggingSession extends LoggingDebugSession {
     private folder: vscode.WorkspaceFolder | undefined;
 
     public constructor() {
