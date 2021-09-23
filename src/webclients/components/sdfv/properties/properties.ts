@@ -5,7 +5,7 @@ import { string_to_sdfg_typeclass } from '@spcl/sdfv/out';
 import { editor } from 'monaco-editor';
 import { Range } from '../../../../types';
 import { showTransformationDetails } from '../transformation/transformation';
-import { elementUpdateLabel } from '../vscode_sdfv';
+import { elementUpdateLabel } from '../vscodeSdfv';
 
 type PropertyValueReturn = {
     value: any,

@@ -1,10 +1,10 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { JsonTransformation } from "../../transformations/transformations";
-import { VSCodeRenderer } from "../renderer/vscode_renderer";
-import { highlightUUIDs, zoomToUUIDs } from "../utils/helpers";
-import { generateAttributesTable, VSCodeSDFV } from "../vscode_sdfv";
+import { JsonTransformation } from '../../transformations/transformations';
+import { VSCodeRenderer } from '../renderer/vscodeRenderer';
+import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
+import { generateAttributesTable, VSCodeSDFV } from '../vscodeSdfv';
 
 declare const vscode: any;
 

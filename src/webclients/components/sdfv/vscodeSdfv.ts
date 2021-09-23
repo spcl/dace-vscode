@@ -8,7 +8,6 @@ import * as $ from 'jquery';
 import 'jquery-editable-select';
 import 'jquery-editable-select/dist/jquery-editable-select.min.css';
 
-import '@popperjs/core';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -16,7 +15,7 @@ import 'material-icons/iconfont/material-icons.css';
 
 import '@spcl/sdfv/sdfv.css';
 
-import './vscode_sdfv.css';
+import './vscodeSdfv.css';
 
 import {
     AccessNode,
@@ -55,7 +54,7 @@ import {
     BreakpointIndicator,
     refreshBreakpoints,
 } from './breakpoints/breakpoints';
-import { MessageHandler } from './messaging/message_handler';
+import { MessageHandler } from './messaging/messageHandler';
 import {
     CodeProperty,
     ComboboxProperty,
@@ -68,7 +67,7 @@ import {
     TypeclassProperty,
     ValueProperty
 } from './properties/properties';
-import { VSCodeRenderer } from './renderer/vscode_renderer';
+import { VSCodeRenderer } from './renderer/vscodeRenderer';
 import {
     getApplicableTransformations,
     refreshTransformationList,

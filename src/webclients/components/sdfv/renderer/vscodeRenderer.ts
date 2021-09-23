@@ -18,7 +18,7 @@ import {
     vscodeHandleEvent,
     VSCodeSDFV,
     vscodeWriteGraph,
-} from '../vscode_sdfv';
+} from '../vscodeSdfv';
 
 declare const vscode: any;
 

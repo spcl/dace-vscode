@@ -7,48 +7,58 @@ import { DaCeVSCode } from '../extension';
 import { SdfgViewerProvider } from '../components/sdfgViewer';
 import { SdfgBreakpointProvider } from '../components/sdfgBreakpoints';
 
-export class Node {
+export type ISDFGDebugNodeInfo = {
+    cache: string | undefined,
+    target: string | undefined,
+    sdfgName: string | undefined,
+    sdfgId: number,
+    stateId: number,
+    nodeId: number,
+    sdfgPath: string | undefined,
+};
 
-    sdfg_id: number;
-    state_id: number;
-    node_id: number;
+export class SDFGDebugNode {
 
-    cache: string | undefined;
-    target: string | undefined;
-    sdfg_name: string | undefined;
+    public cache: string | undefined;
+    public target: string | undefined;
+    public sdfgName: string | undefined;
 
-    constructor(sdfg_id: number, state_id: number, node_id: number) {
-        this.sdfg_id = sdfg_id;
-        this.state_id = state_id;
-        this.node_id = node_id;
+    constructor(
+        public sdfgId: number,
+        public stateId: number,
+        public nodeId: number
+    ) {
     }
 
     public printer(): string {
-        return this.sdfg_id + ':' +
-            this.state_id + ':' +
-            this.node_id;
+        return this.sdfgId + ':' +
+            this.stateId + ':' +
+            this.nodeId;
     }
 
-    public isEqual(node: Node): boolean {
-        return this.sdfg_id === node.sdfg_id &&
-            this.state_id === node.state_id &&
-            this.node_id === node.node_id;
+    public toString(): string {
+        return this.printer();
     }
 
-    public nodeInfo() {
+    public isEqual(node: SDFGDebugNode): boolean {
+        return this.sdfgId === node.sdfgId &&
+            this.stateId === node.stateId &&
+            this.nodeId === node.nodeId;
+    }
+
+    public nodeInfo(): ISDFGDebugNodeInfo {
         return {
-            sdfg_id: this.sdfg_id,
-            state_id: this.state_id,
-            node_id: this.node_id,
-
-            sdfg_name: this.sdfg_name,
+            sdfgId: this.sdfgId,
+            stateId: this.stateId,
+            nodeId: this.nodeId,
+            sdfgName: this.sdfgName,
             cache: this.cache,
             target: this.target,
-
-            sdfg_path: this.cache ?
+            sdfgPath: this.cache ?
                 path.join(this.cache, 'program.sdfg') : undefined,
         };
     }
+
 }
 
 interface ISavedBP {
@@ -70,7 +80,7 @@ interface IHashFiles {
 }
 
 interface IHashNodes {
-    [key: string]: Node[];
+    [key: string]: SDFGDebugNode[];
 }
 
 enum Menus {
@@ -377,7 +387,7 @@ export class BreakpointHandler extends vscode.Disposable {
         return BreakpointHandler.INSTANCE;
     }
 
-    public registerFunction(data: any) {
+    public registerFunction(data: any): void {
         const filePaths: string[] | undefined = data['path_file'];
         const cachePath: string | undefined = data['path_cache'];
         const funcName: string | undefined = data['name'];
@@ -438,13 +448,15 @@ export class BreakpointHandler extends vscode.Disposable {
     }
 
     public handleMessage(message: any, _origin: any) {
-        let node;
+        let node: ISDFGDebugNodeInfo;
         switch (message.type) {
             case 'add_breakpoint':
                 node = message.node;
                 if (node)
                     BreakpointHandler.getInstance()?.handleNodeAdded(
-                        new Node(node.sdfg_id, node.state_id, node.node_id),
+                        new SDFGDebugNode(
+                            node.sdfgId, node.stateId, node.nodeId
+                        ),
                         message.sdfgName
                     );
                 break;
@@ -452,7 +464,9 @@ export class BreakpointHandler extends vscode.Disposable {
                 node = message.node;
                 if (node)
                     BreakpointHandler.getInstance()?.handleNodeRemoved(
-                        new Node(node.sdfg_id, node.state_id, node.node_id),
+                        new SDFGDebugNode(
+                            node.sdfgId, node.stateId, node.nodeId
+                        ),
                         message.sdfgName
                     );
                 break;
@@ -613,7 +627,9 @@ export class BreakpointHandler extends vscode.Disposable {
         return undefined;
     }
 
-    public async handleNodeAdded(node: Node, sdfgName: string): Promise<void> {
+    public async handleNodeAdded(
+        node: SDFGDebugNode, sdfgName: string
+    ): Promise<void> {
         // Search for the file with the corresponding function information
         let unbound = false;
         for (const functions of Object.values(this.files)) {
@@ -623,7 +639,7 @@ export class BreakpointHandler extends vscode.Disposable {
 
             if (funcDetails) {
                 node.cache = funcDetails.cache;
-                node.sdfg_name = funcDetails.name;
+                node.sdfgName = funcDetails.name;
                 node.target = funcDetails.targetName;
 
                 const cppMapPath = path.join(node.cache, 'map', 'map_cpp.json');
@@ -647,6 +663,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 return;
             }
         }
+
         if (unbound) {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'unbound_breakpoint',
@@ -657,10 +674,11 @@ export class BreakpointHandler extends vscode.Disposable {
                 node: node.nodeInfo()
             });
         }
+
         this.saveState();
     }
 
-    public handleNodeRemoved(node: Node, sdfgName: string): void {
+    public handleNodeRemoved(node: SDFGDebugNode, sdfgName: string): void {
         if (this.savedNodes[sdfgName]) {
             this.savedNodes[sdfgName].forEach((n, i, _) => {
                 if (node.isEqual(n)) {
@@ -679,7 +697,7 @@ export class BreakpointHandler extends vscode.Disposable {
         line: number,
         path: vscode.Uri,
         srcFile: string
-    ): Promise<Node[] | undefined> {
+    ): Promise<SDFGDebugNode[] | undefined> {
 
         const mapPy = await jsonFromPath(path);
         if (!mapPy)
@@ -703,7 +721,7 @@ export class BreakpointHandler extends vscode.Disposable {
 
         try {
             nodesJSON.map(node => {
-                new Node(
+                new SDFGDebugNode(
                     node.sdfg_id,
                     node.state_id,
                     node.node_id
@@ -768,7 +786,7 @@ export class BreakpointHandler extends vscode.Disposable {
             });
     }
 
-    public getAllNodes(): any[] {
+    public getAllNodes(): ISDFGDebugNodeInfo[] {
         let allNodes = [];
         for (const nodes of Object.values(this.savedNodes)) {
             for (const node of nodes) {
@@ -849,18 +867,18 @@ export class BreakpointHandler extends vscode.Disposable {
 }
 
 export async function getCppRange(
-    node: Node, uri: vscode.Uri
+    node: SDFGDebugNode, uri: vscode.Uri
 ): Promise<{ from: number, to: number } | undefined> {
     let mapCpp = await jsonFromPath(uri);
     if (!mapCpp)
         return undefined;
 
-    let states = mapCpp[node.sdfg_id];
+    let states = mapCpp[node.sdfgId];
     if (!states)
         return undefined;
 
     // Return the Range of an entire SDFG
-    if (node.state_id === -1) {
+    if (node.stateId === -1) {
         let minLine = Number.MAX_VALUE;
         let maxLine = 0;
         // It's guaranteed that we will find at least one node
@@ -878,12 +896,12 @@ export async function getCppRange(
         };
     }
 
-    let nodes = states[node.state_id];
+    let nodes = states[node.stateId];
     if (!nodes)
         return undefined;
 
     // Return the Range of an entire State
-    if (node.node_id === -1) {
+    if (node.nodeId === -1) {
         let minLine = Number.MAX_VALUE;
         let maxLine = 0;
         // It's guaranteed that we will find at least one node
@@ -901,7 +919,7 @@ export async function getCppRange(
     }
 
     // Return the Range of a single node if it exists
-    let cppRange = nodes[node.node_id];
+    let cppRange = nodes[node.nodeId];
     if (!cppRange)
         return undefined;
     return cppRange;

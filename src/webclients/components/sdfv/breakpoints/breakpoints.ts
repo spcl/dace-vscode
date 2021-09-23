@@ -13,7 +13,7 @@ import {
     SimpleRect,
     State,
 } from '@spcl/sdfv/out';
-import { VSCodeRenderer } from '../renderer/vscode_renderer';
+import { VSCodeRenderer } from '../renderer/vscodeRenderer';
 
 declare const vscode: any;
 
@@ -122,8 +122,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
                         node: sdfgElem,
                         sdfgName: this.renderer.get_sdfg().attributes.name
                     });
-                }
-                else {
+                } else {
                     this.breakpoints.set(elemUUID, BreakpointType.BOUND);
                     this.drawBreakpoint(
                         foregroundElem, this.renderer.get_context(),

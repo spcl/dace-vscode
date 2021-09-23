@@ -13,7 +13,7 @@ import {
     BreakpointIndicator,
     refreshBreakpoints,
 } from '../breakpoints/breakpoints';
-import { VSCodeRenderer } from '../renderer/vscode_renderer';
+import { VSCodeRenderer } from '../renderer/vscodeRenderer';
 import {
     applyTransformation,
     clearSelectedTransformation,
@@ -23,7 +23,7 @@ import {
     sortTransformations,
 } from '../transformation/transformation';
 import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
-import { VSCodeSDFV } from '../vscode_sdfv';
+import { VSCodeSDFV } from '../vscodeSdfv';
 
 export class MessageHandler {
 

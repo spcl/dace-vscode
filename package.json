@@ -509,7 +509,8 @@
                 },
                 {
                     "command": "sdfgBreakpoints.sync",
-                    "when": "view == sdfgBreakpoints"
+                    "when": "view == sdfgBreakpoints",
+                    "group": "navigation"
                 },
                 {
                     "command": "sdfgOutline.sync",

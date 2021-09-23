@@ -1,14 +1,15 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+import * as $ from 'jquery';
+(window as any).jQuery = $;
+
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import 'material-icons/iconfont/material-icons.css';
 
 import './analysis.css';
-
-import * as $ from 'jquery';
 
 import { SymbolMap } from '@spcl/sdfv/out';
 

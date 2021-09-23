@@ -11,7 +11,7 @@ import { AnalysisProvider } from './analysis';
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 import { TransformationListProvider } from './transformationList';
-import { getCppRange, Node } from '../debugger/breakpointHandler';
+import { getCppRange, SDFGDebugNode } from '../debugger/breakpointHandler';
 
 class Message {
     timeStamp: Date;
@@ -248,7 +248,7 @@ export class SdfgViewerProvider
 
                 const cppMapUri = vscode.Uri.file(mapPath);
                 const cppFileUri = vscode.Uri.file(cppPath);
-                node = new Node(
+                node = new SDFGDebugNode(
                     message.sdfgId,
                     message.stateId,
                     message.nodeId,

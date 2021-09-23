@@ -4,7 +4,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { BreakpointHandler } from '../debugger/breakpointHandler';
-
 import { BaseComponent } from './baseComponent';
 import { ComponentMessageHandler } from './messaging/componentMessageHandler';
 
@@ -19,7 +18,9 @@ implements vscode.WebviewViewProvider {
     private static INSTANCE: SdfgBreakpointProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        SdfgBreakpointProvider.INSTANCE = new SdfgBreakpointProvider(ctx, this.viewType);
+        SdfgBreakpointProvider.INSTANCE = new SdfgBreakpointProvider(
+            ctx, this.viewType
+        );
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
@@ -47,10 +48,7 @@ implements vscode.WebviewViewProvider {
             enableScripts: true,
             localResourceRoots: [
                 vscode.Uri.file(path.join(
-                    this.context.extensionPath, 'media'
-                )),
-                vscode.Uri.file(path.join(
-                    this.context.extensionPath, 'node_modules'
+                    this.context.extensionPath, 'dist', 'web'
                 )),
             ],
         };
@@ -59,24 +57,17 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'sdfgBreakpoints',
+            'breakpoints',
             'index.html'
         ));
-        const fpMediaFolder: vscode.Uri = vscode.Uri.file(path.join(
-            this.context.extensionPath, 'media'
-        ));
-        const fpNodeModulesFolder: vscode.Uri = vscode.Uri.file(
-            path.join(this.context.extensionPath, 'node_modules')
+        const fpScriptSrcFolder: vscode.Uri = vscode.Uri.file(
+            path.join(this.context.extensionPath, 'dist', 'web')
         );
         vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
             let baseHtml = data.toString();
             baseHtml = baseHtml.replace(
-                this.csrSrcIdentifier,
-                webviewView.webview.asWebviewUri(fpMediaFolder).toString()
-            );
-            baseHtml = baseHtml.replace(
-                this.nodeModulesIdentifier,
-                webviewView.webview.asWebviewUri(fpNodeModulesFolder).toString()
+                this.scriptSrcIdentifier,
+                webviewView.webview.asWebviewUri(fpScriptSrcFolder).toString()
             );
             webviewView.webview.html = baseHtml;
 
