@@ -42,10 +42,10 @@ export class VSCodeRenderer extends SDFGRenderer {
         if (this.INSTANCE)
             this.INSTANCE.destroy();
         this.INSTANCE = new VSCodeRenderer(
-            sdfg, container, onMouseEvent, userTransform, debugDraw,
-            backgroundColor, modeButtons
+            VSCodeSDFV.getInstance(), sdfg, container, onMouseEvent,
+            userTransform, debugDraw, backgroundColor, modeButtons
         );
-        SDFV.get_instance().set_renderer(this.INSTANCE);
+        VSCodeSDFV.getInstance().set_renderer(this.INSTANCE);
         this.INSTANCE.register_ext_event_handler(vscodeHandleEvent);
         return this.INSTANCE;
     }
@@ -55,6 +55,7 @@ export class VSCodeRenderer extends SDFGRenderer {
     }
 
     private constructor(
+        sdfv: VSCodeSDFV,
         sdfg: JsonSDFG,
         container: HTMLElement,
         onMouseEvent: ((...args: any[]) => boolean) | null | undefined = null,
@@ -96,7 +97,7 @@ export class VSCodeRenderer extends SDFGRenderer {
         }
 
         super(
-            sdfg, container, onMouseEvent, userTransform, debugDraw,
+            sdfv, sdfg, container, onMouseEvent, userTransform, debugDraw,
             backgroundColor, modeButtons
         );
     }

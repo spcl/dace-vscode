@@ -83,38 +83,14 @@ type CategorizedTransformationList = [
     JsonTransformation[],
 ];
 
-export class VSCodeSDFV {
+export class VSCodeSDFV extends SDFV {
 
     public static readonly DEBUG_DRAW: boolean = false;
 
     private static readonly INSTANCE: VSCodeSDFV = new VSCodeSDFV();
 
     private constructor() {
-        const sdfv = SDFV.get_instance();
-        sdfv.register_init_menu_handler(() => {
-            VSCodeSDFV.getInstance().initInfoBox();
-        });
-        sdfv.register_close_menu_handler(() => {
-            VSCodeSDFV.getInstance().clearInfoBox();
-        });
-        sdfv.register_sidebar_get_contents_handler(() => {
-            return VSCodeSDFV.getInstance().infoBoxGetContents();
-        });
-        sdfv.register_sidebar_show_handler(() => {
-            VSCodeSDFV.getInstance().infoBoxShow();
-        });
-        sdfv.register_sidebar_set_title_handler((title) => {
-            VSCodeSDFV.getInstance().infoBoxSetTitle(title);
-        });
-        sdfv.register_outline_handler((renderer, sdfg) => {
-            VSCodeSDFV.getInstance().outline(renderer, sdfg);
-        });
-        sdfv.register_fill_info_handler((elem) => {
-            VSCodeSDFV.getInstance().fillInfo(elem);
-        });
-        sdfv.register_start_find_in_graph_handler(() => {
-            VSCodeSDFV.getInstance().startFindInGraph();
-        });
+        super();
     }
 
     public static getInstance(): VSCodeSDFV {
@@ -138,6 +114,34 @@ export class VSCodeSDFV {
     private daemonConnected: boolean = false;
     private transformations: CategorizedTransformationList = [[], [], [], []];
     private selectedTransformation: JsonTransformation | null = null;
+
+    public init_menu(): void {
+        this.initInfoBox();
+    }
+
+    public close_menu(): void {
+        this.clearInfoBox();
+    }
+
+    public sidebar_get_contents(): HTMLElement | null {
+        return this.infoBoxGetContents();
+    }
+
+    public sidebar_show(): void {
+        this.infoBoxShow();
+    }
+
+    public sidebar_set_title(title: string): void {
+        this.infoBoxSetTitle(title);
+    }
+
+    public fill_info(elem: SDFGElement): void {
+        this.fillInfo(elem);
+    }
+
+    public start_find_in_graph(): void {
+        this.startFindInGraph();
+    }
 
     public initInfoBox(): void {
         // Pass.
@@ -374,7 +378,7 @@ export class VSCodeSDFV {
                 if (graph && searchVal !== undefined &&
                     typeof searchVal === 'string' && searchVal.length > 0)
                     find_in_graph(
-                        renderer, graph, searchVal,
+                        this, renderer, graph, searchVal,
                         $('#search-case-sensitive-btn').is(':checked')
                     );
             }, 1);
@@ -819,7 +823,7 @@ export function reselectRendererElement(elem: SDFGElement): void {
         const newElemRes = find_graph_element_by_uuid(graph, uuid);
         if (newElemRes && newElemRes.element) {
             const newElem = newElemRes.element;
-            SDFV.get_instance().fill_info(newElem);
+            VSCodeSDFV.getInstance().fillInfo(newElem);
         }
     }
 }
