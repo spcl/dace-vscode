@@ -56,6 +56,7 @@ class TransformationCategory extends TransformationListItem {
 }
 
 export type JsonTransformation = {
+    transformation: string | undefined,
     type: string | undefined,
     exp_idx: number | undefined,
     sdfg_id: number | undefined,
@@ -65,6 +66,7 @@ export type JsonTransformation = {
 
 export class Transformation extends TransformationListItem {
 
+    private name: string | undefined = undefined;
     private type: string | undefined = undefined;
     private expressionIndex: number | undefined = undefined;
     private sdfgId: number = -1;
@@ -74,9 +76,19 @@ export class Transformation extends TransformationListItem {
     public constructor(
         private json: any, list: TransformationList
     ) {
-        super(json.transformation, json.docstring, '', false, true, '', '');
+        super(
+            json.transformation,
+            json.type === 'SubgraphTransformation' ?
+                'Subgraph Transformation\n' + json.docstring : json.docstring,
+            '', false, true,
+            json.type === 'SubgraphTransformation' ?
+                'color: var(--vscode-gitDecoration-addedResourceForeground);' :
+                '',
+            ''
+        );
         this.list = list;
 
+        this.name = json.transformation;
         this.type = json.type;
         this.expressionIndex = json.expr_index;
         this.sdfgId = json.sdfg_id;
