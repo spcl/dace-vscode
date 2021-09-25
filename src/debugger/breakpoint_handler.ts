@@ -569,12 +569,11 @@ export class BreakpointHandler extends vscode.Disposable {
 
     public async pyCppTranslation(
         uri: vscode.Uri, line: number
-    ): Promise<any | undefined> {
+    ): Promise<any | null> {
         // Translate a Python Location to a C++ Location
         const filePath = normalizePath(uri.fsPath);
-        if (!filePath) {
-            return undefined; // Illegal path 
-        }
+        if (!filePath)
+            return null; // Illegal path
 
         // If the path hasn't been added yet, then we'll handle the BP
         // later on when the path gets added after compilation of the
@@ -582,9 +581,8 @@ export class BreakpointHandler extends vscode.Disposable {
         // If the path has been added, then we'll receive an array of
         // registered DaCe function names from that path
         const functions = this.files[filePath];
-        if (!functions) {
-            return undefined;
-        }
+        if (!functions)
+            return null;
 
         for (const currentFunc of functions) {
             const cachePath = currentFunc.cache;
@@ -624,7 +622,7 @@ export class BreakpointHandler extends vscode.Disposable {
             };
         }
 
-        return undefined;
+        return null;
     }
 
     public async handleNodeAdded(
@@ -868,14 +866,14 @@ export class BreakpointHandler extends vscode.Disposable {
 
 export async function getCppRange(
     node: SDFGDebugNode, uri: vscode.Uri
-): Promise<{ from: number, to: number } | undefined> {
+): Promise<{ from: number, to: number } | null> {
     let mapCpp = await jsonFromPath(uri);
     if (!mapCpp)
-        return undefined;
+        return null;
 
     let states = mapCpp[node.sdfgId];
     if (!states)
-        return undefined;
+        return null;
 
     // Return the Range of an entire SDFG
     if (node.stateId === -1) {
@@ -898,7 +896,7 @@ export async function getCppRange(
 
     let nodes = states[node.stateId];
     if (!nodes)
-        return undefined;
+        return null;
 
     // Return the Range of an entire State
     if (node.nodeId === -1) {
@@ -921,24 +919,23 @@ export async function getCppRange(
     // Return the Range of a single node if it exists
     let cppRange = nodes[node.nodeId];
     if (!cppRange)
-        return undefined;
+        return null;
     return cppRange;
 }
 
-async function jsonFromPath(fileUri: vscode.Uri): Promise<any | undefined> {
+async function jsonFromPath(fileUri: vscode.Uri): Promise<any | null> {
     /**
      * Reads the file from the given path and parses it to JSON.
-     * Returns undefined if there is an error while reading the file
-     * or if the file doesn't exist
+     * Returns null if there is an error while reading the file or if the file
+     * doesn't exist.
      */
 
     try {
         await vscode.workspace.fs.stat(fileUri);
     } catch (error) {
-        // If the file doesn't exist, the program might
-        // not have been compiled yet, so we don't throw
-        // an error
-        return undefined;
+        // If the file doesn't exist, the program might not have been compiled
+        // yet, so we don't throw an error.
+        return null;
     }
 
     try {
@@ -950,7 +947,7 @@ async function jsonFromPath(fileUri: vscode.Uri): Promise<any | undefined> {
             'Error while opening source mapping at: ' + fileUri.fsPath +
             'Error code: ' + (error as any).code;
         vscode.window.showInformationMessage(msg);
-        return undefined;
+        return null;
     }
 }
 
