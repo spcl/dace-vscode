@@ -30,7 +30,7 @@ def expand_library_node(json_in):
         }
 
     try:
-        sdfg_id, state_id, node_id = json_in['nodeid']
+        sdfg_id, state_id, node_id = json_in['nodeId']
     except KeyError:
         sdfg_id, state_id, node_id = None, None, None
 
@@ -177,7 +177,7 @@ def get_transformations(sdfg_json, selected_elements):
         utils.sdfg_find_node_from_element(sdfg, n) for n in selected_elements
         if n['type'] == 'node'
     ]
-    selected_sdfg_ids = list(set(elem['sdfg_id'] for elem in selected_elements))
+    selected_sdfg_ids = list(set(elem['sdfgId'] for elem in selected_elements))
     selected_sdfg = sdfg
     if len(selected_sdfg_ids) > 1:
         return {

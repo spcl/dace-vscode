@@ -216,5 +216,5 @@ def get_arith_ops(sdfg_json):
     arith_map = {}
     create_arith_ops_map(sdfg, arith_map, {})
     return {
-        'arith_ops_map': arith_map,
+        'arithOpsMap': arith_map,
     }

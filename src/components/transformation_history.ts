@@ -4,43 +4,47 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeInterface } from '../dace_interface';
+import { DaCeVSCode } from '../extension';
 
 import { BaseComponent } from './base_component';
 import { ComponentMessageHandler } from './messaging/component_message_handler';
 
-export class AnalysisProvider
+export class TransformationHistoryProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'sdfgAnalysis';
+    private static readonly viewType: string = 'transformationHistory';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: AnalysisProvider | undefined = undefined;
+    private static INSTANCE: TransformationHistoryProvider | undefined = undefined;
+
+    public activeHistoryItemIndex: Number | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        AnalysisProvider.INSTANCE = new AnalysisProvider(ctx, this.viewType);
+        TransformationHistoryProvider.INSTANCE =
+            new TransformationHistoryProvider(ctx, this.viewType);
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
-            AnalysisProvider.viewType,
-            AnalysisProvider.INSTANCE,
+            TransformationHistoryProvider.viewType,
+            TransformationHistoryProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): AnalysisProvider | undefined {
+    public static getInstance(): TransformationHistoryProvider | undefined {
         return this.INSTANCE;
     }
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
-        _context: vscode.WebviewViewResolveContext,
+        _context: vscode.WebviewViewResolveContext<unknown>,
         _token: vscode.CancellationToken
-    ) {
+    ): void | Thenable<void> {
         // If the DaCe interface has not been started yet, start it here.
         DaCeInterface.getInstance().start();
 
@@ -59,7 +63,7 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'analysis',
+            'history',
             'index.html'
         ));
         const fpScriptFolder: vscode.Uri = vscode.Uri.file(
@@ -82,6 +86,40 @@ implements vscode.WebviewViewProvider {
         });
     }
 
+    public handleMessage(message: any,
+                         origin: vscode.Webview | undefined = undefined): void {
+        switch (message.type) {
+            case 'refresh':
+                if (message.resetActive)
+                    this.activeHistoryItemIndex = undefined;
+                this.refresh();
+                break;
+            default:
+                this.view?.webview.postMessage(message);
+                break;
+        }
+    }
+
+    public clearList(reason: string | undefined) {
+        this.view?.webview.postMessage({
+            type: 'clear_history',
+            reason: reason,
+        });
+    }
+
+    public async refresh() {
+        this.clearList(undefined);
+        const sdfg = await DaCeVSCode.getInstance().getActiveSdfg();
+        if (sdfg !== undefined) {
+            const history = sdfg.attributes.transformation_hist;
+            this.view?.webview.postMessage({
+                type: 'set_history',
+                history: history,
+                activeIndex: this.activeHistoryItemIndex,
+            });
+        }
+    }
+
     public show() {
         this.view?.show();
     }
@@ -90,25 +128,6 @@ implements vscode.WebviewViewProvider {
         if (this.view === undefined)
             return false;
         return this.view.visible;
-    }
-
-    public handleMessage(message: any, origin?: vscode.Webview): void {
-        switch (message.type) {
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
-    }
-
-    public clear(reason: string | undefined) {
-        this.view?.webview.postMessage({
-            type: 'clear',
-            reason: reason,
-        });
-    }
-
-    public refresh() {
-        vscode.commands.executeCommand('sdfgAnalysis.sync');
     }
 
 }
