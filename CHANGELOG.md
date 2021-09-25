@@ -2,7 +2,13 @@
 
 ## 1.0
 
-### 1.03
+### 1.0.4
+
+- Properly order transformations alphabetically.
+- Explicitly highlight subgraph transformations.
+- Move everything to typescript and bundle extension for performance.
+
+### 1.0.3
 
 - Hotfix to address a windows file-system naming issue.
 

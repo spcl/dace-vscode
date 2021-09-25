@@ -182,12 +182,42 @@ export async function sortTransformations(
                 uncatXforms.push(xform);
         }
 
-        VSCodeSDFV.getInstance().setTransformations([
+        const xformLists: [
+            JsonTransformation[],
+            JsonTransformation[],
+            JsonTransformation[],
+            JsonTransformation[],
+        ] = [
             selectedXforms,
             viewportXforms,
             globalXforms,
             uncatXforms,
-        ]);
+        ];
+
+        for (const xformList of xformLists) {
+            xformList.sort((a, b) => {
+                const sgXformType = 'SubgraphTransformation';
+
+                const aName = a.transformation;
+                const bName = b.transformation;
+                if (aName !== undefined && bName !== undefined) {
+                    if (a.type === sgXformType && b.type !== sgXformType)
+                        return -1;
+                    else if (a.type !== sgXformType && b.type === sgXformType)
+                        return 1;
+                    else
+                        return aName.localeCompare(bName);
+                } else if (aName !== undefined && bName === undefined) {
+                    return -1;
+                } else if (aName === undefined && bName !== undefined) {
+                    return 1;
+                }
+
+                return 0;
+            });
+        }
+
+        VSCodeSDFV.getInstance().setTransformations(xformLists);
 
         // Call the callback function if one was provided.
         if (callback !== undefined)
