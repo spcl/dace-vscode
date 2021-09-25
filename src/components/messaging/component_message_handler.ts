@@ -2,15 +2,15 @@
 // All rights reserved.
 
 import * as vscode from 'vscode';
-import { DaCeInterface } from '../../daceInterface';
+import { DaCeInterface } from '../../dace_interface';
 
-import { OutlineProvider } from "../outline";
-import { SdfgViewerProvider } from "../sdfgViewer";
-import { AnalysisProvider } from "../analysis";
-import { SdfgBreakpointProvider } from "../sdfgBreakpoints";
-import { TransformationListProvider } from '../transformationList';
-import { TransformationHistoryProvider } from '../transformationHistory';
-import { BreakpointHandler } from '../../debugger/breakpointHandler';
+import { OutlineProvider } from '../outline';
+import { SdfgViewerProvider } from '../sdfg_viewer';
+import { AnalysisProvider } from '../analysis';
+import { SdfgBreakpointProvider } from '../sdfg_breakpoints';
+import { TransformationListProvider } from '../transformation_list';
+import { TransformationHistoryProvider } from '../transformation_history';
+import { BreakpointHandler } from '../../debugger/breakpoint_handler';
 
 export class ComponentMessageHandler {
 

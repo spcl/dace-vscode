@@ -15,7 +15,7 @@ import 'material-icons/iconfont/material-icons.css';
 
 import '@spcl/sdfv/sdfv.css';
 
-import './vscodeSdfv.css';
+import './vscode_sdfv.css';
 
 import {
     AccessNode,
@@ -54,7 +54,7 @@ import {
     BreakpointIndicator,
     refreshBreakpoints,
 } from './breakpoints/breakpoints';
-import { MessageHandler } from './messaging/messageHandler';
+import { MessageHandler } from './messaging/message_handler';
 import {
     CodeProperty,
     ComboboxProperty,
@@ -67,7 +67,7 @@ import {
     TypeclassProperty,
     ValueProperty
 } from './properties/properties';
-import { VSCodeRenderer } from './renderer/vscodeRenderer';
+import { VSCodeRenderer } from './renderer/vscode_renderer';
 import {
     getApplicableTransformations,
     refreshTransformationList,

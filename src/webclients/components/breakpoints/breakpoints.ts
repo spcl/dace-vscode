@@ -13,7 +13,7 @@ import '@spcl/sdfv/sdfv.css';
 
 import './breakpoints.css';
 
-import { ISDFGDebugNodeInfo } from '../../../debugger/breakpointHandler';
+import { ISDFGDebugNodeInfo } from '../../../debugger/breakpoint_handler';
 
 declare const vscode: any;
 

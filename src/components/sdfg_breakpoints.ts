@@ -3,51 +3,45 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DaCeInterface } from '../daceInterface';
-import { DaCeVSCode } from '../extension';
+import { BreakpointHandler } from '../debugger/breakpoint_handler';
+import { BaseComponent } from './base_component';
+import { ComponentMessageHandler } from './messaging/component_message_handler';
 
-import { BaseComponent } from './baseComponent';
-import { ComponentMessageHandler } from './messaging/componentMessageHandler';
-
-export class TransformationListProvider
+export class SdfgBreakpointProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'transformationList';
+    private static readonly viewType: string = 'sdfgBreakpoints';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: TransformationListProvider | undefined = undefined;
+    private static INSTANCE: SdfgBreakpointProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        TransformationListProvider.INSTANCE = new TransformationListProvider(
-            ctx,
-            this.viewType
+        SdfgBreakpointProvider.INSTANCE = new SdfgBreakpointProvider(
+            ctx, this.viewType
         );
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
-            TransformationListProvider.viewType,
-            TransformationListProvider.INSTANCE,
+            SdfgBreakpointProvider.viewType,
+            SdfgBreakpointProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): TransformationListProvider | undefined {
+    public static getInstance(): SdfgBreakpointProvider | undefined {
         return this.INSTANCE;
     }
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
-        _context: vscode.WebviewViewResolveContext<unknown>,
+        _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
     ): void | Thenable<void> {
-        // If the DaCe interface has not been started yet, start it here.
-        DaCeInterface.getInstance().start();
-
         this.view = webviewView;
 
         webviewView.webview.options = {
@@ -63,17 +57,17 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'transformations',
+            'breakpoints',
             'index.html'
         ));
-        const fpScriptFolder: vscode.Uri = vscode.Uri.file(
+        const fpScriptSrcFolder: vscode.Uri = vscode.Uri.file(
             path.join(this.context.extensionPath, 'dist', 'web')
         );
         vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
             let baseHtml = data.toString();
             baseHtml = baseHtml.replace(
                 this.scriptSrcIdentifier,
-                webviewView.webview.asWebviewUri(fpScriptFolder).toString()
+                webviewView.webview.asWebviewUri(fpScriptSrcFolder).toString()
             );
             webviewView.webview.html = baseHtml;
 
@@ -86,34 +80,6 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public handleMessage(
-        message: any,
-        _origin: vscode.Webview | undefined = undefined
-    ): void {
-        switch (message.type) {
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
-    }
-
-    public clearList(reason: string | undefined) {
-        this.handleMessage({
-            type: 'clear_transformations',
-            reason: reason,
-        });
-    }
-
-    public refresh(hard: boolean = false) {
-        this.clearList(undefined);
-        if (hard)
-            vscode.commands.executeCommand('transformationList.sync');
-        else
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'resync_transformation_list',
-            });
-    }
-
     public show() {
         this.view?.show();
     }
@@ -122,6 +88,28 @@ implements vscode.WebviewViewProvider {
         if (this.view === undefined)
             return false;
         return this.view.visible;
+    }
+
+    public handleMessage(message: any, origin?: vscode.Webview): void {
+        switch (message.type) {
+            case 'refresh_sdfg_breakpoints':
+                message.nodes = BreakpointHandler.getInstance()?.getAllNodes();
+            // Fallthrough to send to the webview
+            default:
+                this.view?.webview.postMessage(message);
+                break;
+        }
+    }
+
+    public clear(reason: string | undefined) {
+        this.view?.webview.postMessage({
+            type: 'clear',
+            reason: reason,
+        });
+    }
+
+    public refresh() {
+        vscode.commands.executeCommand('sdfgBreakpoints.sync');
     }
 
 }

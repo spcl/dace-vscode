@@ -2,7 +2,7 @@
 // All rights reserved.
 
 import { find_graph_element_by_uuid, SDFGElement } from '@spcl/sdfv/out';
-import { VSCodeRenderer } from '../renderer/vscodeRenderer';
+import { VSCodeRenderer } from '../renderer/vscode_renderer';
 
 /**
  * Perform an action for each element in an array given by their uuids.

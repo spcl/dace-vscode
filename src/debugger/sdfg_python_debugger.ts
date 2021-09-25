@@ -2,8 +2,8 @@
 // All rights reserved.
 
 import * as vscode from 'vscode';
-import { SdfgPythonDebugSession } from './sdfgPythonDebugSession';
-import { FileAccessor } from './sdfgPythonRuntime';
+import { SdfgPythonDebugSession } from './sdfg_python_debug_session';
+import { FileAccessor } from './sdfg_python_runtime';
 
 export function activateSdfgPython(context: vscode.ExtensionContext) {
     context.subscriptions.push(

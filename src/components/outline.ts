@@ -3,10 +3,10 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DaCeInterface } from '../daceInterface';
+import { DaCeInterface } from '../dace_interface';
 
-import { BaseComponent } from './baseComponent';
-import { ComponentMessageHandler } from './messaging/componentMessageHandler';
+import { BaseComponent } from './base_component';
+import { ComponentMessageHandler } from './messaging/component_message_handler';
 
 export class OutlineProvider
 extends BaseComponent

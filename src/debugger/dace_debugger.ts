@@ -2,10 +2,10 @@
 // All rights reserved.
 
 import * as vscode from 'vscode';
-import { DaceDebuggingSession } from './daceDebuggingSession';
-import { DaCeInterface } from '../daceInterface';
-import { BreakpointHandler } from './breakpointHandler';
-import { DaceListener } from './daceListener';
+import { DaceDebuggingSession } from './dace_debugging_session';
+import { DaCeInterface } from '../dace_interface';
+import { BreakpointHandler } from './breakpoint_handler';
+import { DaceListener } from './dace_listener';
 import * as os from 'os';
 
 export function activateDaceDebug(context: vscode.ExtensionContext) {

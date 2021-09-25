@@ -4,14 +4,14 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { TransformationHistoryProvider } from './transformationHistory';
+import { TransformationHistoryProvider } from './transformation_history';
 import { OutlineProvider } from './outline';
 import { DaCeVSCode } from '../extension';
 import { AnalysisProvider } from './analysis';
-import { BaseComponent } from './baseComponent';
-import { ComponentMessageHandler } from './messaging/componentMessageHandler';
-import { TransformationListProvider } from './transformationList';
-import { getCppRange, SDFGDebugNode } from '../debugger/breakpointHandler';
+import { BaseComponent } from './base_component';
+import { ComponentMessageHandler } from './messaging/component_message_handler';
+import { TransformationListProvider } from './transformation_list';
+import { getCppRange, SDFGDebugNode } from '../debugger/breakpoint_handler';
 
 class Message {
     timeStamp: Date;

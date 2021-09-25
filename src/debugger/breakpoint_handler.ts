@@ -4,8 +4,8 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeVSCode } from '../extension';
-import { SdfgViewerProvider } from '../components/sdfgViewer';
-import { SdfgBreakpointProvider } from '../components/sdfgBreakpoints';
+import { SdfgViewerProvider } from '../components/sdfg_viewer';
+import { SdfgBreakpointProvider } from '../components/sdfg_breakpoints';
 
 export type ISDFGDebugNodeInfo = {
     cache: string | undefined,

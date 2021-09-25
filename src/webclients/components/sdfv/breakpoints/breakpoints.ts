@@ -13,7 +13,7 @@ import {
     SimpleRect,
     State,
 } from '@spcl/sdfv/out';
-import { VSCodeRenderer } from '../renderer/vscodeRenderer';
+import { VSCodeRenderer } from '../renderer/vscode_renderer';
 
 declare const vscode: any;
 

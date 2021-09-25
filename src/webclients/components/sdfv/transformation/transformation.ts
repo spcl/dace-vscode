@@ -2,9 +2,9 @@
 // All rights reserved.
 
 import { JsonTransformation } from '../../transformations/transformations';
-import { VSCodeRenderer } from '../renderer/vscodeRenderer';
+import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
-import { generateAttributesTable, VSCodeSDFV } from '../vscodeSdfv';
+import { generateAttributesTable, VSCodeSDFV } from '../vscode_sdfv';
 
 declare const vscode: any;
 

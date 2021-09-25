@@ -11,7 +11,7 @@ import 'material-icons/iconfont/material-icons.css';
 
 import '../../elements/treeview/treeview.css';
 
-import './transformationHistory.css';
+import './transformation_history.css';
 
 import {
     CustomTreeView,

@@ -7,7 +7,7 @@ import {
     AddressInfo,
 } from 'net';
 import * as vscode from 'vscode';
-import { BreakpointHandler } from './breakpointHandler';
+import { BreakpointHandler } from './breakpoint_handler';
 
 export var PORT: number = 0;
 

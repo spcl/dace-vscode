@@ -1,10 +1,10 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { AnalysisProvider } from "./analysis";
-import { OutlineProvider } from "./outline";
-import { TransformationHistoryProvider } from "./transformationHistory";
-import { TransformationListProvider } from "./transformationList";
+import { AnalysisProvider } from './analysis';
+import { OutlineProvider } from './outline';
+import { TransformationHistoryProvider } from './transformation_history';
+import { TransformationListProvider } from './transformation_list';
 
 export class OptimizationPanel {
 

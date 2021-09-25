@@ -3,7 +3,9 @@
 
 import * as vscode from 'vscode';
 
-import { MessageReceiverInterface } from './messaging/messageReceiverInterface';
+import {
+    MessageReceiverInterface,
+} from './messaging/message_receiver_interface';
 
 export abstract class BaseComponent implements MessageReceiverInterface {
 

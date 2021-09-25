@@ -7,11 +7,15 @@ import { request } from 'http';
 import * as net from 'net';
 
 import { DaCeVSCode } from './extension';
-import { SdfgViewerProvider } from './components/sdfgViewer';
-import { MessageReceiverInterface } from './components/messaging/messageReceiverInterface';
-import { TransformationListProvider } from './components/transformationList';
-import { TransformationHistoryProvider } from './components/transformationHistory';
-import { OptimizationPanel } from './components/optimizationPanel';
+import { SdfgViewerProvider } from './components/sdfg_viewer';
+import {
+    MessageReceiverInterface,
+} from './components/messaging/message_receiver_interface';
+import { TransformationListProvider } from './components/transformation_list';
+import {
+    TransformationHistoryProvider,
+} from './components/transformation_history';
+import { OptimizationPanel } from './components/optimization_panel';
 
 enum InteractionMode {
     PREVIEW,

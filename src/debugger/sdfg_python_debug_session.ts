@@ -6,9 +6,9 @@ import {
     InitializedEvent,
     LoggingDebugSession,
     OutputEvent,
-    TerminatedEvent
+    TerminatedEvent,
 } from 'vscode-debugadapter';
-import { FileAccessor, SdfgPythonDebuggerRuntime } from './sdfgPythonRuntime';
+import { FileAccessor, SdfgPythonDebuggerRuntime } from './sdfg_python_runtime';
 import { DebugProtocol } from 'vscode-debugprotocol';
 
 export interface SdfgPythonLaunchRequestArguments

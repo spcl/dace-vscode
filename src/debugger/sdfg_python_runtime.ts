@@ -5,9 +5,9 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { EventEmitter } from 'events';
 import { DaCeVSCode } from '../extension';
-import { SdfgViewer, SdfgViewerProvider } from '../components/sdfgViewer';
-import { SdfgPythonLaunchRequestArguments } from './sdfgPythonDebugSession';
-import { DaCeInterface } from '../daceInterface';
+import { SdfgViewer, SdfgViewerProvider } from '../components/sdfg_viewer';
+import { SdfgPythonLaunchRequestArguments } from './sdfg_python_debug_session';
+import { DaCeInterface } from '../dace_interface';
 
 export class SdfgPythonDebuggerRuntime extends EventEmitter {
 

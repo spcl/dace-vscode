@@ -49,9 +49,9 @@ const webclientConfig = {
     entry: {
         analysis: webSrcDir + '/analysis/analysis.ts',
         breakpoints: webSrcDir + '/breakpoints/breakpoints.ts',
-        history: webSrcDir + '/history/transformationHistory.ts',
+        history: webSrcDir + '/history/transformation_history.ts',
         outline: webSrcDir + '/outline/outline.ts',
-        sdfv: webSrcDir + '/sdfv/vscodeSdfv.ts',
+        sdfv: webSrcDir + '/sdfv/vscode_sdfv.ts',
         transformations: webSrcDir + '/transformations/transformations.ts',
     },
     output: {

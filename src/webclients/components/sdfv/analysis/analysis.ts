@@ -1,7 +1,7 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { VSCodeRenderer } from '../renderer/vscodeRenderer';
+import { VSCodeRenderer } from '../renderer/vscode_renderer';
 
 declare const vscode: any;
 

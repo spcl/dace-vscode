@@ -5,8 +5,8 @@ import { LoggingDebugSession, TerminatedEvent } from 'vscode-debugadapter';
 import * as vscode from 'vscode';
 import * as os from 'os';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { BreakpointHandler } from './breakpointHandler';
-import { PORT } from './daceListener';
+import { BreakpointHandler } from './breakpoint_handler';
+import { PORT } from './dace_listener';
 
 export interface DaceLaunchRequestArguments
     extends DebugProtocol.LaunchRequestArguments {
