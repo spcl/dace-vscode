@@ -3,8 +3,9 @@
 
 import { JsonTransformation } from '../../transformations/transformations';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
+import { generateAttributesTable } from '../utils/attributes_table';
 import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
-import { generateAttributesTable, VSCodeSDFV } from '../vscode_sdfv';
+import { VSCodeSDFV } from '../vscode_sdfv';
 
 declare const vscode: any;
 

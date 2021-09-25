@@ -10,14 +10,15 @@ import {
     get_uuid_graph_element,
     find_graph_element_by_uuid,
     SDFGElement,
-    SDFV,
 } from '@spcl/sdfv/out';
 import {
     createSingleUseModal,
     unGraphiphySdfg,
+    vscodeWriteGraph,
+} from '../utils/helpers';
+import {
     vscodeHandleEvent,
     VSCodeSDFV,
-    vscodeWriteGraph,
 } from '../vscode_sdfv';
 
 declare const vscode: any;
