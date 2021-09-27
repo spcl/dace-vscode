@@ -6,8 +6,15 @@ import * as vscode from 'vscode';
 import { SdfgViewerProvider, SDFVMessage } from '../components/sdfg_viewer';
 import { DaCeVSCode } from '../extension';
 import { BreakpointHandler } from './breakpoint_handler';
-import { CorrectnessReport, CorrectnessReportHandler } from './correctness_report_handler';
-import { DaceDebuggingSession, SDFGEditMode, SDFGEditModeItem } from './dace_debugging_session';
+import {
+    CorrectnessReport,
+    CorrectnessReportHandler,
+} from './correctness_report_handler';
+import {
+    DaceDebuggingSession,
+    SDFGEditMode,
+    SDFGEditModeItem,
+} from './dace_debugging_session';
 
 export class DaceListener extends vscode.Disposable {
 
