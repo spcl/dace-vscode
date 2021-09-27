@@ -3,36 +3,37 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DaCeInterface } from '../dace_interface';
-
+import { BreakpointHandler } from '../debugger/breakpoint_handler';
 import { BaseComponent } from './base_component';
 import { ComponentMessageHandler } from './messaging/component_message_handler';
 
-export class AnalysisProvider
+export class SdfgBreakpointProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'sdfgAnalysis';
+    private static readonly viewType: string = 'sdfgBreakpoints';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: AnalysisProvider | undefined = undefined;
+    private static INSTANCE: SdfgBreakpointProvider | undefined = undefined;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        AnalysisProvider.INSTANCE = new AnalysisProvider(ctx, this.viewType);
+        SdfgBreakpointProvider.INSTANCE = new SdfgBreakpointProvider(
+            ctx, this.viewType
+        );
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: false,
         };
         return vscode.window.registerWebviewViewProvider(
-            AnalysisProvider.viewType,
-            AnalysisProvider.INSTANCE,
+            SdfgBreakpointProvider.viewType,
+            SdfgBreakpointProvider.INSTANCE,
             {
                 webviewOptions: options,
             }
         );
     }
 
-    public static getInstance(): AnalysisProvider | undefined {
+    public static getInstance(): SdfgBreakpointProvider | undefined {
         return this.INSTANCE;
     }
 
@@ -40,10 +41,7 @@ implements vscode.WebviewViewProvider {
         webviewView: vscode.WebviewView,
         _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
-    ) {
-        // If the DaCe interface has not been started yet, start it here.
-        DaCeInterface.getInstance().start();
-
+    ): void | Thenable<void> {
         this.view = webviewView;
 
         webviewView.webview.options = {
@@ -59,17 +57,17 @@ implements vscode.WebviewViewProvider {
             this.context.extensionPath,
             'media',
             'components',
-            'analysis',
+            'breakpoints',
             'index.html'
         ));
-        const fpScriptFolder: vscode.Uri = vscode.Uri.file(
+        const fpScriptSrcFolder: vscode.Uri = vscode.Uri.file(
             path.join(this.context.extensionPath, 'dist', 'web')
         );
         vscode.workspace.fs.readFile(fpBaseHtml).then((data) => {
             let baseHtml = data.toString();
             baseHtml = baseHtml.replace(
                 this.scriptSrcIdentifier,
-                webviewView.webview.asWebviewUri(fpScriptFolder).toString()
+                webviewView.webview.asWebviewUri(fpScriptSrcFolder).toString()
             );
             webviewView.webview.html = baseHtml;
 
@@ -94,6 +92,9 @@ implements vscode.WebviewViewProvider {
 
     public handleMessage(message: any, origin?: vscode.Webview): void {
         switch (message.type) {
+            case 'refresh_sdfg_breakpoints':
+                message.nodes = BreakpointHandler.getInstance()?.getAllNodes();
+            // Fallthrough to send to the webview
             default:
                 this.view?.webview.postMessage(message);
                 break;
@@ -108,7 +109,7 @@ implements vscode.WebviewViewProvider {
     }
 
     public refresh() {
-        vscode.commands.executeCommand('sdfgAnalysis.sync');
+        vscode.commands.executeCommand('sdfgBreakpoints.sync');
     }
 
 }

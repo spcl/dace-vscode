@@ -5,15 +5,17 @@ import * as vscode from 'vscode';
 import { homedir } from 'os';
 import { join } from 'path';
 
-import { SdfgViewerProvider } from './components/sdfgViewer';
-import { DaCeInterface } from './daceInterface';
-import { TransformationHistoryProvider } from './components/transformationHistory';
+import { SdfgViewerProvider } from './components/sdfg_viewer';
+import { DaCeInterface } from './dace_interface';
+import {
+    TransformationHistoryProvider,
+} from './components/transformation_history';
 import { OutlineProvider } from './components/outline';
 import { AnalysisProvider } from './components/analysis';
-import { TransformationListProvider } from './components/transformationList';
-import { SdfgBreakpointProvider } from './components/sdfgBreakpoints';
-import { activateSdfgPython } from './debugger/sdfgPythonDebugger';
-import { activateDaceDebug } from './debugger/daceDebugger';
+import { TransformationListProvider } from './components/transformation_list';
+import { SdfgBreakpointProvider } from './components/sdfg_breakpoints';
+import { activateSdfgPython } from './debugger/sdfg_python_debugger';
+import { activateDaceDebug } from './debugger/dace_debugger';
 
 export class DaCeVSCode {
 

@@ -9,39 +9,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SDFG Viewer</title>
 
-    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css"
-        href="{{ NODE_MODULES }}/jquery-editable-select/dist/jquery-editable-select.min.css">
-    </script>
-    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/material-icons/iconfont/material-icons.css">
-
-    <link rel="stylesheet" type="text/css" href="{{ NODE_MODULES }}/@spcl/sdfv/sdfv.css">
-
-    <link rel="stylesheet" type="text/css" href="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.css">
-
     <script>
         // Reference to the VSCode API.
         let vscode = undefined;
-
-        let message_handler = undefined;
-
-        const csp_src = "{{ CSP_SRC }}";
     </script>
-
-    <script src="{{ NODE_MODULES }}/jquery/dist/jquery.min.js"></script>
 
     <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/pdfkit.standalone.js"></script>
     <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/blob-stream.js"></script>
     <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/canvas2pdf.js"></script>
-    <script src="{{ NODE_MODULES }}/@spcl/sdfv/renderer_dir/global_vars.js"></script>
 
     <script src="{{ NODE_MODULES }}/split.js/dist/split.min.js"></script>
-    <script src="{{ NODE_MODULES }}/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ NODE_MODULES }}/jquery-editable-select/dist/jquery-editable-select.min.js"></script>
-
 </head>
 
-<body onresize="rendererSendResize();">
+<body style="display: none;">
     <div id="top-bar">
         <div id="search-bar-wrapper">
             <div id="search-bar" class="container">
@@ -173,7 +153,7 @@
                         Difference
                     </span>
                 </div>
-                <div id="breakpoint-btn" class="button text-nowrap" onclick="displayBreakpoints(!showBps);">
+                <div id="breakpoint-btn" class="button text-nowrap">
                     <span id="display-bps">
                         Display Breakpoints
                     </span>
@@ -213,7 +193,7 @@
                     </span>
                 </div>
                 <div class="flex-spacer"></div>
-                <div id="info-clear-btn" class="hidden button" onclick="clear_info_box();">
+                <div id="info-clear-btn" class="hidden button">
                     <span>
                         Clear Info &times;
                     </span>
@@ -224,234 +204,16 @@
         </div>
     </div>
 
-    <script>
-        var sdfg_json = '';
-        var transformations = [[], [], [], []];
-        var daemon_connected = false;
-    </script>
-    <script src="{{ NODE_MODULES }}/@spcl/sdfv/dist/sdfv.js"></script>
+    <script src="{{ SCRIPT_SRC }}/sdfv.js"></script>
 
-    <script src="{{ CSP_SRC }}/components/sdfv/sdfv_overrides.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/vscode_sdfv.js"></script>
-
-    <script src="{{ CSP_SRC }}/components/sdfv/util/helpers.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/messaging/message_handler.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/analysis/analysis.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/properties/properties.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/transformation/transformation.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/breakpoints/breakpoints.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/correctness/correctness.js"></script>
-    <script src="{{ CSP_SRC }}/components/sdfv/util/vscode_renderer.js"></script>
-
-    <!-- Load in the monaco editor. -->
-    <script>
-        var require = {
-            paths: {
-                'vs': '{{ NODE_MODULES }}/monaco-editor/min/vs',
-            },
-        };
-    </script>
-    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/loader.js"></script>
-    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
-    <script src="{{ NODE_MODULES }}/monaco-editor/min/vs/editor/editor.main.js"></script>
-    <script>
-        window.MonacoEnvironment = { getWorkerUrl: () => proxy };
-
-        let proxy = URL.createObjectURL(new Blob([`
-            self.MonacoEnvironment = {
-                baseUrl: '{{ NODE_MODULES }}/monaco-editor/min/vs'
-            };
-            importScripts('{{ NODE_MODULES }}/monaco-editor/min/vs/base/worker/workerMain.js');
-        `], { type: 'text/javascript' }));
-
-        require(["vs/editor/editor.main"], function () {
-            window.monaco = monaco;
-        });
-
-        function getMonacoThemeName() {
-            switch ($('body').attr('data-vscode-theme-kind')) {
-                case 'vscode-light':
-                    return 'vs';
-                case 'vscode-high-contrast':
-                    return 'hs-black';
-                case 'vscode-dark':
-                default:
-                    return 'vs-dark';
-            }
-        }
-    </script>
     <script>
         vscode = acquireVsCodeApi();
-        message_handler = new MessageHandler();
-        var debug_draw = false;
-        var showBps = false;
-
-        function setRendererContent(sdfg, previewing = false,
-            prevent_refreshes = false) {
-            parsed_sdfg = daceParseSDFG(sdfg);
-
-            if (daceRenderer) {
-                daceRenderer.set_sdfg(parsed_sdfg);
-            } else {
-                if (parsed_sdfg !== null)
-                    daceRenderer = new VSCodeRenderer(
-                        parsed_sdfg, document.getElementById('contents'),
-                        daceMouseEvent, null, debug_draw, null, null
-                    );
-            }
-
-            if (!previewing) {
-                sdfg_json = sdfg;
-                if (!prevent_refreshes)
-                    get_applicable_transformations();
-            }
-
-            embedded_outline(daceRenderer, daceRenderer.graph);
-            refresh_analysis_pane();
-            refresh_breakpoints();
-
-            if (daceRenderer) {
-                if (daceRenderer.selected_elements &&
-                    daceRenderer.selected_elements.length === 1)
-                    reselect_renderer_element(
-                        daceRenderer.selected_elements[0]
-                    );
-                else if ((!daceRenderer.selected_elements) ||
-                    daceRenderer.selected_elements.length === 0)
-                    fill_info_embedded(
-                        new SDFG(daceRenderer.sdfg)
-                    );
-            }
-
-            vscode.postMessage({
-                type: "sdfv.process_queued_messages",
-                sdfgName: daceRenderer.sdfg.attributes.name,
-            });
-        }
-
-        function resetRendererContent() {
-            let user_transform = null;
-            if (daceRenderer) {
-                user_transform = daceRenderer.canvas_manager.user_transform;
-                daceRenderer.destroy();
-            }
-
-            parsed_sdfg = daceParseSDFG(sdfg_json);
-            if (parsed_sdfg !== null)
-                daceRenderer = new VSCodeRenderer(
-                    parsed_sdfg, document.getElementById('contents'),
-                    daceMouseEvent, user_transform, debug_draw, null, null
-                );
-
-            embedded_outline(daceRenderer, daceRenderer.graph);
-            refresh_analysis_pane();
-            refresh_breakpoints();
-        }
-
-        function refreshSdfg() {
-            if (vscode)
-                vscode.postMessage({
-                    type: 'sdfv.get_current_sdfg',
-                });
-        }
-
-        function displayBreakpoints(value) {
-            let already_active = daceRenderer.overlay_manager.get_overlay(
-                BreakpointIndicator
-            );
-            if (value && already_active === undefined) {
-                vscode.postMessage({
-                    type: 'sdfv.register_breakpointindicator',
-                });
-                $('#display-bps').html('Hide Breakpoints');
-            } else if (!value) {
-                vscode.postMessage({
-                    type: 'sdfv.deregister_breakpointindicator',
-                });
-                $('#display-bps').html('Display Breakpoints');
-            }
-            showBps = value;
-        }
-
-        function sdfgEditContinueHide(socketNumber) {
-            daceRenderer.overlay_manager.deregister_overlay(
-                CorrectnessOverlay
-            );
-            vscode.postMessage({
-                type: 'dace_listener.sdfg_edit_continue',
-                socketNumber: socketNumber
-            });
-            $('#sdfg-edit-continue-btn').hide();
-            $('#sdfg-edit-diff-btn').hide();
-        }
-
-        function sdfgEditContinueShow(socketNumber) {
-            $('#sdfg-edit-continue-btn').click(() => { sdfgEditContinueHide(socketNumber); });
-            $('#sdfg-edit-continue-btn').show();
-        }
-
-        function sdfgEditDifferenceShow() {
-            let btn = $('#sdfg-edit-diff-btn');
-            btn.click(() => {
-                const ol = daceRenderer.overlay_manager.get_overlay(
-                    CorrectnessOverlay
-                );
-                changeDiff(ol.diffRange, ol.diffText);
-            });
-            btn.show();
-        }
-
-        // Add a listener to update the content when the extension calls for it.
-        window.addEventListener('message', e => {
-            message_handler.handle_message(e.data);
-        });
-
-        // Send a request to the extension to jump to a specific source code
-        // file and location, if it exists.
-        function gotoSource(filePath, startRow, startChar, endRow, endChar) {
-            vscode.postMessage({
-                type: 'sdfv.go_to_source',
-                file_path: filePath,
-                startRow: startRow,
-                startChar: startChar,
-                endRow: endRow,
-                endChar: endChar,
-            });
-        }
-
-        // Send a request to the extension to jump to the
-        // generated code location of the current Node
-        function gotoCpp(sdfgName, sdfgId, stateId, nodeId) {
-            vscode.postMessage({
-                type: 'sdfv.go_to_cpp',
-                sdfg_name: sdfgName,
-                sdfg_id: sdfgId,
-                state_id: stateId,
-                node_id: nodeId
-            });
-        }
-
-        // Resize the canvas correctly if the renderer exists. This gets
-        // called whenever the body's size changes.
-        function rendererSendResize() {
-            if (daceRenderer) {
-                daceRenderer.onresize();
-                daceRenderer.draw_async();
-            }
-        }
 
         Split(['#contents', '#info-container'], {
             sizes: [60, 40],
             minSize: [0, 0],
             snapOffset: 10,
             direction: 'vertical',
-        });
-
-        $(document).ready(() => {
-            $('#processing-overlay').hide();
-            vscode.postMessage({
-                type: 'sdfv.get_current_sdfg',
-            });
         });
     </script>
 </body>

@@ -7,28 +7,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SDFG Outline</title>
+    <title>Transformation List</title>
 
     <script>
         // Reference to the VSCode API.
         let vscode = undefined;
-        const media_src = '{{ CSP_SRC }}';
     </script>
 </head>
 
 <body>
     <div id="contents" class="container-fluid">
         <div class="row">
-            <div id="outline-list" class="hidden">
+            <div id="transformation-list" class="hidden">
             </div>
         </div>
     </div>
 
-    <script src="{{ SCRIPT_SRC }}/outline.js"></script>
-
+    <script src="{{ SCRIPT_SRC }}/history.js"></script>
     <script>
         vscode = acquireVsCodeApi();
     </script>
 </body>
 
 </html>
+
