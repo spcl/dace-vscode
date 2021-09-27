@@ -407,27 +407,30 @@ export class BreakpointHandler extends vscode.Disposable {
          */
         for (const srcFile of filePaths) {
             let normalizedFilePath = normalizePath(srcFile);
-            if (!normalizedFilePath) {
+            if (!normalizedFilePath)
                 continue; // Illegal Path
-            }
 
-            if (!this.files[normalizedFilePath]) {
+            if (!this.files[normalizedFilePath])
                 this.files[normalizedFilePath] = [];
-            }
 
             let alreadySaved = this.files[normalizedFilePath].find((elem) => {
                 return elem.name === funcName;
             });
 
+            const sourcesFiles: vscode.Uri[] = [];
+            for (const file of filePaths) {
+                if (file)
+                    sourcesFiles.push(vscode.Uri.file(file));
+            }
+
             if (!alreadySaved) {
+
                 this.files[normalizedFilePath].push(
                     {
                         name: funcName,
                         cache: cachePath,
                         targetName: targetName ? targetName : 'cpu',
-                        sourceFiles: filePaths.map(
-                            file => vscode.Uri.file(file)
-                        ),
+                        sourceFiles: sourcesFiles,
                         madeWithApi: madeWithApi ? madeWithApi : false,
                         codegenMap: codegenMap ? codegenMap : false,
                     }
@@ -437,8 +440,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 alreadySaved.targetName = targetName ? targetName : 'cpu';
                 alreadySaved.codegenMap = codegenMap ? codegenMap : false;
                 alreadySaved.madeWithApi = madeWithApi ? madeWithApi : false;
-                alreadySaved.sourceFiles =
-                    filePaths.map(file => vscode.Uri.file(file));
+                alreadySaved.sourceFiles = sourcesFiles;
             }
         }
         this.setAllBreakpoints();

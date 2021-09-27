@@ -134,7 +134,7 @@
                                 "description": "Stops the debugger to apply transformations before code generation",
                                 "default": false
                             },
-                            "daCeDev": {
+                            "daceDev": {
                                 "type": "boolean",
                                 "description": "Adds some DaCe developer features. Example: creates CODEGEN map",
                                 "default": false

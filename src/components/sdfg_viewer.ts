@@ -516,8 +516,8 @@ export class SdfgViewerProvider
         // If the settings indicate it, split the webview vertically and put
         // the info container to the right instead of at the bottom.
         if (vscode.workspace.getConfiguration(
-            'dace.sdfv'
-        ).layout === 'vertical'
+                'dace.sdfv'
+            ).layout === 'vertical'
         ) {
             baseHtml = baseHtml.replace(
                 '<div id="split-container" class="split-container-vertical">',
