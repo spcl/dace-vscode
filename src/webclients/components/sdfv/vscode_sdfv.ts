@@ -29,6 +29,7 @@ import {
     get_uuid_graph_element,
     MemoryVolumeOverlay,
     mouse_event,
+    NestedSDFG,
     parse_sdfg,
     RuntimeMicroSecondsOverlay,
     ScopeNode,
@@ -53,7 +54,10 @@ import {
     refreshTransformationList,
     sortTransformations,
 } from './transformation/transformation';
-import { generateAttributesTable } from './utils/attributes_table';
+import {
+    appendDataDescriptorTable,
+    generateAttributesTable,
+} from './utils/attributes_table';
 import { reselectRendererElement } from './utils/helpers';
 
 declare const vscode: any;
@@ -278,7 +282,7 @@ export class VSCodeSDFV extends SDFV {
             btn.off('click');
             btn.prop('title', '');
         });
-        
+
         if (elem) {
             this.infoBoxSetTitle(elem.type() + ' ' + elem.label());
 
@@ -343,6 +347,17 @@ export class VSCodeSDFV extends SDFV {
 
                     generateAttributesTable(other_element, undefined, contents);
                 }
+            } else if (elem instanceof SDFG) {
+                if (elem.data && elem.data.attributes)
+                    appendDataDescriptorTable(
+                        contents, elem.data.attributes._arrays
+                    );
+            } else if (elem instanceof NestedSDFG) {
+                if (elem.data && elem.data.node.attributes)
+                    appendDataDescriptorTable(
+                        contents,
+                        elem.data.node.attributes.sdfg.attributes._arrays
+                    );
             }
 
             $('#info-clear-btn').show();

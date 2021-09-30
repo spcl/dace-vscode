@@ -1067,3 +1067,55 @@ export function generateAttributesTable(
         gotoCppBtn.show();
     }
 }
+
+export function appendDataDescriptorTable(
+    root: JQuery<HTMLElement>,
+    descriptors: { [key: string]: { type: string, attributes: any } }
+): void {
+    const dataTableBaseContainer = $('<div>', {
+        'class': 'container-fluid attr-table-base-container',
+    }).appendTo(root);
+
+    const catRow = $('<div>', {
+        'class': 'row attr-table-cat-row',
+    }).appendTo(dataTableBaseContainer);
+    const catContainer = $('<div>', {
+        'class': 'col-12 attr-table-cat-container',
+    }).appendTo(catRow);
+    const catToggleBtn = $('<button>', {
+        'class': 'attr-cat-toggle-btn active',
+        'type': 'button',
+        'text': 'Data Containers',
+        'data-bs-toggle': 'collapse',
+        'data-bs-target': '#info-table-data-containers',
+        'aria-expanded': 'false',
+        'aria-controls': 'info-table-data-containers',
+    }).appendTo(catContainer);
+
+    const attrTable = $('<div>', {
+        'class': 'container-fluid attr-table collapse show',
+        'id': 'info-table-data-containers',
+    }).appendTo(catContainer);
+    attrTable.on('hide.bs.collapse', () => {
+        catToggleBtn.removeClass('active');
+    });
+    attrTable.on('show.bs.collapse', () => {
+        catToggleBtn.addClass('active');
+    });
+
+    for (const descriptor in descriptors) {
+        const val = descriptors[descriptor];
+
+        let attrMeta = undefined;
+        const metaDict = VSCodeSDFV.getInstance().getMetaDict();
+        if (metaDict && metaDict[val.type]) {
+            attrMeta = metaDict[val.type];
+            attrMeta['metatype'] = 'dict';
+        }
+
+        attributeTablePutEntry(
+            descriptor, val.attributes, attrMeta, descriptors, undefined,
+            undefined, attrTable, false, true, false
+        );
+    }
+}

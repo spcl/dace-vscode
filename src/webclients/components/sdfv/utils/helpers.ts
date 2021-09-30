@@ -222,6 +222,7 @@ export function elementUpdateLabel(
                             element.data.node.label;
                     }
                 }
+                element.clear_cached_labels();
             } else if (element instanceof AccessNode && attributes.data) {
                 element.data.node.label = attributes.data;
             }
