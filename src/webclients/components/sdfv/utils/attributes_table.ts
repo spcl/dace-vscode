@@ -137,6 +137,116 @@ export function attrTablePutCode(
     );
 }
 
+export function attrTablePutData(
+    key: string, subkey: string | undefined, val: any, elem: any | undefined,
+    xform: any | undefined, target: any, cell: JQuery, dtype: string,
+    meta: any, editableKeys: boolean = false
+): DictProperty {
+    const dataCellContainer = $('<div>', {
+        'class': 'popup-editable-property-container',
+    }).appendTo(cell);
+    $('<div>', {
+        'html': sdfg_property_to_string(
+            val, VSCodeRenderer.getInstance()?.view_settings()
+        ),
+    }).appendTo(dataCellContainer);
+    const dataEditBtn = $('<i>', {
+        'class': 'material-icons property-edit-btn',
+        'text': 'edit',
+        'title': 'Click to edit',
+    }).appendTo(dataCellContainer);
+
+    const prop = new DictProperty(
+        elem, xform, target, key, subkey, dtype, [], val
+    );
+
+    dataEditBtn.on('click', () => {
+        prop.setProperties([]);
+
+        const modal = createSingleUseModal(
+            key, true, 'property-edit-modal-body'
+        );
+
+        const rowbox = $('<div>', {
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+        Object.keys(val.attributes).forEach(k => {
+            let v = val.attributes[k];
+
+            let valMeta = undefined;
+            if (k in meta)
+                valMeta = meta[k];
+
+            const attrProp = attributeTablePutEntry(
+                k, v, valMeta, val.attributes, elem, xform, rowbox,
+                editableKeys, false, editableKeys
+            );
+
+            if (attrProp.deleteBtn)
+                attrProp.deleteBtn.on('click', () => {
+                    attrProp.keyProp?.getInput().val('');
+                    attrProp.row.hide();
+                });
+
+            if (attrProp)
+                prop.getProperties().push(attrProp);
+        });
+
+        // If code editors (monaco editors) are part of this dictionary, they
+        // need to be resized again as soon as the modal is shown in order to
+        // properly fill the container.
+        modal.modal.on('shown.bs.modal', () => {
+            for (const property of prop.getProperties()) {
+                if (property.valProp instanceof CodeProperty)
+                    property.valProp.getEditor().layout();
+            }
+        });
+
+        if (editableKeys) {
+            const addItemContainer = $('<div>', {
+                'class': 'container-fluid',
+            }).appendTo(modal.body);
+            const addItemButtonRow = $('<div>', {
+                'class': 'row',
+            }).appendTo(addItemContainer);
+            $('<i>', {
+                'class': 'material-icons property-add-row-btn',
+                'text': 'playlist_add',
+                'title': 'Add item',
+                'click': () => {
+                    const newProp = attributeTablePutEntry(
+                        '', '', { metatype: 'str' }, val.attributes, elem,
+                        xform, rowbox, true, false, true
+                    );
+                    if (newProp) {
+                        prop.getProperties().push(newProp);
+
+                        if (newProp.deleteBtn)
+                            newProp.deleteBtn.on('click', () => {
+                                newProp.keyProp?.getInput().val('');
+                                newProp.row.hide();
+                            });
+                    }
+                },
+            }).appendTo($('<div>', {
+                'class': 'col-2',
+            }).appendTo(addItemButtonRow));
+        }
+
+        if (modal.confirmBtn)
+            modal.confirmBtn.on('click', () => {
+                const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+                if (prop.update() && !xform && sdfg)
+                    vscodeWriteGraph(sdfg);
+                modal.modal.modal('hide');
+            });
+
+        modal.modal.modal('show');
+    });
+
+    return prop;
+}
+
 export function attrTablePutNumber(
     key: string, subkey: string | undefined, val: number, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string
@@ -235,7 +345,7 @@ export function attrTablePutTypeclass(
 export function attrTablePutDict(
     key: string, subkey: string | undefined, val: any, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string,
-    valMeta: any
+    valMeta: any, allowAdding: boolean = true
 ): DictProperty {
     const dictCellContainer = $('<div>', {
         'class': 'popup-editable-property-container',
@@ -251,7 +361,9 @@ export function attrTablePutDict(
         'title': 'Click to edit',
     }).appendTo(dictCellContainer);
 
-    const prop = new DictProperty(elem, xform, target, key, subkey, dtype, []);
+    const prop = new DictProperty(
+        elem, xform, target, key, subkey, dtype, [], val
+    );
 
     dictEditBtn.on('click', () => {
         prop.setProperties([]);
@@ -365,7 +477,9 @@ export function attrTablePutList(
         'title': 'Click to edit',
     }).appendTo(listCellContainer);
 
-    const prop = new ListProperty(elem, xform, target, key, subkey, dtype, []);
+    const prop = new ListProperty(
+        elem, xform, target, key, subkey, dtype, [], val
+    );
 
     listCellEditBtn.on('click', () => {
         prop.setPropertiesList([]);
@@ -479,7 +593,7 @@ export function attrTablePutRange(
     }).appendTo(rangeCellContainer);
 
     const prop = new RangeProperty(
-        elem, xform, target, key, 'ranges', dtype, []
+        elem, xform, target, key, 'ranges', dtype, [], val
     );
 
     rangeEditBtn.on('click', () => {
@@ -772,26 +886,27 @@ export function attributeTablePutEntry(
                     sdfgMetaDict['__reverse_type_lookup__'] &&
                     sdfgMetaDict['__reverse_type_lookup__'][valType])
                     valMeta = sdfgMetaDict['__reverse_type_lookup__'][valType];
+                const allowAdding = addDeleteButton;
                 attrTablePutDict(
                     key, undefined, val, elem, xform, target, valueCell, dtype,
-                    valMeta
+                    valMeta, allowAdding
                 );
                 break;
             case 'set':
             case 'list':
             case 'tuple':
                 let elemType = undefined;
-                let elemMety = undefined;
+                let elemMeta = undefined;
                 if (meta !== undefined && meta['element_type'])
                     elemType = meta['element_type'];
                 if (sdfgMetaDict && elemType &&
                     sdfgMetaDict['__reverse_type_lookup__'] &&
                     sdfgMetaDict['__reverse_type_lookup__'][elemType])
-                    elemMety =
+                    elemMeta =
                         sdfgMetaDict['__reverse_type_lookup__'][elemType];
                 valProp = attrTablePutList(
                     key, undefined, val, elem, xform, target, valueCell, dtype,
-                    elemMety
+                    elemMeta
                 );
                 break;
             case 'Range':
@@ -810,6 +925,15 @@ export function attributeTablePutEntry(
                 valProp = attrTablePutCode(
                     key, undefined, val ? val.string_data : '', elem, xform,
                     target, valueCell, dtype
+                );
+                break;
+            case 'Array':
+            case 'Data':
+            case 'Scalar':
+            case 'View':
+                valProp = attrTablePutData(
+                    key, 'attributes', val, elem, xform, target,
+                    valueCell, dtype, meta
                 );
                 break;
             default:
@@ -884,6 +1008,7 @@ export function attributeTablePutEntry(
         });
 
     return {
+        key: key,
         keyProp: keyProp,
         valProp: valProp,
         deleteBtn: deleteBtn,
@@ -1110,11 +1235,11 @@ export function appendDataDescriptorTable(
         const metaDict = VSCodeSDFV.getInstance().getMetaDict();
         if (metaDict && metaDict[val.type]) {
             attrMeta = metaDict[val.type];
-            attrMeta['metatype'] = 'dict';
+            attrMeta['metatype'] = val.type;
         }
 
         attributeTablePutEntry(
-            descriptor, val.attributes, attrMeta, descriptors, undefined,
+            descriptor, val, attrMeta, descriptors, undefined,
             undefined, attrTable, false, true, false
         );
     }
