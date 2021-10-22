@@ -17,6 +17,8 @@ import '@spcl/sdfv/sdfv.css';
 
 import './vscode_sdfv.css';
 
+import * as staticSdfgMetaDict from '../../../utils/sdfg_meta_dict.json';
+
 import {
     AccessNode,
     DagreSDFG,
@@ -518,7 +520,15 @@ export class VSCodeSDFV extends SDFV {
         return this.sdfgString;
     }
 
-    public getMetaDict(): { [key: string]: any } | null {
+    public getMetaDict(): { [key: string]: any } {
+        if (!this.sdfgMetaDict) {
+            // If SDFG property metadata isn't available, use the static one and
+            // query an up-to-date one from DaCe if available.
+            vscode.postMessage({
+                type: 'dace.query_sdfg_metadata',
+            });
+            return staticSdfgMetaDict;
+        }
         return this.sdfgMetaDict;
     }
 

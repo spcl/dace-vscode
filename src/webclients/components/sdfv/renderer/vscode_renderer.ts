@@ -206,11 +206,12 @@ export class VSCodeRenderer extends SDFGRenderer {
     }
 
     public showSelectLibraryNodeDialog(callback: CallableFunction): void {
-        const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
-        if (sdfgMetaDict === null) {
+        if (!VSCodeSDFV.getInstance().getDaemonConnected()) {
             this.showNoDaemonDialog();
             return;
         }
+
+        const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
 
         const modalRet = createSingleUseModal(
             'Select Library Node', true, ''
