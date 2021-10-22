@@ -16,6 +16,7 @@ import {
     TransformationHistoryProvider,
 } from './components/transformation_history';
 import { OptimizationPanel } from './components/optimization_panel';
+import * as staticSdfgMetaDict from './utils/sdfg_meta_dict.json';
 
 enum InteractionMode {
     PREVIEW,
@@ -734,6 +735,8 @@ implements MessageReceiverInterface {
                 '/get_metadata',
                 callback
             );
+        else
+            callback({ 'metaDict': staticSdfgMetaDict });
     }
 
     public async loadTransformations(sdfg: any, selectedElements: any) {
