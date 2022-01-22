@@ -114,7 +114,7 @@ export function attrTablePutCode(
     });
 
     const editor = monaco_editor.create(
-        input.get(0), {
+        input.get(0)!, {
             'value': val,
             'language': lang === undefined ? 'python' : lang.toLowerCase(),
             'theme': getMonacoThemeName(),

@@ -23,11 +23,11 @@ enum InteractionMode {
 }
 
 export class DaCeInterface
-implements MessageReceiverInterface {
+    implements MessageReceiverInterface {
 
     private static INSTANCE = new DaCeInterface();
 
-    private constructor() {}
+    private constructor() { }
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
@@ -194,7 +194,7 @@ implements MessageReceiverInterface {
         }
     }
 
-    private getRunDaceScriptUri(): vscode.Uri | undefined{
+    private getRunDaceScriptUri(): vscode.Uri | undefined {
         const extensionUri =
             DaCeVSCode.getInstance().getExtensionContext()?.extensionUri;
         if (!extensionUri) {
@@ -539,6 +539,7 @@ implements MessageReceiverInterface {
                     {
                         sdfg: sdfg,
                         transformation: transformation,
+                        permissive: false,
                     },
                     callback
                 );
@@ -762,13 +763,22 @@ implements MessageReceiverInterface {
             });
         }
 
+        async function clearSpinner(error: any) {
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'get_applicable_transformations_callback',
+                transformations: undefined,
+            });
+        }
+
         this.sendPostRequest(
             '/transformations',
             {
-                'sdfg': JSON.parse(sdfg),
-                'selected_elements': JSON.parse(selectedElements),
+                sdfg: JSON.parse(sdfg),
+                selected_elements: JSON.parse(selectedElements),
+                permissive: false,
             },
-            callback
+            callback,
+            clearSpinner,
         );
     }
 

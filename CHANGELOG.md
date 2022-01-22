@@ -2,6 +2,11 @@
 
 ## 1.0
 
+### 1.0.5
+
+- Support for DaCe v0.12 and above
+- Indicate number of available transformations in collapsed treeview
+
 ### 1.0.4
 
 - Properly order transformations alphabetically.

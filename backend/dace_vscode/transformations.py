@@ -147,7 +147,7 @@ def apply_transformation(sdfg_json, transformation_json):
     }
 
 
-def get_transformations(sdfg_json, selected_elements):
+def get_transformations(sdfg_json, selected_elements, permissive):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
     # delays when booting in daemon mode.
     from dace.transformation.optimizer import SDFGOptimizer
@@ -161,7 +161,11 @@ def get_transformations(sdfg_json, selected_elements):
     sdfg = loaded['sdfg']
 
     optimizer = SDFGOptimizer(sdfg)
-    matches = optimizer.get_pattern_matches()
+    try:
+        matches = optimizer.get_pattern_matches(permissive=permissive)
+    except TypeError:
+        # Compatibility with versions older than 0.12
+        matches = optimizer.get_pattern_matches(strict=not permissive)
 
     transformations = []
     docstrings = {}
@@ -204,12 +208,14 @@ def get_transformations(sdfg_json, selected_elements):
             subgraph = SubgraphView(state, selected_nodes)
 
     if subgraph is not None:
-        extensions = SubgraphTransformation.extensions()
+        if hasattr(SubgraphTransformation, 'extensions'):
+            # Compatibility with versions older than 0.12
+            extensions = SubgraphTransformation.extensions()
+        else:
+            extensions = SubgraphTransformation.subclasses_recursive()
+
         for xform in extensions:
-            xform_data = extensions[xform]
-            if ('singlestate' in xform_data and
-                xform_data['singlestate'] and
-                len(selected_states) > 0):
+            if len(selected_states) > 0:  # Subgraph transformations are single-state
                 continue
             xform_obj = xform(subgraph)
             if xform_obj.can_be_applied(selected_sdfg, subgraph):
