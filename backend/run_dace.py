@@ -240,8 +240,7 @@ def run_daemon(port):
     def _apply_transformation():
         request_json = request.get_json()
         return transformations.apply_transformation(
-            request_json['sdfg'], request_json['transformation'],
-            request_json['permissive'])
+            request_json['sdfg'], request_json['transformation'])
 
     @daemon.route('/expand_library_node', methods=['POST'])
     def _expand_library_node():

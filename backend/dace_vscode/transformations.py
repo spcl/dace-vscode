@@ -77,6 +77,7 @@ def reapply_history_until(sdfg_json, index):
 
     for i in range(index + 1):
         transformation = history[i]
+        transformation._sdfg = original_sdfg.sdfg_list[transformation.sdfg_id]
         try:
             if isinstance(transformation, SubgraphTransformation):
                 transformation.apply(
@@ -125,6 +126,7 @@ def apply_transformation(sdfg_json, transformation_json):
         }
     try:
         target_sdfg = sdfg.sdfg_list[transformation.sdfg_id]
+        transformation._sdfg = target_sdfg
         if isinstance(transformation, SubgraphTransformation):
             sdfg.append_transformation(transformation)
             transformation.apply(target_sdfg)
