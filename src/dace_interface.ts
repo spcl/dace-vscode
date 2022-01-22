@@ -539,6 +539,7 @@ implements MessageReceiverInterface {
                     {
                         sdfg: sdfg,
                         transformation: transformation,
+                        permissive: false,
                     },
                     callback
                 );
@@ -765,8 +766,9 @@ implements MessageReceiverInterface {
         this.sendPostRequest(
             '/transformations',
             {
-                'sdfg': JSON.parse(sdfg),
-                'selected_elements': JSON.parse(selectedElements),
+                sdfg: JSON.parse(sdfg),
+                selected_elements: JSON.parse(selectedElements),
+                permissive: false,
             },
             callback
         );
