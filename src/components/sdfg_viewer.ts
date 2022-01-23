@@ -408,6 +408,7 @@ export class SdfgViewerProvider
             SdfgViewerProvider.getInstance()?.removeOpenEditor(
                 document
             );
+            DaCeVSCode.getInstance()?.clearActiveSdfg();
         });
 
         webviewPanel.webview.options = {
