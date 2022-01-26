@@ -1,0 +1,38 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "watch",
+			"problemMatcher": "$tsc-watch",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "never"
+			},
+			"group": "build",
+			"label": "npm: watch",
+			"detail": "tsc -watch -p ./"
+		},
+		{
+			"type": "npm",
+			"script": "webpack-dev",
+			"problemMatcher": "$ts-webpack-watch",
+			"isBackground": true,
+			"label": "npm: webpack-dev",
+			"detail": "webpack --mode development --watch",
+			"presentation": {
+				"echo": true,
+				"reveal": "never",
+				"revealProblems": "onProblem",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}
