@@ -545,7 +545,7 @@
         "file-loader": "^6.2.0",
         "glob": "^7.1.6",
         "mocha": "^7.2.0",
-        "node-sass": "^6.0.1",
+        "node-sass": "^7.0.0",
         "postcss-loader": "^6.1.1",
         "sass-loader": "^12.1.0",
         "style-loader": "^3.2.1",
