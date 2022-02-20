@@ -401,6 +401,79 @@ export class DictProperty extends Property {
 
 }
 
+export class LogicalGroupProperty extends Property {
+
+    private readonly nameProperty: ValueProperty;
+    private readonly colorProperty: ValueProperty;
+
+    constructor(
+        element: any | undefined,
+        xform: any | undefined,
+        target: any,
+        key: string,
+        subkey: string | undefined,
+        datatype: string,
+        protected nameInput: JQuery<HTMLElement>,
+        protected colorInput: JQuery<HTMLElement>,
+    ) {
+        super(element, xform, target, key, subkey, datatype);
+
+        this.nameProperty = new ValueProperty(
+            element, xform, target, key, 'name', 'string', nameInput
+        );
+        this.colorProperty = new ValueProperty(
+            element, xform, target, key, 'color', 'string', colorInput
+        );
+    }
+
+    public getValue(): PropertyValueReturn {
+        const newDict: { [key: string]: any } = {};
+        let valueChanged = false;
+
+        for (const key in this.target[this.key]) {
+            if (key === 'color' || key === 'name')
+                continue;
+
+            newDict[key] = this.target[this.key][key];
+        }
+
+        const nameRet = this.nameProperty.getValue();
+        valueChanged = valueChanged || nameRet.valueChanged;
+        newDict['name'] = nameRet.value;
+
+        const colorRet = this.colorProperty.getValue();
+        valueChanged = valueChanged || colorRet.valueChanged;
+        newDict['color'] = colorRet.value;
+
+        if (!('nodes' in newDict))
+            newDict['nodes'] = [];
+        if (!('states' in newDict))
+            newDict['states'] = [];
+        if (!('type' in newDict))
+            newDict['type'] = 'LogicalGroup';
+
+        return {
+            value: newDict['name'] === '' ? undefined : newDict,
+            valueChanged: valueChanged,
+        };
+    }
+
+    public update(): boolean {
+        const res = this.getValue();
+        super.writeBack(res.value);
+        return res.valueChanged;
+    }
+
+    public getNameInput(): JQuery<HTMLElement> {
+        return this.nameInput;
+    }
+
+    public getColorInput(): JQuery<HTMLElement> {
+        return this.colorInput;
+    }
+
+}
+
 export class RangeProperty extends Property {
 
     constructor(
