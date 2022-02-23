@@ -174,7 +174,7 @@ export class VSCodeSDFV extends SDFV {
         const outlineList = [];
 
         const topLevelSDFG = {
-            'icon': 'res:icon-theme/sdfg.svg',
+            'icon': 'res:icons/sdfg.svg',
             'type': 'SDFG',
             'label': `SDFG ${renderer.get_sdfg().attributes.name}`,
             'collapsed': false,
@@ -226,7 +226,7 @@ export class VSCodeSDFV extends SDFV {
                         icon = 'fiber_manual_record';
                         break;
                     case 'NestedSDFG':
-                        icon = 'res:icon-theme/sdfg.svg';
+                        icon = 'res:icons/sdfg.svg';
                         break;
                     default:
                         icon = '';
