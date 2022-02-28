@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Editor",
     "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "1.0.11",
+    "version": "1.0.12",
     "engines": {
         "vscode": "^1.55.0"
     },
@@ -189,6 +189,10 @@
                     "SDFG",
                     "sdfg"
                 ],
+                "icon": {
+                    "dark": "media/resources/icons/sdfg.svg",
+                    "light": "media/resources/icons/sdfg.svg"
+                },
                 "configuration": "./language-configuration.json"
             }
         ],
@@ -209,13 +213,6 @@
                     }
                 ],
                 "priority": "default"
-            }
-        ],
-        "iconThemes": [
-            {
-                "id": "sdfgicon",
-                "label": "Seti + SDFG Extension",
-                "path": "media/resources/icon-theme/sdfg-icon-theme.json"
             }
         ],
         "viewsContainers": {
