@@ -655,8 +655,15 @@ $(() => {
         VSCodeSDFV.getInstance().startFindInGraph();
     });
 
+    // Start search whenever text is entered in the search bar.
     $('#search').on('input', function (e) {
         VSCodeSDFV.getInstance().startFindInGraph();
+    });
+
+    // Start search on enter press in the search bar.
+    $('#search').on('keydown', (e) => {
+        if (e.key === 'Enter')
+            VSCodeSDFV.getInstance().startFindInGraph();
     });
 
     $('#breakpoint-btn').on('click', () => {
