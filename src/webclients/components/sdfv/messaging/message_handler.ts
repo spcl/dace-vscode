@@ -50,7 +50,7 @@ export class MessageHandler {
                 );
                 if (message.result)
                     instrumentation_report_read_complete(
-                        message.result, renderer
+                        sdfv, message.result, renderer
                     );
             // Fall through to set the criterium.
             case 'instrumentation_report_change_criterium':
