@@ -59,6 +59,8 @@ export function refreshAnalysisPane(): void {
             availableOverlays: {
                 'Memory Volume': 'MemoryVolumeOverlay',
                 'Static FLOP': 'StaticFlopsOverlay',
+                'Storage Location': 'MemoryLocationOverlay',
+                'Operational Intensity': 'OperationalIntensityOverlay',
             },
             activeOverlays: activeOverlays,
         });

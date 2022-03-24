@@ -3,6 +3,7 @@
 
 import {
     instrumentation_report_read_complete,
+    OperationalIntensityOverlay,
     RuntimeMicroSecondsOverlay,
     StaticFlopsOverlay,
 } from '@spcl/sdfv/out';
@@ -167,6 +168,15 @@ export class MessageHandler {
                     );
                     if (overlay !== undefined && message.map !== undefined &&
                         overlay instanceof StaticFlopsOverlay)
+                        overlay.update_flops_map(message.map);
+                } else if (renderer?.get_overlay_manager().is_overlay_active(
+                    OperationalIntensityOverlay
+                )) {
+                    const overlay = renderer.get_overlay_manager().get_overlay(
+                        OperationalIntensityOverlay
+                    );
+                    if (overlay !== undefined && message.map !== undefined &&
+                        overlay instanceof OperationalIntensityOverlay)
                         overlay.update_flops_map(message.map);
                 }
                 break;
