@@ -64,12 +64,11 @@ export class DaCeVSCode {
     }
 
     private openGeneratedSdfg(
-        sdfgPath: string,
+        sdfgUri: vscode.Uri,
         sourcePath: string,
         linkFile?: string,
         argv?: string[]
     ) {
-        const sdfgUri = vscode.Uri.file(sdfgPath);
         vscode.commands.executeCommand(
             'vscode.openWith',
             sdfgUri,
@@ -86,7 +85,9 @@ export class DaCeVSCode {
         });
     }
 
-    private parseSdfgLinkFile(raw: string, path: string): boolean {
+    private async parseSdfgLinkFile(
+        raw: string, path: string
+    ): Promise<boolean> {
         const lines = raw.split(/\r?\n/);
         if (lines.length < 2)
             return false;
@@ -113,14 +114,32 @@ export class DaCeVSCode {
             if (elements.length >= 4) {
                 const name = elements[0];
                 const intermediateSdfgPath = elements[1];
+                const intermediateSdfgUri =
+                    vscode.Uri.file(intermediateSdfgPath);
                 const sdfgPath = elements[2];
+                const sdfgUri = vscode.Uri.file(sdfgPath);
                 const sourcePath = elements[3];
                 const argv = elements.slice(4, elements.length - 1);
+
+                // Check if the SDFG file actually exists. If not, check if the
+                // _dacegraphs SDFG exists as a fallback.
+                let targetUri = intermediateSdfgUri;
+                try {
+                    await vscode.workspace.fs.stat(targetUri);
+                } catch {
+                    targetUri = sdfgUri;
+                    try {
+                        await vscode.workspace.fs.stat(targetUri);
+                    } catch {
+                        // The _dacegraphs SDFG also doesn't exist, move on.
+                        continue;
+                    }
+                }
 
                 // Check if the SDFG isn't currently open. If it is, don't
                 // do anything.
                 if (this.activeSdfgFileName !== undefined &&
-                    vscode.Uri.file(sdfgPath).fsPath ===
+                    targetUri.fsPath ===
                     vscode.Uri.file(this.activeSdfgFileName).fsPath)
                     continue;
 
@@ -131,7 +150,7 @@ export class DaCeVSCode {
                 if (autoOpen !== undefined) {
                     if (autoOpen)
                         this.openGeneratedSdfg(
-                            sdfgPath,
+                            targetUri,
                             sourcePath,
                             path,
                             argv
@@ -156,7 +175,7 @@ export class DaCeVSCode {
                         // Fall through.
                         case 'Yes':
                             this.openGeneratedSdfg(
-                                sdfgPath,
+                                targetUri,
                                 sourcePath,
                                 path,
                                 argv
@@ -205,6 +224,42 @@ export class DaCeVSCode {
         );
 
         // Register necessary commands.
+        this.registerCommand('sdfg.compile', () => {
+            const sdfgFile = DaCeVSCode.getInstance().getActiveSdfgFileName();
+            if (sdfgFile) {
+                const uri = vscode.Uri.file(sdfgFile);
+
+                vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Window,
+                    title: 'Compiling SDFG',
+                    cancellable: false,
+                }, (_progress) => {
+                    return new Promise<string>((resolve, reject) => {
+                        DaCeInterface.getInstance().compileSdfgFromFile(
+                            uri, (data: any) => {
+                                if (data.filename === undefined) {
+                                    let errorMsg = 'Failed to compile SDFG.';
+                                    if (data.error)
+                                        errorMsg += ' Error message: ' +
+                                            data.error.message + ' (' +
+                                            data.error.details + ')';
+                                    vscode.window.showErrorMessage(errorMsg);
+                                    console.error(errorMsg);
+                                    reject();
+                                } else {
+                                    resolve(data.filename);
+                                }
+                            },
+                            false
+                        );
+                    });
+                }).then((filename) => {
+                    vscode.window.showInformationMessage(
+                        'SDFG compiled, library generated at: ' + filename
+                    );
+                });
+            }
+        });
         this.registerCommand('transformationList.sync', () => {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'get_applicable_transformations',
