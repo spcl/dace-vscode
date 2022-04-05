@@ -167,6 +167,11 @@
                             "Split the SDFG Optimizer layout horizontally",
                             "Split the SDFG Optimizer layout vertically"
                         ]
+                    },
+                    "dace.backend.interpreterPath": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter."
                     }
                 }
             }
@@ -322,6 +327,15 @@
                 "icon": "$(code)"
             },
             {
+                "command": "sdfg.compile",
+                "title": "Compile the SDFG file",
+                "category": "SDFV",
+                "icon": {
+                    "dark": "media/resources/icons/dark/build.svg",
+                    "light": "media/resources/icons/light/build.svg"
+                }
+            },
+            {
                 "command": "transformationList.sync",
                 "title": "Refresh Transformations",
                 "icon": {
@@ -464,6 +478,11 @@
                     "command": "sdfg.sourcefiles",
                     "when": "sdfg.showMenu.goto.py == true",
                     "group": "1_run@40"
+                },
+                {
+                    "command": "sdfg.compile",
+                    "group": "navigation@0",
+                    "when": "resourceLangId == sdfg"
                 }
             ],
             "editor/context": [
