@@ -76,10 +76,27 @@ export class MessageHandler {
                     message.value
                 );
                 break;
-            case 'update_badness_scale_method':
-                renderer?.get_overlay_manager().update_badness_scale_method(
+            case 'update_heatmap_scaling_method':
+                renderer?.get_overlay_manager().update_heatmap_scaling_method(
                     message.method
                 );
+
+                if (message.additionalVal !== undefined) {
+                    switch (message.method) {
+                        case 'hist':
+                            renderer?.get_overlay_manager()
+                                .update_heatmap_scaling_hist_n_buckets(
+                                    message.additionalVal
+                                );
+                            break;
+                        case 'exponential_interpolation':
+                            renderer?.get_overlay_manager()
+                                .update_heatmap_scaling_exp_base(
+                                    message.additionalVal
+                                );
+                            break;
+                    }
+                }
                 break;
             case 'register_overlay':
                 {
