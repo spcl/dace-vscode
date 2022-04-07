@@ -21,33 +21,68 @@
         </div>
         <div id="contents" class="hidden row">
             <div>
-                <div id="badness-scale-method-container">
+                <div id="heatmap-scaling-method-container">
                     <div>
                         <span>
                             Overlay scaling method:
                         </span>
                     </div>
-                    <div>
-                        <!-- TODO(later): Allow the user to select a number of bins -->
-                        <label>
-                            <input type="radio"
-                                name="badness-scale-method"
-                                value="hist">
-                            Histogram
-                        </label>
-                        <label>
-                            <input type="radio"
-                                name="badness-scale-method"
-                                value="mean">
-                            Mean
-                        </label>
-                        <label>
-                            <input type="radio"
-                                name="badness-scale-method"
-                                value="median"
-                                checked="checked">
-                            Median
-                        </label>
+                    <div class="container-fluid" style="padding: 0;">
+                        <div class="row">
+                            <div>
+                                <select class="form-select"
+                                        id="scaling-method-input">
+                                    <option value="median" selected="selected">
+                                        Median
+                                    </option>
+                                    <option value="mean">
+                                        Mean
+                                    </option>
+                                    <option value="hist">
+                                        Histogram
+                                    </option>
+                                    <option value="linear_interpolation">
+                                        Linear interpolation
+                                    </option>
+                                    <option value="exponential_interpolation">
+                                        Exponential interpolation
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row mt-2 hidden"
+                             id="scaling-method-hist-buckets-container">
+                            <label class="form-label"
+                                   for="scaling-method-hist-buckets-input">
+                                <span style="display:inline-block; vertical-align: middle; line-height: normal;">
+                                    Number of histogram buckets:
+                                </span>
+                                <span class="material-icons-outlined"
+                                      data-bs-toggle="tooltip"
+                                      data-bs-placement="top"
+                                      title="Setting to 0 sets the number of buckets to the number of distinct values"
+                                      style="display:inline-block; vertical-align: middle; line-height: normal;">
+                                    info
+                                </span>
+                            </label>
+                            <input type="number"
+                                   class="form-control"
+                                   min="0"
+                                   value="0"
+                                   id="scaling-method-hist-buckets-input">
+                        </div>
+                        <div class="form-row mt-2 hidden"
+                             id="scaling-method-exp-base-container">
+                            <label class="form-label"
+                                   for="scaling-method-exp-base-input">
+                                Exponent:
+                            </label>
+                            <input type="number"
+                                   class="form-control"
+                                   min="2"
+                                   value="2"
+                                   id="scaling-method-exp-base-input">
+                        </div>
                     </div>
                 </div>
                 <hr class="horizontal-divider">

@@ -27,9 +27,11 @@ import {
     find_in_graph,
     GenericSdfgOverlay,
     get_uuid_graph_element,
+    MemoryLocationOverlay,
     MemoryVolumeOverlay,
     mouse_event,
     NestedSDFG,
+    OperationalIntensityOverlay,
     parse_sdfg,
     RuntimeMicroSecondsOverlay,
     ScopeNode,
@@ -87,6 +89,8 @@ export class VSCodeSDFV extends SDFV {
             'StaticFlopsOverlay': StaticFlopsOverlay,
             'RuntimeMicroSecondsOverlay': RuntimeMicroSecondsOverlay,
             'BreakpointIndicator': BreakpointIndicator,
+            'MemoryLocationOverlay': MemoryLocationOverlay,
+            'OperationalIntensityOverlay': OperationalIntensityOverlay,
         };
 
     private monaco: any | null = null;

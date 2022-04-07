@@ -30,6 +30,15 @@ body {
   resize: none;
 }
 
+#minimap {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 100px;
+  height: 200px;
+  border: 1px solid black;
+}
+
 .button {
   color: var(--vscode-button-foreground);
   background-color: var(--vscode-button-background);
