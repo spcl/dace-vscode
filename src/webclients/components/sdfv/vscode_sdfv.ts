@@ -182,10 +182,12 @@ export class VSCodeSDFV extends SDFV {
         elements: any[],
         renderer: SDFGRenderer,
         selectedElements: SDFGElement[],
-        sdfv: SDFV
+        sdfv: SDFV,
+        endsPan: boolean
     ): boolean {
         const externalRet = mouse_event(
-            evtype, event, mousepos, elements, renderer, selectedElements, sdfv
+            evtype, event, mousepos, elements, renderer, selectedElements, sdfv,
+            endsPan
         );
 
         if (evtype === 'click' || evtype === 'dblclick') {
