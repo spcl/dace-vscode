@@ -159,7 +159,37 @@ function clearRuntimeReport() {
         });
 }
 
+function onScalingUpdated(): void {
+    const scalingMethod = $('#scaling-method-input').val();
+    let additionalVal = undefined;
+    switch (scalingMethod) {
+        case 'hist':
+            $('#scaling-method-hist-buckets-container').show();
+            $('#scaling-method-exp-base-container').hide();
+            additionalVal = $('#scaling-method-hist-buckets-input').val();
+            break;
+        case 'exponential_interpolation':
+            $('#scaling-method-hist-buckets-container').hide();
+            $('#scaling-method-exp-base-container').show();
+            additionalVal = $('#scaling-method-exp-base-input').val();
+            break;
+        default:
+            $('#scaling-method-exp-base-container').hide();
+            $('#scaling-method-hist-buckets-container').hide();
+            break;
+    }
+
+    if (vscode)
+        vscode.postMessage({
+            type: 'sdfv.update_heatmap_scaling_method',
+            method: scalingMethod,
+            additionalVal: additionalVal,
+        });
+}
+
 $(() => {
+    ($('[data-bs-toggle="tooltip"') as any)?.tooltip();
+
     symbolResolution = new SymbolResolution();
 
     // Add a listener to receive messages from the extension.
@@ -195,10 +225,29 @@ $(() => {
                 symbolResolution?.removeAllSymbolDefinitions();
                 break;
             case 'refresh_analysis_pane':
-                if (message.badnessScaleMethod !== undefined)
-                    $('input[type=radio][name=badness-scale-method]').val(
-                        [message.badnessScaleMethod]
+                if (message.heatmapScalingMethod !== undefined) {
+                    $('#scaling-method-input').val(
+                        message.heatmapScalingMethod
                     );
+
+                    if (message.heatmapScalingAdditionalVal !== undefined) {
+                        switch (message.heatmapScalingMethod) {
+                            case 'hist':
+                                $('#scaling-method-hist-buckets-container')
+                                    .show();
+                                break;
+                            case 'exponential_interpolation':
+                                $('#scaling-method-exp-base-container').show();
+                                break;
+                            default:
+                                $('#scaling-method-exp-base-container').hide();
+                                $('#scaling-method-hist-buckets-container')
+                                    .hide();
+                                break;
+                        }
+                    }
+                }
+
 
                 if (message.availableOverlays !== undefined) {
                     const toggleContainer = $('#overlay-toggles');
@@ -288,13 +337,9 @@ $(() => {
         }
     });
 
-    $('input[type=radio][name=badness-scale-method]').on('change', function() {
-        if (vscode)
-            vscode.postMessage({
-                type: 'sdfv.update_badness_scale_method',
-                method: (this as HTMLInputElement).value,
-            });
-    });
+    $('#scaling-method-input').on('change', onScalingUpdated);
+    $('#scaling-method-hist-buckets-input').on('change', onScalingUpdated);
+    $('#scaling-method-exp-base-input').on('change', onScalingUpdated);
 
     $('#runtime-report-file-input').on('change', function () {
         const fr = new FileReader();

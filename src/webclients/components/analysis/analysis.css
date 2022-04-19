@@ -102,13 +102,13 @@ button {
     margin-bottom: .5rem;
 }
 
-#badness-scale-method-container input {
+#heatmap-scaling-method-container input {
     background-color: var(--vscode-checkbox-background);
     color: var(--vscode-checkbox-foreground);
     border-color: var(--vscode-checkbox-border);
 }
 
-#badness-scale-method-container input:checked {
+#heatmap-scaling-method-container input:checked {
     background-color: var(--vscode-inputOption-activeBackground);
     color: var(--vscode-inputOption-activeForeground);
     border-color: var(--vscode-inputOption-activeBorder);

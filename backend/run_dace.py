@@ -22,6 +22,7 @@ except (ModuleNotFoundError, ImportError):
         with open('.env', 'r') as fp:
             lines = fp.readlines()
             for line in lines:
+                line = line.strip()
                 if '=' not in line:
                     continue
                 pos = line.find('=')
