@@ -3,6 +3,7 @@
 
 import {
     instrumentation_report_read_complete,
+    LogicalGroupOverlay,
     OperationalIntensityOverlay,
     RuntimeMicroSecondsOverlay,
     StaticFlopsOverlay,
@@ -101,10 +102,15 @@ export class MessageHandler {
             case 'register_overlay':
                 {
                     const ol = message.overlay;
-                    if (typeof ol === 'string' && ol)
+                    if (typeof ol === 'string' && ol &&
+                        !renderer?.get_overlay_manager().is_overlay_active(
+                            VSCodeSDFV.OVERLAYS[ol]
+                        )
+                    ) {
                         renderer?.get_overlay_manager().register_overlay(
                             VSCodeSDFV.OVERLAYS[ol]
                         );
+                    }
                 }
                 break;
             case 'deregister_overlay':
@@ -114,6 +120,28 @@ export class MessageHandler {
                         renderer?.get_overlay_manager().deregister_overlay(
                             VSCodeSDFV.OVERLAYS[ol]
                         );
+                    }
+                }
+                break;
+            case 'set_overlays':
+                {
+                    const olm = renderer?.get_overlay_manager();
+                    const overlays = olm?.get_overlays();
+                    if (overlays) {
+                        for (const ol of overlays) {
+                            if (ol instanceof LogicalGroupOverlay)
+                                continue;
+
+                            if (!message.overlays.includes(ol.constructor.name))
+                                olm?.deregister_overlay(
+                                    VSCodeSDFV.OVERLAYS[ol.constructor.name]
+                                );
+                        }
+                    }
+
+                    for (const ol of message.overlays) {
+                        if (!olm?.is_overlay_active(VSCodeSDFV.OVERLAYS[ol]))
+                            olm?.register_overlay(VSCodeSDFV.OVERLAYS[ol]);
                     }
                 }
                 break;
