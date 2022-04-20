@@ -27,12 +27,15 @@ import {
     find_in_graph,
     GenericSdfgOverlay,
     get_uuid_graph_element,
+    LogicalGroup,
+    LogicalGroupOverlay,
     MemoryLocationOverlay,
     MemoryVolumeOverlay,
     mouse_event,
     NestedSDFG,
     OperationalIntensityOverlay,
     parse_sdfg,
+    Point2D,
     RuntimeMicroSecondsOverlay,
     ScopeNode,
     SDFG,
@@ -40,6 +43,7 @@ import {
     SDFGNode,
     SDFGRenderer,
     SDFV,
+    State,
     StaticFlopsOverlay,
     traverse_sdfg_scopes,
 } from '@spcl/sdfv/out';
@@ -57,7 +61,7 @@ import {
     sortTransformations,
 } from './transformation/transformation';
 import { generateAttributesTable } from './utils/attributes_table';
-import { reselectRendererElement } from './utils/helpers';
+import { getElementMetadata, reselectRendererElement } from './utils/helpers';
 
 declare const vscode: any;
 
@@ -169,6 +173,78 @@ export class VSCodeSDFV extends SDFV {
             vscode.postMessage({
                 type: 'transformation_list.deselect',
             });
+    }
+
+    private onMouseEvent(
+        evtype: string,
+        event: Event,
+        mousepos: Point2D,
+        elements: any[],
+        renderer: SDFGRenderer,
+        selectedElements: SDFGElement[],
+        sdfv: SDFV,
+        endsPan: boolean
+    ): boolean {
+        const externalRet = mouse_event(
+            evtype, event, mousepos, elements, renderer, selectedElements, sdfv,
+            endsPan
+        );
+
+        if (evtype === 'click' || evtype === 'dblclick') {
+            if (selectedElements.length > 1) {
+                // Ensure all elements are in the same SDFG.
+                let sameGraph = true;
+                let sdfgId: null | number = null;
+                const nodes: (SDFGNode | State)[] = [];
+                selectedElements.forEach(element => {
+                    if (element instanceof SDFGNode ||
+                        element instanceof State) {
+                        if (sdfgId === null) {
+                            sdfgId = element.sdfg.sdfg_list_id;
+                        } else if (sdfgId !== element.sdfg.sdfg_list_id) {
+                            sameGraph = false;
+                            return;
+                        }
+                        nodes.push(element);
+                    }
+                });
+
+                const contents = sdfv.sidebar_get_contents();
+
+                if (contents) {
+                    if (sameGraph) {
+                        $('<span>', {
+                            text: 'Assign elements to logical group: ',
+                        }).appendTo($(contents));
+                        const groupSelect = $('<select>', {
+                            'class': 'sdfv-property-dropdown',
+                            // TODO: handle changing.
+                        }).appendTo($(contents));
+
+                        const sdfg = nodes[0].sdfg;
+                        if (sdfg?.attributes?.logical_groups) {
+                            sdfg?.attributes?.logical_groups.forEach(
+                                (group: LogicalGroup) => {
+                                    groupSelect.append(new Option(
+                                        group.name,
+                                        group.name,
+                                        false,
+                                        false
+                                    ));
+                                }
+                            );
+                        }
+                    } else {
+                        contents.innerText =
+                            '<p>Not all elements are part of the same ' +
+                            '(sub)SDFG, no grouping possible.</p>';
+                    }
+                }
+            }
+            sdfv.sidebar_show();
+        }
+
+        return externalRet;
     }
 
     public outline(renderer: SDFGRenderer, graph: DagreSDFG): void {
@@ -289,7 +365,93 @@ export class VSCodeSDFV extends SDFV {
 
             const contents = $('#info-contents');
             contents.html('');
-            if (elem instanceof Edge && elem.data.type === 'Memlet' &&
+
+            // If the grouping view is active, show a possibility for assigning
+            // the node to groups or creating new ones.
+            if ((elem instanceof SDFGNode || elem instanceof State) &&
+                getElementMetadata(elem) !== undefined &&
+                VSCodeRenderer.getInstance()?.get_overlay_manager()
+                    .is_overlay_active(LogicalGroupOverlay)) {
+                const nodeGroups: LogicalGroup[] = [];
+                const allGroups: LogicalGroup[] = [];
+
+                if (elem instanceof SDFGNode) {
+                    elem.sdfg.attributes?.logical_groups?.forEach(
+                        (group: LogicalGroup) => {
+                            allGroups.push(group);
+                            let present = false;
+                            group.nodes.forEach(node => {
+                                if (node[0] === elem.parent_id &&
+                                    node[1] === elem.id) {
+                                    present = true;
+                                    return;
+                                }
+                            });
+
+                            if (present)
+                                nodeGroups.push(group);
+                        }
+                    );
+                } else {
+                    elem.sdfg.attributes?.logical_groups?.forEach(
+                        (group: LogicalGroup) => {
+                            allGroups.push(group);
+                            if (group.states.includes(elem.id))
+                                nodeGroups.push(group);
+                        }
+                    );
+                }
+
+                const table = $('<div>', {
+                    'class': 'container-fluid attr-table',
+                }).appendTo(contents);
+
+                const row = $('<div>', {
+                    'class': 'row attr-table-row',
+                }).appendTo(table);
+
+                $('<div>', {
+                    'class': 'col-3 attr-table-cell attr-table-heading',
+                    'text': 'Logical Groups',
+                }).appendTo(row);
+
+                const valCell = $('<div>', {
+                    'class': 'col-9 attr-table-cell',
+                }).appendTo(row);
+
+                const groupSelect = $('<select>', {
+                    'class': 'sdfv-property-dropdown',
+                    // TODO: handle changing.
+                }).appendTo(valCell);
+
+                groupSelect.append(new Option(
+                    'none',
+                    'none',
+                    false,
+                    nodeGroups.length === 0
+                ));
+                allGroups.forEach(
+                    (group: LogicalGroup) => {
+                        if (nodeGroups.length > 0) {
+                            groupSelect.append(new Option(
+                                group.name,
+                                group.name,
+                                false,
+                                group.name === nodeGroups[0].name
+                            ));
+                        } else {
+                            groupSelect.append(new Option(
+                                group.name,
+                                group.name,
+                                false,
+                                false
+                            ));
+                        }
+                    }
+                );
+
+                $('<br>').appendTo(contents);
+            } else if (elem instanceof Edge && elem.data.type === 'Memlet' &&
                 elem.parent_id !== null) {
                 let sdfg_edge = elem.sdfg.nodes[elem.parent_id].edges[elem.id];
                 $('<p>', {
@@ -407,7 +569,7 @@ export class VSCodeSDFV extends SDFV {
             if (parsedSdfg !== null)
                 renderer = VSCodeRenderer.init(
                     parsedSdfg, contentsElem,
-                    mouse_event, null, VSCodeSDFV.DEBUG_DRAW, null, null
+                    this.onMouseEvent, null, VSCodeSDFV.DEBUG_DRAW, null, null
                 );
             else
                 return;
@@ -459,7 +621,7 @@ export class VSCodeSDFV extends SDFV {
             }
 
             renderer = VSCodeRenderer.init(
-                parsedSdfg, contentsElem, mouse_event, userTransform,
+                parsedSdfg, contentsElem, this.onMouseEvent, userTransform,
                 VSCodeSDFV.DEBUG_DRAW, null, null
             );
         }
