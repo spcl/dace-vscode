@@ -52,13 +52,28 @@ export function refreshAnalysisPane(): void {
         for (const activeOverlay of overlayManager.get_overlays())
             activeOverlays.push(activeOverlay.constructor.name);
 
+        let additionalMethodVal = undefined;
+        switch (overlayManager.get_heatmap_scaling_method()) {
+            case 'hist':
+                additionalMethodVal =
+                    overlayManager.get_heatmap_scaling_hist_n_buckets();
+                break;
+            case 'exponential_interpolation':
+                additionalMethodVal =
+                    overlayManager.get_heatmap_scaling_exp_base();
+                break;
+        }
+
         vscode.postMessage({
             type: 'analysis.refresh_analysis_pane',
             symbols: map,
-            badnessScaleMethod: overlayManager.get_badness_scale_method(),
+            heatmapScalingMethod: overlayManager.get_heatmap_scaling_method(),
+            heatmapScalingAdditionalVal: additionalMethodVal,
             availableOverlays: {
                 'Memory Volume': 'MemoryVolumeOverlay',
                 'Static FLOP': 'StaticFlopsOverlay',
+                'Storage Location': 'MemoryLocationOverlay',
+                'Operational Intensity': 'OperationalIntensityOverlay',
             },
             activeOverlays: activeOverlays,
         });

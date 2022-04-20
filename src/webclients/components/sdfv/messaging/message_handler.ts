@@ -3,6 +3,7 @@
 
 import {
     instrumentation_report_read_complete,
+    OperationalIntensityOverlay,
     RuntimeMicroSecondsOverlay,
     StaticFlopsOverlay,
 } from '@spcl/sdfv/out';
@@ -50,7 +51,7 @@ export class MessageHandler {
                 );
                 if (message.result)
                     instrumentation_report_read_complete(
-                        message.result, renderer
+                        sdfv, message.result, renderer
                     );
             // Fall through to set the criterium.
             case 'instrumentation_report_change_criterium':
@@ -75,10 +76,27 @@ export class MessageHandler {
                     message.value
                 );
                 break;
-            case 'update_badness_scale_method':
-                renderer?.get_overlay_manager().update_badness_scale_method(
+            case 'update_heatmap_scaling_method':
+                renderer?.get_overlay_manager().update_heatmap_scaling_method(
                     message.method
                 );
+
+                if (message.additionalVal !== undefined) {
+                    switch (message.method) {
+                        case 'hist':
+                            renderer?.get_overlay_manager()
+                                .update_heatmap_scaling_hist_n_buckets(
+                                    message.additionalVal
+                                );
+                            break;
+                        case 'exponential_interpolation':
+                            renderer?.get_overlay_manager()
+                                .update_heatmap_scaling_exp_base(
+                                    message.additionalVal
+                                );
+                            break;
+                    }
+                }
                 break;
             case 'register_overlay':
                 {
@@ -167,6 +185,15 @@ export class MessageHandler {
                     );
                     if (overlay !== undefined && message.map !== undefined &&
                         overlay instanceof StaticFlopsOverlay)
+                        overlay.update_flops_map(message.map);
+                } else if (renderer?.get_overlay_manager().is_overlay_active(
+                    OperationalIntensityOverlay
+                )) {
+                    const overlay = renderer.get_overlay_manager().get_overlay(
+                        OperationalIntensityOverlay
+                    );
+                    if (overlay !== undefined && message.map !== undefined &&
+                        overlay instanceof OperationalIntensityOverlay)
                         overlay.update_flops_map(message.map);
                 }
                 break;

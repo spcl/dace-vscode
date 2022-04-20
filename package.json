@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Editor",
     "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "1.0.4",
+    "version": "1.0.15",
     "engines": {
         "vscode": "^1.55.0"
     },
@@ -167,6 +167,11 @@
                             "Split the SDFG Optimizer layout horizontally",
                             "Split the SDFG Optimizer layout vertically"
                         ]
+                    },
+                    "dace.backend.interpreterPath": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter."
                     }
                 }
             }
@@ -189,6 +194,10 @@
                     "SDFG",
                     "sdfg"
                 ],
+                "icon": {
+                    "dark": "media/resources/icons/sdfg.svg",
+                    "light": "media/resources/icons/sdfg.svg"
+                },
                 "configuration": "./language-configuration.json"
             }
         ],
@@ -209,13 +218,6 @@
                     }
                 ],
                 "priority": "default"
-            }
-        ],
-        "iconThemes": [
-            {
-                "id": "sdfgicon",
-                "label": "Seti + SDFG Extension",
-                "path": "media/resources/icon-theme/sdfg-icon-theme.json"
             }
         ],
         "viewsContainers": {
@@ -323,6 +325,15 @@
                 "title": "All source files",
                 "category": "SDFV",
                 "icon": "$(code)"
+            },
+            {
+                "command": "sdfg.compile",
+                "title": "Compile the SDFG file",
+                "category": "SDFV",
+                "icon": {
+                    "dark": "media/resources/icons/dark/build.svg",
+                    "light": "media/resources/icons/light/build.svg"
+                }
             },
             {
                 "command": "transformationList.sync",
@@ -467,6 +478,11 @@
                     "command": "sdfg.sourcefiles",
                     "when": "sdfg.showMenu.goto.py == true",
                     "group": "1_run@40"
+                },
+                {
+                    "command": "sdfg.compile",
+                    "group": "navigation@0",
+                    "when": "resourceLangId == sdfg"
                 }
             ],
             "editor/context": [
@@ -545,7 +561,7 @@
         "file-loader": "^6.2.0",
         "glob": "^7.1.6",
         "mocha": "^7.2.0",
-        "node-sass": "^6.0.1",
+        "node-sass": "^7.0.0",
         "postcss-loader": "^6.1.1",
         "sass-loader": "^12.1.0",
         "style-loader": "^3.2.1",

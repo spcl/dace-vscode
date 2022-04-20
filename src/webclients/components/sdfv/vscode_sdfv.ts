@@ -29,9 +29,11 @@ import {
     find_in_graph,
     GenericSdfgOverlay,
     get_uuid_graph_element,
+    MemoryLocationOverlay,
     MemoryVolumeOverlay,
     mouse_event,
     NestedSDFG,
+    OperationalIntensityOverlay,
     parse_sdfg,
     RuntimeMicroSecondsOverlay,
     ScopeNode,
@@ -88,11 +90,13 @@ export class VSCodeSDFV extends SDFV {
     public static readonly OVERLAYS: {
         [key: string]: typeof GenericSdfgOverlay,
     } = {
-        'MemoryVolumeOverlay': MemoryVolumeOverlay,
-        'StaticFlopsOverlay': StaticFlopsOverlay,
-        'RuntimeMicroSecondsOverlay': RuntimeMicroSecondsOverlay,
-        'BreakpointIndicator': BreakpointIndicator,
-    };
+            'MemoryVolumeOverlay': MemoryVolumeOverlay,
+            'StaticFlopsOverlay': StaticFlopsOverlay,
+            'RuntimeMicroSecondsOverlay': RuntimeMicroSecondsOverlay,
+            'BreakpointIndicator': BreakpointIndicator,
+            'MemoryLocationOverlay': MemoryLocationOverlay,
+            'OperationalIntensityOverlay': OperationalIntensityOverlay,
+        };
 
     private monaco: any | null = null;
     private sdfgString: string | null = null;
@@ -179,7 +183,7 @@ export class VSCodeSDFV extends SDFV {
         const outlineList = [];
 
         const topLevelSDFG = {
-            'icon': 'res:icon-theme/sdfg.svg',
+            'icon': 'res:icons/sdfg.svg',
             'type': 'SDFG',
             'label': `SDFG ${renderer.get_sdfg().attributes.name}`,
             'collapsed': false,
@@ -231,7 +235,7 @@ export class VSCodeSDFV extends SDFV {
                         icon = 'fiber_manual_record';
                         break;
                     case 'NestedSDFG':
-                        icon = 'res:icon-theme/sdfg.svg';
+                        icon = 'res:icons/sdfg.svg';
                         break;
                     default:
                         icon = '';
@@ -279,7 +283,7 @@ export class VSCodeSDFV extends SDFV {
         ];
 
         // Clear and hide these buttons.
-        buttons.forEach((btn) =>{
+        buttons.forEach((btn) => {
             btn.hide();
             btn.off('click');
             btn.prop('title', '');
@@ -316,6 +320,16 @@ export class VSCodeSDFV extends SDFV {
                 }).appendTo(contents);
 
                 generateAttributesTable(sdfg_array, undefined, contents);
+            } else if (elem instanceof NestedSDFG) {
+                // If nested SDFG, add SDFG info too.
+                const sdfg_sdfg = elem.attributes().sdfg;
+                $('<br>').appendTo(contents);
+                $('<p>', {
+                    'class': 'info-subtitle',
+                    'text': 'SDFG properties:',
+                }).appendTo(contents);
+
+                generateAttributesTable(sdfg_sdfg, undefined, contents);
             } else if (elem instanceof ScopeNode) {
                 // If we're processing a scope node, we want to append the exit
                 // node's props when selecting an entry node, and vice versa.
@@ -657,20 +671,27 @@ $(() => {
         const caseBtn = $('#search-case-sensitive-btn');
         if (caseBtn) {
             if (caseBtn)
-            if (caseBtn.css('background-color') === 'transparent') {
-                caseBtn.css('background-color', '#245779');
-                caseBtn.prop('checked', true);
-            } else {
-                caseBtn.css('background-color', 'transparent');
-                caseBtn.prop('checked', false);
-            }
+                if (caseBtn.css('background-color') === 'transparent') {
+                    caseBtn.css('background-color', '#245779');
+                    caseBtn.prop('checked', true);
+                } else {
+                    caseBtn.css('background-color', 'transparent');
+                    caseBtn.prop('checked', false);
+                }
         }
 
         VSCodeSDFV.getInstance().startFindInGraph();
     });
 
+    // Start search whenever text is entered in the search bar.
     $('#search').on('input', function (e) {
         VSCodeSDFV.getInstance().startFindInGraph();
+    });
+
+    // Start search on enter press in the search bar.
+    $('#search').on('keydown', (e) => {
+        if (e.key === 'Enter')
+            VSCodeSDFV.getInstance().startFindInGraph();
     });
 
     $('#breakpoint-btn').on('click', () => {

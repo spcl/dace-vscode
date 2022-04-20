@@ -23,11 +23,11 @@ enum InteractionMode {
 }
 
 export class DaCeInterface
-implements MessageReceiverInterface {
+    implements MessageReceiverInterface {
 
     private static INSTANCE = new DaCeInterface();
 
-    private constructor() {}
+    private constructor() { }
 
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
@@ -117,10 +117,43 @@ implements MessageReceiverInterface {
         });
     }
 
+    /**
+     * Clean out shell commands by ensuring spaces are properly quoted.
+     * Commands containing spaces are surrounded by quotes, and the command
+     * is assembled into command + arguments as one string.
+     * @param cmds      List of command parts, typically command plus arguments.
+     * @param spaceSafe Whether or not to perform space-quoting.
+     * @returns         Assembled command as a string.
+     */
+    private cleanCmd(cmds: string[], spaceSafe = true): string {
+        if (spaceSafe)
+            switch (os.platform()) {
+                case 'win32':
+                    for (let i = 0; i < cmds.length; i++) {
+                        if (/\s/g.test(cmds[i]))
+                            cmds[i] = '& "' + cmds[i] + '"';
+                    }
+                    break;
+                default:
+                    for (let i = 0; i < cmds.length; i++) {
+                        if (/\s/g.test(cmds[i]))
+                            cmds[i] = '"' + cmds[i] + '"';
+                    }
+                    break;
+            }
+        return cmds.join(' ');
+    }
+
     public async getPythonExecCommand(
         uri: vscode.Uri | undefined,
         spaceSafe = true
     ): Promise<string> {
+        const overridePath = vscode.workspace.getConfiguration(
+            'dace.backend'
+        )?.interpreterPath;
+        if (overridePath && overridePath !== '')
+            return this.cleanCmd([overridePath], spaceSafe);
+
         try {
             let pyExt = vscode.extensions.getExtension('ms-python.python');
             if (!pyExt) {
@@ -137,28 +170,12 @@ implements MessageReceiverInterface {
                         uri
                     ).execCommand :
                     pyExt.exports.settings.getExecutionCommand(uri);
-                if (pyCmd) {
-                    // Ensure spaces in the python command don't trip up the
-                    // terminal.
-                    if (spaceSafe)
-                        switch (os.platform()) {
-                            case 'win32':
-                                for (let i = 0; i < pyCmd.length; i++) {
-                                    if (/\s/g.test(pyCmd[i]))
-                                        pyCmd[i] = '& "' + pyCmd[i] + '"';
-                                }
-                                break;
-                            default:
-                                for (let i = 0; i < pyCmd.length; i++) {
-                                    if (/\s/g.test(pyCmd[i]))
-                                        pyCmd[i] = '"' + pyCmd[i] + '"';
-                                }
-                                break;
-                        }
-                    return pyCmd.join(' ');
-                } else {
+                // Ensure spaces in the python command don't trip up the
+                // terminal.
+                if (pyCmd)
+                    return this.cleanCmd(pyCmd, spaceSafe);
+                else
                     return 'python';
-                }
             } else {
                 let path = undefined;
                 if (uri)
@@ -194,7 +211,7 @@ implements MessageReceiverInterface {
         }
     }
 
-    private getRunDaceScriptUri(): vscode.Uri | undefined{
+    private getRunDaceScriptUri(): vscode.Uri | undefined {
         const extensionUri =
             DaCeVSCode.getInstance().getExtensionContext()?.extensionUri;
         if (!extensionUri) {
@@ -539,6 +556,7 @@ implements MessageReceiverInterface {
                     {
                         sdfg: sdfg,
                         transformation: transformation,
+                        permissive: false,
                     },
                     callback
                 );
@@ -709,19 +727,28 @@ implements MessageReceiverInterface {
         });
     }
 
-    public compileSdfgFromFile(uri: vscode.Uri, callback: CallableFunction,
-                               suppressInstrumentation: boolean = false) {
-        this.sendPostRequest(
-            '/compile_sdfg_from_file',
-            {
-                'path': uri.fsPath,
-                'suppress_instrumentation': suppressInstrumentation,
-            },
-            callback
-        );
+    public compileSdfgFromFile(
+        uri: vscode.Uri, callback: CallableFunction,
+        suppressInstrumentation: boolean = false
+    ): void {
+        const compile = () => {
+            this.sendPostRequest(
+                '/compile_sdfg_from_file',
+                {
+                    'path': uri.fsPath,
+                    'suppress_instrumentation': suppressInstrumentation,
+                },
+                callback
+            );
+        };
+
+        if (!this.daemonRunning)
+            this.startDaemonInTerminal(compile);
+        else
+            compile();
     }
 
-    public async querySdfgMetadata() {
+    public async querySdfgMetadata(): Promise<void> {
         async function callback(data: any) {
             SdfgViewerProvider.getInstance()?.handleMessage({
                 type: 'set_sdfg_metadata',
@@ -736,7 +763,9 @@ implements MessageReceiverInterface {
             );
     }
 
-    public async loadTransformations(sdfg: any, selectedElements: any) {
+    public async loadTransformations(
+        sdfg: any, selectedElements: any
+    ): Promise<void> {
         TransformationListProvider.getInstance()?.handleMessage({
             type: 'show_loading',
         });
@@ -746,7 +775,7 @@ implements MessageReceiverInterface {
             return;
         }
 
-        async function callback(data: any) {
+        async function callback(data: any): Promise<void> {
             for (const elem of data.transformations) {
                 let docstring = '';
                 if (data.docstrings)
@@ -762,13 +791,22 @@ implements MessageReceiverInterface {
             });
         }
 
+        async function clearSpinner(error: any): Promise<void> {
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'get_applicable_transformations_callback',
+                transformations: undefined,
+            });
+        }
+
         this.sendPostRequest(
             '/transformations',
             {
-                'sdfg': JSON.parse(sdfg),
-                'selected_elements': JSON.parse(selectedElements),
+                sdfg: JSON.parse(sdfg),
+                selected_elements: JSON.parse(selectedElements),
+                permissive: false,
             },
-            callback
+            callback,
+            clearSpinner,
         );
     }
 
@@ -814,7 +852,7 @@ implements MessageReceiverInterface {
         );
     }
 
-    public isRunning() {
+    public isRunning(): boolean {
         return this.daemonRunning;
     }
 

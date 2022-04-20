@@ -1,9 +1,22 @@
+## Typescript
 out
 dist
 node_modules
+
+## Environment variables
+.env
+
+## Python
+__pycache__/
+
+## Visual Studio Code
 .vscode-test/
+.vscode/**/*
 *.vsix
 *.code-workspace
-.vscode
-.env
-__pycache__/
+# Allow debug and launch configurations etc. to be synced.
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+# Sync the default workspace for this project.
+!ws.code-workspace

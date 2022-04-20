@@ -101,8 +101,13 @@ export class CustomTreeViewItem {
             labelContainer.append(label);
         }
 
+        // Add children count to label if exists
+        let extra = '';
+        if (this.children)
+            extra = ' (' + this.children.length + ')';
+
         const labelText = $('<span>', {
-            'text': this.label,
+            'text': this.label + extra,
         });
         if (this.icon !== undefined && this.icon !== '') {
             let iconElement;

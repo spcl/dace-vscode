@@ -323,7 +323,7 @@ export class SdfgViewerProvider
         startCol: number,
         endLine: number,
         endCol: number
-    ) {
+    ): void {
         /* Load the file and show it in a new editor, highlighting the
         indicated range. */
         vscode.workspace.openTextDocument(fileUri).then(
@@ -352,7 +352,7 @@ export class SdfgViewerProvider
         );
     }
 
-    public openViewer(uri: vscode.Uri, messages: Message[] = []) {
+    public openViewer(uri: vscode.Uri, messages: Message[] = []): void {
         // If the SDFG is currently open, then execute the messages
         // otherwise store them to execute as soon as the SDFG is loaded
         let editorIsLoaded = false;
@@ -408,6 +408,7 @@ export class SdfgViewerProvider
             SdfgViewerProvider.getInstance()?.removeOpenEditor(
                 document
             );
+            DaCeVSCode.getInstance()?.clearActiveSdfg();
         });
 
         webviewPanel.webview.options = {

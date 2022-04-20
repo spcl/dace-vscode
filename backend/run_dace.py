@@ -22,6 +22,7 @@ except (ModuleNotFoundError, ImportError):
         with open('.env', 'r') as fp:
             lines = fp.readlines()
             for line in lines:
+                line = line.strip()
                 if '=' not in line:
                     continue
                 pos = line.find('=')
@@ -141,7 +142,7 @@ def get_property_metdata(force_regenerate=False):
             # For library nodes we want to make sure they are all easily
             # accessible under '__libs__', to be able to list them all out.
             if (issubclass(t, dace.sdfg.nodes.LibraryNode)
-                and not t == dace.sdfg.nodes.LibraryNode):
+                    and not t == dace.sdfg.nodes.LibraryNode):
                 meta_dict['__libs__'][typename] = meta_key
 
     # Save a lookup for enum values not present yet.
@@ -176,6 +177,7 @@ def _sdfg_remove_instrumentations(sdfg: dace.sdfg.SDFG):
             node.instrument = dace.dtypes.InstrumentationType.No_Instrumentation
             if isinstance(node, dace.sdfg.nodes.NestedSDFG):
                 _sdfg_remove_instrumentations(node.sdfg)
+
 
 def compile_sdfg(path, suppress_instrumentation=False):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
@@ -239,15 +241,14 @@ def run_daemon(port):
     def _get_transformations():
         request_json = request.get_json()
         return transformations.get_transformations(
-            request_json['sdfg'], request_json['selected_elements']
-        )
+            request_json['sdfg'], request_json['selected_elements'],
+            request_json['permissive'])
 
     @daemon.route('/apply_transformation', methods=['POST'])
     def _apply_transformation():
         request_json = request.get_json()
         return transformations.apply_transformation(
-            request_json['sdfg'], request_json['transformation']
-        )
+            request_json['sdfg'], request_json['transformation'])
 
     @daemon.route('/expand_library_node', methods=['POST'])
     def _expand_library_node():
@@ -257,9 +258,8 @@ def run_daemon(port):
     @daemon.route('/reapply_history_until', methods=['POST'])
     def _reapply_history_until():
         request_json = request.get_json()
-        return transformations.reapply_history_until(
-            request_json['sdfg'], request_json['index']
-        )
+        return transformations.reapply_history_until(request_json['sdfg'],
+                                                     request_json['index'])
 
     @daemon.route('/get_arith_ops', methods=['POST'])
     def _get_arith_ops():
@@ -275,17 +275,16 @@ def run_daemon(port):
     @daemon.route('/insert_sdfg_element', methods=['POST'])
     def _insert_sdfg_element():
         request_json = request.get_json()
-        return editing.insert_sdfg_element(
-            request_json['sdfg'], request_json['type'], request_json['parent'],
-            request_json['edge_a']
-        )
+        return editing.insert_sdfg_element(request_json['sdfg'],
+                                           request_json['type'],
+                                           request_json['parent'],
+                                           request_json['edge_a'])
 
     @daemon.route('/remove_sdfg_elements', methods=['POST'])
     def _remove_sdfg_elements():
         request_json = request.get_json()
-        return editing.remove_sdfg_elements(
-            request_json['sdfg'], request_json['uuids']
-        )
+        return editing.remove_sdfg_elements(request_json['sdfg'],
+                                            request_json['uuids'])
 
     @daemon.route('/get_metadata', methods=['GET'])
     def _get_metadata():
