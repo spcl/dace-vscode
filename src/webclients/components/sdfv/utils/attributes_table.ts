@@ -4,8 +4,9 @@
 import {
     Connector,
     Edge,
-    LibraryNode, LogicalGroup, SDFGElement,
-    SDFGNode,
+    LibraryNode,
+    LogicalGroup,
+    SDFGElement,
     sdfg_property_to_string,
     State
 } from '@spcl/sdfv/out';

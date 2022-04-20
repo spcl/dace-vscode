@@ -27,6 +27,7 @@ import {
     find_in_graph,
     GenericSdfgOverlay,
     get_uuid_graph_element,
+    JsonSDFG,
     LogicalGroup,
     LogicalGroupOverlay,
     MemoryLocationOverlay,
@@ -61,7 +62,7 @@ import {
     sortTransformations,
 } from './transformation/transformation';
 import { generateAttributesTable } from './utils/attributes_table';
-import { getElementMetadata, reselectRendererElement } from './utils/helpers';
+import { getElementMetadata, reselectRendererElement, showContextMenu, vscodeWriteGraph } from './utils/helpers';
 
 declare const vscode: any;
 
@@ -175,11 +176,116 @@ export class VSCodeSDFV extends SDFV {
             });
     }
 
+    private handleShowGroupsContextMenu(
+        selectedElements: SDFGElement[], event: Event
+    ): void {
+        // If elements are selected, show a context menu to add or remove
+        // them to or from logical groups.
+
+        // Ensure that all elements belong to the same SDFG.
+        let target: JsonSDFG | null = null;
+        selectedElements.forEach(elem => {
+            if (target === null) {
+                target = elem.sdfg;
+            } else if (target.sdfg_list_id !== elem.sdfg.sdfg_list_id) {
+                target = null;
+                return;
+            }
+        });
+
+        if (target !== null) {
+            const options: {
+                label: string | null,
+                callback: CallableFunction | null,
+                disabled: boolean,
+            }[] = [];
+
+            // Add options to add elements to groups.
+            (target as JsonSDFG).attributes?.logical_groups.forEach(
+                (lg: LogicalGroup) => {
+                    options.push({
+                        label: `Add selection to group "${lg.name}"`,
+                        disabled: false,
+                        callback: () => {
+                            selectedElements.forEach(el => {
+                                if (el instanceof State) {
+                                    if (!lg.states.includes(el.id))
+                                        lg.states.push(el.id);
+                                } else if (el.parent_id !== null) {
+                                    const hasTuple = lg.nodes.some((v) => {
+                                        return v[0] === el.parent_id &&
+                                            v[1] === el.id;
+                                    });
+                                    if (!hasTuple)
+                                        lg.nodes.push([el.parent_id, el.id]);
+                                }
+                            });
+
+                            const sdfg =
+                                VSCodeRenderer.getInstance()?.get_sdfg();
+                            if (sdfg)
+                                vscodeWriteGraph(sdfg);
+                        },
+                    });
+                }
+            );
+
+            // Adds a separator.
+            if ((target as JsonSDFG).attributes?.logical_groups)
+                options.push({
+                    label: null,
+                    disabled: true,
+                    callback: null,
+                });
+
+            // Add options to remove from groups.
+            (target as JsonSDFG).attributes?.logical_groups.forEach(
+                (lg: LogicalGroup) => {
+                    options.push({
+                        label: `Remove selection from group "${lg.name}"`,
+                        disabled: false,
+                        callback: () => {
+                            selectedElements.forEach(el => {
+                                if (el instanceof State)
+                                    lg.states = lg.states.filter(v => {
+                                        return v !== el.id;
+                                    });
+                                else if (el.parent_id !== null)
+                                    lg.nodes = lg.nodes.filter(v => {
+                                        return v[0] !== el.parent_id ||
+                                            v[1] !== el.id;
+                                    });
+                            });
+
+                            const sdfg =
+                                VSCodeRenderer .getInstance()?.get_sdfg();
+                            if (sdfg)
+                                vscodeWriteGraph(sdfg);
+                        },
+                    });
+                }
+            );
+
+            if (options)
+                showContextMenu(
+                    (event as MouseEvent).clientX,
+                    (event as MouseEvent).clientY,
+                    options
+                );
+        }
+    }
+
     private onMouseEvent(
         evtype: string,
         event: Event,
         mousepos: Point2D,
-        elements: any[],
+        elements: {
+            states: any[],
+            nodes: any[],
+            connectors: any[],
+            edges: any[],
+            isedges: any[],
+        },
         renderer: SDFGRenderer,
         selectedElements: SDFGElement[],
         sdfv: SDFV,
@@ -242,6 +348,15 @@ export class VSCodeSDFV extends SDFV {
                 }
             }
             sdfv.sidebar_show();
+        } else if (evtype === 'contextmenu') {
+            if (VSCodeRenderer.getInstance()?.get_overlay_manager()
+                .is_overlay_active(LogicalGroupOverlay))
+                VSCodeSDFV.getInstance().handleShowGroupsContextMenu(
+                    selectedElements, event
+                );
+
+            event.preventDefault();
+            return false;
         }
 
         return externalRet;
@@ -366,91 +481,96 @@ export class VSCodeSDFV extends SDFV {
             const contents = $('#info-contents');
             contents.html('');
 
-            // If the grouping view is active, show a possibility for assigning
-            // the node to groups or creating new ones.
-            if ((elem instanceof SDFGNode || elem instanceof State) &&
-                getElementMetadata(elem) !== undefined &&
-                VSCodeRenderer.getInstance()?.get_overlay_manager()
-                    .is_overlay_active(LogicalGroupOverlay)) {
-                const nodeGroups: LogicalGroup[] = [];
-                const allGroups: LogicalGroup[] = [];
+            if ((elem instanceof SDFGNode || elem instanceof State)) {
+                /*
+                // TODO: Provide a means of changing logical groups via the
+                // attributes table.
+                // If the grouping view is active, show a possibility for
+                // assigning the node to groups or creating new ones.
+                if (getElementMetadata(elem) !== undefined &&
+                    VSCodeRenderer.getInstance()?.get_overlay_manager()
+                        .is_overlay_active(LogicalGroupOverlay)) {
+                    const nodeGroups: LogicalGroup[] = [];
+                    const allGroups: LogicalGroup[] = [];
 
-                if (elem instanceof SDFGNode) {
-                    elem.sdfg.attributes?.logical_groups?.forEach(
-                        (group: LogicalGroup) => {
-                            allGroups.push(group);
-                            let present = false;
-                            group.nodes.forEach(node => {
-                                if (node[0] === elem.parent_id &&
-                                    node[1] === elem.id) {
-                                    present = true;
-                                    return;
-                                }
-                            });
+                    if (elem instanceof SDFGNode) {
+                        elem.sdfg.attributes?.logical_groups?.forEach(
+                            (group: LogicalGroup) => {
+                                allGroups.push(group);
+                                let present = false;
+                                group.nodes.forEach(node => {
+                                    if (node[0] === elem.parent_id &&
+                                        node[1] === elem.id) {
+                                        present = true;
+                                        return;
+                                    }
+                                });
 
-                            if (present)
-                                nodeGroups.push(group);
-                        }
-                    );
-                } else {
-                    elem.sdfg.attributes?.logical_groups?.forEach(
-                        (group: LogicalGroup) => {
-                            allGroups.push(group);
-                            if (group.states.includes(elem.id))
-                                nodeGroups.push(group);
-                        }
-                    );
-                }
-
-                const table = $('<div>', {
-                    'class': 'container-fluid attr-table',
-                }).appendTo(contents);
-
-                const row = $('<div>', {
-                    'class': 'row attr-table-row',
-                }).appendTo(table);
-
-                $('<div>', {
-                    'class': 'col-3 attr-table-cell attr-table-heading',
-                    'text': 'Logical Groups',
-                }).appendTo(row);
-
-                const valCell = $('<div>', {
-                    'class': 'col-9 attr-table-cell',
-                }).appendTo(row);
-
-                const groupSelect = $('<select>', {
-                    'class': 'sdfv-property-dropdown',
-                    // TODO: handle changing.
-                }).appendTo(valCell);
-
-                groupSelect.append(new Option(
-                    'none',
-                    'none',
-                    false,
-                    nodeGroups.length === 0
-                ));
-                allGroups.forEach(
-                    (group: LogicalGroup) => {
-                        if (nodeGroups.length > 0) {
-                            groupSelect.append(new Option(
-                                group.name,
-                                group.name,
-                                false,
-                                group.name === nodeGroups[0].name
-                            ));
-                        } else {
-                            groupSelect.append(new Option(
-                                group.name,
-                                group.name,
-                                false,
-                                false
-                            ));
-                        }
+                                if (present)
+                                    nodeGroups.push(group);
+                            }
+                        );
+                    } else {
+                        elem.sdfg.attributes?.logical_groups?.forEach(
+                            (group: LogicalGroup) => {
+                                allGroups.push(group);
+                                if (group.states.includes(elem.id))
+                                    nodeGroups.push(group);
+                            }
+                        );
                     }
-                );
 
-                $('<br>').appendTo(contents);
+                    const table = $('<div>', {
+                        'class': 'container-fluid attr-table',
+                    }).appendTo(contents);
+
+                    const row = $('<div>', {
+                        'class': 'row attr-table-row',
+                    }).appendTo(table);
+
+                    $('<div>', {
+                        'class': 'col-3 attr-table-cell attr-table-heading',
+                        'text': 'Logical Groups',
+                    }).appendTo(row);
+
+                    const valCell = $('<div>', {
+                        'class': 'col-9 attr-table-cell',
+                    }).appendTo(row);
+
+                    const groupSelect = $('<select>', {
+                        'class': 'sdfv-property-dropdown',
+                        // TODO: handle changing.
+                    }).appendTo(valCell);
+
+                    groupSelect.append(new Option(
+                        'none',
+                        'none',
+                        false,
+                        nodeGroups.length === 0
+                    ));
+                    allGroups.forEach(
+                        (group: LogicalGroup) => {
+                            if (nodeGroups.length > 0) {
+                                groupSelect.append(new Option(
+                                    group.name,
+                                    group.name,
+                                    false,
+                                    group.name === nodeGroups[0].name
+                                ));
+                            } else {
+                                groupSelect.append(new Option(
+                                    group.name,
+                                    group.name,
+                                    false,
+                                    false
+                                ));
+                            }
+                        }
+                    );
+
+                    $('<br>').appendTo(contents);
+                }
+                */
             } else if (elem instanceof Edge && elem.data.type === 'Memlet' &&
                 elem.parent_id !== null) {
                 let sdfg_edge = elem.sdfg.nodes[elem.parent_id].edges[elem.id];

@@ -517,3 +517,47 @@ pre.code {
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
 }
+
+.context-menu {
+  position: absolute;
+  z-index: 10;
+  display: block;
+  background-color: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border-color: var(--vscode-dropdown-border);
+  border-width: 1px;
+}
+
+.context-menu-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.context-menu-item {
+  user-select: none;
+  padding: .5rem;
+  display: block;
+  margin-bottom: .2rem;
+  background-color: var(--vscode-list-background);
+  color: var(--vscode-list-foreground);
+}
+
+.context-menu-item:last-child {
+  margin-bottom: 0;
+}
+
+.context-menu-item:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground);
+}
+
+.context-menu-separator {
+  user-select: none;
+  display: block;
+  height: 1px;
+  width: 100%;
+  background-color: var(--vscode-dropdown-foreground);
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+}
