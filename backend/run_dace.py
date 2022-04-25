@@ -147,7 +147,7 @@ def get_property_metdata(force_regenerate=False):
             if (issubclass(t, dace.sdfg.nodes.LibraryNode)
                     and not t == dace.sdfg.nodes.LibraryNode):
                 meta_dict['__libs__'][typename] = meta_key
-            elif (issubclass(t, dace.data.Data) and not t == dace.data.Data):
+            elif (issubclass(t, dace.data.Data) and t is not dace.data.Data):
                 meta_dict['__data_container_types__'][typename] = meta_key
 
     # Save a lookup for enum values not present yet.
