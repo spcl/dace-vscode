@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.1
+
+### 1.1.0
+
+- Support editing of data containers for SDFGs
+- Improve UI for overlays
+- Provide interface for adding/editing/deleting logical groups and
+  adding/removing nodes to and from them.
+
 ## 1.0
 
 ### 1.0.5
