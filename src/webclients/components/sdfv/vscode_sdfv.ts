@@ -319,6 +319,7 @@ export class VSCodeSDFV extends SDFV {
                     'text': sdfg_array.type + ' properties:',
                 }).appendTo(contents);
 
+                // TODO: Allow container types to be changed here too.
                 generateAttributesTable(sdfg_array, undefined, contents);
             } else if (elem instanceof NestedSDFG) {
                 // If nested SDFG, add SDFG info too.

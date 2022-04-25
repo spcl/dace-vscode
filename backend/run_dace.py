@@ -3,6 +3,7 @@
 
 #####################################################################
 # Before importing anything, try to take the ".env" file into account
+import json
 import os
 import re
 import sys
@@ -87,6 +88,7 @@ def get_property_metdata(force_regenerate=False):
     meta_dict.clear()
     meta_dict['__reverse_type_lookup__'] = {}
     meta_dict['__libs__'] = {}
+    meta_dict['__data_container_types__'] = {}
     for typename in dace.serialize._DACE_SERIALIZE_TYPES:
         t = dace.serialize._DACE_SERIALIZE_TYPES[typename]
         if hasattr(t, '__properties__'):
@@ -141,9 +143,12 @@ def get_property_metdata(force_regenerate=False):
 
             # For library nodes we want to make sure they are all easily
             # accessible under '__libs__', to be able to list them all out.
+            # Same for data container types.
             if (issubclass(t, dace.sdfg.nodes.LibraryNode)
                     and not t == dace.sdfg.nodes.LibraryNode):
                 meta_dict['__libs__'][typename] = meta_key
+            elif (issubclass(t, dace.data.Data) and not t == dace.data.Data):
+                meta_dict['__data_container_types__'][typename] = meta_key
 
     # Save a lookup for enum values not present yet.
     enum_list = [

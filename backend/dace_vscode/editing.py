@@ -2,7 +2,7 @@
 # All rights reserved.
 
 from dace import (
-    serialize, nodes, SDFG, SDFGState, InterstateEdge, Memlet, dtypes
+    nodes, SDFG, SDFGState, InterstateEdge, Memlet, dtypes
 )
 from dace_vscode.utils import (
     load_sdfg_from_json,
@@ -98,7 +98,7 @@ def insert_sdfg_element(sdfg_str, type, parent_uuid, edge_a_uuid):
         sub_sdfg = SDFG('nested_sdfg')
         sub_sdfg.add_array('in', [1], dtypes.float32)
         sub_sdfg.add_array('out', [1], dtypes.float32)
-        
+
         nsdfg = parent.add_nested_sdfg(sub_sdfg, sdfg, {'in'}, {'out'})
         uuid = [get_uuid(nsdfg, parent)]
     elif type == 'LibraryNode':
