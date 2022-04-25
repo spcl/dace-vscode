@@ -539,6 +539,8 @@ export class VSCodeSDFV extends SDFV {
         if (!this.sdfgMetaDict) {
             // If SDFG property metadata isn't available, use the static one and
             // query an up-to-date one from DaCe if available.
+            // TODO(later): Query an up-to-date version from a static online
+            // location first before sending a query to DaCe.
             vscode.postMessage({
                 type: 'dace.query_sdfg_metadata',
             });
