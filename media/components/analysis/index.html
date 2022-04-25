@@ -30,7 +30,7 @@
                     <div class="container-fluid" style="padding: 0;">
                         <div class="row">
                             <div>
-                                <select class="form-select"
+                                <select class="form-select form-select-sm"
                                         id="scaling-method-input">
                                     <option value="median" selected="selected">
                                         Median
@@ -86,13 +86,44 @@
                     </div>
                 </div>
                 <hr class="horizontal-divider">
-                <div id="overlay-toggle-container">
+                <div id="node-overlay-toggle-container" class="mb-1">
                     <div>
                         <span>
-                            Overlays:
+                            Node Overlay:
                         </span>
                     </div>
-                    <div id="overlay-toggles">
+                    <div class="container-fluid"
+                         style="padding: 0;">
+                        <div class="row">
+                            <div>
+                                <select class="form-select form-select-sm"
+                                        id="node-overlays-input">
+                                    <option value="none" selected="selected">
+                                        None
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="edge-overlay-toggle-container">
+                    <div>
+                        <span>
+                            Edge Overlay:
+                        </span>
+                    </div>
+                    <div class="container-fluid"
+                         style="padding: 0;">
+                        <div class="row">
+                            <div>
+                                <select class="form-select form-select-sm"
+                                        id="edge-overlays-input">
+                                    <option value="none" selected="selected">
+                                        None
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <hr class="horizontal-divider">

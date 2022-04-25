@@ -5,31 +5,33 @@ import {
     Connector,
     Edge,
     LibraryNode,
+    LogicalGroup,
     SDFGElement,
     sdfg_property_to_string,
-    State,
+    State
 } from '@spcl/sdfv/out';
+import { editor as monaco_editor } from 'monaco-editor';
+import { Range } from '../../../../types';
 import {
     CodeProperty,
     ComboboxProperty,
     DictProperty,
     KeyProperty,
     ListProperty,
+    LogicalGroupProperty,
     Property,
     PropertyEntry,
     RangeProperty,
     TypeclassProperty,
-    ValueProperty,
+    ValueProperty
 } from '../properties/properties';
-import { VSCodeSDFV } from '../vscode_sdfv';
-import { editor as monaco_editor } from 'monaco-editor';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
-import { Range } from '../../../../types';
+import { VSCodeSDFV } from '../vscode_sdfv';
 import {
     createSingleUseModal,
     getElementMetadata,
     getTransformationMetadata,
-    vscodeWriteGraph,
+    vscodeWriteGraph
 } from './helpers';
 
 declare const vscode: any;
@@ -387,10 +389,16 @@ export function attrTablePutList(
 
                 if (attrProp.deleteBtn) {
                     attrProp.deleteBtn.on('click', () => {
-                        if (attrProp.valProp &&
-                            attrProp.valProp instanceof ValueProperty &&
-                            attrProp.valProp.getInput()) {
-                            attrProp.valProp.getInput().val('');
+                        if (attrProp.valProp) {
+                            if (attrProp.valProp instanceof ValueProperty &&
+                                attrProp.valProp.getInput()) {
+                                attrProp.valProp.getInput().val('');
+                            } else if (
+                                attrProp.valProp instanceof LogicalGroupProperty
+                            ) {
+                                attrProp.valProp.getNameInput().val('');
+                                attrProp.valProp.getColorInput().val('#000000');
+                            }
                             attrProp.row.hide();
                         }
                     });
@@ -432,12 +440,18 @@ export function attrTablePutList(
 
                     if (newProp.deleteBtn) {
                         newProp.deleteBtn.on('click', () => {
-                            if (newProp.valProp &&
-                                newProp.valProp instanceof ValueProperty &&
+                        if (newProp.valProp) {
+                            if (newProp.valProp instanceof ValueProperty &&
                                 newProp.valProp.getInput()) {
                                 newProp.valProp.getInput().val('');
-                                newProp.row.hide();
+                            } else if (
+                                newProp.valProp instanceof LogicalGroupProperty
+                            ) {
+                                newProp.valProp.getNameInput().val('');
+                                newProp.valProp.getColorInput().val('#000000');
                             }
+                            newProp.row.hide();
+                        }
                         });
                     }
                 }
@@ -670,6 +684,26 @@ export function attrTablePutRange(
     return prop;
 }
 
+export function attrTablePutLogicalGroup(
+    key: string, subkey: string | undefined, val: LogicalGroup,
+    elem: any | undefined, xform: any | undefined, target: any, cell: JQuery,
+    dtype: string
+): LogicalGroupProperty {
+    const input = $('<input>', {
+        'type': 'text',
+        'class': 'sdfv-property-text',
+        'value': val.name,
+    }).appendTo(cell);
+    const colorInput = $('<input>', {
+        'type': 'color',
+        'class': 'sdfv-property-color',
+        'value': val.color,
+    }).appendTo(cell);
+    return new LogicalGroupProperty(
+        elem, xform, target, key, undefined, dtype, input, colorInput
+    );
+}
+
 export function attributeTablePutEntry(
     key: string, val: any, meta: any, target: any, elem: any | undefined,
     xform: any | undefined, root: JQuery, editableKey: boolean,
@@ -781,17 +815,23 @@ export function attributeTablePutEntry(
             case 'list':
             case 'tuple':
                 let elemType = undefined;
-                let elemMety = undefined;
+                let elemMeta = undefined;
                 if (meta !== undefined && meta['element_type'])
                     elemType = meta['element_type'];
                 if (sdfgMetaDict && elemType &&
                     sdfgMetaDict['__reverse_type_lookup__'] &&
                     sdfgMetaDict['__reverse_type_lookup__'][elemType])
-                    elemMety =
+                    elemMeta =
                         sdfgMetaDict['__reverse_type_lookup__'][elemType];
+
+                if (elemMeta === undefined && elemType)
+                    elemMeta = {
+                        metatype: elemType,
+                    };
+
                 valProp = attrTablePutList(
                     key, undefined, val, elem, xform, target, valueCell, dtype,
-                    elemMety
+                    elemMeta
                 );
                 break;
             case 'Range':
@@ -812,16 +852,22 @@ export function attributeTablePutEntry(
                     target, valueCell, dtype
                 );
                 break;
+            case 'LogicalGroup':
+                valProp = attrTablePutLogicalGroup(
+                    key, undefined, val, elem, xform, target, valueCell, dtype
+                );
+                break;
             default:
-                if (choices !== undefined)
+                if (choices !== undefined) {
                     valProp = attrTablePutSelect(
                         key, undefined, val, elem, xform, target, valueCell,
                         dtype, choices
                     );
-                else
+                } else {
                     valueCell.html(sdfg_property_to_string(
                         val, VSCodeRenderer.getInstance()?.view_settings()
                     ));
+                }
                 break;
         }
     }

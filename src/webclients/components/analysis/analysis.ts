@@ -11,7 +11,7 @@ import 'material-icons/iconfont/material-icons.css';
 
 import './analysis.css';
 
-import { SymbolMap } from '@spcl/sdfv/out';
+import { OverlayType, SymbolMap } from '@spcl/sdfv/out';
 
 declare const vscode: any;
 
@@ -250,44 +250,49 @@ $(() => {
 
 
                 if (message.availableOverlays !== undefined) {
-                    const toggleContainer = $('#overlay-toggles');
-                    toggleContainer.html('');
-                    for (const overlay in message.availableOverlays) {
-                        const overlayId = message.availableOverlays[
-                            overlay
-                        ];
+                    const nodeOverlaySelect = $('#node-overlays-input');
+                    const edgeOverlaySelect = $('#edge-overlays-input');
 
-                        const overlayToggle = $('<input>', {
-                            'type': 'checkbox',
-                            'name': 'overlay-toggle',
-                            'value': overlayId,
-                        });
+                    nodeOverlaySelect.html('');
+                    edgeOverlaySelect.html('');
 
-                        if (message.activeOverlays.includes(overlayId))
-                            overlayToggle.prop('checked', true);
+                    nodeOverlaySelect.append(new Option('None', 'none', true));
+                    edgeOverlaySelect.append(new Option('None', 'none', true));
 
-                        const toggleLabel = $('<label>', {
-                        }).appendTo(toggleContainer);
-
-                        toggleLabel.append(overlayToggle);
-                        toggleLabel.append('&nbsp;' + overlay);
+                    for (const overlay of message.availableOverlays) {
+                        const option = new Option(
+                            overlay.label, overlay.class, false,
+                            message.activeOverlays.includes(overlay.class)
+                        );
+                        switch (overlay.type) {
+                            case OverlayType.BOTH:
+                                // TODO(later): Not an issue yet, but once
+                                // we have overlays that are of type both,
+                                // this must be considered.
+                            case OverlayType.NODE:
+                                nodeOverlaySelect.append(option);
+                                break;
+                            case OverlayType.EDGE:
+                                edgeOverlaySelect.append(option);
+                                break;
+                        }
                     }
 
-                    $('input[type=checkbox][name=overlay-toggle]').on(
-                        'change', function () {
-                            const that = this as HTMLInputElement;
-                            if (that.checked)
-                                vscode.postMessage({
-                                    type: 'sdfv.register_overlay',
-                                    overlay: that.value,
-                                });
-                            else
-                                vscode.postMessage({
-                                    type: 'sdfv.deregister_overlay',
-                                    overlay: that.value,
-                                });
-                        }
-                    );
+                    const updateHandler = () => {
+                        const overlays = [];
+                        if (nodeOverlaySelect.val() !== 'none')
+                            overlays.push(nodeOverlaySelect.val());
+                        if (edgeOverlaySelect.val() !== 'none')
+                            overlays.push(edgeOverlaySelect.val());
+                        console.log(overlays);
+                        vscode.postMessage({
+                            type: 'sdfv.set_overlays',
+                            overlays: overlays,
+                        });
+                    };
+
+                    nodeOverlaySelect.on('change', updateHandler);
+                    edgeOverlaySelect.on('change', updateHandler);
                 }
                 // Fall through into the next case to also set the symbols.
             case 'set_symbols':
