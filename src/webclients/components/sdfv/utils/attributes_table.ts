@@ -4,6 +4,8 @@
 import {
     Connector,
     Edge,
+    JsonSDFG,
+    JsonSDFGNode,
     LibraryNode,
     SDFGElement,
     sdfg_property_to_string,
@@ -27,6 +29,8 @@ import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { Range } from '../../../../types';
 import {
     createSingleUseModal,
+    doForAllNodeTypes,
+    elementUpdateLabel,
     getElementMetadata,
     getTransformationMetadata,
     vscodeWriteGraph,
@@ -789,7 +793,9 @@ export function attrTablePutRange(
 export function attributeTablePutEntry(
     key: string, val: any, meta: any, target: any, elem: any | undefined,
     xform: any | undefined, root: JQuery, editableKey: boolean,
-    updateOnChange: boolean, addDeleteButton: boolean
+    updateOnChange: boolean, addDeleteButton: boolean,
+    keyChangeHandlerOverride?: (prop: KeyProperty) => void,
+    valueChangeHandlerOverride?: (prop: Property) => void
 ): PropertyEntry {
     let keyProp: KeyProperty | undefined = undefined;
     let valProp: Property[] | undefined = undefined;
@@ -803,6 +809,20 @@ export function attributeTablePutEntry(
         if (meta['choices'])
             choices = meta['choices'];
     }
+
+    const valPropUpdateHandler = valueChangeHandlerOverride !== undefined ?
+        valueChangeHandlerOverride : (prop: Property) => {
+            const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+            if (!xform && prop.update() && sdfg)
+                vscodeWriteGraph(sdfg);
+        };
+
+    const keyPropUpdateHandler = keyChangeHandlerOverride !== undefined ?
+        keyChangeHandlerOverride : (prop: KeyProperty) => {
+            const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+            if (prop && prop.update() && !xform && sdfg)
+                vscodeWriteGraph(sdfg);
+        };
 
     const row = $('<div>', {
         'class': 'row attr-table-row',
@@ -969,49 +989,33 @@ export function attributeTablePutEntry(
             if (prop instanceof ValueProperty) {
                 if (prop instanceof ComboboxProperty) {
                     prop.getInput().on('hidden.editable-select', () => {
-                        const valueChanged = prop.update();
-                        const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                        if (!xform && valueChanged && sdfg)
-                            vscodeWriteGraph(sdfg);
+                        valPropUpdateHandler(prop);
                     });
                     prop.getInput().on('select.editable-select', () => {
-                        const valueChanged = prop.update();
-                        const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                        if (!xform && valueChanged && sdfg)
-                            vscodeWriteGraph(sdfg);
+                        valPropUpdateHandler(prop);
                     });
                 } else {
                     prop.getInput().on('change', () => {
-                        prop.update();
-                        const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                        if (!xform && sdfg)
-                            vscodeWriteGraph(sdfg);
+                        valPropUpdateHandler(prop);
                     });
                 }
             } else if (prop instanceof CodeProperty) {
                 prop.getCodeInput().on('change', () => {
-                    prop.update();
-                    const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                    if (!xform && sdfg)
-                        vscodeWriteGraph(sdfg);
+                    valPropUpdateHandler(prop);
                 });
                 prop.getLangInput().on('change', () => {
-                    prop.update();
-                    const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                    if (!xform && sdfg)
-                        vscodeWriteGraph(sdfg);
+                    valPropUpdateHandler(prop);
                 });
             }
         });
     }
 
-    if (updateOnChange && keyProp !== undefined &&
-        keyProp.getInput() !== undefined)
+    if (updateOnChange && keyProp && keyProp.getInput() !== undefined) {
         keyProp.getInput().on('change', () => {
-            const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-            if (keyProp && keyProp.update() && !xform && sdfg)
-                vscodeWriteGraph(sdfg);
+            if (keyProp)
+                keyPropUpdateHandler(keyProp);
         });
+    }
 
     return {
         key: key,
@@ -1201,7 +1205,8 @@ export function generateAttributesTable(
 
 export function appendDataDescriptorTable(
     root: JQuery<HTMLElement>,
-    descriptors: { [key: string]: { type: string, attributes: any } }
+    descriptors: { [key: string]: { type: string, attributes: any } },
+    sdfg: JsonSDFG
 ): void {
     const dataTableBaseContainer = $('<div>', {
         'class': 'container-fluid attr-table-base-container',
@@ -1245,11 +1250,37 @@ export function appendDataDescriptorTable(
             attrMeta['metatype'] = val.type;
         }
 
-        // TODO: On name changes, traverse access nodes and update their data
-        // attribute to point to the new name.
         const res = attributeTablePutEntry(
             descriptor, val, attrMeta, descriptors, undefined,
-            undefined, attrTable, true, true, true
+            undefined, attrTable, true, true, true,
+            (prop: KeyProperty) => {
+                // When a data container name is changed, update the data
+                // container and label for all access nodes referencing this
+                // data container.
+                const nVal = prop.getValue();
+                if (nVal.valueChanged) {
+                    const oldDescriptor = prop.getKey();
+                    const newDescriptor = nVal.value;
+
+                    doForAllNodeTypes(
+                        sdfg, 'AccessNode', (accessNode: JsonSDFGNode) => {
+                            if (accessNode.attributes?.data === oldDescriptor) {
+                                accessNode.attributes.data = newDescriptor;
+                                accessNode.label = newDescriptor;
+                            }
+                        }, false
+                    );
+
+                    prop.update();
+
+                    // Write back the change - this is necessary since we're
+                    // overwriting the default handler which writes changes
+                    // back when update-on-value-change is enabled.
+                    const wholeSdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+                    if (wholeSdfg)
+                        vscodeWriteGraph(wholeSdfg);
+                }
+            }
         );
 
         if (res.deleteBtn)

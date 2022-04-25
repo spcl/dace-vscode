@@ -367,13 +367,14 @@ export class VSCodeSDFV extends SDFV {
             } else if (elem instanceof SDFG) {
                 if (elem.data && elem.data.attributes)
                     appendDataDescriptorTable(
-                        contents, elem.data.attributes._arrays
+                        contents, elem.data.attributes._arrays, elem.data
                     );
             } else if (elem instanceof NestedSDFG) {
                 if (elem.data && elem.data.node.attributes)
                     appendDataDescriptorTable(
                         contents,
-                        elem.data.node.attributes.sdfg.attributes._arrays
+                        elem.data.node.attributes.sdfg.attributes._arrays,
+                        elem.data.node.attributes.sdfg
                     );
             }
 

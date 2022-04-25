@@ -118,12 +118,17 @@ export class KeyProperty {
                     propertyDescriptor
                 );
             delete this.target[this.key];
+            this.key = res.value;
         }
         return res.valueChanged;
     }
 
     public getInput(): JQuery<HTMLElement> {
         return this.input;
+    }
+
+    public getKey(): string {
+        return this.key;
     }
 
 }

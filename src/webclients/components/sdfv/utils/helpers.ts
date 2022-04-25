@@ -8,6 +8,7 @@ import {
     find_graph_element_by_uuid,
     get_uuid_graph_element,
     JsonSDFG,
+    JsonSDFGNode,
     ScopeNode,
     SDFGElement,
     sdfg_range_elem_to_string,
@@ -335,4 +336,22 @@ export function getElementMetadata(elem: any): any {
     }
 
     return metadata;
+}
+
+export function doForAllNodeTypes(
+    sdfg: JsonSDFG, type: string, fun: CallableFunction, recurseNested: boolean
+): void {
+    sdfg.nodes.forEach(state => {
+        if (type === 'SDFGState')
+            fun(state);
+
+        state.nodes.forEach((node: JsonSDFGNode) => {
+            if (node.type && node.type === type)
+                fun(node);
+            else if (node.type && node.type === 'NestedSDFG' && recurseNested)
+                doForAllNodeTypes(
+                    node.attributes.sdfg, type, fun, recurseNested
+                );
+        });
+    });
 }
