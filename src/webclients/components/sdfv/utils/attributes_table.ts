@@ -145,13 +145,6 @@ export function attrTablePutData(
     const dataCellContainer = $('<div>', {
         'class': 'popup-editable-property-container',
     }).appendTo(cell);
-    //$('<div>', {
-    //    'html': `
-    //        <span title="${val /*sdfg_property_to_string(
-    //            val, VSCodeRenderer.getInstance()?.view_settings()
-    //        )*/}">Details</span>
-    //    `,
-    //}).appendTo(dataCellContainer);
     const dataEditBtn = $('<i>', {
         'class': 'material-icons property-edit-btn',
         'text': 'edit',
