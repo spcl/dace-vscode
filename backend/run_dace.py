@@ -3,6 +3,7 @@
 
 #####################################################################
 # Before importing anything, try to take the ".env" file into account
+import json
 import os
 import re
 import sys
@@ -56,14 +57,21 @@ from dace_vscode.utils import (
 )
 from dace_vscode import transformations, editing, arith_ops
 
+meta_dict = {}
 
-def get_property_metdata():
+def get_property_metdata(force_regenerate=False):
     """ Generate a dictionary of class properties and their metadata.
         This iterates over all classes registered as serializable in DaCe's
         serialization module, checks whether there are properties present
         (true for any class registered via the @make.properties decorator), and
         then assembels their metadata to a dictionary.
     """
+    # If a cached version of the dictionary is available, return that.
+    if meta_dict and not force_regenerate:
+        return {
+            'metaDict': meta_dict,
+        }
+
     # Lazy import to cut down on module load time.
     from dace.sdfg.nodes import full_class_path
 
@@ -77,9 +85,10 @@ def get_property_metdata():
     from dace.transformation import optimizer
     _ = optimizer.Optimizer(dace.SDFG('dummy')).get_pattern_matches()
 
-    meta_dict = {}
+    meta_dict.clear()
     meta_dict['__reverse_type_lookup__'] = {}
     meta_dict['__libs__'] = {}
+    meta_dict['__data_container_types__'] = {}
     for typename in dace.serialize._DACE_SERIALIZE_TYPES:
         t = dace.serialize._DACE_SERIALIZE_TYPES[typename]
         if hasattr(t, '__properties__'):
@@ -134,9 +143,12 @@ def get_property_metdata():
 
             # For library nodes we want to make sure they are all easily
             # accessible under '__libs__', to be able to list them all out.
+            # Same for data container types.
             if (issubclass(t, dace.sdfg.nodes.LibraryNode)
                     and not t == dace.sdfg.nodes.LibraryNode):
                 meta_dict['__libs__'][typename] = meta_key
+            elif (issubclass(t, dace.data.Data) and t is not dace.data.Data):
+                meta_dict['__data_container_types__'][typename] = meta_key
 
     # Save a lookup for enum values not present yet.
     enum_list = [

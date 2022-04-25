@@ -81,7 +81,7 @@ export abstract class Property {
 }
 
 export class KeyProperty {
-    /* 
+    /*
      * Note: This does not extend the Property class by design, because it
      * behaves slightly differently.
      * TODO(later): Adapt this in such a way, that it can be made a coherent
@@ -118,12 +118,17 @@ export class KeyProperty {
                     propertyDescriptor
                 );
             delete this.target[this.key];
+            this.key = res.value;
         }
         return res.valueChanged;
     }
 
     public getInput(): JQuery<HTMLElement> {
         return this.input;
+    }
+
+    public getKey(): string {
+        return this.key;
     }
 
 }
@@ -149,6 +154,12 @@ export class ValueProperty extends Property {
         if (this.datatype === 'LambdaProperty') {
             if (value === '' || value === undefined)
                 value = null;
+        } else if (this.input.attr('type') === 'number') {
+            try {
+                value = parseInt(value);
+            } catch {
+                // ignored.
+            }
         }
 
         return {
@@ -295,12 +306,19 @@ export class ListProperty extends Property {
         key: string,
         subkey: string | undefined,
         datatype: string,
-        protected propertiesList: Property[]
+        protected propertiesList: Property[],
+        protected originalValue: any
     ) {
         super(element, xform, target, key, subkey, datatype);
     }
 
     public getValue(): PropertyValueReturn {
+        if (!this.propertiesList.length)
+            return {
+                value: this.originalValue,
+                valueChanged: false,
+            };
+
         const newList = [];
         for (let i = 0; i < this.propertiesList.length; i++) {
             const res = this.propertiesList[i].getValue();
@@ -331,8 +349,9 @@ export class ListProperty extends Property {
 }
 
 export type PropertyEntry = {
+    key: string | undefined,
     keyProp: KeyProperty | undefined,
-    valProp: Property | undefined,
+    valProp: Property[] | undefined,
     deleteBtn: JQuery<HTMLElement> | undefined,
     row: JQuery<HTMLElement>,
 };
@@ -348,33 +367,43 @@ export class DictProperty extends Property {
         key: string,
         subkey: string | undefined,
         datatype: string,
-        protected properties: DictPropertyList
+        protected properties: DictPropertyList,
+        protected originalValue: any
     ) {
         super(element, xform, target, key, subkey, datatype);
     }
 
     public getValue(): PropertyValueReturn {
+        if (!this.properties.length)
+            return {
+                value: this.originalValue,
+                valueChanged: false,
+            };
+
         const newDict: { [key: string]: any } = {};
         let valueChanged = false;
         this.properties.forEach(prop => {
-            if (prop.keyProp && prop.valProp) {
-                const keyRes = prop.keyProp.getValue();
-                const valRes = prop.valProp.getValue();
-                if (keyRes !== undefined && keyRes.value !== undefined &&
-                    keyRes.value !== '') {
-                    const valSubkey = prop.valProp.getSubkey();
-                    if (prop.valProp.getDatatype() === 'CodeBlock' &&
-                        valSubkey !== undefined) {
-                        // For code properties, we need to write back the entire
-                        // code property structure, including language info.
-                        let codeVal = prop.valProp.getTarget()[
-                            prop.valProp.getKey()
-                        ];
-                        codeVal[valSubkey] = valRes.value;
-                        newDict[keyRes.value] = codeVal;
-                    } else {
-                        newDict[keyRes.value] = valRes.value;
-                    }
+            if ((prop.keyProp || prop.key) && prop.valProp) {
+                const keyRes = prop.keyProp?.getValue();
+                let keyVal = keyRes?.value;
+                if (!keyVal || keyVal === '')
+                    keyVal = prop.key;
+                if (keyVal !== undefined && keyVal !== '') {
+                    prop.valProp.forEach(vp => {
+                        const valRes = vp.getValue();
+                        const valSubkey = vp.getSubkey();
+                        if (vp.getDatatype() === 'CodeBlock' &&
+                            valSubkey !== undefined) {
+                            // For code properties, we need to write back the
+                            // entire code property structure, including
+                            // language info.
+                            let codeVal = vp.getTarget()[vp.getKey()];
+                            codeVal[valSubkey] = valRes.value;
+                            newDict[keyVal] = codeVal;
+                        } else {
+                            newDict[keyVal] = valRes.value;
+                        }
+                    });
                     valueChanged = true;
                 }
             }
@@ -483,12 +512,19 @@ export class RangeProperty extends Property {
         key: string,
         subkey: string | undefined,
         datatype: string,
-        protected rangeInputList: RangeInput[]
+        protected rangeInputList: RangeInput[],
+        protected originalValue: any
     ) {
         super(element, xform, target, key, subkey, datatype);
     }
 
     public getValue(): PropertyValueReturn {
+        if (!this.rangeInputList.length)
+            return {
+                value: this.originalValue,
+                valueChanged: false,
+            };
+
         let newRanges: Range[] = [];
         for (let i = 0; i < this.rangeInputList.length; i++) {
             let targetRange: Range = {

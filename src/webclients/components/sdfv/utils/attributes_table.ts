@@ -4,6 +4,8 @@
 import {
     Connector,
     Edge,
+    JsonSDFG,
+    JsonSDFGNode,
     LibraryNode,
     LogicalGroup,
     SDFGElement,
@@ -29,6 +31,8 @@ import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { VSCodeSDFV } from '../vscode_sdfv';
 import {
     createSingleUseModal,
+    doForAllNodeTypes,
+    elementUpdateLabel,
     getElementMetadata,
     getTransformationMetadata,
     vscodeWriteGraph
@@ -139,6 +143,111 @@ export function attrTablePutCode(
     );
 }
 
+export function attrTablePutData(
+    key: string, subkey: string | undefined, val: any, elem: any | undefined,
+    xform: any | undefined, target: any, cell: JQuery, dtype: string,
+    meta: any, editableKeys: boolean = false
+): DictProperty {
+    const dataCellContainer = $('<div>', {
+        'class': 'popup-editable-property-container',
+    }).appendTo(cell);
+    const dataEditBtn = $('<i>', {
+        'class': 'material-icons property-edit-btn',
+        'text': 'edit',
+        'title': 'Click to edit',
+    }).appendTo(dataCellContainer);
+
+    const prop = new DictProperty(
+        elem, xform, target, key, subkey, dtype, [], val
+    );
+
+    dataEditBtn.on('click', () => {
+        prop.setProperties([]);
+
+        const modal = createSingleUseModal(
+            key, true, 'property-edit-modal-body'
+        );
+
+        const rowbox = $('<div>', {
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+        Object.keys(val.attributes).forEach(k => {
+            let v = val.attributes[k];
+
+            let valMeta = undefined;
+            if (k in meta)
+                valMeta = meta[k];
+
+            const attrProp = attributeTablePutEntry(
+                k, v, valMeta, val.attributes, elem, xform, rowbox,
+                editableKeys, false, editableKeys
+            );
+
+            if (attrProp.deleteBtn)
+                attrProp.deleteBtn.on('click', () => {
+                    attrProp.keyProp?.getInput().val('');
+                    attrProp.row.hide();
+                });
+
+            if (attrProp)
+                prop.getProperties().push(attrProp);
+        });
+
+        // If code editors (monaco editors) are part of this dictionary, they
+        // need to be resized again as soon as the modal is shown in order to
+        // properly fill the container.
+        modal.modal.on('shown.bs.modal', () => {
+            for (const property of prop.getProperties()) {
+                if (property.valProp instanceof CodeProperty)
+                    property.valProp.getEditor().layout();
+            }
+        });
+
+        if (editableKeys) {
+            const addItemContainer = $('<div>', {
+                'class': 'container-fluid',
+            }).appendTo(modal.body);
+            const addItemButtonRow = $('<div>', {
+                'class': 'row',
+            }).appendTo(addItemContainer);
+            $('<i>', {
+                'class': 'material-icons property-add-row-btn',
+                'text': 'playlist_add',
+                'title': 'Add item',
+                'click': () => {
+                    const newProp = attributeTablePutEntry(
+                        '', '', { metatype: 'str' }, val.attributes, elem,
+                        xform, rowbox, true, false, true
+                    );
+                    if (newProp) {
+                        prop.getProperties().push(newProp);
+
+                        if (newProp.deleteBtn)
+                            newProp.deleteBtn.on('click', () => {
+                                newProp.keyProp?.getInput().val('');
+                                newProp.row.hide();
+                            });
+                    }
+                },
+            }).appendTo($('<div>', {
+                'class': 'col-2',
+            }).appendTo(addItemButtonRow));
+        }
+
+        if (modal.confirmBtn)
+            modal.confirmBtn.on('click', () => {
+                const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+                if (prop.update() && !xform && sdfg)
+                    vscodeWriteGraph(sdfg);
+                modal.modal.modal('hide');
+            });
+
+        modal.modal.modal('show');
+    });
+
+    return prop;
+}
+
 export function attrTablePutNumber(
     key: string, subkey: string | undefined, val: number, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string
@@ -237,7 +346,7 @@ export function attrTablePutTypeclass(
 export function attrTablePutDict(
     key: string, subkey: string | undefined, val: any, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string,
-    valMeta: any
+    valMeta: any, allowAdding: boolean = true
 ): DictProperty {
     const dictCellContainer = $('<div>', {
         'class': 'popup-editable-property-container',
@@ -253,7 +362,9 @@ export function attrTablePutDict(
         'title': 'Click to edit',
     }).appendTo(dictCellContainer);
 
-    const prop = new DictProperty(elem, xform, target, key, subkey, dtype, []);
+    const prop = new DictProperty(
+        elem, xform, target, key, subkey, dtype, [], val
+    );
 
     dictEditBtn.on('click', () => {
         prop.setProperties([]);
@@ -367,7 +478,9 @@ export function attrTablePutList(
         'title': 'Click to edit',
     }).appendTo(listCellContainer);
 
-    const prop = new ListProperty(elem, xform, target, key, subkey, dtype, []);
+    const prop = new ListProperty(
+        elem, xform, target, key, subkey, dtype, [], val
+    );
 
     listCellEditBtn.on('click', () => {
         prop.setPropertiesList([]);
@@ -404,8 +517,12 @@ export function attrTablePutList(
                     });
                 }
 
-                if (attrProp && attrProp.valProp)
-                    prop.getPropertiesList().push(attrProp.valProp);
+                if (attrProp && attrProp.valProp) {
+                    if (Array.isArray(attrProp.valProp))
+                        prop.getPropertiesList().push(...attrProp.valProp);
+                    else
+                        prop.getPropertiesList().push(attrProp.valProp);
+                }
             }
 
             // If code editors (monaco editors) are part of this list, they
@@ -436,7 +553,10 @@ export function attrTablePutList(
                     false, true
                 );
                 if (newProp && newProp.valProp) {
-                    prop.getPropertiesList().push(newProp.valProp);
+                    if (Array.isArray(newProp.valProp))
+                        prop.getPropertiesList().push(...newProp.valProp);
+                    else
+                        prop.getPropertiesList().push(newProp.valProp);
 
                     if (newProp.deleteBtn) {
                         newProp.deleteBtn.on('click', () => {
@@ -493,7 +613,7 @@ export function attrTablePutRange(
     }).appendTo(rangeCellContainer);
 
     const prop = new RangeProperty(
-        elem, xform, target, key, 'ranges', dtype, []
+        elem, xform, target, key, 'ranges', dtype, [], val
     );
 
     rangeEditBtn.on('click', () => {
@@ -707,10 +827,12 @@ export function attrTablePutLogicalGroup(
 export function attributeTablePutEntry(
     key: string, val: any, meta: any, target: any, elem: any | undefined,
     xform: any | undefined, root: JQuery, editableKey: boolean,
-    updateOnChange: boolean, addDeleteButton: boolean
+    updateOnChange: boolean, addDeleteButton: boolean,
+    keyChangeHandlerOverride?: (prop: KeyProperty) => void,
+    valueChangeHandlerOverride?: (prop: Property) => void
 ): PropertyEntry {
     let keyProp: KeyProperty | undefined = undefined;
-    let valProp: Property | undefined = undefined;
+    let valProp: Property[] | undefined = undefined;
     let deleteBtn = undefined;
 
     let dtype = undefined;
@@ -721,6 +843,20 @@ export function attributeTablePutEntry(
         if (meta['choices'])
             choices = meta['choices'];
     }
+
+    const valPropUpdateHandler = valueChangeHandlerOverride !== undefined ?
+        valueChangeHandlerOverride : (prop: Property) => {
+            const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+            if (!xform && prop.update() && sdfg)
+                vscodeWriteGraph(sdfg);
+        };
+
+    const keyPropUpdateHandler = keyChangeHandlerOverride !== undefined ?
+        keyChangeHandlerOverride : (prop: KeyProperty) => {
+            const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+            if (prop && prop.update() && !xform && sdfg)
+                vscodeWriteGraph(sdfg);
+        };
 
     const row = $('<div>', {
         'class': 'row attr-table-row',
@@ -773,29 +909,29 @@ export function attributeTablePutEntry(
         const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
         switch (dtype) {
             case 'typeclass':
-                valProp = attrTablePutTypeclass(
+                valProp = [attrTablePutTypeclass(
                     key, undefined, val, elem, xform, target, valueCell, dtype,
                     choices
-                );
+                )];
                 break;
             case 'bool':
-                valProp = attrTablePutBool(
+                valProp = [attrTablePutBool(
                     key, undefined, val, elem, xform, target, valueCell, dtype
-                );
+                )];
                 break;
             case 'str':
             case 'LambdaProperty':
             case 'SymbolicProperty':
                 // TODO(later): Treat symbolic expressions with a symbolic
                 // parser, they're not just a regular string.
-                valProp = attrTablePutText(
+                valProp = [attrTablePutText(
                     key, undefined, val, elem, xform, target, valueCell, dtype
-                );
+                )];
                 break;
             case 'int':
-                valProp = attrTablePutNumber(
+                valProp = [attrTablePutNumber(
                     key, undefined, val, elem, xform, target, valueCell, dtype
-                );
+                )];
                 break;
             case 'dict':
                 let valType = undefined;
@@ -806,9 +942,10 @@ export function attributeTablePutEntry(
                     sdfgMetaDict['__reverse_type_lookup__'] &&
                     sdfgMetaDict['__reverse_type_lookup__'][valType])
                     valMeta = sdfgMetaDict['__reverse_type_lookup__'][valType];
+                const allowAdding = addDeleteButton;
                 attrTablePutDict(
                     key, undefined, val, elem, xform, target, valueCell, dtype,
-                    valMeta
+                    valMeta, allowAdding
                 );
                 break;
             case 'set':
@@ -829,107 +966,104 @@ export function attributeTablePutEntry(
                         metatype: elemType,
                     };
 
-                valProp = attrTablePutList(
+                valProp = [attrTablePutList(
                     key, undefined, val, elem, xform, target, valueCell, dtype,
                     elemMeta
-                );
+                )];
                 break;
             case 'Range':
             case 'SubsetProperty':
-                valProp = attrTablePutRange(
+                valProp = [attrTablePutRange(
                     key, undefined, val, elem, xform, target, valueCell, dtype
-                );
+                )];
                 break;
             case 'DataProperty':
-                valProp = attrTablePutSelect(
+                valProp = [attrTablePutSelect(
                     key, undefined, val, elem, xform, target, valueCell, dtype,
                     elem ? Object.keys(elem.sdfg.attributes._arrays): []
-                );
+                )];
                 break;
             case 'CodeBlock':
-                valProp = attrTablePutCode(
+                valProp = [attrTablePutCode(
                     key, undefined, val ? val.string_data : '', elem, xform,
                     target, valueCell, dtype
+                )];
+                break;
+            case 'Array':
+            case 'Data':
+            case 'Scalar':
+            case 'View':
+            case 'Reference':
+            case 'Stream':
+                const containerTypeChoices = Object.keys(
+                    VSCodeSDFV.getInstance().getMetaDict()[
+                        '__data_container_types__'
+                    ]
                 );
+                const dataTypeProp = attrTablePutSelect(
+                    key, 'type', val.type, elem, xform, target, valueCell,
+                    dtype, containerTypeChoices
+                );
+                const dataAttrProp = attrTablePutData(
+                    key, 'attributes', val, elem, xform, target,
+                    valueCell, dtype, meta
+                );
+                valProp = [dataTypeProp, dataAttrProp];
                 break;
             case 'LogicalGroup':
-                valProp = attrTablePutLogicalGroup(
+                valProp = [attrTablePutLogicalGroup(
                     key, undefined, val, elem, xform, target, valueCell, dtype
-                );
+                )];
                 break;
             default:
-                if (choices !== undefined) {
-                    valProp = attrTablePutSelect(
+                if (choices !== undefined)
+                    valProp = [attrTablePutSelect(
                         key, undefined, val, elem, xform, target, valueCell,
                         dtype, choices
-                    );
-                } else {
+                    )];
+                else
                     valueCell.html(sdfg_property_to_string(
                         val, VSCodeRenderer.getInstance()?.view_settings()
                     ));
-                }
                 break;
         }
     }
 
     if (updateOnChange && valProp !== undefined) {
-        if (valProp instanceof ValueProperty) {
-            if (valProp instanceof ComboboxProperty) {
-                valProp.getInput().on('hidden.editable-select', () => {
-                    if (valProp) {
-                        const valueChanged = valProp.update();
-                        const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                        if (!xform && valueChanged && sdfg)
-                            vscodeWriteGraph(sdfg);
-                    }
+        valProp.forEach(prop => {
+            if (prop instanceof ValueProperty) {
+                if (prop instanceof ComboboxProperty) {
+                    prop.getInput().on('hidden.editable-select', () => {
+                        valPropUpdateHandler(prop);
+                    });
+                    prop.getInput().on('select.editable-select', () => {
+                        valPropUpdateHandler(prop);
+                    });
+                } else {
+                    prop.getInput().on('change', () => {
+                        valPropUpdateHandler(prop);
+                    });
+                }
+            } else if (prop instanceof CodeProperty) {
+                prop.getCodeInput().on('change', () => {
+                    valPropUpdateHandler(prop);
                 });
-                valProp.getInput().on('select.editable-select', () => {
-                    if (valProp) {
-                        const valueChanged = valProp.update();
-                        const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                        if (!xform && valueChanged && sdfg)
-                            vscodeWriteGraph(sdfg);
-                    }
-                });
-            } else {
-                valProp.getInput().on('change', () => {
-                    if (valProp) {
-                        valProp.update();
-                        const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                        if (!xform && sdfg)
-                            vscodeWriteGraph(sdfg);
-                    }
+                prop.getLangInput().on('change', () => {
+                    valPropUpdateHandler(prop);
                 });
             }
-        } else if (valProp instanceof CodeProperty) {
-            valProp.getCodeInput().on('change', () => {
-                if (valProp) {
-                    valProp.update();
-                    const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                    if (!xform && sdfg)
-                        vscodeWriteGraph(sdfg);
-                }
-            });
-            valProp.getLangInput().on('change', () => {
-                if (valProp) {
-                    valProp.update();
-                    const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                    if (!xform && sdfg)
-                        vscodeWriteGraph(sdfg);
-                }
-            });
-        }
+        });
     }
 
-    if (updateOnChange && keyProp !== undefined &&
-        keyProp.getInput() !== undefined)
+    if (updateOnChange && keyProp && keyProp.getInput() !== undefined) {
         keyProp.getInput().on('change', () => {
-            const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-            if (keyProp && keyProp.update() && !xform && sdfg)
-                vscodeWriteGraph(sdfg);
+            if (keyProp)
+                keyPropUpdateHandler(keyProp);
         });
+    }
 
     return {
+        key: key,
         keyProp: keyProp,
         valProp: valProp,
         deleteBtn: deleteBtn,
@@ -1112,4 +1246,171 @@ export function generateAttributesTable(
         );
         gotoCppBtn.show();
     }
+}
+
+export function appendDataDescriptorTable(
+    root: JQuery<HTMLElement>,
+    descriptors: { [key: string]: { type: string, attributes: any } },
+    sdfg: JsonSDFG
+): void {
+    const dataTableBaseContainer = $('<div>', {
+        'class': 'container-fluid attr-table-base-container',
+    }).appendTo(root);
+
+    const catRow = $('<div>', {
+        'class': 'row attr-table-cat-row',
+    }).appendTo(dataTableBaseContainer);
+    const catContainer = $('<div>', {
+        'class': 'col-12 attr-table-cat-container',
+    }).appendTo(catRow);
+    const catToggleBtn = $('<button>', {
+        'class': 'attr-cat-toggle-btn active',
+        'type': 'button',
+        'text': 'Data Containers',
+        'data-bs-toggle': 'collapse',
+        'data-bs-target': '#info-table-data-containers',
+        'aria-expanded': 'false',
+        'aria-controls': 'info-table-data-containers',
+    }).appendTo(catContainer);
+
+    const attrTable = $('<div>', {
+        'class': 'container-fluid attr-table collapse show',
+        'id': 'info-table-data-containers',
+    }).appendTo(catContainer);
+    attrTable.on('hide.bs.collapse', () => {
+        catToggleBtn.removeClass('active');
+    });
+    attrTable.on('show.bs.collapse', () => {
+        catToggleBtn.addClass('active');
+    });
+
+    const metaDict = VSCodeSDFV.getInstance().getMetaDict();
+
+    for (const descriptor in descriptors) {
+        const val = descriptors[descriptor];
+
+        let attrMeta = undefined;
+        if (metaDict && metaDict[val.type]) {
+            attrMeta = metaDict[val.type];
+            attrMeta['metatype'] = val.type;
+        }
+
+        const res = attributeTablePutEntry(
+            descriptor, val, attrMeta, descriptors, undefined,
+            undefined, attrTable, true, true, true,
+            (prop: KeyProperty) => {
+                // When a data container name is changed, update the data
+                // container and label for all access nodes referencing this
+                // data container.
+                const nVal = prop.getValue();
+                if (nVal.valueChanged) {
+                    const oldDescriptor = prop.getKey();
+                    const newDescriptor = nVal.value;
+
+                    doForAllNodeTypes(
+                        sdfg, 'AccessNode', (accessNode: JsonSDFGNode) => {
+                            if (accessNode.attributes?.data === oldDescriptor) {
+                                accessNode.attributes.data = newDescriptor;
+                                accessNode.label = newDescriptor;
+                            }
+                        }, false
+                    );
+
+                    prop.update();
+
+                    // Write back the change - this is necessary since we're
+                    // overwriting the default handler which writes changes
+                    // back when update-on-value-change is enabled.
+                    const wholeSdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+                    if (wholeSdfg)
+                        vscodeWriteGraph(wholeSdfg);
+                }
+            }
+        );
+
+        if (res.deleteBtn)
+            res.deleteBtn.on('click', () => {
+                delete descriptors[descriptor];
+
+                const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+                if (sdfg)
+                    vscodeWriteGraph(sdfg);
+            });
+    }
+
+    const addItemRowContainer = $('<div>', {
+        'class': 'container-fluid attr-table',
+    }).appendTo(catContainer);
+    const addItemButtonRow = $('<div>', {
+        'class': 'row',
+    }).appendTo(addItemRowContainer);
+    $('<i>', {
+        'class': 'material-icons property-add-row-btn',
+        'text': 'playlist_add',
+        'title': 'Add data container',
+        'click': () => {
+            const nContModalRet = createSingleUseModal(
+                'New Data Container Name', true, ''
+            );
+
+            const nameInput = $('<input>', {
+                type: 'text',
+            }).appendTo($('<div>', {
+                class: 'container-fluid',
+            }).appendTo(nContModalRet.body));
+
+            nContModalRet.confirmBtn?.on('click', () => {
+                const nameVal = nameInput.val();
+
+                if (nameVal && nameVal !== '' && typeof nameVal === 'string') {
+                    nContModalRet.modal.modal('hide');
+
+                    const defaultNewType = 'Scalar';
+                    const newMetaType = metaDict[defaultNewType];
+
+                    const defaultValues: {
+                        type: string,
+                        attributes: any,
+                    } = {
+                        type: defaultNewType,
+                        attributes: {},
+                    };
+                    for (const key in newMetaType) {
+                        if (key === 'debuginfo')
+                            continue;
+
+                        const val = newMetaType[key];
+                        if (Object.keys(val).includes('default'))
+                            defaultValues.attributes[key] = val.default;
+                    }
+
+                    newMetaType['metatype'] = defaultNewType;
+
+                    const newProp = attributeTablePutEntry(
+                        nameVal, defaultValues, newMetaType, descriptors,
+                        undefined, undefined, attrTable, true, true, true
+                    );
+                    if (newProp) {
+                        if (newProp.deleteBtn)
+                            newProp.deleteBtn.on('click', () => {
+                                if (newProp.key) {
+                                    delete descriptors[newProp.key];
+
+                                const sdfg =
+                                    VSCodeRenderer.getInstance()?.get_sdfg();
+                                if (sdfg)
+                                    vscodeWriteGraph(sdfg);
+                            }
+                        });
+                    }
+
+                    descriptors[nameVal] = defaultValues;
+                }
+            });
+
+            nContModalRet.modal.modal('show');
+        },
+    }).appendTo($('<div>', {
+        'class': 'col-2',
+    }).appendTo(addItemButtonRow));
 }

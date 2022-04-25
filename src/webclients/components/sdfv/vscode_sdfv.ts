@@ -17,6 +17,8 @@ import '@spcl/sdfv/sdfv.css';
 
 import './vscode_sdfv.css';
 
+import * as staticSdfgMetaDict from '../../../utils/sdfg_meta_dict.json';
+
 import {
     AccessNode,
     DagreSDFG,
@@ -61,8 +63,15 @@ import {
     refreshTransformationList,
     sortTransformations,
 } from './transformation/transformation';
-import { generateAttributesTable } from './utils/attributes_table';
-import { getElementMetadata, reselectRendererElement, showContextMenu, vscodeWriteGraph } from './utils/helpers';
+import {
+    appendDataDescriptorTable,
+    generateAttributesTable,
+} from './utils/attributes_table';
+import {
+    reselectRendererElement,
+    showContextMenu,
+    vscodeWriteGraph,
+} from './utils/helpers';
 
 declare const vscode: any;
 
@@ -456,6 +465,7 @@ export class VSCodeSDFV extends SDFV {
                     'text': sdfg_array.type + ' properties:',
                 }).appendTo(contents);
 
+                // TODO: Allow container types to be changed here too.
                 generateAttributesTable(sdfg_array, undefined, contents);
             } else if (elem instanceof NestedSDFG) {
                 // If nested SDFG, add SDFG info too.
@@ -500,6 +510,18 @@ export class VSCodeSDFV extends SDFV {
 
                     generateAttributesTable(other_element, undefined, contents);
                 }
+            } else if (elem instanceof SDFG) {
+                if (elem.data && elem.data.attributes)
+                    appendDataDescriptorTable(
+                        contents, elem.data.attributes._arrays, elem.data
+                    );
+            } else if (elem instanceof NestedSDFG) {
+                if (elem.data && elem.data.node.attributes)
+                    appendDataDescriptorTable(
+                        contents,
+                        elem.data.node.attributes.sdfg.attributes._arrays,
+                        elem.data.node.attributes.sdfg
+                    );
             }
 
             $('#info-clear-btn').show();
@@ -660,7 +682,17 @@ export class VSCodeSDFV extends SDFV {
         return this.sdfgString;
     }
 
-    public getMetaDict(): { [key: string]: any } | null {
+    public getMetaDict(): { [key: string]: any } {
+        if (!this.sdfgMetaDict) {
+            // If SDFG property metadata isn't available, use the static one and
+            // query an up-to-date one from DaCe if available.
+            // TODO(later): Query an up-to-date version from a static online
+            // location first before sending a query to DaCe.
+            vscode.postMessage({
+                type: 'dace.query_sdfg_metadata',
+            });
+            return staticSdfgMetaDict;
+        }
         return this.sdfgMetaDict;
     }
 

@@ -8,6 +8,7 @@ import {
     find_graph_element_by_uuid,
     get_uuid_graph_element,
     JsonSDFG,
+    JsonSDFGNode,
     ScopeNode,
     SDFGElement,
     sdfg_range_elem_to_string,
@@ -222,6 +223,7 @@ export function elementUpdateLabel(
                             element.data.node.label;
                     }
                 }
+                element.clear_cached_labels();
             } else if (element instanceof AccessNode && attributes.data) {
                 element.data.node.label = attributes.data;
             }
@@ -287,68 +289,71 @@ export function reselectRendererElement(elem: SDFGElement): void {
 export function getTransformationMetadata(transformation: any): any {
     let metadata = undefined;
     const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
-    if (sdfgMetaDict) {
-        if (transformation.transformation)
-            metadata = sdfgMetaDict[transformation.transformation];
-    } else {
-        // If SDFG property metadata isn't available, query it from DaCe.
-        vscode.postMessage({
-            type: 'dace.query_sdfg_metadata',
-        });
-    }
+    if (transformation.transformation)
+        metadata = sdfgMetaDict[transformation.transformation];
     return metadata;
 }
 
 export function getElementMetadata(elem: any): any {
     let metadata: any = undefined;
     const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
-    if (sdfgMetaDict) {
-        if (elem instanceof SDFGElement) {
-            if (elem.data.sdfg) {
-                metadata = sdfgMetaDict[elem.data.sdfg.type];
-            } else if (elem.data.state) {
-                metadata = sdfgMetaDict[elem.data.state.type];
-            } else if (elem.data.node) {
-                const nodeType = elem.data.node.type;
-                if (elem instanceof ScopeNode) {
-                    let nodeMeta = sdfgMetaDict[nodeType];
-                    let scopeMeta: any = undefined;
-                    let entryIdx = nodeType.indexOf('Entry');
-                    let exitIdx = nodeType.indexOf('Exit');
-                    if (entryIdx)
-                        scopeMeta =
-                            sdfgMetaDict[nodeType.substring(0, entryIdx)];
-                    else if (exitIdx)
-                        scopeMeta =
-                            sdfgMetaDict[nodeType.substring(0, exitIdx)];
+    if (elem instanceof SDFGElement) {
+        if (elem.data.sdfg) {
+            metadata = sdfgMetaDict[elem.data.sdfg.type];
+        } else if (elem.data.state) {
+            metadata = sdfgMetaDict[elem.data.state.type];
+        } else if (elem.data.node) {
+            const nodeType = elem.data.node.type;
+            if (elem instanceof ScopeNode) {
+                let nodeMeta = sdfgMetaDict[nodeType];
+                let scopeMeta: any = undefined;
+                let entryIdx = nodeType.indexOf('Entry');
+                let exitIdx = nodeType.indexOf('Exit');
+                if (entryIdx)
+                    scopeMeta = sdfgMetaDict[nodeType.substring(0, entryIdx)];
+                else if (exitIdx)
+                    scopeMeta = sdfgMetaDict[nodeType.substring(0, exitIdx)];
 
-                    metadata = {};
-                    if (nodeMeta !== undefined)
-                        Object.keys(nodeMeta).forEach(k => {
-                            metadata[k] = nodeMeta[k];
-                        });
-                    if (scopeMeta !== undefined)
-                        Object.keys(scopeMeta).forEach(k => {
-                            metadata[k] = scopeMeta[k];
-                        });
-                } else if (nodeType === 'LibraryNode') {
-                    metadata = sdfgMetaDict[elem.data.node.classpath];
-                } else {
-                    metadata = sdfgMetaDict[nodeType];
-                }
-            } else if (elem.data.type) {
-                metadata = sdfgMetaDict[elem.data.type];
+                metadata = {};
+                if (nodeMeta !== undefined)
+                    Object.keys(nodeMeta).forEach(k => {
+                        metadata[k] = nodeMeta[k];
+                    });
+                if (scopeMeta !== undefined)
+                    Object.keys(scopeMeta).forEach(k => {
+                        metadata[k] = scopeMeta[k];
+                    });
+            } else if (nodeType === 'LibraryNode') {
+                metadata = sdfgMetaDict[elem.data.node.classpath];
+            } else {
+                metadata = sdfgMetaDict[nodeType];
             }
-        } else if (elem.type) {
-            metadata = sdfgMetaDict[elem.type];
+        } else if (elem.data.type) {
+            metadata = sdfgMetaDict[elem.data.type];
         }
-    } else {
-        // If SDFG property metadata isn't available, query it from DaCe.
-        vscode.postMessage({
-            type: 'dace.query_sdfg_metadata',
-        });
+    } else if (elem.type) {
+        metadata = sdfgMetaDict[elem.type];
     }
+
     return metadata;
+}
+
+export function doForAllNodeTypes(
+    sdfg: JsonSDFG, type: string, fun: CallableFunction, recurseNested: boolean
+): void {
+    sdfg.nodes.forEach(state => {
+        if (type === 'SDFGState')
+            fun(state);
+
+        state.nodes.forEach((node: JsonSDFGNode) => {
+            if (node.type && node.type === type)
+                fun(node);
+            else if (node.type && node.type === 'NestedSDFG' && recurseNested)
+                doForAllNodeTypes(
+                    node.attributes.sdfg, type, fun, recurseNested
+                );
+        });
+    });
 }
 
 class ContextMenu {
