@@ -29,12 +29,16 @@ import {
     find_in_graph,
     GenericSdfgOverlay,
     get_uuid_graph_element,
+    JsonSDFG,
+    LogicalGroup,
+    LogicalGroupOverlay,
     MemoryLocationOverlay,
     MemoryVolumeOverlay,
     mouse_event,
     NestedSDFG,
     OperationalIntensityOverlay,
     parse_sdfg,
+    Point2D,
     RuntimeMicroSecondsOverlay,
     ScopeNode,
     SDFG,
@@ -42,6 +46,7 @@ import {
     SDFGNode,
     SDFGRenderer,
     SDFV,
+    State,
     StaticFlopsOverlay,
     traverse_sdfg_scopes,
 } from '@spcl/sdfv/out';
@@ -62,7 +67,11 @@ import {
     appendDataDescriptorTable,
     generateAttributesTable,
 } from './utils/attributes_table';
-import { reselectRendererElement } from './utils/helpers';
+import {
+    reselectRendererElement,
+    showContextMenu,
+    vscodeWriteGraph,
+} from './utils/helpers';
 
 declare const vscode: any;
 
@@ -174,6 +183,142 @@ export class VSCodeSDFV extends SDFV {
             vscode.postMessage({
                 type: 'transformation_list.deselect',
             });
+    }
+
+    private handleShowGroupsContextMenu(
+        selectedElements: SDFGElement[], event: Event
+    ): void {
+        // If elements are selected, show a context menu to add or remove
+        // them to or from logical groups.
+
+        // Ensure that all elements belong to the same SDFG.
+        let target: JsonSDFG | null = null;
+        selectedElements.forEach(elem => {
+            if (target === null) {
+                target = elem.sdfg;
+            } else if (target.sdfg_list_id !== elem.sdfg.sdfg_list_id) {
+                target = null;
+                return;
+            }
+        });
+
+        if (target !== null) {
+            const options: {
+                label: string | null,
+                callback: CallableFunction | null,
+                disabled: boolean,
+            }[] = [];
+
+            // Add options to add elements to groups.
+            (target as JsonSDFG).attributes?.logical_groups.forEach(
+                (lg: LogicalGroup) => {
+                    options.push({
+                        label: `Add selection to group "${lg.name}"`,
+                        disabled: false,
+                        callback: () => {
+                            selectedElements.forEach(el => {
+                                if (el instanceof State) {
+                                    if (!lg.states.includes(el.id))
+                                        lg.states.push(el.id);
+                                } else if (el.parent_id !== null) {
+                                    const hasTuple = lg.nodes.some((v) => {
+                                        return v[0] === el.parent_id &&
+                                            v[1] === el.id;
+                                    });
+                                    if (!hasTuple)
+                                        lg.nodes.push([el.parent_id, el.id]);
+                                }
+                            });
+
+                            const sdfg =
+                                VSCodeRenderer.getInstance()?.get_sdfg();
+                            if (sdfg)
+                                vscodeWriteGraph(sdfg);
+                        },
+                    });
+                }
+            );
+
+            // Adds a separator.
+            if ((target as JsonSDFG).attributes?.logical_groups)
+                options.push({
+                    label: null,
+                    disabled: true,
+                    callback: null,
+                });
+
+            // Add options to remove from groups.
+            (target as JsonSDFG).attributes?.logical_groups.forEach(
+                (lg: LogicalGroup) => {
+                    options.push({
+                        label: `Remove selection from group "${lg.name}"`,
+                        disabled: false,
+                        callback: () => {
+                            selectedElements.forEach(el => {
+                                if (el instanceof State)
+                                    lg.states = lg.states.filter(v => {
+                                        return v !== el.id;
+                                    });
+                                else if (el.parent_id !== null)
+                                    lg.nodes = lg.nodes.filter(v => {
+                                        return v[0] !== el.parent_id ||
+                                            v[1] !== el.id;
+                                    });
+                            });
+
+                            const sdfg =
+                                VSCodeRenderer .getInstance()?.get_sdfg();
+                            if (sdfg)
+                                vscodeWriteGraph(sdfg);
+                        },
+                    });
+                }
+            );
+
+            if (options)
+                showContextMenu(
+                    (event as MouseEvent).clientX,
+                    (event as MouseEvent).clientY,
+                    options
+                );
+        }
+    }
+
+    private onMouseEvent(
+        evtype: string,
+        event: Event,
+        mousepos: Point2D,
+        elements: {
+            states: any[],
+            nodes: any[],
+            connectors: any[],
+            edges: any[],
+            isedges: any[],
+        },
+        renderer: SDFGRenderer,
+        selectedElements: SDFGElement[],
+        sdfv: SDFV,
+        endsPan: boolean
+    ): boolean {
+        const externalRet = mouse_event(
+            evtype, event, mousepos, elements, renderer, selectedElements, sdfv,
+            endsPan
+        );
+
+        if (evtype === 'click' || evtype === 'dblclick') {
+            sdfv.sidebar_show();
+        } else if (evtype === 'contextmenu') {
+            if (VSCodeRenderer.getInstance()?.get_overlay_manager()
+                .is_overlay_active(LogicalGroupOverlay))
+                VSCodeSDFV.getInstance().handleShowGroupsContextMenu(
+                    selectedElements, event
+                );
+
+            event.preventDefault();
+            return false;
+        }
+
+        return externalRet;
     }
 
     public outline(renderer: SDFGRenderer, graph: DagreSDFG): void {
@@ -294,6 +439,7 @@ export class VSCodeSDFV extends SDFV {
 
             const contents = $('#info-contents');
             contents.html('');
+
             if (elem instanceof Edge && elem.data.type === 'Memlet' &&
                 elem.parent_id !== null) {
                 let sdfg_edge = elem.sdfg.nodes[elem.parent_id].edges[elem.id];
@@ -425,7 +571,7 @@ export class VSCodeSDFV extends SDFV {
             if (parsedSdfg !== null)
                 renderer = VSCodeRenderer.init(
                     parsedSdfg, contentsElem,
-                    mouse_event, null, VSCodeSDFV.DEBUG_DRAW, null, null
+                    this.onMouseEvent, null, VSCodeSDFV.DEBUG_DRAW, null, null
                 );
             else
                 return;
@@ -477,7 +623,7 @@ export class VSCodeSDFV extends SDFV {
             }
 
             renderer = VSCodeRenderer.init(
-                parsedSdfg, contentsElem, mouse_event, userTransform,
+                parsedSdfg, contentsElem, this.onMouseEvent, userTransform,
                 VSCodeSDFV.DEBUG_DRAW, null, null
             );
         }

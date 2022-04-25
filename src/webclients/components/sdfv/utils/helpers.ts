@@ -355,3 +355,93 @@ export function doForAllNodeTypes(
         });
     });
 }
+
+class ContextMenu {
+
+    private static readonly INSTANCE = new ContextMenu();
+
+    public static getInstance(): ContextMenu {
+        return ContextMenu.INSTANCE;
+    }
+
+    private readonly container: JQuery<HTMLElement>;
+    private readonly items: JQuery<HTMLElement>;
+
+    private constructor() {
+        $(document.body).on('click', () => {
+            this.hide();
+        });
+
+        this.container = $('<nav>', {
+            class: 'context-menu',
+        });
+        this.items = $('<ul>', {
+            class: 'context-menu-items',
+        }).appendTo(this.container);
+
+        this.container.hide();
+
+        this.container.appendTo(document.body);
+    }
+
+    public show(
+        x: number, y: number,
+        opts: {
+            label: string | null,
+            callback: CallableFunction | null,
+            disabled: boolean,
+        }[]
+    ): void {
+        this.hide();
+
+        for (const option of opts) {
+            if (option.label === null || option.callback === null) {
+                $('<li>', {
+                    class: 'context-menu-separator',
+                }).appendTo(this.items);
+            } else {
+                if (!option.disabled) {
+                    const item = $('<li>', {
+                        class: 'context-menu-item',
+                        text: option.label,
+                    }).appendTo(this.items);
+                    item.on('click', () => {
+                        if (option.callback)
+                            option.callback();
+                        this.hide();
+                        return false;
+                    });
+                } else {
+                    $('<li>', {
+                        class: 'context-menu-item context-menu-item-disabled',
+                        text: option.label,
+                    }).appendTo(this.items);
+                }
+            }
+        }
+
+        this.container.css({
+            left: x,
+            top: y,
+        });
+
+        this.container.show();
+    }
+
+    public hide(): void {
+        this.container.hide();
+        this.items.html('');
+    }
+
+}
+
+export function showContextMenu(
+    x: number, y: number,
+    options: {
+        label: string | null,
+        callback: CallableFunction | null,
+        disabled: boolean,
+    }[]
+): void {
+    ContextMenu.getInstance().show(x, y, options);
+}
