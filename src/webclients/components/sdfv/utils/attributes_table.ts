@@ -940,6 +940,8 @@ export function attributeTablePutEntry(
             case 'Data':
             case 'Scalar':
             case 'View':
+            case 'Reference':
+            case 'Stream':
                 const containerTypeChoices = Object.keys(
                     VSCodeSDFV.getInstance().getMetaDict()[
                         '__data_container_types__'
@@ -1239,19 +1241,22 @@ export function appendDataDescriptorTable(
         catToggleBtn.addClass('active');
     });
 
+    const metaDict = VSCodeSDFV.getInstance().getMetaDict();
+
     for (const descriptor in descriptors) {
         const val = descriptors[descriptor];
 
         let attrMeta = undefined;
-        const metaDict = VSCodeSDFV.getInstance().getMetaDict();
         if (metaDict && metaDict[val.type]) {
             attrMeta = metaDict[val.type];
             attrMeta['metatype'] = val.type;
         }
 
+        // TODO: On name changes, traverse access nodes and update their data
+        // attribute to point to the new name.
         const res = attributeTablePutEntry(
             descriptor, val, attrMeta, descriptors, undefined,
-            undefined, attrTable, false, true, true
+            undefined, attrTable, true, true, true
         );
 
         if (res.deleteBtn)
@@ -1263,4 +1268,80 @@ export function appendDataDescriptorTable(
                     vscodeWriteGraph(sdfg);
             });
     }
+
+    const addItemRowContainer = $('<div>', {
+        'class': 'container-fluid attr-table',
+    }).appendTo(catContainer);
+    const addItemButtonRow = $('<div>', {
+        'class': 'row',
+    }).appendTo(addItemRowContainer);
+    $('<i>', {
+        'class': 'material-icons property-add-row-btn',
+        'text': 'playlist_add',
+        'title': 'Add data container',
+        'click': () => {
+            const nContModalRet = createSingleUseModal(
+                'New Data Container Name', true, ''
+            );
+
+            const nameInput = $('<input>', {
+                type: 'text',
+            }).appendTo($('<div>', {
+                class: 'container-fluid',
+            }).appendTo(nContModalRet.body));
+
+            nContModalRet.confirmBtn?.on('click', () => {
+                const nameVal = nameInput.val();
+
+                if (nameVal && nameVal !== '' && typeof nameVal === 'string') {
+                    nContModalRet.modal.modal('hide');
+
+                    const defaultNewType = 'Scalar';
+                    const newMetaType = metaDict[defaultNewType];
+
+                    const defaultValues: {
+                        type: string,
+                        attributes: any,
+                    } = {
+                        type: defaultNewType,
+                        attributes: {},
+                    };
+                    for (const key in newMetaType) {
+                        if (key === 'debuginfo')
+                            continue;
+
+                        const val = newMetaType[key];
+                        if (Object.keys(val).includes('default'))
+                            defaultValues.attributes[key] = val.default;
+                    }
+
+                    newMetaType['metatype'] = defaultNewType;
+
+                    const newProp = attributeTablePutEntry(
+                        nameVal, defaultValues, newMetaType, descriptors,
+                        undefined, undefined, attrTable, true, true, true
+                    );
+                    if (newProp) {
+                        if (newProp.deleteBtn)
+                            newProp.deleteBtn.on('click', () => {
+                                if (newProp.key) {
+                                    delete descriptors[newProp.key];
+
+                                const sdfg =
+                                    VSCodeRenderer.getInstance()?.get_sdfg();
+                                if (sdfg)
+                                    vscodeWriteGraph(sdfg);
+                            }
+                        });
+                    }
+
+                    descriptors[nameVal] = defaultValues;
+                }
+            });
+
+            nContModalRet.modal.modal('show');
+        },
+    }).appendTo($('<div>', {
+        'class': 'col-2',
+    }).appendTo(addItemButtonRow));
 }
