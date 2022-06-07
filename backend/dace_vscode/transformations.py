@@ -219,7 +219,8 @@ def get_transformations(sdfg_json, selected_elements, permissive):
         for xform in extensions:
             if len(selected_states) > 0:  # Subgraph transformations are single-state
                 continue
-            xform_obj = xform(subgraph)
+            xform_obj = xform()
+            xform_obj.setup_match(subgraph)
             if xform_obj.can_be_applied(selected_sdfg, subgraph):
                 transformations.append(xform_obj.to_json())
                 docstrings[xform.__name__] = xform_obj.__doc__
