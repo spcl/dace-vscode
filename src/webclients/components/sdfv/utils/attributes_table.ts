@@ -284,8 +284,8 @@ export function attrTablePutSelect(
         ));
     });
 
-    if (elem && elem instanceof LibraryNode && key === 'implementation')
-        $('<button>', {
+    if (elem && elem instanceof LibraryNode && key === 'implementation') {
+        const expandButton =  $('<button>', {
             'class': 'btn btn-sm btn-primary sdfv-property-expand-libnode-btn',
             'text': 'Expand',
             'click': () => {
@@ -300,6 +300,17 @@ export function attrTablePutSelect(
                     });
             },
         }).appendTo(cell);
+        const inPreviewMode = !document.getElementById(
+            'exit-preview-button'
+        )?.classList.contains('hidden');
+        if (inPreviewMode) {
+            expandButton.prop('disabled', 'disabled');
+            expandButton.addClass('btn-disabled');
+            expandButton.prop(
+                'title', 'Cannot expand in preview mode'
+            );
+        }
+    }
 
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
 }
