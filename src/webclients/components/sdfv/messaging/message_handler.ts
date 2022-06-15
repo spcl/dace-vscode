@@ -125,20 +125,45 @@ export class MessageHandler {
                 break;
             case 'set_overlays':
                 {
+                    // Query all active overlays
                     const olm = renderer?.get_overlay_manager();
-                    const overlays = olm?.get_overlays();
-                    if (overlays) {
-                        for (const ol of overlays) {
+                    const activeOverlays = olm?.get_overlays();
+
+                    // Deregister any previously active overlays.
+                    if (activeOverlays) {
+                        for (const ol of activeOverlays) {
+                            // Never deregister the logical group overlay.
                             if (ol instanceof LogicalGroupOverlay)
                                 continue;
 
-                            if (!message.overlays.includes(ol.constructor.name))
-                                olm?.deregister_overlay(
-                                    VSCodeSDFV.OVERLAYS[ol.constructor.name]
-                                );
+                            // Find the correct type for the registered overlay.
+                            let type = undefined;
+                            for (const overlayType of
+                                Object.values(VSCodeSDFV.OVERLAYS)) {
+                                if (ol instanceof overlayType) {
+                                    type = overlayType;
+                                    break;
+                                }
+                            }
+
+                            // Don't deregister overlays that should be
+                            // registered.
+                            let included = false;
+                            for (const requestedOverlay of message.overlays) {
+                                const requestedOverlayType =
+                                    VSCodeSDFV.OVERLAYS[requestedOverlay];
+                                if (ol instanceof requestedOverlayType) {
+                                    included = true;
+                                    break;
+                                }
+                            }
+
+                            if (!included && type)
+                                olm?.deregister_overlay(type);
                         }
                     }
 
+                    // Register all the selected overlays.
                     for (const ol of message.overlays) {
                         if (!olm?.is_overlay_active(VSCodeSDFV.OVERLAYS[ol]))
                             olm?.register_overlay(VSCodeSDFV.OVERLAYS[ol]);
