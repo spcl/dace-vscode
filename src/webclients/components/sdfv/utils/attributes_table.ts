@@ -318,29 +318,36 @@ export function attrTablePutSelect(
 export function attrTablePutTypeclass(
     key: string, subkey: string | undefined, val: string, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string,
-    choices: string[]
+    baseTypes: string[], compoundTypes: { [keys: string]: any }
 ): TypeclassProperty {
+    // Add a random string to the id so we can fetch the new element after an
+    // editable select is created. Passing the element directly doesn't use the
+    // updated fields created by editable select.
+    const r = (Math.random() + 1).toString(36).substring(7);
     const input = $('<select>', {
-        'id': key + '-typeclass-dropdown',
+        'id': key + '-' + r + '-typeclass-dropdown',
         'class': 'sdfv-property-dropdown',
     }).appendTo(cell);
+    const choices = baseTypes.concat(Object.keys(compoundTypes));
+
+    const typeval = typeof val === 'object' ? val['type'] : val;
     let found = false;
     if (choices) {
         choices.forEach(array => {
             input.append(new Option(
                 array,
                 array,
-                array === val,
-                array === val
+                array === typeval,
+                array === typeval
             ));
 
-            if (array === val)
+            if (array === typeval)
                 found = true;
         });
     }
 
     if (!found)
-        input.append(new Option(val, val, true, true));
+        input.append(new Option(typeval, typeval, true, true));
 
     input.editableSelect({
         filter: false,
@@ -348,9 +355,18 @@ export function attrTablePutTypeclass(
         duration: 'fast',
     });
 
+    const editCompoundButton = $('<i>', {
+        'class': 'material-icons property-edit-btn',
+        'text': 'edit',
+        'title': 'Click to edit',
+    }).appendTo(cell);
+    if (typeof val === 'string')
+        editCompoundButton.hide();
+
     return new TypeclassProperty(
         elem, xform, target, key, subkey, dtype, input,
-        $('#' + key + '-typeclass-dropdown')
+        $('#' + key + '-' + r + '-typeclass-dropdown'), editCompoundButton,
+        compoundTypes
     );
 }
 
@@ -920,10 +936,12 @@ export function attributeTablePutEntry(
         const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
         switch (dtype) {
             case 'typeclass':
-                valProp = [attrTablePutTypeclass(
-                    key, undefined, val, elem, xform, target, valueCell, dtype,
-                    choices
-                )];
+                if (meta !== undefined && meta['base_types'] &&
+                    meta['compound_types'])
+                    valProp = [attrTablePutTypeclass(
+                        key, undefined, val, elem, xform, target, valueCell,
+                        dtype, meta['base_types'], meta['compound_types']
+                    )];
                 break;
             case 'bool':
                 valProp = [attrTablePutBool(
@@ -1043,11 +1061,12 @@ export function attributeTablePutEntry(
     if (updateOnChange && valProp !== undefined) {
         valProp.forEach(prop => {
             if (prop instanceof ValueProperty) {
-                if (prop instanceof ComboboxProperty) {
-                    prop.getInput().on('hidden.editable-select', () => {
+                if (prop instanceof TypeclassProperty) {
+                    prop.getInput().on('typeclass.change', () => {
                         valPropUpdateHandler(prop);
                     });
-                    prop.getInput().on('select.editable-select', () => {
+                } else if (prop instanceof ComboboxProperty) {
+                    prop.getInput().on('hidden.editable-select', () => {
                         valPropUpdateHandler(prop);
                     });
                 } else {

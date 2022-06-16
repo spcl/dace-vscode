@@ -74,6 +74,7 @@ def get_property_metdata(force_regenerate=False):
 
     # Lazy import to cut down on module load time.
     from dace.sdfg.nodes import full_class_path
+    from dace.properties import TypeClassProperty
 
     # In order to get all transformation metadata the @make.properties
     # annotation for each transformation needs to have run, so the
@@ -117,7 +118,80 @@ def get_property_metdata(force_regenerate=False):
                 if prop.choices is not None:
                     # If there are specific choices for this property (i.e. this
                     # property is an enum), list those as metadata as well.
-                    if inspect.isclass(prop.choices):
+                    if (isinstance(prop, TypeClassProperty) and
+                        inspect.isclass(prop.choices) and
+                        issubclass(prop.choices, aenum.Enum)):
+                        base_types = []
+                        for btype in prop.choices:
+                            btype_short = str(btype).split('.')[-1]
+                            if btype_short != 'Undefined':
+                                base_types.append(btype_short)
+                        meta_dict[meta_key][propname]['base_types'] = base_types
+
+                        # TODO(later): This isn't really nice, it would be
+                        # better if we can automatically get this information
+                        # from DaCe. This should be one of the things addressed
+                        # by subclass properties / expanding properties.
+                        compound_types = {
+                            'vector': {
+                                'elements': {
+                                    'type': 'int',
+                                    'default': 0
+                                },
+                                'dtype': {
+                                    'type': 'typeclass',
+                                    'default': 'bool',
+                                },
+                            },
+                            'pointer': {
+                                'dtype': {
+                                    'type': 'typeclass',
+                                    'default': 'bool',
+                                },
+                            },
+                            'opaque': {
+                                'dtype': {
+                                    'type': 'typeclass',
+                                    'default': 'bool',
+                                },
+                            },
+                            'struct': {
+                                'name': {
+                                    'type': 'str',
+                                    'default': '',
+                                },
+                                'data': {
+                                    'type': 'dict',
+                                    'default': {},
+                                    'value_type': 'typeclass',
+                                },
+                                'length': {
+                                    'type': 'dict',
+                                    'default': {},
+                                    'value_type': 'int',
+                                },
+                                'bytes': {
+                                    'type': 'int',
+                                    'default': 0,
+                                },
+                            },
+                            'callback': {
+                                'arguments': {
+                                    'type': 'list',
+                                    'element_type': 'typeclass',
+                                    'default': [],
+                                },
+                                'returntypes': {
+                                    'type': 'list',
+                                    'element_type': 'typeclass',
+                                    'default': [],
+                                },
+                            },
+                        }
+                        meta_dict[meta_key][propname][
+                            'compound_types'
+                        ] = compound_types
+                    elif inspect.isclass(prop.choices):
                         if issubclass(prop.choices, aenum.Enum):
                             choices = []
                             for choice in prop.choices:
