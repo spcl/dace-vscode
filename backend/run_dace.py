@@ -135,8 +135,8 @@ def get_property_metdata(force_regenerate=False):
                         compound_types = {
                             'vector': {
                                 'elements': {
-                                    'type': 'int',
-                                    'default': 0
+                                    'type': 'str',
+                                    'default': '0'
                                 },
                                 'dtype': {
                                     'type': 'typeclass',
@@ -150,9 +150,9 @@ def get_property_metdata(force_regenerate=False):
                                 },
                             },
                             'opaque': {
-                                'dtype': {
-                                    'type': 'typeclass',
-                                    'default': 'bool',
+                                'ctype': {
+                                    'type': 'str',
+                                    'default': '',
                                 },
                             },
                             'struct': {
