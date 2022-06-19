@@ -188,9 +188,7 @@
             {
                 "id": "sdfg",
                 "extensions": [
-                    ".sdfg",
-                    ".sdfg.gz",
-                    ".sdfgz"
+                    ".sdfg"
                 ],
                 "aliases": [
                     "SDFG",
