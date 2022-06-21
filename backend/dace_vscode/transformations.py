@@ -217,10 +217,18 @@ def get_transformations(sdfg_json, selected_elements, permissive):
             extensions = SubgraphTransformation.subclasses_recursive()
 
         for xform in extensions:
-            if len(selected_states) > 0:  # Subgraph transformations are single-state
+            # Subgraph transformations are single-state.
+            if len(selected_states) > 0:
                 continue
-            xform_obj = xform()
-            xform_obj.setup_match(subgraph)
+            xform_obj = None
+            try:
+                xform_obj = xform()
+                xform_obj.setup_match(subgraph)
+            except:
+                # If the above method throws an exception, it might be because
+                # an older version of dace (<= 0.13.1) is being used - attempt
+                # to construct subgraph transformations using the old API.
+                xform_obj = xform(subgraph)
             if xform_obj.can_be_applied(selected_sdfg, subgraph):
                 transformations.append(xform_obj.to_json())
                 docstrings[xform.__name__] = xform_obj.__doc__
