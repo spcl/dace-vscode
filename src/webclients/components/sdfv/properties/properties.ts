@@ -5,7 +5,9 @@ import { string_to_sdfg_typeclass } from '@spcl/sdfv/out';
 import { editor } from 'monaco-editor';
 import { Range } from '../../../../types';
 import { showTransformationDetails } from '../transformation/transformation';
-import { elementUpdateLabel } from '../utils/helpers';
+import { attributeTablePutEntry } from '../utils/attributes_table';
+import { createSingleUseModal, elementUpdateLabel } from '../utils/helpers';
+import { VSCodeSDFV } from '../vscode_sdfv';
 
 type PropertyValueReturn = {
     value: any,
@@ -263,6 +265,11 @@ export class CodeProperty extends Property {
 
 export class TypeclassProperty extends ComboboxProperty {
 
+    private compoundEditHandler?: () => void;
+    private compoundProp: DictProperty | null = null;
+    private compoundValues: { [keys: string]: any } | null = null;
+    private compoundValueType: string | null = null;
+
     constructor(
         element: any | undefined,
         xform: any | undefined,
@@ -271,12 +278,137 @@ export class TypeclassProperty extends ComboboxProperty {
         subkey: string | undefined,
         datatype: string,
         input: JQuery<HTMLElement>,
-        backgroundInput: JQuery<HTMLElement>
+        backgroundInput: JQuery<HTMLElement>,
+        editCompoundButton: JQuery<HTMLElement>,
+        compoundTypes: { [keys: string]: any }
     ) {
         super(
             element, xform, target, key, subkey, datatype, input,
             backgroundInput
         );
+
+        if (typeof target[key] === 'object') {
+            editCompoundButton.show();
+            this.compoundValueType = target[key]['type'];
+            this.compoundValues = target[key];
+            this.compoundProp = new DictProperty(
+                undefined, undefined, this, 'compoundValues', undefined,
+                'dict', [], this.compoundValues
+            );
+            this.compoundEditHandler = () => {
+                if (this.compoundValueType)
+                    this.baseCompoundEditHandler(
+                        this.compoundValueType, compoundTypes
+                    );
+            };
+            editCompoundButton.on('click', this.compoundEditHandler);
+        } else {
+            if (this.compoundEditHandler)
+                editCompoundButton.off('click', this.compoundEditHandler);
+            editCompoundButton.hide();
+            this.compoundValues = null;
+            this.compoundValueType = null;
+            this.compoundProp = null;
+        }
+
+        input.on('hidden.editable-select', () => {
+            const val = backgroundInput.val();
+            if (val === undefined || typeof val !== 'string')
+                return;
+
+            if (Object.keys(compoundTypes).includes(val)) {
+                // This is a compound type, make the compound edit button
+                // available.
+                editCompoundButton.show();
+
+                // If a previous edit button handler exists, deregister it.
+                if (this.compoundEditHandler)
+                    editCompoundButton.off('click', this.compoundEditHandler);
+
+                this.compoundValues = {
+                    'type': val,
+                };
+                this.compoundValueType = val;
+                const compoundFields = compoundTypes[val];
+                for (const key in compoundFields) {
+                    const descriptor = compoundFields[key];
+                    const defaultVal = descriptor['default'];
+                    this.compoundValues[key] = defaultVal;
+                }
+
+                this.compoundProp = new DictProperty(
+                    undefined, undefined, this, 'compoundValues', undefined,
+                    'dict', [], this.compoundValues
+                );
+
+                // Register the new handler.
+                this.compoundEditHandler = () => {
+                    this.baseCompoundEditHandler(val, compoundTypes);
+                };
+                editCompoundButton.on('click', this.compoundEditHandler);
+            } else {
+                // This is a base type, hide the edit button.
+                this.compoundValues = null;
+                this.compoundProp = null;
+                editCompoundButton.hide();
+                if (this.compoundEditHandler)
+                    editCompoundButton.off('click', this.compoundEditHandler);
+            }
+
+            input.trigger('typeclass.change');
+        });
+    }
+
+    private baseCompoundEditHandler(
+        val: string, compoundTypes: { [keys: string]: any }
+    ): void {
+        if (!this.compoundValues)
+            return;
+
+        // Construct and show a modal to edit compound types.
+        const modal = createSingleUseModal(
+            'Edit ' + val, true, 'property-edit-modal-body'
+        );
+        const rowbox = $('<div>', {
+            'class': 'container-fluid',
+        }).appendTo(modal.body);
+
+        // Print an entry for each attribute of the compound.
+        const compoundFields = compoundTypes[val];
+        for (const key in compoundFields) {
+            const descriptor = compoundFields[key];
+            const type = descriptor['type'];
+
+            const meta = VSCodeSDFV.getInstance().getMetaDict();
+            let valMeta = undefined;
+            if (type in meta['__reverse_type_lookup__'])
+                valMeta = meta['__reverse_type_lookup__'][type];
+
+            const attrProp = attributeTablePutEntry(
+                key, this.compoundValues[key],
+                valMeta, this.compoundValues, undefined, undefined,
+                rowbox, false, false, false
+            );
+
+            if (attrProp)
+                this.compoundProp?.getProperties().push(attrProp);
+        }
+
+        // When the confirm button is clicked, transfer the new values from the
+        // modal to the compoundValues intermediate storage and fire the change
+        // event. This will then write values back if auto-writeback is active.
+        modal.confirmBtn?.on('click', () => {
+            const nVal = this.compoundProp?.getValue();
+            if (nVal && nVal.valueChanged && nVal.value) {
+                this.compoundValues = nVal.value;
+                if (this.compoundValues)
+                    this.compoundValues['type'] = this.compoundValueType;
+                this.input.trigger('typeclass.change');
+            }
+            modal.modal.modal('hide');
+        });
+
+        modal.modal.modal('show');
     }
 
     public getValue(): PropertyValueReturn {
@@ -287,12 +419,21 @@ export class TypeclassProperty extends ComboboxProperty {
         else
             originalValue = this.target[this.key];
 
-        const inputVal = this.backgroundInput.val()?.toString();
-        const value = inputVal ? string_to_sdfg_typeclass(inputVal) : undefined;
-        return {
-            value: value,
-            valueChanged: originalValue !== value,
-        };
+        if (this.compoundValues) {
+            const value = this.compoundValues;
+            return {
+                value: value,
+                valueChanged: originalValue !== value,
+            };
+        } else {
+            const inputVal = this.backgroundInput.val()?.toString();
+            const value =
+                inputVal ? string_to_sdfg_typeclass(inputVal) : undefined;
+            return {
+                value: value,
+                valueChanged: originalValue !== value,
+            };
+        }
     }
 
 }

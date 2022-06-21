@@ -284,7 +284,6 @@ $(() => {
                             overlays.push(nodeOverlaySelect.val());
                         if (edgeOverlaySelect.val() !== 'none')
                             overlays.push(edgeOverlaySelect.val());
-                        console.log(overlays);
                         vscode.postMessage({
                             type: 'sdfv.set_overlays',
                             overlays: overlays,

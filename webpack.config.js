@@ -58,7 +58,7 @@ const webclientConfig = {
         path: path.resolve(__dirname, 'dist', 'web'),
         filename: '[name].js',
     },
-    devtool: 'source-map',
+    devtool: 'eval-source-map',
     externals: {
         vscode: 'commonjs vscode',
     },

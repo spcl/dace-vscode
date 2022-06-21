@@ -1,7 +1,12 @@
 // Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { MemoryLocationOverlay, MemoryVolumeOverlay, OperationalIntensityOverlay, StaticFlopsOverlay } from '@spcl/sdfv/out';
+import {
+    MemoryLocationOverlay,
+    MemoryVolumeOverlay,
+    OperationalIntensityOverlay,
+    StaticFlopsOverlay,
+} from '@spcl/sdfv/out';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 
 declare const vscode: any;
@@ -72,22 +77,22 @@ export function refreshAnalysisPane(): void {
             heatmapScalingAdditionalVal: additionalMethodVal,
             availableOverlays: [
                 {
-                    class: MemoryVolumeOverlay.name,
+                    class: 'MemoryVolumeOverlay',
                     label: 'Logical Memory Volume',
                     type: MemoryVolumeOverlay.type,
                 },
                 {
-                    class: StaticFlopsOverlay.name,
+                    class: 'StaticFlopsOverlay',
                     label: 'Arithmetic Operations',
                     type: StaticFlopsOverlay.type,
                 },
                 {
-                    class: MemoryLocationOverlay.name,
+                    class: 'MemoryLocationOverlay',
                     label: 'Memory Location',
                     type: MemoryLocationOverlay.type,
                 },
                 {
-                    class: OperationalIntensityOverlay.name,
+                    class: 'OperationalIntensityOverlay',
                     label: 'Operational Intensity',
                     type: OperationalIntensityOverlay.type,
                 },
