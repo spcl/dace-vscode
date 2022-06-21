@@ -360,103 +360,119 @@ export class DaCeInterface
     private sendRequest(url: string,
                         data?: any,
                         callback?: CallableFunction,
-                        customErrorHandler?: CallableFunction) {
-        let method = 'GET';
-        let postData = undefined;
-        if (data !== undefined)
-            method = 'POST';
+                        customErrorHandler?: CallableFunction,
+                        startIfSleeping?: boolean): void {
+        const doSend = () => {
+            let method = 'GET';
+            let postData = undefined;
+            if (data !== undefined)
+                method = 'POST';
 
-        let parameters = {
-            host: 'localhost',
-            port: this.port,
-            path: url,
-            method: method,
-            headers: {},
+            let parameters = {
+                host: 'localhost',
+                port: this.port,
+                path: url,
+                method: method,
+                headers: {},
+            };
+
+            if (data !== undefined) {
+                postData = JSON.stringify(data);
+                parameters.headers = {
+                    'Content-Type': 'application/json',
+                    'Content-Length': postData.length,
+                };
+            }
+
+            const req = request(parameters, response => {
+                response.setEncoding('utf8');
+                // Accumulate all the data, in case data is chunked up.
+                let accumulatedData = '';
+                if (callback) {
+                    response.on('data', (data) => {
+                        if (response.statusCode === 200) {
+                            accumulatedData += data;
+                            // Check if this is all the data we're going to
+                            // receive, or if the data is chunked up into
+                            // pieces.
+                            const contentLength =
+                                Number(response.headers?.['content-length']);
+                            if (!contentLength ||
+                                accumulatedData.length >= contentLength) {
+                                let error = undefined;
+                                let parsed = undefined;
+                                try {
+                                    parsed = JSON.parse(accumulatedData);
+                                    if (parsed.error) {
+                                        error = parsed.error;
+                                        parsed = undefined;
+                                    }
+                                } catch (e) {
+                                    error = {
+                                        message: 'Failed to parse response',
+                                        details: e,
+                                    };
+                                }
+
+                                if (parsed) {
+                                    callback(parsed);
+                                } else if (error) {
+                                    if (customErrorHandler)
+                                        customErrorHandler(error);
+                                    else
+                                        DaCeInterface.getInstance()
+                                            .genericErrorHandler(
+                                                error.message, error.details
+                                            );
+                                }
+                            }
+                        } else {
+                            const errorMessage =
+                                'An internal DaCe error was encountered!';
+                            const errorDetails =
+                                'DaCe request failed with code ' +
+                                    response.statusCode;
+                            if (customErrorHandler)
+                                customErrorHandler({
+                                    message: errorMessage,
+                                    details: errorDetails,
+                                });
+                            else
+                                DaCeInterface.getInstance().genericErrorHandler(
+                                    errorMessage, errorDetails
+                                );
+                        }
+                    });
+                }
+            });
+            if (postData !== undefined)
+                req.write(postData);
+            req.end();
         };
 
-        if (data !== undefined) {
-            postData = JSON.stringify(data);
-            parameters.headers = {
-                'Content-Type': 'application/json',
-                'Content-Length': postData.length,
-            };
-        }
-
-        const req = request(parameters, response => {
-            response.setEncoding('utf8');
-            // Accumulate all the data, in case data is chunked up.
-            let accumulatedData = '';
-            if (callback) {
-                response.on('data', (data) => {
-                    if (response.statusCode === 200) {
-                        accumulatedData += data;
-                        // Check if this is all the data we're going to receive,
-                        // or if the data is chunked up into pieces.
-                        const contentLength =
-                            Number(response.headers?.['content-length']);
-                        if (!contentLength ||
-                            accumulatedData.length >= contentLength) {
-                            let error = undefined;
-                            let parsed = undefined;
-                            try {
-                                parsed = JSON.parse(accumulatedData);
-                                if (parsed.error) {
-                                    error = parsed.error;
-                                    parsed = undefined;
-                                }
-                            } catch (e) {
-                                error = {
-                                    message: 'Failed to parse response',
-                                    details: e,
-                                };
-                            }
-
-                            if (parsed) {
-                                callback(parsed);
-                            } else if (error) {
-                                if (customErrorHandler)
-                                    customErrorHandler(error);
-                                else
-                                    DaCeInterface.getInstance()
-                                        .genericErrorHandler(
-                                            error.message, error.details
-                                        );
-                            }
-                        }
-                    } else {
-                        const errorMessage =
-                            'An internal DaCe error was encountered!';
-                        const errorDetails = 'DaCe request failed with code ' +
-                            response.statusCode;
-                        if (customErrorHandler)
-                            customErrorHandler({
-                                message: errorMessage,
-                                details: errorDetails,
-                            });
-                        else
-                            DaCeInterface.getInstance().genericErrorHandler(
-                                errorMessage, errorDetails
-                            );
-                    }
-                });
-            }
-        });
-        if (postData !== undefined)
-            req.write(postData);
-        req.end();
+        if (this.daemonRunning)
+            doSend();
+        else if (startIfSleeping)
+            this.startDaemonInTerminal(doSend);
     }
 
     private sendGetRequest(url: string,
                            callback?: CallableFunction,
-                           customErrorHandler?: CallableFunction) {
-        this.sendRequest(url, undefined, callback, customErrorHandler);
+                           customErrorHandler?: CallableFunction,
+                           startIfSleeping?: boolean): void {
+        this.sendRequest(
+            url, undefined, callback, customErrorHandler, startIfSleeping
+        );
     }
 
     private sendPostRequest(url: string,
                             requestData: any,
                             callback?: CallableFunction,
-                            customErrorHandler?: CallableFunction) {
-        this.sendRequest(url, requestData, callback, customErrorHandler);
+                            customErrorHandler?: CallableFunction,
+                            startIfSleeping?: boolean): void {
+        this.sendRequest(
+            url, requestData, callback, customErrorHandler, startIfSleeping
+        );
     }
 
     public promptStartDaemon() {
@@ -577,7 +593,11 @@ export class DaCeInterface
                     (data: any) => {
                         this.hideSpinner();
                         this.writeToActiveDocument(data.sdfg);
-                    }
+                    },
+                    () => {
+                        this.hideSpinner();
+                    },
+                    true
                 );
             }
         });
@@ -731,21 +751,16 @@ export class DaCeInterface
         uri: vscode.Uri, callback: CallableFunction,
         suppressInstrumentation: boolean = false
     ): void {
-        const compile = () => {
-            this.sendPostRequest(
-                '/compile_sdfg_from_file',
-                {
-                    'path': uri.fsPath,
-                    'suppress_instrumentation': suppressInstrumentation,
-                },
-                callback
-            );
-        };
-
-        if (!this.daemonRunning)
-            this.startDaemonInTerminal(compile);
-        else
-            compile();
+        this.sendPostRequest(
+            '/compile_sdfg_from_file',
+            {
+                'path': uri.fsPath,
+                'suppress_instrumentation': suppressInstrumentation,
+            },
+            callback,
+            undefined,
+            true
+        );
     }
 
     public async querySdfgMetadata(): Promise<void> {
