@@ -72,8 +72,10 @@ import {
     showContextMenu,
     vscodeWriteGraph,
 } from './utils/helpers';
+import Split from 'split.js';
 
 declare const vscode: any;
+declare const SPLIT_DIRECTION: 'vertical' | 'horizontal';
 
 type CategorizedTransformationList = [
     JsonTransformation[],
@@ -812,6 +814,13 @@ export function vscodeHandleEvent(event: string, data: any): void {
 }
 
 $(() => {
+    Split(['#contents', '#info-container'], {
+        sizes: [60, 40],
+        minSize: [0, 0],
+        snapOffset: 10,
+        direction: SPLIT_DIRECTION,
+    });
+
     $('#processing-overlay').hide();
     vscode.postMessage({
         type: 'sdfv.get_current_sdfg',

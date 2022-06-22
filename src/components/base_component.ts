@@ -12,7 +12,6 @@ export abstract class BaseComponent implements MessageReceiverInterface {
     // Identifiers for code placement into the webview's HTML.
     protected readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
     protected readonly scriptSrcIdentifier = /{{ SCRIPT_SRC }}/g;
-    protected readonly nodeModulesIdentifier = /{{ NODE_MODULES }}/g;
 
     constructor(
         protected readonly context: vscode.ExtensionContext,
