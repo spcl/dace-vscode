@@ -81,6 +81,7 @@ def reapply_history_until(sdfg_json, index):
         transformation._sdfg = original_sdfg.sdfg_list[transformation.sdfg_id]
         try:
             if isinstance(transformation, SubgraphTransformation):
+                transformation._sdfg.append_transformation(transformation)
                 transformation.apply(
                     original_sdfg.sdfg_list[transformation.sdfg_id]
                 )
