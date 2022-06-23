@@ -875,7 +875,7 @@ export class DaCeInterface
      * files, which are sent to the DaCe daemon to be loaded in as
      * transformations.
      */
-    public addCustomTransformations(): void {
+    public addCustomTransformations(fromDir: boolean = false): void {
         // When done adding transformations, attempt a refresh.
         const callback = (data: any) => {
             if (data.done)
@@ -887,6 +887,7 @@ export class DaCeInterface
         vscode.window.showOpenDialog({
             canSelectFiles: true,
             canSelectMany: true,
+            canSelectFolders: fromDir,
             filters: {
                 'Python': ['py'],
             },

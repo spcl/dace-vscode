@@ -336,9 +336,14 @@
                 }
             },
             {
+                "command": "transformationList.addCustomFromDir",
+                "title": "Load Custom Transformations From Folder",
+                "icon": "$(file-directory-create)"
+            },
+            {
                 "command": "transformationList.addCustom",
                 "title": "Load Custom Transformations",
-                "icon": "$(add)"
+                "icon": "$(file-add)"
             },
             {
                 "command": "transformationList.sync",
@@ -515,6 +520,11 @@
             "view/title": [
                 {
                     "command": "transformationList.addCustom",
+                    "when": "view == transformationList",
+                    "group": "navigation"
+                },
+                {
+                    "command": "transformationList.addCustomFromDir",
                     "when": "view == transformationList",
                     "group": "navigation"
                 },
