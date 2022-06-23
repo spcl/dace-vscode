@@ -31,7 +31,7 @@ def expand_library_node(json_in):
         }
 
     try:
-        sdfg_id, state_id, node_id = json_in['nodeId']
+        sdfg_id, state_id, node_id = json_in['nodeid']
     except KeyError:
         sdfg_id, state_id, node_id = None, None, None
 
