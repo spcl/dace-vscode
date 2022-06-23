@@ -12,13 +12,12 @@
     <script>
         // Reference to the VSCode API.
         let vscode = undefined;
+        const SPLIT_DIRECTION = 'vertical';
     </script>
 
-    <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/pdfkit.standalone.js"></script>
-    <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/blob-stream.js"></script>
-    <script src="{{ NODE_MODULES }}/@spcl/sdfv/external_lib/canvas2pdf.js"></script>
-
-    <script src="{{ NODE_MODULES }}/split.js/dist/split.min.js"></script>
+    <script src="{{ SCRIPT_SRC }}/pdfkit.standalone.js"></script>
+    <script src="{{ SCRIPT_SRC }}/blob-stream.js"></script>
+    <script src="{{ SCRIPT_SRC }}/canvas2pdf.js"></script>
 </head>
 
 <body style="display: none;">
@@ -198,13 +197,6 @@
 
     <script>
         vscode = acquireVsCodeApi();
-
-        Split(['#contents', '#info-container'], {
-            sizes: [60, 40],
-            minSize: [0, 0],
-            snapOffset: 10,
-            direction: 'vertical',
-        });
     </script>
 </body>
 

@@ -323,6 +323,11 @@ def run_daemon(port):
             request_json['sdfg'], request_json['selected_elements'],
             request_json['permissive'])
 
+    @daemon.route('/add_transformations', methods=['POST'])
+    def _add_transformations():
+        request_json = request.get_json()
+        return transformations.add_custom_transformations(request_json['paths'])
+
     @daemon.route('/apply_transformation', methods=['POST'])
     def _apply_transformation():
         request_json = request.get_json()

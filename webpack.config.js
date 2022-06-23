@@ -4,6 +4,7 @@
 
 const path = require('path');
 const webpack = require('webpack');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 /**
  * @type {import('webpack').Configuration}
@@ -64,6 +65,12 @@ const webclientConfig = {
     },
     resolve: {
         extensions: ['.ts', '.js'],
+        fallback: {
+            assert: require.resolve('assert'),
+            buffer: require.resolve('buffer'),
+            stream: require.resolve('stream-browserify'),
+            zlib: require.resolve('browserify-zlib'),
+        },
     },
     module: {
         rules: [
@@ -115,6 +122,14 @@ const webclientConfig = {
         new webpack.ProvidePlugin({
             $: 'jquery',
             jQuery: 'jquery',
+            process: 'process/browser',
+        }),
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: 'node_modules/@spcl/sdfv/external_lib',
+                },
+            ],
         }),
     ],
 };

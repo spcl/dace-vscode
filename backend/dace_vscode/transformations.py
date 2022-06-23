@@ -6,6 +6,7 @@ from dace.transformation.transformation import SubgraphTransformation
 from dace_vscode import utils
 import sys
 import traceback
+import importlib.util
 
 def expand_library_node(json_in):
     """
@@ -30,7 +31,7 @@ def expand_library_node(json_in):
         }
 
     try:
-        sdfg_id, state_id, node_id = json_in['nodeId']
+        sdfg_id, state_id, node_id = json_in['nodeid']
     except KeyError:
         sdfg_id, state_id, node_id = None, None, None
 
@@ -80,6 +81,7 @@ def reapply_history_until(sdfg_json, index):
         transformation._sdfg = original_sdfg.sdfg_list[transformation.sdfg_id]
         try:
             if isinstance(transformation, SubgraphTransformation):
+                transformation._sdfg.append_transformation(transformation)
                 transformation.apply(
                     original_sdfg.sdfg_list[transformation.sdfg_id]
                 )
@@ -146,6 +148,20 @@ def apply_transformation(sdfg_json, transformation_json):
     utils.restore_save_metadata(old_meta)
     return {
         'sdfg': new_sdfg,
+    }
+
+
+def add_custom_transformations(filepaths):
+    for xf_path in filepaths:
+        if not xf_path in sys.modules:
+            xf_module_spec = importlib.util.spec_from_file_location(
+                xf_path, xf_path
+            )
+            xf_module = importlib.util.module_from_spec(xf_module_spec)
+            sys.modules[xf_path] = xf_module
+            xf_module_spec.loader.exec_module(xf_module)
+    return {
+        'done': True,
     }
 
 
@@ -217,9 +233,18 @@ def get_transformations(sdfg_json, selected_elements, permissive):
             extensions = SubgraphTransformation.subclasses_recursive()
 
         for xform in extensions:
-            if len(selected_states) > 0:  # Subgraph transformations are single-state
+            # Subgraph transformations are single-state.
+            if len(selected_states) > 0:
                 continue
-            xform_obj = xform(subgraph)
+            xform_obj = None
+            try:
+                xform_obj = xform()
+                xform_obj.setup_match(subgraph)
+            except:
+                # If the above method throws an exception, it might be because
+                # an older version of dace (<= 0.13.1) is being used - attempt
+                # to construct subgraph transformations using the old API.
+                xform_obj = xform(subgraph)
             if xform_obj.can_be_applied(selected_sdfg, subgraph):
                 transformations.append(xform_obj.to_json())
                 docstrings[xform.__name__] = xform_obj.__doc__

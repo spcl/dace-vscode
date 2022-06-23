@@ -95,10 +95,10 @@ export class SdfgViewerProvider
 
     /**
      * Register the current SDFG file and editor to be the last active editor.
-     * 
+     *
      * This is an unfortunate workaround because the vscode API does not allow
      * you to grab the currently active editor unless it's a TextEditor.
-     * 
+     *
      * @param document      Active SDFG document.
      * @param webview       Active SDFG editor webview.
      */
@@ -111,10 +111,10 @@ export class SdfgViewerProvider
 
     /**
      * Update the contents of the editor's webview.
-     * 
+     *
      * This also forces the transformation view to update, if the webview is the
      * last active SDFG editor.
-     * 
+     *
      * @param document      SDFG document with updated contents.
      * @param webviewPanel  SDFG editor webview panel to update.
      */
@@ -132,11 +132,11 @@ export class SdfgViewerProvider
 
     /**
      * Callback for when the document changes.
-     * 
+     *
      * This updates the corresponding webview accordingly.
      * If this is the last active SDFG document, we also force a reload of the
      * attached transformation panel.
-     * 
+     *
      * @param document      Changed document.
      * @param webview       Attached webview.
      */
@@ -267,7 +267,7 @@ export class SdfgViewerProvider
                     }
 
                     // Subtract 1 as we don't want to highlight the first line
-                    // as the 'to' value is inclusive 
+                    // as the 'to' value is inclusive
                     if (!lineRange.to) {
                         lineRange.to = lineRange.from - 1;
                     }
@@ -468,10 +468,10 @@ export class SdfgViewerProvider
 
     /**
      * Load the HTML to be displayed in the editor's webview.
-     * 
+     *
      * @param webview  Webview to load for
      * @param document Document to show in the editor's webview
-     * 
+     *
      * @returns        HTML to be displayed
      */
     private async getHtml(webview: vscode.Webview): Promise<string> {
@@ -496,15 +496,6 @@ export class SdfgViewerProvider
             this.csrSrcIdentifier, mediaFolderUri.toString()
         );
 
-        // Set the node-module base-path in the HTML.
-        const fpNodeModulesFolder: vscode.Uri = vscode.Uri.file(
-            path.join(this.context.extensionPath, 'node_modules')
-        );
-        const nodeModulesFolder = webview.asWebviewUri(fpNodeModulesFolder);
-        baseHtml = baseHtml.replace(
-            this.nodeModulesIdentifier, nodeModulesFolder.toString()
-        );
-
         const fpScriptFolder: vscode.Uri = vscode.Uri.file(
             path.join(this.context.extensionPath, 'dist', 'web')
         );
@@ -524,8 +515,8 @@ export class SdfgViewerProvider
                 '<div id="split-container" style="display: flex;" class="split-container-horizontal">'
             );
             baseHtml = baseHtml.replace(
-                'direction: \'vertical\',',
-                'direction: \'horizontal\','
+                'SPLIT_DIRECTION = \'vertical\';',
+                'SPLIT_DIRECTION = \'horizontal\';'
             );
         }
 

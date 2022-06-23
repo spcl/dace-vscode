@@ -72,8 +72,10 @@ import {
     showContextMenu,
     vscodeWriteGraph,
 } from './utils/helpers';
+import Split from 'split.js';
 
 declare const vscode: any;
+declare const SPLIT_DIRECTION: 'vertical' | 'horizontal';
 
 type CategorizedTransformationList = [
     JsonTransformation[],
@@ -110,6 +112,7 @@ export class VSCodeSDFV extends SDFV {
     private monaco: any | null = null;
     private sdfgString: string | null = null;
     private sdfgMetaDict: { [key: string]: any } | null = null;
+    private queryingMetaDict: boolean = false;
     private viewingHistoryState: boolean = false;
     private showingBreakpoints: boolean = false;
     private daemonConnected: boolean = false;
@@ -685,12 +688,28 @@ export class VSCodeSDFV extends SDFV {
     public getMetaDict(): { [key: string]: any } {
         if (!this.sdfgMetaDict) {
             // If SDFG property metadata isn't available, use the static one and
-            // query an up-to-date one from DaCe if available.
-            // TODO(later): Query an up-to-date version from a static online
-            // location first before sending a query to DaCe.
-            vscode.postMessage({
-                type: 'dace.query_sdfg_metadata',
-            });
+            // query an up-to-date one from the dace github page. If that
+            // doesn't work, query the daemon (waking it up if it isn't up).
+            if (!this.queryingMetaDict) {
+                this.queryingMetaDict = true;
+                fetch(
+                    'https://spcl.github.io/dace/metadata/sdfg_meta_dict.json'
+                ).then(
+                    (response) => response.json()
+                ).then(
+                    (data) => {
+                        this.sdfgMetaDict = data;
+                        this.queryingMetaDict = false;
+                    }
+                ).catch(
+                    (_reason) => {
+                        vscode.postMessage({
+                            type: 'dace.query_sdfg_metadata',
+                        });
+                        return staticSdfgMetaDict;
+                    }
+                );
+            }
             return staticSdfgMetaDict;
         }
         return this.sdfgMetaDict;
@@ -812,6 +831,13 @@ export function vscodeHandleEvent(event: string, data: any): void {
 }
 
 $(() => {
+    Split(['#contents', '#info-container'], {
+        sizes: [60, 40],
+        minSize: [0, 0],
+        snapOffset: 10,
+        direction: SPLIT_DIRECTION,
+    });
+
     $('#processing-overlay').hide();
     vscode.postMessage({
         type: 'sdfv.get_current_sdfg',

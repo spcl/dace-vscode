@@ -2,9 +2,9 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Editor",
     "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "engines": {
-        "vscode": "^1.55.0"
+        "vscode": "^1.68.0"
     },
     "categories": [
         "Visualization",
@@ -336,6 +336,16 @@
                 }
             },
             {
+                "command": "transformationList.addCustomFromDir",
+                "title": "Load Custom Transformations From Folder",
+                "icon": "$(file-directory-create)"
+            },
+            {
+                "command": "transformationList.addCustom",
+                "title": "Load Custom Transformations",
+                "icon": "$(file-add)"
+            },
+            {
                 "command": "transformationList.sync",
                 "title": "Refresh Transformations",
                 "icon": {
@@ -509,6 +519,16 @@
             ],
             "view/title": [
                 {
+                    "command": "transformationList.addCustom",
+                    "when": "view == transformationList",
+                    "group": "navigation"
+                },
+                {
+                    "command": "transformationList.addCustomFromDir",
+                    "when": "view == transformationList",
+                    "group": "navigation"
+                },
+                {
                     "command": "transformationList.sync",
                     "when": "view == transformationList",
                     "group": "navigation"
@@ -557,19 +577,20 @@
         "@typescript-eslint/eslint-plugin": "^5.28.0",
         "@typescript-eslint/parser": "^5.28.0",
         "autoprefixer": "^10.3.4",
+        "copy-webpack-plugin": "^11.0.0",
         "css-loader": "^6.3.0",
         "eslint": "^8.17.0",
         "file-loader": "^6.2.0",
         "glob": "^7.1.6",
         "mocha": "^7.2.0",
-        "node-sass": "^7.0.0",
         "postcss-loader": "^6.1.1",
+        "rimraf": "^3.0.2",
+        "sass": "^1.52.3",
         "sass-loader": "^12.1.0",
         "style-loader": "^3.2.1",
         "ts-loader": "^9.2.6",
         "typescript": "^3.9.9",
         "vscode-test": "^1.5.2",
-        "rimraf": "^3.0.2",
         "webpack": "^5.73.0",
         "webpack-cli": "^4.10.0"
     },
@@ -579,12 +600,15 @@
         "@types/dagre": "^0.7.46",
         "@types/jquery": "^3.5.6",
         "bootstrap": "^5.0.2",
+        "browserify-zlib": "^0.2.0",
         "dagre": "^0.8.5",
         "jquery": "^3.6.0",
         "jquery-editable-select": "^2.2.5",
         "material-icons": "^1.11.1",
         "monaco-editor": "^0.26.1",
+        "process": "^0.11.10",
         "split.js": "^1.6.4",
+        "stream-browserify": "^3.0.0",
         "vscode-debugadapter": "^1.46.0"
     }
 }
