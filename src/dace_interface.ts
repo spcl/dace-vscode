@@ -867,6 +867,22 @@ export class DaCeInterface
         );
     }
 
+    public addCustomTransformations(): void {
+        vscode.window.showOpenDialog({
+            canSelectFiles: true,
+            canSelectFolders: true,
+            canSelectMany: true,
+            filters: {
+                'Python': ['.py'],
+            },
+            openLabel: 'Load',
+            title: 'Load Custom Transformations',
+        }).then(uri => {
+            if (uri) {
+            }
+        });
+    }
+
     public isRunning(): boolean {
         return this.daemonRunning;
     }

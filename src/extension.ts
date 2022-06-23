@@ -260,6 +260,9 @@ export class DaCeVSCode {
                 });
             }
         });
+        this.registerCommand('transformationList.addCustom', () => {
+            DaCeInterface.getInstance().addCustomTransformations();
+        });
         this.registerCommand('transformationList.sync', () => {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
                 type: 'get_applicable_transformations',

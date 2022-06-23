@@ -336,6 +336,11 @@
                 }
             },
             {
+                "command": "transformationList.addCustom",
+                "title": "Load Custom Transformations",
+                "icon": "$(add)"
+            },
+            {
                 "command": "transformationList.sync",
                 "title": "Refresh Transformations",
                 "icon": {
@@ -508,6 +513,11 @@
                 }
             ],
             "view/title": [
+                {
+                    "command": "transformationList.addCustom",
+                    "when": "view == transformationList",
+                    "group": "navigation"
+                },
                 {
                     "command": "transformationList.sync",
                     "when": "view == transformationList",

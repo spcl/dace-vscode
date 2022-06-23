@@ -6,6 +6,7 @@ from dace.transformation.transformation import SubgraphTransformation
 from dace_vscode import utils
 import sys
 import traceback
+import importlib.util
 
 def expand_library_node(json_in):
     """
@@ -149,6 +150,29 @@ def apply_transformation(sdfg_json, transformation_json):
     }
 
 
+def add_custom_transformations():
+    print('adding custom xform')
+    custom_xf_module_spec = importlib.util.spec_from_loader('custom_xf_module', loader=None)
+    custom_xf_module = importlib.util.module_from_spec(custom_xf_module_spec)
+    custom_xf_string = '''
+from dace import nodes
+from dace.sdfg import utils as sdutils
+from dace.transformation import transformation as xf
+
+class SillyTransformation(xf.SingleStateTransformation):
+    tasklet = xf.PatternNode(nodes.Tasklet)
+
+    @classmethod
+    def expressions(cls):
+        return [sdutils.node_path_graph(cls.tasklet)]
+
+    def can_be_applied(self, graph, expr_index, sdfg, permissive=False):
+        return True
+    '''
+
+    exec(custom_xf_string, custom_xf_module.__dict__)
+
+
 def get_transformations(sdfg_json, selected_elements, permissive):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
     # delays when booting in daemon mode.
@@ -161,6 +185,8 @@ def get_transformations(sdfg_json, selected_elements, permissive):
     if loaded['error'] is not None:
         return loaded['error']
     sdfg = loaded['sdfg']
+
+    add_custom_transformations()
 
     optimizer = SDFGOptimizer(sdfg)
     try:
