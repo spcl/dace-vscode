@@ -16,6 +16,7 @@ import {
     TransformationHistoryProvider,
 } from './components/transformation_history';
 import { OptimizationPanel } from './components/optimization_panel';
+import { walkDirectory } from './utils/utils';
 
 enum InteractionMode {
     PREVIEW,
@@ -867,18 +868,50 @@ export class DaCeInterface
         );
     }
 
+    /**
+     * Allow the user to load custom transformations from file(s).
+     * This shows a file picker dialog, where the user can select one or many
+     * files or folders. These files or folders are then checked for any '.py'
+     * files, which are sent to the DaCe daemon to be loaded in as
+     * transformations.
+     */
     public addCustomTransformations(): void {
+        // When done adding transformations, attempt a refresh.
+        const callback = (data: any) => {
+            if (data.done)
+                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+                    type: 'get_applicable_transformations',
+                });
+        };
+
         vscode.window.showOpenDialog({
             canSelectFiles: true,
-            canSelectFolders: true,
             canSelectMany: true,
             filters: {
-                'Python': ['.py'],
+                'Python': ['py'],
             },
             openLabel: 'Load',
             title: 'Load Custom Transformations',
-        }).then(uri => {
+        }).then(async (uri) => {
             if (uri) {
+                const paths = [];
+                for (const u of uri) {
+                    const stat = await vscode.workspace.fs.stat(u);
+                    if (stat.type === vscode.FileType.Directory) {
+                        for await (const fileUri of walkDirectory(u, '.py'))
+                            paths.push(fileUri.fsPath);
+                    } else if (stat.type === vscode.FileType.File) {
+                        paths.push(u.fsPath);
+                    }
+                }
+
+                this.sendPostRequest(
+                    '/add_transformations',
+                    {
+                        paths: paths,
+                    },
+                    callback
+                );
             }
         });
     }

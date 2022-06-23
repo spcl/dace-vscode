@@ -150,27 +150,18 @@ def apply_transformation(sdfg_json, transformation_json):
     }
 
 
-def add_custom_transformations():
-    print('adding custom xform')
-    custom_xf_module_spec = importlib.util.spec_from_loader('custom_xf_module', loader=None)
-    custom_xf_module = importlib.util.module_from_spec(custom_xf_module_spec)
-    custom_xf_string = '''
-from dace import nodes
-from dace.sdfg import utils as sdutils
-from dace.transformation import transformation as xf
-
-class SillyTransformation(xf.SingleStateTransformation):
-    tasklet = xf.PatternNode(nodes.Tasklet)
-
-    @classmethod
-    def expressions(cls):
-        return [sdutils.node_path_graph(cls.tasklet)]
-
-    def can_be_applied(self, graph, expr_index, sdfg, permissive=False):
-        return True
-    '''
-
-    exec(custom_xf_string, custom_xf_module.__dict__)
+def add_custom_transformations(filepaths):
+    for xf_path in filepaths:
+        if not xf_path in sys.modules:
+            xf_module_spec = importlib.util.spec_from_file_location(
+                xf_path, xf_path
+            )
+            xf_module = importlib.util.module_from_spec(xf_module_spec)
+            sys.modules[xf_path] = xf_module
+            xf_module_spec.loader.exec_module(xf_module)
+    return {
+        'done': True,
+    }
 
 
 def get_transformations(sdfg_json, selected_elements, permissive):
@@ -185,8 +176,6 @@ def get_transformations(sdfg_json, selected_elements, permissive):
     if loaded['error'] is not None:
         return loaded['error']
     sdfg = loaded['sdfg']
-
-    add_custom_transformations()
 
     optimizer = SDFGOptimizer(sdfg)
     try:
