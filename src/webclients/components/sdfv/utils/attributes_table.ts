@@ -330,7 +330,7 @@ export function attrTablePutTypeclass(
     }).appendTo(cell);
     const choices = baseTypes.concat(Object.keys(compoundTypes));
 
-    const typeval = typeof val === 'object' ? val['type'] : val;
+    const typeval = val ? (typeof val === 'object' ? val['type'] : val) : null;
     let found = false;
     if (choices) {
         choices.forEach(array => {
@@ -346,7 +346,7 @@ export function attrTablePutTypeclass(
         });
     }
 
-    if (!found)
+    if (!found && typeval)
         input.append(new Option(typeval, typeval, true, true));
 
     input.editableSelect({

@@ -287,7 +287,7 @@ export class TypeclassProperty extends ComboboxProperty {
             backgroundInput
         );
 
-        if (typeof target[key] === 'object') {
+        if (target[key] && typeof target[key] === 'object') {
             editCompoundButton.show();
             this.compoundValueType = target[key]['type'];
             this.compoundValues = target[key];
