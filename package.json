@@ -38,6 +38,15 @@
     "extensionDependencies": [
         "benjamin-simmonds.pythoncpp-debug"
     ],
+    "capabilities": {
+        "untrustedWorkspaces": {
+            "supported": "limited",
+            "restrictedConfigurations": [
+                "dace.backend.interpreterPath"
+            ],
+            "description": "Certain functionality, like executing or transforming SDFGs, might be unavailable in untrusted workspaces to keep you safe."
+        }
+    },
     "contributes": {
         "debuggers": [
             {
@@ -492,7 +501,7 @@
                 {
                     "command": "sdfg.compile",
                     "group": "navigation@0",
-                    "when": "resourceLangId == sdfg"
+                    "when": "resourceLangId == sdfg && isWorkspaceTrusted"
                 }
             ],
             "editor/context": [
@@ -520,12 +529,12 @@
             "view/title": [
                 {
                     "command": "transformationList.addCustom",
-                    "when": "view == transformationList",
+                    "when": "view == transformationList && isWorkspaceTrusted",
                     "group": "navigation"
                 },
                 {
                     "command": "transformationList.addCustomFromDir",
-                    "when": "view == transformationList",
+                    "when": "view == transformationList && isWorkspaceTrusted",
                     "group": "navigation"
                 },
                 {

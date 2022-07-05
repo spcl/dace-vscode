@@ -1,4 +1,4 @@
-// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as vscode from 'vscode';
@@ -16,6 +16,7 @@ import { TransformationListProvider } from './components/transformation_list';
 import { SdfgBreakpointProvider } from './components/sdfg_breakpoints';
 import { activateSdfgPython } from './debugger/sdfg_python_debugger';
 import { activateDaceDebug } from './debugger/dace_debugger';
+import { executeTrusted } from './utils/utils';
 
 export class DaCeVSCode {
 
@@ -261,10 +262,14 @@ export class DaCeVSCode {
             }
         });
         this.registerCommand('transformationList.addCustom', () => {
-            DaCeInterface.getInstance().addCustomTransformations(false);
+            executeTrusted(() => {
+                DaCeInterface.getInstance().addCustomTransformations(false);
+            }, false , 'Loading custom transformations');
         });
         this.registerCommand('transformationList.addCustomFromDir', () => {
-            DaCeInterface.getInstance().addCustomTransformations(true);
+            executeTrusted(() => {
+                DaCeInterface.getInstance().addCustomTransformations(true);
+            }, false , 'Loading custom transformations');
         });
         this.registerCommand('transformationList.sync', () => {
             DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
@@ -316,7 +321,7 @@ export class DaCeVSCode {
             const uri = vscode.Uri.file(
                 join(homedir(), '.dace.conf')
             );
-            vscode.commands.executeCommand("vscode.openWith", uri, "default");
+            vscode.commands.executeCommand('vscode.openWith', uri, 'default');
         });
 
         const sdfgWatcher = vscode.workspace.createFileSystemWatcher(
