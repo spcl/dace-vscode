@@ -505,11 +505,10 @@ export class SdfgViewerProvider
         );
 
         // If the settings indicate it, split the webview vertically and put
-        // the info container to the right instead of at the bottom.
-        if (vscode.workspace.getConfiguration(
-            'dace.sdfv'
-        ).layout === 'vertical'
-        ) {
+        // the info container to the right instead of at the bottom. Also hide
+        // the minimap if the settings say so.
+        const sdfvConfig = vscode.workspace.getConfiguration('dace.sdfv');
+        if (sdfvConfig?.get<string>('layout') === 'vertical') {
             baseHtml = baseHtml.replace(
                 '<div id="split-container" class="split-container-vertical">',
                 '<div id="split-container" style="display: flex;" class="split-container-horizontal">'
@@ -519,6 +518,11 @@ export class SdfgViewerProvider
                 'SPLIT_DIRECTION = \'horizontal\';'
             );
         }
+        if (sdfvConfig?.get<boolean>('minimap') === false)
+            baseHtml = baseHtml.replace(
+                'MINIMAP_ENABLED = true;',
+                'MINIMAP_ENABLED = false;'
+            );
 
         return baseHtml;
     }

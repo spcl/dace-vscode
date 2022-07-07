@@ -177,6 +177,11 @@
                             "Split the SDFG Optimizer layout vertically"
                         ]
                     },
+                    "dace.sdfv.minimap": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show a minimap in the top right corner of the SDFG editor"
+                    },
                     "dace.backend.interpreterPath": {
                         "type": "string",
                         "default": "",
