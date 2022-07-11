@@ -281,7 +281,7 @@ def compile_sdfg(path, suppress_instrumentation=False):
     }
 
 
-def specialize_sdfg(path, symbol_map):
+def specialize_sdfg(path, symbol_map, remove_undef=True):
     old_meta = disable_save_metadata()
 
     loaded = load_sdfg_from_file(path)
@@ -290,6 +290,18 @@ def specialize_sdfg(path, symbol_map):
     sdfg: dace.sdfg.SDFG = loaded['sdfg']
 
     sdfg.specialize(symbol_map)
+
+    # Remove any constants that are not defined anymore in the symbol map, if
+    # the remove_undef flag is set.
+    if remove_undef:
+        delkeys = set()
+        for key in sdfg.constants_prop:
+            if (key not in symbol_map or symbol_map[key] is None or
+                symbol_map[key] == 0):
+                delkeys.add(key)
+        for key in delkeys:
+            del sdfg.constants_prop[key]
+
     ret_sdfg = sdfg.to_json()
 
     restore_save_metadata(old_meta)
