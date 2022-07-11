@@ -923,7 +923,15 @@ export function attributeTablePutEntry(
         'class': 'col-9 attr-table-cell',
     }).appendTo(row);
 
-    if (dtype === undefined) {
+    if (key === 'constants_prop') {
+        const constContainer = $('<div>').appendTo(valueCell);
+        for (const k in val) {
+            const v = val[k];
+            constContainer.append($('<div>', {
+                text: k + ': ' + v[1].toString(),
+            }));
+        }
+    } else if (dtype === undefined) {
         // Implementations that are set to null should still be visible. Other
         // null properties should be shown as an empty field.
         if (key === 'implementation' && val === null)
