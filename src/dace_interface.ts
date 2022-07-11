@@ -81,6 +81,16 @@ export class DaCeInterface
             case 'query_sdfg_metadata':
                 this.querySdfgMetadata();
                 break;
+            case 'specialize_graph':
+                if (message.symbolMap !== undefined) {
+                    const sdfgFile =
+                        DaCeVSCode.getInstance().getActiveSdfgFileName();
+                    if (sdfgFile) {
+                        const uri = vscode.Uri.file(sdfgFile);
+                        this.specializeGraph(uri, message.symbolMap);
+                    }
+                }
+                break;
             default:
                 break;
         }
@@ -761,6 +771,23 @@ export class DaCeInterface
             callback,
             undefined,
             true
+        );
+    }
+
+    public specializeGraph(
+        uri: vscode.Uri, symbolMap: { [symbol: string]: any | undefined }
+    ): void {
+        this.showSpinner('Specializing');
+        this.sendPostRequest(
+            '/specialize_sdfg',
+            {
+                'path': uri.fsPath,
+                'symbol_map': symbolMap,
+            },
+            (data: any) => {
+                this.hideSpinner();
+                this.writeToActiveDocument(data.sdfg);
+            }
         );
     }
 

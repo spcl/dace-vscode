@@ -64,8 +64,13 @@ body {
     margin-right: .3rem;
 }
 
+#symbol-list {
+    padding-bottom: .5rem;
+}
+
 #symbol-table {
     width: 100%;
+    margin: .5rem 0;
 }
 
 #symbol-table .symbol-entry .symbol {

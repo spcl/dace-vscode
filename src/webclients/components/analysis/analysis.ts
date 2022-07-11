@@ -143,6 +143,13 @@ class SymbolResolution {
         });
     }
 
+    public specializeGraph(): void {
+        vscode.postMessage({
+            type: 'dace.specialize_graph',
+            symbolMap: this.symbols,
+        });
+    }
+
 }
 
 function clearRuntimeReport() {
@@ -370,7 +377,7 @@ $(() => {
             fr.readAsText(that.files[0]);
     });
 
-    $('#runtime-time-criterium-select').change(() => {
+    $('#runtime-time-criterium-select').on('change', () => {
         if (vscode)
             vscode.postMessage({
                 type: 'sdfv.instrumentation_report_change_criterium',
@@ -384,6 +391,10 @@ $(() => {
 
     $('#runtime-report-browse-btn').on('click', () => {
         $('#runtime-report-file-input').trigger('click');
+    });
+
+    $('#specialize-btn').on('click', () => {
+        symbolResolution?.specializeGraph();
     });
 
     if (vscode)
