@@ -121,20 +121,21 @@ export function attrTablePutCode(
 
     const editor = monaco_editor.create(
         input.get(0)!, {
-            'value': val,
-            'language': lang === undefined ? 'python' : lang.toLowerCase(),
-            'theme': getMonacoThemeName(),
-            'glyphMargin': false,
-            'lineDecorationsWidth': 0,
-            'lineNumbers': 'off',
-            'lineNumbersMinChars': 0,
-            'minimap': {
-                'enabled': false,
+            value: val,
+            language: lang === undefined ? 'python' : lang.toLowerCase(),
+            theme: getMonacoThemeName(),
+            glyphMargin: false,
+            lineDecorationsWidth: 0,
+            lineNumbers: 'off',
+            lineNumbersMinChars: 0,
+            minimap: {
+                enabled: false,
             },
-            'padding': {
-                'top': 0,
-                'bottom': 0,
+            padding: {
+                top: 0,
+                bottom: 0,
             },
+            automaticLayout: true,
         }
     );
 
