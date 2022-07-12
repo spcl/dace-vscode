@@ -103,6 +103,16 @@ export class VSCodeRenderer extends SDFGRenderer {
         );
     }
 
+    public async localViewSelection(): Promise<void> {
+        // TODO: Disable the button to clear the info box before we transition
+        // to the local view.
+        return super.localViewSelection();
+    }
+
+    public exitLocalView(): void {
+        // TODO: close the local view and show the original renderer again.
+    }
+
     public sendNewSdfgToVscode(): void {
         vscodeWriteGraph(this.sdfg);
     }
