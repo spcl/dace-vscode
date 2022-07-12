@@ -1,4 +1,4 @@
-# Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+# Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
 #####################################################################
@@ -281,6 +281,35 @@ def compile_sdfg(path, suppress_instrumentation=False):
     }
 
 
+def specialize_sdfg(path, symbol_map, remove_undef=True):
+    old_meta = disable_save_metadata()
+
+    loaded = load_sdfg_from_file(path)
+    if loaded['error'] is not None:
+        return loaded['error']
+    sdfg: dace.sdfg.SDFG = loaded['sdfg']
+
+    sdfg.specialize(symbol_map)
+
+    # Remove any constants that are not defined anymore in the symbol map, if
+    # the remove_undef flag is set.
+    if remove_undef:
+        delkeys = set()
+        for key in sdfg.constants_prop:
+            if (key not in symbol_map or symbol_map[key] is None or
+                symbol_map[key] == 0):
+                delkeys.add(key)
+        for key in delkeys:
+            del sdfg.constants_prop[key]
+
+    ret_sdfg = sdfg.to_json()
+
+    restore_save_metadata(old_meta)
+    return {
+        'sdfg': ret_sdfg,
+    }
+
+
 def run_daemon(port):
     from logging.config import dictConfig
     from flask import Flask, request
@@ -355,6 +384,11 @@ def run_daemon(port):
         request_json = request.get_json()
         return compile_sdfg(request_json['path'],
                             request_json['suppress_instrumentation'])
+
+    @daemon.route('/specialize_sdfg', methods=['POST'])
+    def _specialize_sdfg():
+        request_json = request.get_json()
+        return specialize_sdfg(request_json['path'], request_json['symbol_map'])
 
     @daemon.route('/insert_sdfg_element', methods=['POST'])
     def _insert_sdfg_element():

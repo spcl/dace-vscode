@@ -1,7 +1,8 @@
-// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as vscode from 'vscode';
+import { executeTrusted } from '../utils/utils';
 import { SdfgPythonDebugSession } from './sdfg_python_debug_session';
 import { FileAccessor } from './sdfg_python_runtime';
 
@@ -10,32 +11,36 @@ export function activateSdfgPython(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             'sdfg.debug.run',
             (resource: vscode.Uri) => {
-                if (resource) {
-                    vscode.debug.startDebugging(undefined, {
-                        type: 'sdfg-python',
-                        name: 'Run current SDFG',
-                        request: 'launch',
-                        program: resource.fsPath,
-                    }, {
-                        noDebug: true,
-                    });
-                }
+                executeTrusted(() => {
+                    if (resource) {
+                        vscode.debug.startDebugging(undefined, {
+                            type: 'sdfg-python',
+                            name: 'Run current SDFG',
+                            request: 'launch',
+                            program: resource.fsPath,
+                        }, {
+                            noDebug: true,
+                        });
+                    }
+                }, false, 'Execution of SDFGs');
             }
         ),
         vscode.commands.registerCommand(
             'sdfg.debug.profile',
             (resource: vscode.Uri) => {
-                if (resource) {
-                    vscode.debug.startDebugging(undefined, {
-                        type: 'sdfg-python',
-                        name: 'Profile current SDFG',
-                        request: 'launch',
-                        profile: true,
-                        program: resource.fsPath,
-                    }, {
-                        noDebug: true,
-                    });
-                }
+                executeTrusted(() => {
+                    if (resource) {
+                        vscode.debug.startDebugging(undefined, {
+                            type: 'sdfg-python',
+                            name: 'Profile current SDFG',
+                            request: 'launch',
+                            profile: true,
+                            program: resource.fsPath,
+                        }, {
+                            noDebug: true,
+                        });
+                    }
+                }, false, 'Profiling of SDFGs');
             }
         )
     );

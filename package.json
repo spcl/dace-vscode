@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Editor",
     "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "1.1.3",
+    "version": "1.3.0",
     "engines": {
         "vscode": "^1.68.0"
     },
@@ -38,6 +38,15 @@
     "extensionDependencies": [
         "benjamin-simmonds.pythoncpp-debug"
     ],
+    "capabilities": {
+        "untrustedWorkspaces": {
+            "supported": "limited",
+            "restrictedConfigurations": [
+                "dace.backend.interpreterPath"
+            ],
+            "description": "Certain functionality, like executing or transforming SDFGs, might be unavailable in untrusted workspaces to keep you safe."
+        }
+    },
     "contributes": {
         "debuggers": [
             {
@@ -167,6 +176,11 @@
                             "Split the SDFG Optimizer layout horizontally",
                             "Split the SDFG Optimizer layout vertically"
                         ]
+                    },
+                    "dace.sdfv.minimap": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show a minimap in the top right corner of the SDFG editor"
                     },
                     "dace.backend.interpreterPath": {
                         "type": "string",
@@ -492,7 +506,7 @@
                 {
                     "command": "sdfg.compile",
                     "group": "navigation@0",
-                    "when": "resourceLangId == sdfg"
+                    "when": "resourceLangId == sdfg && isWorkspaceTrusted"
                 }
             ],
             "editor/context": [
@@ -520,12 +534,12 @@
             "view/title": [
                 {
                     "command": "transformationList.addCustom",
-                    "when": "view == transformationList",
+                    "when": "view == transformationList && isWorkspaceTrusted",
                     "group": "navigation"
                 },
                 {
                     "command": "transformationList.addCustomFromDir",
-                    "when": "view == transformationList",
+                    "when": "view == transformationList && isWorkspaceTrusted",
                     "group": "navigation"
                 },
                 {

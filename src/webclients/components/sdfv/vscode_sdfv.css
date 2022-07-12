@@ -1,4 +1,4 @@
-/* Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+/* Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
  * All rights reserved. */
 
 body {
@@ -501,6 +501,7 @@ pre.code {
   flex-direction: row;
   align-items: center;
   justify-content: left;
+  flex-basis: auto;
   width: 100%;
 }
 
@@ -508,6 +509,7 @@ pre.code {
   flex-grow: 1;
   height: 6rem;
   margin-right: .8rem;
+  min-width: 0;
   border: 1px solid;
   border-bottom: 1px solid;
   border-color: var(--vscode-input-border);

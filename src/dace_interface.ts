@@ -1,4 +1,4 @@
-// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as os from 'os';
@@ -16,7 +16,7 @@ import {
     TransformationHistoryProvider,
 } from './components/transformation_history';
 import { OptimizationPanel } from './components/optimization_panel';
-import { walkDirectory } from './utils/utils';
+import { executeTrusted, showUntrustedWorkspaceWarning, walkDirectory } from './utils/utils';
 
 enum InteractionMode {
     PREVIEW,
@@ -80,6 +80,16 @@ export class DaCeInterface
                 break;
             case 'query_sdfg_metadata':
                 this.querySdfgMetadata();
+                break;
+            case 'specialize_graph':
+                if (message.symbolMap !== undefined) {
+                    const sdfgFile =
+                        DaCeVSCode.getInstance().getActiveSdfgFileName();
+                    if (sdfgFile) {
+                        const uri = vscode.Uri.file(sdfgFile);
+                        this.specializeGraph(uri, message.symbolMap);
+                    }
+                }
                 break;
             default:
                 break;
@@ -509,17 +519,25 @@ export class DaCeInterface
             !OptimizationPanel.getInstance().isVisible())
             return;
 
-        this.daemonBooting = true;
+        const callBoot = () => {
+            this.daemonBooting = true;
 
-        const callback = () => {
-            SdfgViewerProvider.getInstance()?.handleMessage({
-                type: 'daemon_connected',
+            this.startDaemonInTerminal(() => {
+                SdfgViewerProvider.getInstance()?.handleMessage({
+                    type: 'daemon_connected',
+                });
+                TransformationHistoryProvider.getInstance()?.refresh();
+                TransformationListProvider.getInstance()?.refresh(true);
+                this.querySdfgMetadata();
             });
-            TransformationHistoryProvider.getInstance()?.refresh();
-            TransformationListProvider.getInstance()?.refresh(true);
-            this.querySdfgMetadata();
         };
-        this.startDaemonInTerminal(callback);
+
+        if (vscode.workspace.isTrusted) {
+            callBoot();
+        } else if (!this.daemonBooting) {
+            this.daemonBooting = true;
+            showUntrustedWorkspaceWarning('Running DaCe', callBoot);
+        }
     }
 
     public previewSdfg(sdfg: any, history_mode: boolean = false) {
@@ -761,6 +779,23 @@ export class DaCeInterface
             callback,
             undefined,
             true
+        );
+    }
+
+    public specializeGraph(
+        uri: vscode.Uri, symbolMap: { [symbol: string]: any | undefined }
+    ): void {
+        this.showSpinner('Specializing');
+        this.sendPostRequest(
+            '/specialize_sdfg',
+            {
+                'path': uri.fsPath,
+                'symbol_map': symbolMap,
+            },
+            (data: any) => {
+                this.hideSpinner();
+                this.writeToActiveDocument(data.sdfg);
+            }
         );
     }
 

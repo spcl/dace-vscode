@@ -1,4 +1,4 @@
-// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import { string_to_sdfg_typeclass } from '@spcl/sdfv/out';
@@ -287,7 +287,7 @@ export class TypeclassProperty extends ComboboxProperty {
             backgroundInput
         );
 
-        if (typeof target[key] === 'object') {
+        if (target[key] && typeof target[key] === 'object') {
             editCompoundButton.show();
             this.compoundValueType = target[key]['type'];
             this.compoundValues = target[key];

@@ -1,4 +1,4 @@
-// Copyright 2020-2021 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
@@ -121,20 +121,21 @@ export function attrTablePutCode(
 
     const editor = monaco_editor.create(
         input.get(0)!, {
-            'value': val,
-            'language': lang === undefined ? 'python' : lang.toLowerCase(),
-            'theme': getMonacoThemeName(),
-            'glyphMargin': false,
-            'lineDecorationsWidth': 0,
-            'lineNumbers': 'off',
-            'lineNumbersMinChars': 0,
-            'minimap': {
-                'enabled': false,
+            value: val,
+            language: lang === undefined ? 'python' : lang.toLowerCase(),
+            theme: getMonacoThemeName(),
+            glyphMargin: false,
+            lineDecorationsWidth: 0,
+            lineNumbers: 'off',
+            lineNumbersMinChars: 0,
+            minimap: {
+                enabled: false,
             },
-            'padding': {
-                'top': 0,
-                'bottom': 0,
+            padding: {
+                top: 0,
+                bottom: 0,
             },
+            automaticLayout: true,
         }
     );
 
@@ -330,7 +331,7 @@ export function attrTablePutTypeclass(
     }).appendTo(cell);
     const choices = baseTypes.concat(Object.keys(compoundTypes));
 
-    const typeval = typeof val === 'object' ? val['type'] : val;
+    const typeval = val ? (typeof val === 'object' ? val['type'] : val) : null;
     let found = false;
     if (choices) {
         choices.forEach(array => {
@@ -346,7 +347,7 @@ export function attrTablePutTypeclass(
         });
     }
 
-    if (!found)
+    if (!found && typeval)
         input.append(new Option(typeval, typeval, true, true));
 
     input.editableSelect({
@@ -923,7 +924,15 @@ export function attributeTablePutEntry(
         'class': 'col-9 attr-table-cell',
     }).appendTo(row);
 
-    if (dtype === undefined) {
+    if (key === 'constants_prop') {
+        const constContainer = $('<div>').appendTo(valueCell);
+        for (const k in val) {
+            const v = val[k];
+            constContainer.append($('<div>', {
+                text: k + ': ' + v[1].toString(),
+            }));
+        }
+    } else if (dtype === undefined) {
         // Implementations that are set to null should still be visible. Other
         // null properties should be shown as an empty field.
         if (key === 'implementation' && val === null)
