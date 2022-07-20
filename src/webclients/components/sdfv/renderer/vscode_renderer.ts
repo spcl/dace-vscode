@@ -104,13 +104,14 @@ export class VSCodeRenderer extends SDFGRenderer {
     }
 
     public async localViewSelection(): Promise<void> {
-        // TODO: Disable the button to clear the info box before we transition
-        // to the local view.
-        return super.localViewSelection();
+        await super.localViewSelection();
+        // Hide the info button so the local view controls cannot be disabled
+        // by accident.
+        $('#info-clear-btn').hide();
     }
 
     public exitLocalView(): void {
-        // TODO: close the local view and show the original renderer again.
+        VSCodeSDFV.getInstance().refreshSdfg();
     }
 
     public sendNewSdfgToVscode(): void {
