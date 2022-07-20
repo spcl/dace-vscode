@@ -186,6 +186,34 @@
                         "type": "string",
                         "default": "",
                         "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter."
+                    },
+                    "dace.general.autoOpenSdfgs": {
+                        "type": "string",
+                        "default": "Ask",
+                        "enum": [
+                            "Always",
+                            "Ask",
+                            "Never"
+                        ],
+                        "enumDescriptions": [
+                            "Always automatically open newly generated SDFGs",
+                            "Ask when a new SDFG is generated, whether or not it should be opened",
+                            "Never automatically open newly generated SDFGs, and don't ask"
+                        ]
+                    },
+                    "dace.general.autoOpenInstrumentationReports": {
+                        "type": "string",
+                        "default": "Ask",
+                        "enum": [
+                            "Always",
+                            "Ask",
+                            "Never"
+                        ],
+                        "enumDescriptions": [
+                            "Always automatically load newly generated instrumentation reports",
+                            "Ask when a new instrumentation report is generated, whether or not it should be loaded",
+                            "Never automatically load newly generated instrumentation reports, and don't ask"
+                        ]
                     }
                 }
             }
