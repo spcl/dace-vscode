@@ -308,20 +308,24 @@ export class DaCeVSCode {
             (h) => DaCeInterface.getInstance().previewHistoryPoint(h));
         this.registerCommand('sdfg.applyHistoryPoint',
             (h) => DaCeInterface.getInstance().applyHistoryPoint(h));
-        this.registerCommand('dace.openOptimizerInTerminal',
-            () => DaCeInterface.getInstance().startDaemonInTerminal());
         this.registerCommand('dace.installDace', () => {
-            const term = vscode.window.createTerminal('Install DaCe');
-            term.show();
-            term.sendText(
-                'pip install dace'
-            );
+            executeTrusted(() => {
+                const term = vscode.window.createTerminal('Install DaCe');
+                term.show();
+                term.sendText(
+                    'pip install dace'
+                );
+            }, false, 'Installing DaCe');
         });
         this.registerCommand('dace.config', () => {
-            const uri = vscode.Uri.file(
-                join(homedir(), '.dace.conf')
-            );
-            vscode.commands.executeCommand('vscode.openWith', uri, 'default');
+            executeTrusted(() => {
+                const uri = vscode.Uri.file(
+                    join(homedir(), '.dace.conf')
+                );
+                vscode.commands.executeCommand(
+                    'vscode.openWith', uri, 'default'
+                );
+            }, false, 'Accessing the user\'s dace.config');
         });
 
         const sdfgWatcher = vscode.workspace.createFileSystemWatcher(
