@@ -289,7 +289,8 @@ def specialize_sdfg(path, symbol_map, remove_undef=True):
         return loaded['error']
     sdfg: dace.sdfg.SDFG = loaded['sdfg']
 
-    sdfg.specialize(symbol_map)
+    cleaned_map = { k: int(v) for k, v in symbol_map.items() }
+    sdfg.specialize(cleaned_map)
 
     # Remove any constants that are not defined anymore in the symbol map, if
     # the remove_undef flag is set.

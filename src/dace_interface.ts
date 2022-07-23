@@ -1,22 +1,22 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as os from 'os';
-import * as vscode from 'vscode';
 import { request } from 'http';
 import * as net from 'net';
+import * as os from 'os';
+import * as vscode from 'vscode';
 
-import { DaCeVSCode } from './extension';
+import {
+    MessageReceiverInterface
+} from './components/messaging/message_receiver_interface';
+import { OptimizationPanel } from './components/optimization_panel';
 import { SdfgViewerProvider } from './components/sdfg_viewer';
 import {
-    MessageReceiverInterface,
-} from './components/messaging/message_receiver_interface';
-import { TransformationListProvider } from './components/transformation_list';
-import {
-    TransformationHistoryProvider,
+    TransformationHistoryProvider
 } from './components/transformation_history';
-import { OptimizationPanel } from './components/optimization_panel';
-import { executeTrusted, showUntrustedWorkspaceWarning, walkDirectory } from './utils/utils';
+import { TransformationListProvider } from './components/transformation_list';
+import { DaCeVSCode } from './extension';
+import { showUntrustedWorkspaceWarning, walkDirectory } from './utils/utils';
 
 enum InteractionMode {
     PREVIEW,
@@ -50,6 +50,10 @@ export class DaCeInterface
             case 'preview_transformation':
                 if (message.transformation !== undefined)
                     this.previewTransformation(message.transformation);
+                break;
+            case 'export_transformation_to_file':
+                if (message.transformation !== undefined)
+                    this.exportTransformation(message.transformation);
                 break;
             case 'load_transformations':
                 if (message.sdfg !== undefined &&
@@ -622,14 +626,14 @@ export class DaCeInterface
         });
     }
 
-    public applyTransformation(transformation: any) {
+    public applyTransformation(transformation: any): void {
         this.sendApplyTransformationRequest(transformation, (data: any) => {
             this.hideSpinner();
             this.writeToActiveDocument(data.sdfg);
         });
     }
 
-    public previewTransformation(transformation: any) {
+    public previewTransformation(transformation: any): void {
         this.sendApplyTransformationRequest(
             transformation,
             (data: any) => {
@@ -640,7 +644,33 @@ export class DaCeInterface
         );
     }
 
-    public writeToActiveDocument(json: any) {
+    public exportTransformation(transformation: any): void {
+        vscode.window.showSaveDialog({
+            filters: {
+                'JSON': ['json'],
+            },
+            title: 'Export Transformation',
+        }).then(uri => {
+            if (uri)
+                vscode.workspace.fs.writeFile(
+                    uri,
+                    new TextEncoder().encode(JSON.stringify(transformation))
+                ).then(
+                    () => {
+                        vscode.window.showInformationMessage(
+                            'Successfully saved transformation to file.'
+                        );
+                    },
+                    () => {
+                        vscode.window.showErrorMessage(
+                            'Failed to save transformation to file.'
+                        );
+                    }
+                );
+        });
+    }
+
+    public writeToActiveDocument(json: any): void {
         const activeEditor = DaCeVSCode.getInstance().getActiveEditor();
         if (activeEditor) {
             const sdfvInstance = SdfgViewerProvider.getInstance();

@@ -75,7 +75,7 @@ export function getApplicableTransformations(): void {
 
 /**
  * Asynchronouly sort the list of transformations in the timing thread.
- * 
+ *
  * @param {*} callback  Callback to call when sorting has been completed.
  */
 export async function sortTransformations(
@@ -252,9 +252,9 @@ export function clearSelectedTransformation(): void {
 
 /**
  * For a given transformation, show its details pane in the information area.
- * 
+ *
  * This pane allows the further interaction with the transformation.
- * 
+ *
  * @param {*} xform     The transformation to display.
  */
 export function showTransformationDetails(xform: any): void {
@@ -339,6 +339,18 @@ export function showTransformationDetails(xform: any): void {
         },
     }).append($('<span>', {
         'text': 'Apply',
+    })).appendTo(xformButtonContainer);
+
+    $('<div>', {
+        class: 'button',
+        click: () => {
+            vscode.postMessage({
+                type: 'dace.export_transformation_to_file',
+                transformation: xform,
+            });
+        },
+    }).append($('<span>', {
+        text: 'Export To File',
     })).appendTo(xformButtonContainer);
 
     generateAttributesTable(undefined, xform, infoContents);
