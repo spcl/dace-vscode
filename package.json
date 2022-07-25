@@ -167,7 +167,7 @@
                 "properties": {
                     "dace.sdfv.layout": {
                         "type": "string",
-                        "default": "horizontal",
+                        "default": "vertical",
                         "enum": [
                             "horizontal",
                             "vertical"
