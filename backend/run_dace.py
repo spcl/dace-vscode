@@ -55,7 +55,7 @@ from dace_vscode.utils import (
     disable_save_metadata,
     restore_save_metadata,
 )
-from dace_vscode import transformations, editing, arith_ops
+from dace_vscode import transformations, arith_ops
 
 meta_dict = {}
 
@@ -390,20 +390,6 @@ def run_daemon(port):
     def _specialize_sdfg():
         request_json = request.get_json()
         return specialize_sdfg(request_json['path'], request_json['symbol_map'])
-
-    @daemon.route('/insert_sdfg_element', methods=['POST'])
-    def _insert_sdfg_element():
-        request_json = request.get_json()
-        return editing.insert_sdfg_element(request_json['sdfg'],
-                                           request_json['type'],
-                                           request_json['parent'],
-                                           request_json['edge_a'])
-
-    @daemon.route('/remove_sdfg_elements', methods=['POST'])
-    def _remove_sdfg_elements():
-        request_json = request.get_json()
-        return editing.remove_sdfg_elements(request_json['sdfg'],
-                                            request_json['uuids'])
 
     @daemon.route('/get_metadata', methods=['GET'])
     def _get_metadata():

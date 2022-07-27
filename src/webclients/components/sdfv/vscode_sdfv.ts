@@ -45,6 +45,7 @@ import {
     SDFGElement,
     SDFGNode,
     SDFGRenderer,
+    SDFGRendererEvent,
     SDFV,
     State,
     StaticFlopsOverlay,
@@ -810,14 +811,14 @@ export function vscodeHandleEvent(event: string, data: any): void {
             if (data && data.nodes)
                 VSCodeRenderer.getInstance()?.removeGraphNodes(data.nodes);
             break;
-        case 'add_graph_node':
+        case SDFGRendererEvent.ADD_ELEMENT:
             if (data && data.type !== undefined && data.parent !== undefined &&
-                data.edgeA !== undefined)
+                data.lib !== undefined && data.edgeA !== undefined)
                 VSCodeRenderer.getInstance()?.addNodeToGraph(
-                    data.type, data.parent, data.edgeA
+                    data.type, data.parent, data.lib, data.edgeA
                 );
             break;
-        case 'libnode_select':
+        case SDFGRendererEvent.QUERY_LIBNODE:
             if (data && data.callback)
                 VSCodeRenderer.getInstance()?.showSelectLibraryNodeDialog(
                     data.callback

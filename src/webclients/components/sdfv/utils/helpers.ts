@@ -8,15 +8,89 @@ import {
     find_graph_element_by_uuid,
     get_uuid_graph_element,
     JsonSDFG,
+    JsonSDFGEdge,
     JsonSDFGNode,
+    JsonSDFGState,
     ScopeNode,
     SDFGElement,
+    SDFGElementType,
     sdfg_range_elem_to_string,
 } from '@spcl/sdfv/out';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { VSCodeSDFV } from '../vscode_sdfv';
 
 declare const vscode: any;
+
+export function findMaximumSdfgId(sdfg: JsonSDFG): number {
+    let maxId = sdfg.sdfg_list_id;
+    for (const node of sdfg.nodes) {
+        if (node.type === SDFGElementType.SDFGState)
+            for (const n of node.nodes) {
+                if (n.type === SDFGElementType.NestedSDFG)
+                    maxId = Math.max(
+                        findMaximumSdfgId(n.attributes.sdfg), maxId
+                    );
+            }
+    }
+    return maxId;
+}
+
+export function findSdfgById(sdfg: JsonSDFG, id: number): JsonSDFG | undefined {
+    if (sdfg.sdfg_list_id === id)
+        return sdfg;
+
+    for (const node of sdfg.nodes) {
+        if (node.type === SDFGElementType.SDFGState)
+            for (const n of node.nodes) {
+                if (n.type === SDFGElementType.NestedSDFG) {
+                    const ret = findSdfgById(n.attributes.sdfg, id);
+                    if (ret)
+                        return ret;
+        }
+    }
+    }
+    return undefined;
+}
+
+export function findJsonSDFGElementByUUID(
+    rootSdfg: JsonSDFG, uuid: string
+): [
+    JsonSDFG | JsonSDFGState | JsonSDFGNode | JsonSDFGEdge | undefined,
+    JsonSDFG
+] {
+    const parts = uuid?.split('/');
+    if (!parts || parts.length < 2 || parts.length > 4)
+        return [undefined, rootSdfg];
+
+    const sdfgId = parseInt(parts[0]);
+    if (sdfgId >= 0 && rootSdfg) {
+        const sdfg = findSdfgById(rootSdfg, sdfgId);
+        const stateId = parseInt(parts[1]);
+        if (stateId >= 0 && sdfg?.nodes) {
+            const state = sdfg.nodes[stateId];
+            if (state) {
+                if (parts.length > 2) {
+                    const nodeId = parseInt(parts[2]);
+                    if (nodeId >= 0) {
+                        return [state.nodes[nodeId], sdfg];
+                    } else if (parts.length === 4) {
+                        const edgeId = parseInt(parts[3]);
+                        if (edgeId >= 0)
+                            return [state.edges[edgeId], sdfg];
+                    }
+                }
+
+                return [state, sdfg];
+            }
+        } else if (parts.length === 4 && sdfg?.edges) {
+            const edgeId = parseInt(parts[3]);
+            if (edgeId > 0)
+                return [sdfg.edges[edgeId], sdfg];
+        }
+        return [sdfg, rootSdfg];
+    }
+    return [undefined, rootSdfg];
+}
 
 /**
  * Perform an action for each element in an array given by their uuids.
@@ -259,7 +333,7 @@ export function unGraphiphySdfg(g: JsonSDFG): void {
             if (v.attributes.layout)
                 delete v.attributes.layout;
 
-            if (v.type === 'NestedSDFG')
+            if (v.type === SDFGElementType.NestedSDFG)
                 unGraphiphySdfg(v.attributes.sdfg);
         });
     });

@@ -10,9 +10,14 @@ import {
     get_uuid_graph_element,
     find_graph_element_by_uuid,
     SDFGElement,
+    set_positioning_info,
+    SDFGElementType,
+    JsonSDFGState,
 } from '@spcl/sdfv/out';
 import {
     createSingleUseModal,
+    findJsonSDFGElementByUUID,
+    findMaximumSdfgId,
     unGraphiphySdfg,
     vscodeWriteGraph,
 } from '../utils/helpers';
@@ -119,17 +124,282 @@ export class VSCodeRenderer extends SDFGRenderer {
     }
 
     public addNodeToGraph(
-        addType: string, parent: any, edgeA: any = undefined
+        addType: SDFGElementType, parentUUID: string, lib: string | null = null,
+        edgeStartUUID: string | null = null
     ): void {
-        let g = this.sdfg;
-        unGraphiphySdfg(g);
-        vscode.postMessage({
-            type: 'dace.insert_node',
-            sdfg: JSON.stringify(g),
-            addType: addType,
-            parent: parent,
-            edgeA: edgeA,
-        });
+        const meta = VSCodeSDFV.getInstance().getMetaDict()[addType];
+
+        const rootSdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+        if (!rootSdfg)
+            return;
+
+        let addRoot = undefined;
+        if (addType === SDFGElementType.Edge && edgeStartUUID) {
+            const [startElem, startElemSdfg] =
+                findJsonSDFGElementByUUID(rootSdfg, edgeStartUUID);
+            const [endElem, endElemSdfg] =
+                findJsonSDFGElementByUUID(rootSdfg, parentUUID);
+            let element = undefined;
+            if (startElemSdfg === endElemSdfg && startElem &&
+                endElem && startElem.type === endElem.type) {
+                if (startElem.type === SDFGElementType.SDFGState) {
+                    element = {
+                        type: 'Edge',
+                        src: (startElem as any).id.toString(),
+                        dst: (endElem as any).id.toString(),
+                        attributes: {
+                            data: {
+                                type: 'InterstateEdge',
+                                attributes: {},
+                                label: '',
+                            }
+                        },
+                    };
+                    const iseMeta =
+                        VSCodeSDFV.getInstance().getMetaDict()[
+                            'InterstateEdge'
+                        ];
+                    for (const key in iseMeta) {
+                        const attrs: any =
+                            element.attributes.data.attributes;
+                        if (attrs[key] === undefined) {
+                            const val = iseMeta[key];
+                            attrs[key] = val['default'];
+                        }
+                    }
+                    addRoot = startElemSdfg;
+                } else {
+                    const parentIdParts = parentUUID.split('/');
+                    const parentStateId =
+                        parentIdParts[0] + '/' + parentIdParts[1];
+                    const [parentState, _] = findJsonSDFGElementByUUID(
+                        rootSdfg, parentStateId
+                    );
+                    if (parentState) {
+                        element = {
+                            type: 'MultiConnectorEdge',
+                            src: (startElem as any).id.toString(),
+                            dst: (endElem as any).id.toString(),
+                            src_connector: null,
+                            dst_connector: null,
+                            attributes: {
+                                data: {
+                                    type: 'Memlet',
+                                    attributes: {},
+                                }
+                            },
+                        };
+                        const mceMeta =
+                            VSCodeSDFV.getInstance().getMetaDict()['Memlet'];
+                        for (const key in mceMeta) {
+                            const attrs: any =
+                                element.attributes.data.attributes;
+                            if (attrs[key] === undefined) {
+                                const val = mceMeta[key];
+                                attrs[key] = val['default'];
+                            }
+                        }
+                        addRoot = parentState;
+                    }
+                }
+            } else {
+                element = undefined;
+            }
+
+            if (element && addRoot && addRoot.hasOwnProperty('edges')) {
+                (addRoot as any).edges.push(element);
+                this.add_position = null;
+                this.add_edge_start = null;
+                vscodeWriteGraph(rootSdfg);
+            }
+        } else {
+            const [parentElem, parentSdfg] = findJsonSDFGElementByUUID(
+                rootSdfg, parentUUID
+            );
+
+            let parent = parentElem as any;
+            if (parentElem === undefined)
+                parent = rootSdfg;
+
+            if (parent && parent.hasOwnProperty('nodes')) {
+                let maxId = -1;
+                for (const el of parent.nodes)
+                    maxId = Math.max(maxId, el.id);
+                let element: any = {
+                    id: maxId + 1,
+                    type: addType,
+                    attributes: {},
+                };
+                let exitElem: any = undefined;
+                switch (addType) {
+                    case SDFGElementType.SDFGState:
+                        element.collapsed = false;
+                        element.edges = [];
+                        element.nodes = [];
+                        element.scope_dict = {};
+                        element.label = 'New State';
+                        break;
+                    case SDFGElementType.AccessNode:
+                        {
+                            const arrays = parentSdfg?.attributes?._arrays ?
+                                Object.keys(parentSdfg.attributes._arrays) : [];
+                            const data = arrays ? arrays[0].toString() : 'NULL';
+                            element.attributes.data = data;
+                            element.label = data;
+                        }
+                        break;
+                    case SDFGElementType.Tasklet:
+                        element.label = 'New Tasklet';
+                        break;
+                    case SDFGElementType.NestedSDFG:
+                        {
+                            const maxSdfgId = findMaximumSdfgId(rootSdfg);
+                            const nSdfgState: JsonSDFGState = {
+                                collapsed: false,
+                                edges: [],
+                                nodes: [],
+                                scope_dict: {},
+                                label: 'New State',
+                                id: 0,
+                                attributes: {},
+                                type: SDFGElementType.SDFGState
+                            };
+                            const stateMeta =
+                                VSCodeSDFV.getInstance().getMetaDict()[
+                                    SDFGElementType.SDFGState
+                                ];
+                            for (const key in stateMeta) {
+                                if (nSdfgState.attributes[key] === undefined) {
+                                    const val = stateMeta[key];
+                                    nSdfgState.attributes[key] = val['default'];
+                                }
+                            }
+                            const nSdfg: JsonSDFG = {
+                                attributes: {
+                                    name: 'NewSDFG',
+                                },
+                                nodes: [nSdfgState],
+                                edges: [],
+                                start_state: 0,
+                                type: 'SDFG',
+                                error: undefined,
+                                sdfg_list_id: maxSdfgId + 1,
+                            };
+                            const sdfgMeta =
+                                VSCodeSDFV.getInstance().getMetaDict()['SDFG'];
+                            for (const key in sdfgMeta) {
+                                if (nSdfg.attributes[key] === undefined) {
+                                    const val = sdfgMeta[key];
+                                    nSdfg.attributes[key] = val['default'];
+                                }
+                            }
+                            element.label = 'New Nested SDFG';
+                            element.attributes.sdfg = nSdfg;
+                        }
+                        break;
+                    case SDFGElementType.MapEntry:
+                        {
+                            element.label = 'New Map';
+                            element.scope_entry = null;
+                            element.scope_exit = element.id + 1;
+                            exitElem = {
+                                attributes: {},
+                                id: element.id + 1,
+                                label: element.label,
+                                type: SDFGElementType.MapExit,
+                                scope_entry: element.id,
+                                scope_exit: element.id + 1,
+                            };
+                            const exitMeta =
+                                VSCodeSDFV.getInstance().getMetaDict()[
+                                    'MapExit'
+                                ];
+                            for (const key in exitMeta) {
+                                if (exitElem.attributes[key] === undefined) {
+                                    const val = exitMeta[key];
+                                    exitElem.attributes[key] = val['default'];
+                                }
+                            }
+                        }
+                        break;
+                    case SDFGElementType.ConsumeEntry:
+                        {
+                            element.label = 'New Consume';
+                            element.scope_entry = null;
+                            element.scope_exit = element.id + 1;
+                            exitElem = {
+                                attributes: {},
+                                id: element.id + 1,
+                                label: element.label,
+                                type: SDFGElementType.ConsumeExit,
+                                scope_entry: element.id,
+                                scope_exit: element.id + 1,
+                            };
+                            const exitMeta =
+                                VSCodeSDFV.getInstance().getMetaDict()[
+                                    'ConsumeExit'
+                                ];
+                            for (const key in exitMeta) {
+                                if (exitElem.attributes[key] === undefined) {
+                                    const val = exitMeta[key];
+                                    exitElem.attributes[key] = val['default'];
+                                }
+                            }
+                        }
+                        break;
+                    case SDFGElementType.LibraryNode:
+                        if (lib) {
+                            const libParts = lib.split('.');
+                            const libName = libParts[libParts.length - 1];
+                            element.label = libName;
+                            element.classpath = lib;
+                        } else {
+                            element = undefined;
+                        }
+                        break;
+                    default:
+                        element = undefined;
+                        break;
+                }
+
+                if (element && parent?.nodes !== undefined) {
+                    for (const key in meta) {
+                        if (element.attributes[key] === undefined) {
+                            const val = meta[key];
+                            element.attributes[key] = val['default'];
+                        }
+                    }
+
+                    if (addType.endsWith('Entry') && parent.scope_dict &&
+                        exitElem) {
+                        parent.scope_dict[element.id] = [exitElem.id];
+                        const parentScope = parent.scope_dict['-1'];
+                        if (parentScope)
+                            parentScope.push(element.id);
+                        else
+                            parent.scope_dict['-1'] = [element.id];
+                    } else if (addType !== SDFGElementType.SDFGState &&
+                        parent.scope_dict) {
+                        element.scope_entry = null;
+                        element.scope_exit = null;
+                        const parentScope = parent.scope_dict['-1'];
+                        if (parentScope)
+                            parentScope.push(element.id);
+                        else
+                            parent.scope_dict['-1'] = [element.id];
+                    }
+
+                    parent.nodes.push(element);
+                    if (exitElem)
+                        parent.nodes.push(exitElem);
+
+                    set_positioning_info(element, this.add_position);
+                    this.add_position = null;
+
+                    vscodeWriteGraph(rootSdfg);
+                }
+            }
+        }
     }
 
     public removeGraphNodes(nodes: SDFGElement[]): void {
@@ -217,11 +487,6 @@ export class VSCodeRenderer extends SDFGRenderer {
     }
 
     public showSelectLibraryNodeDialog(callback: CallableFunction): void {
-        if (!VSCodeSDFV.getInstance().getDaemonConnected()) {
-            this.showNoDaemonDialog();
-            return;
-        }
-
         const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
 
         const modalRet = createSingleUseModal(
