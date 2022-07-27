@@ -171,6 +171,7 @@ def load_sdfg_from_json(json):
                 },
             }
             sdfg = None
+    print(error)
     return {
         'error': error,
         'sdfg': sdfg,

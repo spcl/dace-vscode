@@ -204,16 +204,17 @@ export class DaCeInterface
     public genericErrorHandler(message: string, details?: string) {
         this.hideSpinner();
         console.error(message);
+        let text = message;
         if (details) {
             console.error(details);
-            vscode.window.showErrorMessage(
-                message + ' (' + details + ')'
-            );
-        } else {
-            vscode.window.showErrorMessage(
-                message
-            );
+            text += ' (' + details + ')';
         }
+        vscode.window.showErrorMessage(
+            text, 'Show Trace'
+        ).then((val: 'Show Trace' | undefined) => {
+            if (val === 'Show Trace')
+                this.daemonTerminal?.show();
+        });
     }
 
     private getRunDaceScriptUri(): vscode.Uri | undefined {
@@ -233,6 +234,7 @@ export class DaCeInterface
             this.daemonTerminal = vscode.window.createTerminal({
                 hideFromUser: false,
                 name: 'SDFG Optimizer',
+                isTransient: true,
             });
 
         const scriptUri = this.getRunDaceScriptUri();
@@ -607,7 +609,8 @@ export class DaCeInterface
                         this.hideSpinner();
                         this.writeToActiveDocument(data.sdfg);
                     },
-                    () => {
+                    async (error: any): Promise<void> => {
+                        this.genericErrorHandler(error.message, error.details);
                         this.hideSpinner();
                     },
                     true
@@ -862,7 +865,7 @@ export class DaCeInterface
             });
         }
 
-        async function clearSpinner(error: any): Promise<void> {
+        async function clearSpinner(): Promise<void> {
             SdfgViewerProvider.getInstance()?.handleMessage({
                 type: 'get_applicable_transformations_callback',
                 transformations: undefined,
@@ -877,7 +880,10 @@ export class DaCeInterface
                 permissive: false,
             },
             callback,
-            clearSpinner,
+            async (error: any): Promise<void> => {
+                this.genericErrorHandler(error.message, error.details);
+                clearSpinner();
+            },
         );
     }
 

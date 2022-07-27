@@ -3,7 +3,6 @@
 
 #####################################################################
 # Before importing anything, try to take the ".env" file into account
-import json
 import os
 import re
 import sys
@@ -54,6 +53,7 @@ from dace_vscode.utils import (
     load_sdfg_from_file,
     disable_save_metadata,
     restore_save_metadata,
+    get_exception_message,
 )
 from dace_vscode import transformations, arith_ops
 
@@ -270,15 +270,32 @@ def compile_sdfg(path, suppress_instrumentation=False):
         return loaded['error']
     sdfg = loaded['sdfg']
 
-    if suppress_instrumentation:
-        _sdfg_remove_instrumentations(sdfg)
+    try:
+        if suppress_instrumentation:
+            _sdfg_remove_instrumentations(sdfg)
+    except Exception as e:
+        return {
+            'error': {
+                'message': ('Failed to remove instrumentation from SDFG ' +
+                    'for compiling'),
+                'details': get_exception_message(e),
+            },
+        }
 
-    compiled_sdfg: CompiledSDFG = sdfg.compile()
+    try:
+        compiled_sdfg: CompiledSDFG = sdfg.compile()
 
-    restore_save_metadata(old_meta)
-    return {
-        'filename': compiled_sdfg.filename,
-    }
+        restore_save_metadata(old_meta)
+        return {
+            'filename': compiled_sdfg.filename,
+        }
+    except Exception as e:
+        return {
+            'error': {
+                'message': 'Failed to compile SDFG',
+                'details': get_exception_message(e),
+            },
+        }
 
 
 def specialize_sdfg(path, symbol_map, remove_undef=True):
@@ -289,26 +306,34 @@ def specialize_sdfg(path, symbol_map, remove_undef=True):
         return loaded['error']
     sdfg: dace.sdfg.SDFG = loaded['sdfg']
 
-    cleaned_map = { k: int(v) for k, v in symbol_map.items() }
-    sdfg.specialize(cleaned_map)
+    try:
+        cleaned_map = { k: int(v) for k, v in symbol_map.items() }
+        sdfg.specialize(cleaned_map)
 
-    # Remove any constants that are not defined anymore in the symbol map, if
-    # the remove_undef flag is set.
-    if remove_undef:
-        delkeys = set()
-        for key in sdfg.constants_prop:
-            if (key not in symbol_map or symbol_map[key] is None or
-                symbol_map[key] == 0):
-                delkeys.add(key)
-        for key in delkeys:
-            del sdfg.constants_prop[key]
+        # Remove any constants that are not defined anymore in the symbol map,
+        # if the remove_undef flag is set.
+        if remove_undef:
+            delkeys = set()
+            for key in sdfg.constants_prop:
+                if (key not in symbol_map or symbol_map[key] is None or
+                    symbol_map[key] == 0):
+                    delkeys.add(key)
+            for key in delkeys:
+                del sdfg.constants_prop[key]
 
-    ret_sdfg = sdfg.to_json()
+        ret_sdfg = sdfg.to_json()
 
-    restore_save_metadata(old_meta)
-    return {
-        'sdfg': ret_sdfg,
-    }
+        restore_save_metadata(old_meta)
+        return {
+            'sdfg': ret_sdfg,
+        }
+    except Exception as e:
+        return {
+            'error': {
+                'message': 'Failed to specialize SDFG',
+                'details': get_exception_message(e),
+            },
+        }
 
 
 def run_daemon(port):
