@@ -13,6 +13,7 @@ import {
     set_positioning_info,
     SDFGElementType,
     JsonSDFGState,
+    memlet_tree_complete,
 } from '@spcl/sdfv/out';
 import {
     createSingleUseModal,
@@ -58,6 +59,20 @@ export class VSCodeRenderer extends SDFGRenderer {
 
     public destroy(): void {
         super.destroy();
+    }
+
+    public set_sdfg(new_sdfg: JsonSDFG, layout?: boolean | undefined): void {
+        super.set_sdfg(new_sdfg, layout);
+
+        // TODO(later): This is a fix for broken memlet trees when the graph
+        // is changed / edited (including when the collapse state changes).
+        // This is only necessary because these type of events send changes to
+        // the underlying document, which in turn updates the webview with the
+        // same contents to ensure the two representations are kept in sync.
+        // This needs to be handled better, i.e. _without_ requiring this
+        // two-sided update, which causes slowdowns when the graph is edited.
+        this.all_memlet_trees_sdfg = memlet_tree_complete(this.sdfg);
+        this.update_fast_memlet_lookup();
     }
 
     private constructor(
