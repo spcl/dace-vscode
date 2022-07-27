@@ -125,7 +125,8 @@ export class VSCodeRenderer extends SDFGRenderer {
 
     public addNodeToGraph(
         addType: SDFGElementType, parentUUID: string, lib: string | null = null,
-        edgeStartUUID: string | null = null
+        edgeStartUUID: string | null = null,
+        edgeStartConn: string | null = null, edgeDstConn: string | null = null
     ): void {
         const meta = VSCodeSDFV.getInstance().getMetaDict()[addType];
 
@@ -180,8 +181,8 @@ export class VSCodeRenderer extends SDFGRenderer {
                             type: 'MultiConnectorEdge',
                             src: (startElem as any).id.toString(),
                             dst: (endElem as any).id.toString(),
-                            src_connector: null,
-                            dst_connector: null,
+                            src_connector: edgeStartConn,
+                            dst_connector: edgeDstConn,
                             attributes: {
                                 data: {
                                     type: 'Memlet',

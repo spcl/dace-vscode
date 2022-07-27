@@ -815,7 +815,9 @@ export function vscodeHandleEvent(event: string, data: any): void {
             if (data && data.type !== undefined && data.parent !== undefined &&
                 data.lib !== undefined && data.edgeA !== undefined)
                 VSCodeRenderer.getInstance()?.addNodeToGraph(
-                    data.type, data.parent, data.lib, data.edgeA
+                    data.type, data.parent, data.lib, data.edgeA,
+                    data.edgeAConn ? data.edgeAConn : null,
+                    data.conn ? data.conn : null
                 );
             break;
         case SDFGRendererEvent.QUERY_LIBNODE:
