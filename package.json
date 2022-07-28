@@ -210,7 +210,7 @@
                             "Never"
                         ],
                         "enumDescriptions": [
-                            "Always automatically load newly generated instrumentation reports",
+                            "Automatically load all newly generated instrumentation reports",
                             "Ask when a new instrumentation report is generated, whether or not it should be loaded",
                             "Never automatically load newly generated instrumentation reports, and don't ask"
                         ]
