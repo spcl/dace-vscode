@@ -637,6 +637,16 @@ export class DaCeInterface
         );
     }
 
+    /**
+     * Given a transformation, export it to a JSON file.
+     * This allows saving a transformation as matched to a specific subgraph or
+     * pattern to a JSON file. This file can be loaded / deserialized through
+     * DaCe's standard deserializer elsewhere, to obtain the same transformation
+     * matched to the same subgraph, to be directly applied. This allows
+     * transformations to be shared or used outside the interface in custom
+     * scripts.
+     * @param transformation Transformation to export, in JSON format.
+     */
     public exportTransformation(transformation: any): void {
         vscode.window.showSaveDialog({
             filters: {
