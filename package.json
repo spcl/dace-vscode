@@ -196,7 +196,7 @@
                             "Never"
                         ],
                         "enumDescriptions": [
-                            "Always automatically open newly generated SDFGs",
+                            "Automatically open any newly generated SDFG",
                             "Ask when a new SDFG is generated, whether or not it should be opened",
                             "Never automatically open newly generated SDFGs, and don't ask"
                         ]
