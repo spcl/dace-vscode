@@ -103,18 +103,19 @@ def reapply_history_until(sdfg_json, index):
         except Exception as e:
             print(traceback.format_exc(), file=sys.stderr)
             sys.stderr.flush()
-            nr_string = str(i + 1)
-            if i == 0:
-                nr_string += 'st'
-            elif i == 1:
-                nr_string += 'nd'
+            hist_nr = i + 1
+            hist_nr_string = str(hist_nr)
+            if (hist_nr - 1) % 10 == 0 and (hist_nr) != 11:
+                hist_nr_string += 'st'
+            elif (hist_nr - 2) % 10 == 0 and hist_nr != 12:
+                hist_nr_string += 'nd'
             else:
-                nr_string += 'th'
+                hist_nr_string += 'th'
             return {
                 'error': {
                     'message': (
                         'Failed to play back the transformation history, ' +
-                        'failed at ' + nr_string + ' history point'
+                        'failed at ' + hist_nr_string + ' history point'
                     ),
                     'details': utils.get_exception_message(e),
                 },
