@@ -24,16 +24,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -78,7 +108,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "AllocationLifetime": {
@@ -86,7 +119,13 @@
       "desc": "Data allocation span",
       "category": "General",
       "default": "Scope",
-      "choices": ["Scope", "State", "SDFG", "Global", "Persistent"]
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent"
+      ]
     },
     "dict": {
       "metatype": "dict",
@@ -151,7 +190,11 @@
       "desc": "Instrument data contents at this access",
       "category": "General",
       "default": "No_Instrumentation",
-      "choices": ["No_Instrumentation", "Save", "Restore"]
+      "choices": [
+        "No_Instrumentation",
+        "Save",
+        "Restore"
+      ]
     },
     "str": {
       "metatype": "str",
@@ -169,7 +212,10 @@
       "metatype": "CodeBlock",
       "desc": "Tasklet code",
       "category": "General",
-      "default": { "string_data": "", "language": "Python" }
+      "default": {
+        "string_data": "",
+        "language": "Python"
+      }
     },
     "InstrumentationType": {
       "metatype": "InstrumentationType",
@@ -207,14 +253,19 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "Range": {
       "metatype": "Range",
       "desc": "Ranges of map parameters",
       "category": "General",
-      "default": { "type": "Range", "ranges": [] },
+      "default": {
+        "type": "Range",
+        "ranges": []
+      },
       "indirected": true
     },
     "OMPScheduleType": {
@@ -223,7 +274,12 @@
       "category": "General",
       "default": "Default",
       "indirected": true,
-      "choices": ["Default", "Static", "Dynamic", "Guided"]
+      "choices": [
+        "Default",
+        "Static",
+        "Dynamic",
+        "Guided"
+      ]
     },
     "LibraryImplementationProperty": {
       "metatype": "LibraryImplementationProperty",
@@ -248,17 +304,32 @@
       "desc": "normal: the outerloop increments with tile_size, ceilrange: uses ceiling(N/tile_size) in outer range, number_of_tiles: tiles the map into the number of provided tiles, provide the number of tiles over tile_size",
       "category": "General",
       "default": "Normal",
-      "choices": ["Normal", "CeilRange", "NumberOfTiles"]
+      "choices": [
+        "Normal",
+        "CeilRange",
+        "NumberOfTiles"
+      ]
     },
     "DeviceType": {
       "category": "General",
       "metatype": "DeviceType",
-      "choices": ["CPU", "GPU", "FPGA"]
+      "choices": [
+        "CPU",
+        "GPU",
+        "FPGA",
+        "Snitch"
+      ]
     },
     "Language": {
       "category": "General",
       "metatype": "Language",
-      "choices": ["Python", "CPP", "OpenCL", "SystemVerilog", "MLIR"]
+      "choices": [
+        "Python",
+        "CPP",
+        "OpenCL",
+        "SystemVerilog",
+        "MLIR"
+      ]
     },
     "ReductionType": {
       "category": "General",
@@ -349,16 +420,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "str", "default": "0" },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "ctype": { "type": "str", "default": "" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -403,7 +504,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "lifetime": {
@@ -411,7 +515,13 @@
       "desc": "Data allocation span",
       "category": "General",
       "default": "Scope",
-      "choices": ["Scope", "State", "SDFG", "Global", "Persistent"]
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent"
+      ]
     },
     "location": {
       "metatype": "dict",
@@ -466,16 +576,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -520,7 +660,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "lifetime": {
@@ -528,7 +671,13 @@
       "desc": "Data allocation span",
       "category": "General",
       "default": "Scope",
-      "choices": ["Scope", "State", "SDFG", "Global", "Persistent"]
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent"
+      ]
     },
     "location": {
       "metatype": "dict",
@@ -619,16 +768,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -673,7 +852,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "lifetime": {
@@ -681,7 +863,13 @@
       "desc": "Data allocation span",
       "category": "General",
       "default": "Scope",
-      "choices": ["Scope", "State", "SDFG", "Global", "Persistent"]
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent"
+      ]
     },
     "location": {
       "metatype": "dict",
@@ -743,16 +931,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -797,7 +1015,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "lifetime": {
@@ -805,7 +1026,13 @@
       "desc": "Data allocation span",
       "category": "General",
       "default": "Scope",
-      "choices": ["Scope", "State", "SDFG", "Global", "Persistent"]
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent"
+      ]
     },
     "location": {
       "metatype": "dict",
@@ -896,16 +1123,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -950,7 +1207,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "lifetime": {
@@ -958,7 +1218,13 @@
       "desc": "Data allocation span",
       "category": "General",
       "default": "Scope",
-      "choices": ["Scope", "State", "SDFG", "Global", "Persistent"]
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent"
+      ]
     },
     "location": {
       "metatype": "dict",
@@ -1049,16 +1315,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -1103,7 +1399,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "lifetime": {
@@ -1111,7 +1410,13 @@
       "desc": "Data allocation span",
       "category": "General",
       "default": "Scope",
-      "choices": ["Scope", "State", "SDFG", "Global", "Persistent"]
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent"
+      ]
     },
     "location": {
       "metatype": "dict",
@@ -1247,7 +1552,11 @@
       "desc": "Instrument data contents at this access",
       "category": "General",
       "default": "No_Instrumentation",
-      "choices": ["No_Instrumentation", "Save", "Restore"]
+      "choices": [
+        "No_Instrumentation",
+        "Save",
+        "Restore"
+      ]
     },
     "in_connectors": {
       "metatype": "dict",
@@ -1309,7 +1618,10 @@
       "metatype": "CodeBlock",
       "desc": "Tasklet code",
       "category": "General",
-      "default": { "string_data": "", "language": "Python" }
+      "default": {
+        "string_data": "",
+        "language": "Python"
+      }
     },
     "state_fields": {
       "metatype": "list",
@@ -1322,19 +1634,28 @@
       "metatype": "CodeBlock",
       "desc": "Global scope code needed for tasklet execution",
       "category": "General",
-      "default": { "string_data": "", "language": "CPP" }
+      "default": {
+        "string_data": "",
+        "language": "CPP"
+      }
     },
     "code_init": {
       "metatype": "CodeBlock",
       "desc": "Extra code that is called on DaCe runtime initialization",
       "category": "General",
-      "default": { "string_data": "", "language": "CPP" }
+      "default": {
+        "string_data": "",
+        "language": "CPP"
+      }
     },
     "code_exit": {
       "metatype": "CodeBlock",
       "desc": "Extra code that is called on DaCe runtime cleanup",
       "category": "General",
-      "default": { "string_data": "", "language": "CPP" }
+      "default": {
+        "string_data": "",
+        "language": "CPP"
+      }
     },
     "debuginfo": {
       "metatype": "DebugInfo",
@@ -1361,6 +1682,12 @@
         "GPU_Events",
         "FPGA"
       ]
+    },
+    "side_effects": {
+      "metatype": "bool",
+      "desc": "If True, this tasklet calls a function that may have additional side effects on the system state (e.g., callback). Defaults to None, which lets the framework make assumptions based on the tasklet contents",
+      "category": "General",
+      "default": null
     },
     "label": {
       "metatype": "str",
@@ -1412,7 +1739,10 @@
       "metatype": "CodeBlock",
       "desc": "Tasklet code",
       "category": "General",
-      "default": { "string_data": "", "language": "Python" }
+      "default": {
+        "string_data": "",
+        "language": "Python"
+      }
     },
     "state_fields": {
       "metatype": "list",
@@ -1425,19 +1755,28 @@
       "metatype": "CodeBlock",
       "desc": "Global scope code needed for tasklet execution",
       "category": "General",
-      "default": { "string_data": "", "language": "CPP" }
+      "default": {
+        "string_data": "",
+        "language": "CPP"
+      }
     },
     "code_init": {
       "metatype": "CodeBlock",
       "desc": "Extra code that is called on DaCe runtime initialization",
       "category": "General",
-      "default": { "string_data": "", "language": "CPP" }
+      "default": {
+        "string_data": "",
+        "language": "CPP"
+      }
     },
     "code_exit": {
       "metatype": "CodeBlock",
       "desc": "Extra code that is called on DaCe runtime cleanup",
       "category": "General",
-      "default": { "string_data": "", "language": "CPP" }
+      "default": {
+        "string_data": "",
+        "language": "CPP"
+      }
     },
     "debuginfo": {
       "metatype": "DebugInfo",
@@ -1464,6 +1803,12 @@
         "GPU_Events",
         "FPGA"
       ]
+    },
+    "side_effects": {
+      "metatype": "bool",
+      "desc": "If True, this tasklet calls a function that may have additional side effects on the system state (e.g., callback). Defaults to None, which lets the framework make assumptions based on the tasklet contents",
+      "category": "General",
+      "default": null
     },
     "label": {
       "metatype": "str",
@@ -1526,7 +1871,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "symbol_mapping": {
@@ -1638,7 +1985,10 @@
       "metatype": "Range",
       "desc": "Ranges of map parameters",
       "category": "General",
-      "default": { "type": "Range", "ranges": [] },
+      "default": {
+        "type": "Range",
+        "ranges": []
+      },
       "indirected": true
     },
     "schedule": {
@@ -1659,7 +2009,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "unroll": {
@@ -1724,7 +2076,12 @@
       "category": "General",
       "default": "Default",
       "indirected": true,
-      "choices": ["Default", "Static", "Dynamic", "Guided"]
+      "choices": [
+        "Default",
+        "Static",
+        "Dynamic",
+        "Guided"
+      ]
     },
     "omp_chunk_size": {
       "metatype": "int",
@@ -1786,7 +2143,10 @@
       "metatype": "Range",
       "desc": "Ranges of map parameters",
       "category": "General",
-      "default": { "type": "Range", "ranges": [] }
+      "default": {
+        "type": "Range",
+        "ranges": []
+      }
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -1805,7 +2165,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "unroll": {
@@ -1863,7 +2225,12 @@
       "desc": "OpenMP schedule {static, dynamic, guided}",
       "category": "General",
       "default": "Default",
-      "choices": ["Default", "Static", "Dynamic", "Guided"]
+      "choices": [
+        "Default",
+        "Static",
+        "Dynamic",
+        "Guided"
+      ]
     },
     "omp_chunk_size": {
       "metatype": "int",
@@ -1919,7 +2286,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "chunksize": {
@@ -2041,7 +2410,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "chunksize": {
@@ -2138,7 +2509,10 @@
       "metatype": "Range",
       "desc": "Ranges of map parameters",
       "category": "General",
-      "default": { "type": "Range", "ranges": [] },
+      "default": {
+        "type": "Range",
+        "ranges": []
+      },
       "indirected": true
     },
     "schedule": {
@@ -2159,7 +2533,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "unroll": {
@@ -2224,7 +2600,12 @@
       "category": "General",
       "default": "Default",
       "indirected": true,
-      "choices": ["Default", "Static", "Dynamic", "Guided"]
+      "choices": [
+        "Default",
+        "Static",
+        "Dynamic",
+        "Guided"
+      ]
     },
     "omp_chunk_size": {
       "metatype": "int",
@@ -2316,7 +2697,10 @@
       "metatype": "Range",
       "desc": "Ranges of map parameters",
       "category": "General",
-      "default": { "type": "Range", "ranges": [] }
+      "default": {
+        "type": "Range",
+        "ranges": []
+      }
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -2335,7 +2719,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "unroll": {
@@ -2393,7 +2779,12 @@
       "desc": "OpenMP schedule {static, dynamic, guided}",
       "category": "General",
       "default": "Default",
-      "choices": ["Default", "Static", "Dynamic", "Guided"]
+      "choices": [
+        "Default",
+        "Static",
+        "Dynamic",
+        "Guided"
+      ]
     },
     "omp_chunk_size": {
       "metatype": "int",
@@ -2432,7 +2823,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -2616,16 +3009,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -2726,7 +3149,10 @@
       "metatype": "CodeBlock",
       "desc": "Transition condition",
       "category": "General",
-      "default": { "string_data": "1", "language": "Python" }
+      "default": {
+        "string_data": "1",
+        "language": "Python"
+      }
     }
   },
   "SDFG": {
@@ -3037,7 +3463,9 @@
       "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
       "category": "General",
       "default": null,
-      "choices": ["specialize"]
+      "choices": [
+        "specialize"
+      ]
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -3056,7 +3484,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -3311,16 +3741,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -3373,7 +3833,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -3691,7 +4153,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -3945,16 +4409,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -4013,7 +4507,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -4164,7 +4660,10 @@
       "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
       "category": "General",
       "default": null,
-      "choices": ["pure", "FPGA"]
+      "choices": [
+        "pure",
+        "FPGA"
+      ]
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -4183,7 +4682,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -4403,16 +4904,46 @@
       ],
       "compound_types": {
         "vector": {
-          "elements": { "type": "int", "default": 0 },
-          "dtype": { "type": "typeclass", "default": "bool" }
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
         },
-        "pointer": { "dtype": { "type": "typeclass", "default": "bool" } },
-        "opaque": { "dtype": { "type": "typeclass", "default": "bool" } },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
         "struct": {
-          "name": { "type": "str", "default": "" },
-          "data": { "type": "dict", "default": {}, "value_type": "typeclass" },
-          "length": { "type": "dict", "default": {}, "value_type": "int" },
-          "bytes": { "type": "int", "default": 0 }
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
         },
         "callback": {
           "arguments": {
@@ -4445,7 +4976,12 @@
       "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
       "category": "General",
       "default": null,
-      "choices": ["pure", "MKL", "OpenBLAS", "cuBLAS"]
+      "choices": [
+        "pure",
+        "MKL",
+        "OpenBLAS",
+        "cuBLAS"
+      ]
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -4464,7 +5000,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -4647,7 +5185,12 @@
       "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
       "category": "General",
       "default": null,
-      "choices": ["pure", "MKL", "OpenBLAS", "cuBLAS"]
+      "choices": [
+        "pure",
+        "MKL",
+        "OpenBLAS",
+        "cuBLAS"
+      ]
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -4666,7 +5209,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -4799,7 +5344,10 @@
       "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
       "category": "General",
       "default": null,
-      "choices": ["pure", "fpga"]
+      "choices": [
+        "pure",
+        "fpga"
+      ]
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -4818,7 +5366,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -4895,7 +5445,9 @@
       "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
       "category": "General",
       "default": null,
-      "choices": ["default"]
+      "choices": [
+        "default"
+      ]
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -4914,7 +5466,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -5041,7 +5595,9 @@
       "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
       "category": "General",
       "default": null,
-      "choices": ["pure"]
+      "choices": [
+        "pure"
+      ]
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -5060,7 +5616,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -5368,7 +5926,9 @@
         "GPU_ThreadBlock",
         "GPU_ThreadBlock_Dynamic",
         "GPU_Persistent",
-        "FPGA_Device"
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
       ]
     },
     "debuginfo": {
@@ -5621,7 +6181,11 @@
       "desc": "normal: the outerloop increments with tile_size, ceilrange: uses ceiling(N/tile_size) in outer range, number_of_tiles: tiles the map into the number of provided tiles, provide the number of tiles over tile_size",
       "category": "General",
       "default": "Normal",
-      "choices": ["Normal", "CeilRange", "NumberOfTiles"]
+      "choices": [
+        "Normal",
+        "CeilRange",
+        "NumberOfTiles"
+      ]
     },
     "skew": {
       "metatype": "bool",
@@ -5667,7 +6231,11 @@
       "metatype": "tuple",
       "desc": "Tile size per dimension",
       "category": "General",
-      "default": ["128", "128", "128"]
+      "default": [
+        "128",
+        "128",
+        "128"
+      ]
     },
     "strides": {
       "metatype": "tuple",
@@ -5743,7 +6311,11 @@
       "metatype": "tuple",
       "desc": "Tile size per dimension",
       "category": "General",
-      "default": ["128", "128", "128"]
+      "default": [
+        "128",
+        "128",
+        "128"
+      ]
     },
     "strides": {
       "metatype": "tuple",
@@ -5801,7 +6373,11 @@
       "metatype": "tuple",
       "desc": "Tile size per dimension",
       "category": "General",
-      "default": ["128", "128", "128"]
+      "default": [
+        "128",
+        "128",
+        "128"
+      ]
     },
     "sdfg_id": {
       "metatype": "int",
@@ -6124,7 +6700,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "use_memory_buffering": {
@@ -6190,7 +6769,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "sdfg_id": {
@@ -6352,7 +6934,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "sdfg_id": {
@@ -6722,7 +7307,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "schedule_innermaps": {
@@ -7156,7 +7744,9 @@
       "metatype": "tuple",
       "desc": "Tile stride",
       "category": "General",
-      "default": ["1"]
+      "default": [
+        "1"
+      ]
     },
     "schedule": {
       "metatype": "ScheduleType",
@@ -7225,7 +7815,10 @@
         "FPGA_Local",
         "FPGA_Registers",
         "FPGA_ShiftRegister",
-        "SVE_Register"
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
       ]
     },
     "schedule_innermaps": {
@@ -7244,7 +7837,9 @@
       "metatype": "tuple",
       "desc": "Stencil tile stride",
       "category": "General",
-      "default": ["1"]
+      "default": [
+        "1"
+      ]
     },
     "expansion_split": {
       "metatype": "bool",

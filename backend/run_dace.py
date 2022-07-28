@@ -59,7 +59,7 @@ from dace_vscode import transformations, arith_ops
 
 meta_dict = {}
 
-def get_property_metdata(force_regenerate=False):
+def get_property_metadata(force_regenerate=False):
     """ Generate a dictionary of class properties and their metadata.
         This iterates over all classes registered as serializable in DaCe's
         serialization module, checks whether there are properties present
@@ -418,7 +418,7 @@ def run_daemon(port):
 
     @daemon.route('/get_metadata', methods=['GET'])
     def _get_metadata():
-        return get_property_metdata()
+        return get_property_metadata()
 
     daemon.run(port=port)
 
