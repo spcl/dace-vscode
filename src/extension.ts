@@ -144,54 +144,50 @@ export class DaCeVSCode {
                     vscode.Uri.file(this.activeSdfgFileName).fsPath)
                     continue;
 
-                let autoOpen = this.context?.workspaceState.get(
-                    'SDFV_auto_open_generated_sdfg'
-                );
+                const autoOpen =
+                    vscode.workspace.getConfiguration('dace.general');
+                const configKey = 'autoOpenSdfgs';
 
-                if (autoOpen !== undefined) {
-                    if (autoOpen)
-                        this.openGeneratedSdfg(
-                            targetUri,
-                            sourcePath,
-                            path,
-                            argv
-                        );
+                const autoOpenPref = autoOpen?.get<string>(configKey);
+                if (autoOpenPref === 'Always') {
+                    this.openGeneratedSdfg(
+                        targetUri,
+                        sourcePath,
+                        path,
+                        argv
+                    );
                     continue;
+                } else if (autoOpenPref === 'Never') {
+                    continue;
+                } else {
+                    vscode.window.showInformationMessage(
+                        'An SDFG with the name ' + name +
+                        ' was generated, do you want to show it?',
+                        'Always',
+                        'Yes',
+                        'No',
+                        'Never'
+                    ).then((opt) => {
+                        switch (opt) {
+                            case 'Always':
+                                autoOpen.update(configKey, 'Always');
+                            // Fall through.
+                            case 'Yes':
+                                this.openGeneratedSdfg(
+                                    targetUri,
+                                    sourcePath,
+                                    path,
+                                    argv
+                                );
+                                break;
+                            case 'Never':
+                                autoOpen.update(configKey, 'Never');
+                            // Fall through.
+                            case 'No':
+                                break;
+                        }
+                    });
                 }
-
-                vscode.window.showInformationMessage(
-                    'An SDFG with the name ' + name +
-                    ' was generated, do you want to show it?',
-                    'Always',
-                    'Yes',
-                    'No',
-                    'Never'
-                ).then((opt) => {
-                    switch (opt) {
-                        case 'Always':
-                            this.context?.workspaceState.update(
-                                'SDFV_auto_open_generated_sdfg',
-                                true
-                            );
-                        // Fall through.
-                        case 'Yes':
-                            this.openGeneratedSdfg(
-                                targetUri,
-                                sourcePath,
-                                path,
-                                argv
-                            );
-                            break;
-                        case 'Never':
-                            this.context?.workspaceState.update(
-                                'SDFV_auto_open_generated_sdfg',
-                                false
-                            );
-                        // Fall through.
-                        case 'No':
-                            break;
-                    }
-                });
             }
         }
         return true;
@@ -347,45 +343,42 @@ export class DaCeVSCode {
         );
         perfReportWatcher.onDidCreate((url) => {
             vscode.workspace.fs.readFile(url).then((data) => {
-                let report = JSON.parse(data.toString());
+                const report = JSON.parse(data.toString());
 
-                let autoOpen = this.context?.workspaceState.get(
-                    'SDFV_auto_open_instrumentation_report'
-                );
+                const autoOpen =
+                    vscode.workspace.getConfiguration('dace.general');
+                const configKey = 'autoOpenInstrumentationReports';
 
-                if (autoOpen !== undefined) {
-                    if (autoOpen)
-                        this.openInstrumentationReport(url, report);
+                const autoOpenPref = autoOpen?.get<string>(configKey);
+                if (autoOpenPref === 'Always') {
+                    this.openInstrumentationReport(url, report);
                     return;
+                } else if (autoOpenPref === 'Never') {
+                    return;
+                } else {
+                    vscode.window.showInformationMessage(
+                        'A report file was just generated, do you want to ' +
+                            'load it?',
+                        'Always',
+                        'Yes',
+                        'No',
+                        'Never'
+                    ).then((opt) => {
+                        switch (opt) {
+                            case 'Always':
+                                autoOpen.update(configKey, 'Always');
+                            // Fall through.
+                            case 'Yes':
+                                this.openInstrumentationReport(url, report);
+                                break;
+                            case 'Never':
+                                autoOpen.update(configKey, 'Never');
+                            // Fall through.
+                            case 'No':
+                                break;
+                        }
+                    });
                 }
-
-                vscode.window.showInformationMessage(
-                    'A report file was just generated, do you want to load it?',
-                    'Always',
-                    'Yes',
-                    'No',
-                    'Never'
-                ).then((opt) => {
-                    switch (opt) {
-                        case 'Always':
-                            this.context?.workspaceState.update(
-                                'SDFV_auto_open_instrumentation_report',
-                                true
-                            );
-                        // Fall through.
-                        case 'Yes':
-                            this.openInstrumentationReport(url, report);
-                            break;
-                        case 'Never':
-                            this.context?.workspaceState.update(
-                                'SDFV_auto_open_instrumentation_report',
-                                false
-                            );
-                        // Fall through.
-                        case 'No':
-                            break;
-                    }
-                });
             });
         });
 

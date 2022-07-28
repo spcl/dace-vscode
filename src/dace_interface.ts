@@ -1,22 +1,22 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as os from 'os';
-import * as vscode from 'vscode';
 import { request } from 'http';
 import * as net from 'net';
+import * as os from 'os';
+import * as vscode from 'vscode';
 
-import { DaCeVSCode } from './extension';
+import {
+    MessageReceiverInterface
+} from './components/messaging/message_receiver_interface';
+import { OptimizationPanel } from './components/optimization_panel';
 import { SdfgViewerProvider } from './components/sdfg_viewer';
 import {
-    MessageReceiverInterface,
-} from './components/messaging/message_receiver_interface';
-import { TransformationListProvider } from './components/transformation_list';
-import {
-    TransformationHistoryProvider,
+    TransformationHistoryProvider
 } from './components/transformation_history';
-import { OptimizationPanel } from './components/optimization_panel';
-import { executeTrusted, showUntrustedWorkspaceWarning, walkDirectory } from './utils/utils';
+import { TransformationListProvider } from './components/transformation_list';
+import { DaCeVSCode } from './extension';
+import { showUntrustedWorkspaceWarning, walkDirectory } from './utils/utils';
 
 enum InteractionMode {
     PREVIEW,
@@ -51,6 +51,10 @@ export class DaCeInterface
                 if (message.transformation !== undefined)
                     this.previewTransformation(message.transformation);
                 break;
+            case 'export_transformation_to_file':
+                if (message.transformation !== undefined)
+                    this.exportTransformation(message.transformation);
+                break;
             case 'load_transformations':
                 if (message.sdfg !== undefined &&
                     message.selectedElements !== undefined)
@@ -67,16 +71,6 @@ export class DaCeInterface
                 break;
             case 'get_flops':
                 this.getFlops();
-                break;
-            case 'insert_node':
-                this.insertSDFGElement(
-                    message.sdfg, message.addType, message.parent,
-                    message.edgeA, origin
-                );
-                break;
-            case 'remove_nodes':
-                if (message.sdfg && message.uuids)
-                    this.removeGraphElements(message.sdfg, message.uuids);
                 break;
             case 'query_sdfg_metadata':
                 this.querySdfgMetadata();
@@ -210,16 +204,17 @@ export class DaCeInterface
     public genericErrorHandler(message: string, details?: string) {
         this.hideSpinner();
         console.error(message);
+        let text = message;
         if (details) {
             console.error(details);
-            vscode.window.showErrorMessage(
-                message + ' (' + details + ')'
-            );
-        } else {
-            vscode.window.showErrorMessage(
-                message
-            );
+            text += ' (' + details + ')';
         }
+        vscode.window.showErrorMessage(
+            text, 'Show Trace'
+        ).then((val: 'Show Trace' | undefined) => {
+            if (val === 'Show Trace')
+                this.daemonTerminal?.show();
+        });
     }
 
     private getRunDaceScriptUri(): vscode.Uri | undefined {
@@ -239,6 +234,7 @@ export class DaCeInterface
             this.daemonTerminal = vscode.window.createTerminal({
                 hideFromUser: false,
                 name: 'SDFG Optimizer',
+                isTransient: true,
             });
 
         const scriptUri = this.getRunDaceScriptUri();
@@ -613,7 +609,8 @@ export class DaCeInterface
                         this.hideSpinner();
                         this.writeToActiveDocument(data.sdfg);
                     },
-                    () => {
+                    async (error: any): Promise<void> => {
+                        this.genericErrorHandler(error.message, error.details);
                         this.hideSpinner();
                     },
                     true
@@ -622,14 +619,14 @@ export class DaCeInterface
         });
     }
 
-    public applyTransformation(transformation: any) {
+    public applyTransformation(transformation: any): void {
         this.sendApplyTransformationRequest(transformation, (data: any) => {
             this.hideSpinner();
             this.writeToActiveDocument(data.sdfg);
         });
     }
 
-    public previewTransformation(transformation: any) {
+    public previewTransformation(transformation: any): void {
         this.sendApplyTransformationRequest(
             transformation,
             (data: any) => {
@@ -640,7 +637,43 @@ export class DaCeInterface
         );
     }
 
-    public writeToActiveDocument(json: any) {
+    /**
+     * Given a transformation, export it to a JSON file.
+     * This allows saving a transformation as matched to a specific subgraph or
+     * pattern to a JSON file. This file can be loaded / deserialized through
+     * DaCe's standard deserializer elsewhere, to obtain the same transformation
+     * matched to the same subgraph, to be directly applied. This allows
+     * transformations to be shared or used outside the interface in custom
+     * scripts.
+     * @param transformation Transformation to export, in JSON format.
+     */
+    public exportTransformation(transformation: any): void {
+        vscode.window.showSaveDialog({
+            filters: {
+                'JSON': ['json'],
+            },
+            title: 'Export Transformation',
+        }).then(uri => {
+            if (uri)
+                vscode.workspace.fs.writeFile(
+                    uri,
+                    new TextEncoder().encode(JSON.stringify(transformation))
+                ).then(
+                    () => {
+                        vscode.window.showInformationMessage(
+                            'Successfully saved transformation to file.'
+                        );
+                    },
+                    () => {
+                        vscode.window.showErrorMessage(
+                            'Failed to save transformation to file.'
+                        );
+                    }
+                );
+        });
+    }
+
+    public writeToActiveDocument(json: any): void {
         const activeEditor = DaCeVSCode.getInstance().getActiveEditor();
         if (activeEditor) {
             const sdfvInstance = SdfgViewerProvider.getInstance();
@@ -842,7 +875,7 @@ export class DaCeInterface
             });
         }
 
-        async function clearSpinner(error: any): Promise<void> {
+        async function clearSpinner(): Promise<void> {
             SdfgViewerProvider.getInstance()?.handleMessage({
                 type: 'get_applicable_transformations_callback',
                 transformations: undefined,
@@ -857,49 +890,10 @@ export class DaCeInterface
                 permissive: false,
             },
             callback,
-            clearSpinner,
-        );
-    }
-
-    public insertSDFGElement(
-        sdfg: string, type: string, parent: string, edge_a: string,
-        origin: vscode.Webview
-    ): void {
-        function callback(data: any) {
-            origin.postMessage({
-                type: 'added_node',
-                sdfg: data.sdfg,
-                uuid: data.uuid,
-            });
-        }
-
-        if (!edge_a)
-            edge_a = 'NONE';
-
-        this.sendPostRequest(
-            '/insert_sdfg_element',
-            {
-                'sdfg': JSON.parse(sdfg),
-                'type': type,
-                'parent': parent,
-                'edge_a': edge_a,
+            async (error: any): Promise<void> => {
+                this.genericErrorHandler(error.message, error.details);
+                clearSpinner();
             },
-            callback
-        );
-    }
-
-    public removeGraphElements(sdfg: string, uuids: string): void {
-        function callback(data: any) {
-            DaCeInterface.getInstance().writeToActiveDocument(data.sdfg);
-        }
-
-        this.sendPostRequest(
-            '/remove_sdfg_elements',
-            {
-                'sdfg': JSON.parse(sdfg),
-                'uuids': uuids,
-            },
-            callback
         );
     }
 

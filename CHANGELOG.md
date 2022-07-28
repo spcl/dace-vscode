@@ -1,5 +1,26 @@
 # Change Log
 
+## Pre-Release (1.3.1)
+
+- Allow offline editing of SDFGs (adding / deleting elements etc.)
+- Add auto-opening SDFG and instrumentation report preference to the extension
+  settings
+- Allow exporting of SDFG transformations to JSON files
+- Integrate the new local view for close-up memory reuse analysis
+- Improved error reporting from the DaCe daemon
+- Various bugfixes and improvements
+
+## 1.2
+
+### 1.2.0
+
+- Allow loading of custom transformations
+- Enable specializing SDFGs through the SDFG Analysis panel
+- Make the built-in minimap toggleable
+- Adopt a pre-release system
+- Support workspace trust
+- Various bugfixes and improvements
+
 ## 1.1
 
 ### 1.1.0
@@ -94,7 +115,7 @@
 
 - Provide interactive instrumentation of SDFGs.
 - Provide visualization of instrumentation reports on SDFGs.
-  - If a runtime report is generated, prompt the user to display it ontop of the 
+  - If a runtime report is generated, prompt the user to display it ontop of the
     currently active SDFG.
 - Provide running of SDFGs.
   - Run SDFGs normally, or run with profiling - this runs N times and reports

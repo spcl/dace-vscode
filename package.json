@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Editor",
     "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "engines": {
         "vscode": "^1.68.0"
     },
@@ -167,7 +167,7 @@
                 "properties": {
                     "dace.sdfv.layout": {
                         "type": "string",
-                        "default": "horizontal",
+                        "default": "vertical",
                         "enum": [
                             "horizontal",
                             "vertical"
@@ -186,6 +186,34 @@
                         "type": "string",
                         "default": "",
                         "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter."
+                    },
+                    "dace.general.autoOpenSdfgs": {
+                        "type": "string",
+                        "default": "Ask",
+                        "enum": [
+                            "Always",
+                            "Ask",
+                            "Never"
+                        ],
+                        "enumDescriptions": [
+                            "Automatically open any newly generated SDFG",
+                            "Ask when a new SDFG is generated, whether or not it should be opened",
+                            "Never automatically open newly generated SDFGs, and don't ask"
+                        ]
+                    },
+                    "dace.general.autoOpenInstrumentationReports": {
+                        "type": "string",
+                        "default": "Ask",
+                        "enum": [
+                            "Always",
+                            "Ask",
+                            "Never"
+                        ],
+                        "enumDescriptions": [
+                            "Automatically load all newly generated instrumentation reports",
+                            "Ask when a new instrumentation report is generated, whether or not it should be loaded",
+                            "Never automatically load newly generated instrumentation reports, and don't ask"
+                        ]
                     }
                 }
             }
@@ -603,14 +631,14 @@
         "sass-loader": "^12.1.0",
         "style-loader": "^3.2.1",
         "ts-loader": "^9.2.6",
-        "typescript": "^3.9.9",
+        "typescript": "^4.7.0",
         "vscode-test": "^1.5.2",
         "webpack": "^5.73.0",
         "webpack-cli": "^4.10.0"
     },
     "dependencies": {
         "@popperjs/core": "^2.10.1",
-        "@spcl/sdfv": "^1.0.0",
+        "@spcl/sdfv": "^1.0.29-beta.12",
         "@types/dagre": "^0.7.46",
         "@types/jquery": "^3.5.6",
         "bootstrap": "^5.0.2",

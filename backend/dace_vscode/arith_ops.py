@@ -10,7 +10,11 @@ from dace.libraries.standard import Reduce
 from dace import nodes, dtypes
 import sympy
 
-from dace_vscode.utils import get_uuid, load_sdfg_from_json
+from dace_vscode.utils import (
+    get_uuid,
+    load_sdfg_from_json,
+    get_exception_message,
+)
 
 
 def symeval(val, symbols):
@@ -211,10 +215,26 @@ def get_arith_ops(sdfg_json):
         return loaded['error']
     sdfg = loaded['sdfg']
 
-    propagation.propagate_memlets_sdfg(sdfg)
+    try:
+        propagation.propagate_memlets_sdfg(sdfg)
+    except Exception as e:
+        return {
+            'error': {
+                'message': 'Failed to propagate memlets through SDFG',
+                'details': get_exception_message(e),
+            },
+        }
 
-    arith_map = {}
-    create_arith_ops_map(sdfg, arith_map, {})
-    return {
-        'arithOpsMap': arith_map,
-    }
+    try:
+        arith_map = {}
+        create_arith_ops_map(sdfg, arith_map, {})
+        return {
+            'arithOpsMap': arith_map,
+        }
+    except Exception as e:
+        return {
+            'error': {
+                'message': 'Failed to count arithmetic operations',
+                'details': get_exception_message(e),
+            },
+        }

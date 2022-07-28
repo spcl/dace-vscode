@@ -45,6 +45,7 @@ import {
     SDFGElement,
     SDFGNode,
     SDFGRenderer,
+    SDFGRendererEvent,
     SDFV,
     State,
     StaticFlopsOverlay,
@@ -73,6 +74,7 @@ import {
     vscodeWriteGraph,
 } from './utils/helpers';
 import Split from 'split.js';
+import { LViewRenderer } from '@spcl/sdfv/out/local_view/lview_renderer';
 
 declare const vscode: any;
 declare const SPLIT_DIRECTION: 'vertical' | 'horizontal';
@@ -560,10 +562,8 @@ export class VSCodeSDFV extends SDFV {
         preventRefreshes: boolean = false
     ): void {
         const parsedSdfg = parse_sdfg(sdfgString);
-        let renderer = VSCodeRenderer.getInstance();
-
-        if (renderer) {
-            renderer.set_sdfg(parsedSdfg);
+        if (this.renderer) {
+            this.renderer.set_sdfg(parsedSdfg);
         } else {
             const contentsElem = document.getElementById('contents');
             if (contentsElem === null) {
@@ -572,7 +572,7 @@ export class VSCodeSDFV extends SDFV {
             }
 
             if (parsedSdfg !== null)
-                renderer = VSCodeRenderer.init(
+                this.renderer = VSCodeRenderer.init(
                     parsedSdfg, contentsElem,
                     this.onMouseEvent, null, VSCodeSDFV.DEBUG_DRAW, null, null
                 );
@@ -586,23 +586,23 @@ export class VSCodeSDFV extends SDFV {
                 getApplicableTransformations();
         }
 
-        const graph = renderer.get_graph();
+        const graph = this.renderer.get_graph();
         if (graph)
-            this.outline(renderer, graph);
+            this.outline(this.renderer, graph);
         refreshAnalysisPane();
         refreshBreakpoints();
 
-        const selectedElements = renderer.get_selected_elements();
+        const selectedElements = this.renderer.get_selected_elements();
         if (selectedElements && selectedElements.length === 1)
             reselectRendererElement(selectedElements[0]);
         else if (!selectedElements || selectedElements.length === 0)
             this.fillInfo(
-                new SDFG(renderer.get_sdfg())
+                new SDFG(this.renderer.get_sdfg())
             );
 
         vscode.postMessage({
             type: 'sdfv.process_queued_messages',
-            sdfgName: renderer.get_sdfg().attributes.name,
+            sdfgName: this.renderer.get_sdfg().attributes.name,
         });
     }
 
@@ -787,6 +787,22 @@ export class VSCodeSDFV extends SDFV {
         this.selectedTransformation = selectedTransformation;
     }
 
+    public set_renderer(renderer: SDFGRenderer | null): void {
+        if (renderer) {
+            this.localViewRenderer?.destroy();
+            this.localViewRenderer = null;
+        }
+        this.renderer = renderer;
+    }
+
+    public setLocalViewRenderer(localViewRenderer: LViewRenderer | null): void {
+        if (localViewRenderer) {
+            this.renderer?.destroy();
+            this.renderer = null;
+        }
+        this.localViewRenderer = localViewRenderer;
+    }
+
 }
 
 export function vscodeHandleEvent(event: string, data: any): void {
@@ -795,14 +811,16 @@ export function vscodeHandleEvent(event: string, data: any): void {
             if (data && data.nodes)
                 VSCodeRenderer.getInstance()?.removeGraphNodes(data.nodes);
             break;
-        case 'add_graph_node':
+        case SDFGRendererEvent.ADD_ELEMENT:
             if (data && data.type !== undefined && data.parent !== undefined &&
-                data.edgeA !== undefined)
+                data.lib !== undefined && data.edgeA !== undefined)
                 VSCodeRenderer.getInstance()?.addNodeToGraph(
-                    data.type, data.parent, data.edgeA
+                    data.type, data.parent, data.lib, data.edgeA,
+                    data.edgeAConn ? data.edgeAConn : null,
+                    data.conn ? data.conn : null
                 );
             break;
-        case 'libnode_select':
+        case SDFGRendererEvent.QUERY_LIBNODE:
             if (data && data.callback)
                 VSCodeRenderer.getInstance()?.showSelectLibraryNodeDialog(
                     data.callback

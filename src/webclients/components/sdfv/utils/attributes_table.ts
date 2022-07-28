@@ -857,7 +857,8 @@ export function attributeTablePutEntry(
     xform: any | undefined, root: JQuery, editableKey: boolean,
     updateOnChange: boolean, addDeleteButton: boolean,
     keyChangeHandlerOverride?: (prop: KeyProperty) => void,
-    valueChangeHandlerOverride?: (prop: Property) => void
+    valueChangeHandlerOverride?: (prop: Property) => void,
+    invertedSpacing: boolean = false
 ): PropertyEntry {
     let keyProp: KeyProperty | undefined = undefined;
     let valProp: Property[] | undefined = undefined;
@@ -892,7 +893,7 @@ export function attributeTablePutEntry(
     let keyCell = undefined;
     if (editableKey) {
         keyCell = $('<div>', {
-            'class': 'col-3 attr-table-cell',
+            'class': 'attr-table-cell ' + (invertedSpacing ? 'col-9' : 'col-3'),
         }).appendTo(row);
         const keyInput = $('<input>', {
             'type': 'text',
@@ -903,7 +904,9 @@ export function attributeTablePutEntry(
         keyProp = new KeyProperty(elem, xform, target, key, keyInput);
     } else {
         keyCell = $('<div>', {
-            'class': 'col-3 attr-table-heading attr-table-cell',
+            'class': 'attr-table-heading attr-table-cell ' + (
+                invertedSpacing ? 'col-9' : 'col-3'
+            ),
             'text': key,
         }).appendTo(row);
     }
@@ -921,7 +924,7 @@ export function attributeTablePutEntry(
     }
 
     const valueCell = $('<div>', {
-        'class': 'col-9 attr-table-cell',
+        'class': 'attr-table-cell ' + (invertedSpacing ? 'col-3' : 'col-9'),
     }).appendTo(row);
 
     if (key === 'constants_prop') {
@@ -1364,7 +1367,7 @@ export function appendDataDescriptorTable(
                     if (wholeSdfg)
                         vscodeWriteGraph(wholeSdfg);
                 }
-            }
+            }, undefined, true
         );
 
         if (res.deleteBtn)
