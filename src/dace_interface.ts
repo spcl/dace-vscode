@@ -17,6 +17,7 @@ import {
 import { TransformationListProvider } from './components/transformation_list';
 import { DaCeVSCode } from './extension';
 import { showUntrustedWorkspaceWarning, walkDirectory } from './utils/utils';
+import { JsonTransformation } from './webclients/components/transformations/transformations';
 
 enum InteractionMode {
     PREVIEW,
@@ -43,9 +44,9 @@ export class DaCeInterface
             case 'expand_library_node':
                 this.expandLibraryNode(message.nodeId);
                 break;
-            case 'apply_transformation':
-                if (message.transformation !== undefined)
-                    this.applyTransformation(message.transformation);
+            case 'apply_transformations':
+                if (message.transformations !== undefined)
+                    this.applyTransformations(message.transformations);
                 break;
             case 'preview_transformation':
                 if (message.transformation !== undefined)
@@ -568,25 +569,30 @@ export class DaCeInterface
         });
     }
 
-    private sendApplyTransformationRequest(transformation: any,
-                                           callback: CallableFunction,
-                                           processingMessage?: string) {
+    private sendApplyTransformationRequest(
+        transformations: JsonTransformation[], callback: CallableFunction,
+        processingMessage?: string
+    ) {
         if (!this.daemonRunning) {
             this.promptStartDaemon();
             return;
         }
 
         this.showSpinner(
-            processingMessage ? processingMessage : 'Applying Transformation'
+            processingMessage ? processingMessage : (
+                'Applying Transformation' + (
+                    transformations.length > 1 ? 's' : ''
+                )
+            )
         );
 
         DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
             if (sdfg) {
                 this.sendPostRequest(
-                    '/apply_transformation',
+                    '/apply_transformations',
                     {
                         sdfg: sdfg,
-                        transformation: transformation,
+                        transformations: transformations,
                         permissive: false,
                     },
                     callback
@@ -619,8 +625,8 @@ export class DaCeInterface
         });
     }
 
-    public applyTransformation(transformation: any): void {
-        this.sendApplyTransformationRequest(transformation, (data: any) => {
+    public applyTransformations(transformations: JsonTransformation[]): void {
+        this.sendApplyTransformationRequest(transformations, (data: any) => {
             this.hideSpinner();
             this.writeToActiveDocument(data.sdfg);
         });
@@ -628,7 +634,7 @@ export class DaCeInterface
 
     public previewTransformation(transformation: any): void {
         this.sendApplyTransformationRequest(
-            transformation,
+            [transformation],
             (data: any) => {
                 this.previewSdfg(data.sdfg);
                 this.hideSpinner();

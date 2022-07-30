@@ -436,7 +436,7 @@
                 "title": "Preview"
             },
             {
-                "command": "sdfg.applyTransformation",
+                "command": "sdfg.applyTransformations",
                 "title": "Apply"
             },
             {
@@ -483,7 +483,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "sdfg.applyTransformation",
+                    "command": "sdfg.applyTransformations",
                     "when": "false"
                 },
                 {

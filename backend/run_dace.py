@@ -383,11 +383,12 @@ def run_daemon(port):
         request_json = request.get_json()
         return transformations.add_custom_transformations(request_json['paths'])
 
-    @daemon.route('/apply_transformation', methods=['POST'])
-    def _apply_transformation():
+    @daemon.route('/apply_transformations', methods=['POST'])
+    def _apply_transformations():
         request_json = request.get_json()
-        return transformations.apply_transformation(
-            request_json['sdfg'], request_json['transformation'])
+        return transformations.apply_transformations(
+            request_json['sdfg'], request_json['transformations']
+        )
 
     @daemon.route('/expand_library_node', methods=['POST'])
     def _expand_library_node():

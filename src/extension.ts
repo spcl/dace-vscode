@@ -296,8 +296,8 @@ export class DaCeVSCode {
                 type: 'refresh_sdfg',
             });
         });
-        this.registerCommand('sdfg.applyTransformation',
-            (t) => DaCeInterface.getInstance().applyTransformation(t));
+        this.registerCommand('sdfg.applyTransformations',
+            (t) => DaCeInterface.getInstance().applyTransformations(t));
         this.registerCommand('sdfg.previewTransformation',
             (t) => DaCeInterface.getInstance().previewTransformation(t));
         this.registerCommand('sdfg.previewHistoryPoint',

@@ -128,7 +128,7 @@ def reapply_history_until(sdfg_json, index):
     }
 
 
-def apply_transformation(sdfg_json, transformation_json):
+def apply_transformations(sdfg_json, transformation_json_list):
     old_meta = utils.disable_save_metadata()
 
     loaded = utils.load_sdfg_from_json(sdfg_json)
@@ -136,34 +136,35 @@ def apply_transformation(sdfg_json, transformation_json):
         return loaded['error']
     sdfg = loaded['sdfg']
 
-    try:
-        transformation = serialize.from_json(transformation_json)
-    except Exception as e:
-        print(traceback.format_exc(), file=sys.stderr)
-        sys.stderr.flush()
-        return {
-            'error': {
-                'message': 'Failed to parse the applied transformation',
-                'details': utils.get_exception_message(e),
-            },
-        }
-    try:
-        target_sdfg = sdfg.sdfg_list[transformation.sdfg_id]
-        transformation._sdfg = target_sdfg
-        if isinstance(transformation, SubgraphTransformation):
-            sdfg.append_transformation(transformation)
-            transformation.apply(target_sdfg)
-        else:
-            transformation.apply_pattern(target_sdfg)
-    except Exception as e:
-        print(traceback.format_exc(), file=sys.stderr)
-        sys.stderr.flush()
-        return {
-            'error': {
-                'message': 'Failed to apply the transformation to the SDFG',
-                'details': utils.get_exception_message(e),
-            },
-        }
+    for transformation_json in transformation_json_list:
+        try:
+            transformation = serialize.from_json(transformation_json)
+        except Exception as e:
+            print(traceback.format_exc(), file=sys.stderr)
+            sys.stderr.flush()
+            return {
+                'error': {
+                    'message': 'Failed to parse the applied transformation',
+                    'details': utils.get_exception_message(e),
+                },
+            }
+        try:
+            target_sdfg = sdfg.sdfg_list[transformation.sdfg_id]
+            transformation._sdfg = target_sdfg
+            if isinstance(transformation, SubgraphTransformation):
+                sdfg.append_transformation(transformation)
+                transformation.apply(target_sdfg)
+            else:
+                transformation.apply_pattern(target_sdfg)
+        except Exception as e:
+            print(traceback.format_exc(), file=sys.stderr)
+            sys.stderr.flush()
+            return {
+                'error': {
+                    'message': 'Failed to apply the transformation to the SDFG',
+                    'details': utils.get_exception_message(e),
+                },
+            }
 
     new_sdfg = sdfg.to_json()
     utils.restore_save_metadata(old_meta)

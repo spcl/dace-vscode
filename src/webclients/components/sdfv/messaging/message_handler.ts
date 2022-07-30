@@ -17,7 +17,7 @@ import {
 } from '../breakpoints/breakpoints';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import {
-    applyTransformation,
+    applyTransformations,
     clearSelectedTransformation,
     getApplicableTransformations,
     refreshTransformationList,
@@ -42,9 +42,9 @@ export class MessageHandler {
         const renderer = VSCodeRenderer.getInstance();
         const sdfv = VSCodeSDFV.getInstance();
         switch (message.type) {
-            case 'apply_transformation':
-                if (message.transformation)
-                    applyTransformation(message.transformation);
+            case 'apply_transformations':
+                if (message.transformations)
+                    applyTransformations(...message.transformations);
                 break;
             case 'load_instrumentation_report':
                 renderer?.get_overlay_manager().deregister_overlay(

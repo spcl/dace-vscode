@@ -329,7 +329,7 @@ export function showTransformationDetails(xform: any): void {
     $('<div>', {
         'class': 'button',
         'click': () => {
-            applyTransformation(xform);
+            applyTransformations(xform);
         },
         'mouseenter': () => {
             highlightUUIDs(transformationGetAffectedUUIDs(xform));
@@ -358,7 +358,7 @@ export function showTransformationDetails(xform: any): void {
     $('#info-clear-btn').show();
 }
 
-export function applyTransformation(xform: any): void {
+export function applyTransformations(...xforms: JsonTransformation[]): void {
     if (vscode) {
         VSCodeRenderer.getInstance()?.clearSelectedItems();
         VSCodeSDFV.getInstance().clearInfoBox();
@@ -366,8 +366,8 @@ export function applyTransformation(xform: any): void {
         if (el)
             el.className = 'button hidden';
         vscode.postMessage({
-            type: 'dace.apply_transformation',
-            transformation: xform,
+            type: 'dace.apply_transformations',
+            transformations: xforms,
         });
     }
 }
