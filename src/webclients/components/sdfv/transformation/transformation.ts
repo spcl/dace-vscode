@@ -267,24 +267,24 @@ export function showTransformationDetails(xform: any): void {
     infoContents.html('');
 
     const xformButtonContainer = $('<div>', {
-        'class': 'transformation-button-container',
+        class: 'transformation-button-container',
     }).appendTo(infoContents);
 
     const xformInfoContainer = $('<div>', {
-        'class': 'transformation-info-container',
+        class: 'transformation-info-container',
     }).appendTo(infoContents);
 
     //let doc_lines = trafo.docstring.split('\n');
     // TODO: Docstring's formatting goes down the gutter
     // this way. Find a way to pretty print it.
     $('<p>', {
-        'class': 'transformation-description-text',
-        'text': xform.docstring,
+        class: 'transformation-description-text',
+        text: xform.docstring,
     }).appendTo(xformInfoContainer);
 
     const xformImage = $('<object>', {
-        'class': 'transformation-image',
-        'type': 'image/gif',
+        class: 'transformation-image',
+        type: 'image/gif',
     }).appendTo(xformInfoContainer);
     xformImage.attr(
         'data',
@@ -292,15 +292,18 @@ export function showTransformationDetails(xform: any): void {
         xform.transformation + '.gif'
     );
 
+    const affectedIds = transformationGetAffectedUUIDs(xform);
+    zoomToUUIDs(affectedIds);
+
     $('<div>', {
-        'class': 'button',
-        'click': () => {
-            zoomToUUIDs(transformationGetAffectedUUIDs(xform));
+        class: 'button',
+        click: () => {
+            zoomToUUIDs(affectedIds);
         },
-        'mouseenter': () => {
-            highlightUUIDs(transformationGetAffectedUUIDs(xform));
+        mouseenter: () => {
+            highlightUUIDs(affectedIds);
         },
-        'mouseleave': () => {
+        mouseleave: () => {
             VSCodeRenderer.getInstance()?.draw_async();
         },
     }).append($('<span>', {
@@ -308,18 +311,18 @@ export function showTransformationDetails(xform: any): void {
     })).appendTo(xformButtonContainer);
 
     $('<div>', {
-        'class': 'button',
-        'click': () => {
+        class: 'button',
+        click: () => {
             if (vscode)
                 vscode.postMessage({
                     type: 'dace.preview_transformation',
                     transformation: xform,
                 });
         },
-        'mouseenter': () => {
-            highlightUUIDs(transformationGetAffectedUUIDs(xform));
+        mouseenter: () => {
+            highlightUUIDs(affectedIds);
         },
-        'mouseleave': () => {
+        mouseleave: () => {
             VSCodeRenderer.getInstance()?.draw_async();
         },
     }).append($('<span>', {
@@ -327,14 +330,14 @@ export function showTransformationDetails(xform: any): void {
     })).appendTo(xformButtonContainer);
 
     $('<div>', {
-        'class': 'button',
-        'click': () => {
+        class: 'button',
+        click: () => {
             applyTransformations(xform);
         },
-        'mouseenter': () => {
-            highlightUUIDs(transformationGetAffectedUUIDs(xform));
+        mouseenter: () => {
+            highlightUUIDs(affectedIds);
         },
-        'mouseleave': () => {
+        mouseleave: () => {
             VSCodeRenderer.getInstance()?.draw_async();
         },
     }).append($('<span>', {
