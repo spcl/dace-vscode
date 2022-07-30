@@ -563,3 +563,12 @@ pre.code {
   margin-top: .5rem;
   margin-bottom: .5rem;
 }
+
+#minimap-close-button {
+  position: absolute;
+  top: .5rem;
+  right: .5rem;
+  cursor: pointer;
+  user-select: none;
+  color: black;
+}

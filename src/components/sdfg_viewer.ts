@@ -185,6 +185,16 @@ export class SdfgViewerProvider
     ): Promise<void> {
         let node: any;
         switch (message.type) {
+            case 'disable_minimap':
+                vscode.workspace.getConfiguration('dace.sdfv')?.update(
+                    'minimap', false
+                ).then(() => {
+                    vscode.window.showInformationMessage(
+                        'Minimap disabled, you can re-enable the feature in ' +
+                        'your settings.'
+                    );
+                });
+                break;
             case 'get_current_sdfg':
                 const instance = SdfgViewerProvider.getInstance();
                 if (instance !== undefined && origin !== undefined) {

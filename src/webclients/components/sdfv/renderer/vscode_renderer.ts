@@ -28,6 +28,7 @@ import {
 } from '../vscode_sdfv';
 
 declare const vscode: any;
+declare let MINIMAP_ENABLED: boolean;
 
 export class VSCodeRenderer extends SDFGRenderer {
 
@@ -121,6 +122,24 @@ export class VSCodeRenderer extends SDFGRenderer {
             sdfv, sdfg, container, onMouseEvent, userTransform, debugDraw,
             backgroundColor, modeButtons
         );
+
+        if (this.minimap_canvas) {
+            const disableMinimapButton = $('<div>', {
+                id: 'minimap-close-button',
+                title: 'Disable Minimap',
+                html: '<i class="material-icons">cancel</i>',
+                click: () => {
+                    MINIMAP_ENABLED = false;
+                    this.minimap_canvas?.remove();
+                    this.minimap_ctx = null;
+                    this.minimap_canvas = null;
+                    disableMinimapButton.remove();
+                    vscode.postMessage({
+                        type: 'sdfv.disable_minimap',
+                    });
+                },
+            }).appendTo($(this.container));
+        }
     }
 
     public async localViewSelection(): Promise<void> {
