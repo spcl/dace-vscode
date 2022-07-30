@@ -144,9 +144,6 @@ export class VSCodeRenderer extends SDFGRenderer {
 
     public async localViewSelection(): Promise<void> {
         await super.localViewSelection();
-        // Hide the info button so the local view controls cannot be disabled
-        // by accident.
-        $('#info-clear-btn').hide();
     }
 
     public exitLocalView(): void {

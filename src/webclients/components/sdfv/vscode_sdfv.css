@@ -270,19 +270,35 @@ pre.code {
   margin: .2rem 0 .2rem 1rem;
 }
 
+#layout-toggle-btn,
 #info-clear-btn {
+  cursor: pointer;
   font-size: .9rem;
-  margin: .2rem 1rem;
+  margin: .2rem;
 }
 
+#layout-toggle-btn span,
 #info-clear-btn span {
   display: block;
   height: 100%;
 }
 
+#layout-toggle-btn .material-icons,
 #info-clear-btn .material-icons {
   display: inline-flex;
   vertical-align: middle;
+}
+
+#layout-toggle-btn.vertical span .material-icons {
+  transform: rotate(90deg);
+}
+
+#expand-info-btn {
+  cursor: pointer;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin: .4rem;
 }
 
 #info-contents {

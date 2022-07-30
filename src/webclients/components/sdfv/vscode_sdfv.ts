@@ -88,6 +88,8 @@ type CategorizedTransformationList = [
 
 export class VSCodeSDFV extends SDFV {
 
+    public static splitInstance: Split.Instance | null = null;
+
     public static readonly DEBUG_DRAW: boolean = false;
 
     private static readonly INSTANCE: VSCodeSDFV = new VSCodeSDFV();
@@ -164,7 +166,6 @@ export class VSCodeSDFV extends SDFV {
      * Show the info box and its necessary components.
      */
     public infoBoxShow(): void {
-        $('#info-clear-btn').show();
     }
 
     /**
@@ -180,14 +181,9 @@ export class VSCodeSDFV extends SDFV {
     public clearInfoBox(): void {
         $('#info-contents').html('');
         $('#info-title').text('');
-        $('#info-clear-btn').hide();
         $('#goto-source-btn').hide();
         $('#goto-cpp-btn').hide();
         this.selectedTransformation = null;
-        if (vscode)
-            vscode.postMessage({
-                type: 'transformation_list.deselect',
-            });
     }
 
     private handleShowGroupsContextMenu(
@@ -849,11 +845,16 @@ export function vscodeHandleEvent(event: string, data: any): void {
 }
 
 $(() => {
-    Split(['#contents', '#info-container'], {
-        sizes: [60, 40],
+    const defaultSplitSizes = [60, 40];
+    const expandInfoBtn = $('#expand-info-btn');
+    VSCodeSDFV.splitInstance = Split(['#contents', '#info-container'], {
+        sizes: defaultSplitSizes,
         minSize: [0, 0],
         snapOffset: 10,
         direction: SPLIT_DIRECTION,
+        onDragEnd: () => {
+            expandInfoBtn.hide();
+        },
     });
 
     $('#processing-overlay').hide();
@@ -893,7 +894,13 @@ $(() => {
     });
 
     $('#info-clear-btn').on('click', () => {
-        VSCodeSDFV.getInstance().clearInfoBox();
+        expandInfoBtn.show();
+        VSCodeSDFV.splitInstance?.collapse(1);
+    });
+
+    $('#expand-info-btn').on('click', () => {
+        expandInfoBtn.hide();
+        VSCodeSDFV.splitInstance?.setSizes(defaultSplitSizes);
     });
 
     window.addEventListener('message', (e) => {

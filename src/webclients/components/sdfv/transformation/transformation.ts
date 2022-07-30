@@ -357,8 +357,6 @@ export function showTransformationDetails(xform: any): void {
     })).appendTo(xformButtonContainer);
 
     generateAttributesTable(undefined, xform, infoContents);
-
-    $('#info-clear-btn').show();
 }
 
 export function applyTransformations(...xforms: JsonTransformation[]): void {
