@@ -1,6 +1,18 @@
 # Change Log
 
-## Pre-Release (1.3.1)
+## Pre-Release (1.3.2)
+
+- Allow changing the editor layout through the UI
+- Improve the behavior of the information side panel
+- Allow closing the information side panel
+- Zoom to affected nodes when selecting a transformation
+- Allow the minimap to be disabled through the UI
+- Group transformations by type
+- Allow all transformations of a certain type to be applied at once
+
+## 1.2
+
+### 1.2.1
 
 - Allow offline editing of SDFGs (adding / deleting elements etc.)
 - Add auto-opening SDFG and instrumentation report preference to the extension
@@ -9,8 +21,6 @@
 - Integrate the new local view for close-up memory reuse analysis
 - Improved error reporting from the DaCe daemon
 - Various bugfixes and improvements
-
-## 1.2
 
 ### 1.2.0
 

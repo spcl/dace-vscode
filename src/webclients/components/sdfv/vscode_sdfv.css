@@ -259,6 +259,17 @@ pre.code {
   color: var(--vscode-button-foreground);
 }
 
+#title-btns-container {
+  margin-top: .2rem;
+  display: flex;
+  flex-direction: row;
+}
+
+#info-title {
+  text-overflow: clip;
+  overflow: hidden;
+}
+
 .flex-spacer {
   flex-grow: 1;
 }
@@ -266,7 +277,7 @@ pre.code {
 #goto-source-btn,
 #goto-cpp-btn {
   font-size: .9rem;
-  margin: .2rem 0 .2rem 1rem;
+  margin-right: .2rem;
 }
 
 #layout-toggle-btn,
