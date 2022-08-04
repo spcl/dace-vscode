@@ -641,7 +641,7 @@
         "@spcl/sdfv": "^1.0.29-beta.12",
         "@types/dagre": "^0.7.46",
         "@types/jquery": "^3.5.6",
-        "bootstrap": "^5.0.2",
+        "bootstrap": "^5.2.0",
         "browserify-zlib": "^0.2.0",
         "dagre": "^0.8.5",
         "jquery": "^3.6.0",
@@ -649,7 +649,6 @@
         "material-icons": "^1.11.1",
         "monaco-editor": "^0.26.1",
         "process": "^0.11.10",
-        "split.js": "^1.6.4",
         "stream-browserify": "^3.0.0",
         "vscode-debugadapter": "^1.46.0"
     }

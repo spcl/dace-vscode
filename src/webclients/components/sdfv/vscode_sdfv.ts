@@ -73,11 +73,10 @@ import {
     showContextMenu,
     vscodeWriteGraph,
 } from './utils/helpers';
-import Split from 'split.js';
 import { LViewRenderer } from '@spcl/sdfv/out/local_view/lview_renderer';
 
 declare const vscode: any;
-declare const SPLIT_DIRECTION: 'vertical' | 'horizontal';
+declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
 
 type CategorizedTransformationList = [
     JsonTransformation[],
@@ -87,8 +86,6 @@ type CategorizedTransformationList = [
 ];
 
 export class VSCodeSDFV extends SDFV {
-
-    public static splitInstance: Split.Instance | null = null;
 
     public static readonly DEBUG_DRAW: boolean = false;
 
@@ -122,6 +119,8 @@ export class VSCodeSDFV extends SDFV {
     private daemonConnected: boolean = false;
     private transformations: CategorizedTransformationList = [[], [], [], []];
     private selectedTransformation: JsonTransformation | null = null;
+
+    public infoTrayExplicitlyHidden: boolean = false;
 
     public init_menu(): void {
         this.initInfoBox();
@@ -165,7 +164,9 @@ export class VSCodeSDFV extends SDFV {
     /**
      * Show the info box and its necessary components.
      */
-    public infoBoxShow(): void {
+    public infoBoxShow(overrideHidden: boolean = false): void {
+        if (!this.infoTrayExplicitlyHidden || overrideHidden)
+            $('#info-container').addClass('show');
     }
 
     /**
@@ -178,12 +179,14 @@ export class VSCodeSDFV extends SDFV {
     /**
      * Clear the info container and its title, and hide the clear button again.
      */
-    public clearInfoBox(): void {
+    public clearInfoBox(hide: boolean = false): void {
         $('#info-contents').html('');
         $('#info-title').text('');
         $('#goto-source-btn').hide();
         $('#goto-cpp-btn').hide();
         this.selectedTransformation = null;
+        if (hide)
+            $('#info-container').removeClass('show');
     }
 
     private handleShowGroupsContextMenu(
@@ -524,8 +527,6 @@ export class VSCodeSDFV extends SDFV {
                         elem.data.node.attributes.sdfg
                     );
             }
-
-            $('#info-clear-btn').show();
         } else {
             this.clearInfoBox();
         }
@@ -797,6 +798,7 @@ export class VSCodeSDFV extends SDFV {
             this.renderer = null;
         }
         this.localViewRenderer = localViewRenderer;
+        this.infoBoxShow(true);
     }
 
 }
@@ -845,16 +847,93 @@ export function vscodeHandleEvent(event: string, data: any): void {
 }
 
 $(() => {
-    const defaultSplitSizes = [60, 40];
+    const infoContainer = $('#info-container');
+    const layoutToggleBtn = $('#layout-toggle-btn');
+    const infoDragBar = $('#info-drag-bar');
     const expandInfoBtn = $('#expand-info-btn');
-    VSCodeSDFV.splitInstance = Split(['#contents', '#info-container'], {
-        sizes: defaultSplitSizes,
-        minSize: [0, 0],
-        snapOffset: 10,
-        direction: SPLIT_DIRECTION,
-        onDragEnd: () => {
-            expandInfoBtn.hide();
-        },
+    const infoCloseBtn = $('#info-close-btn');
+
+    // Set up resizing of the info drawer.
+    let draggingDragInfoBar = false;
+    let lastVertWidth = infoContainer.css('min-width');
+    let lastHorHeight = infoContainer.css('min-height');
+    const infoChangeHeightHandler = (e: any) => {
+        if (draggingDragInfoBar) {
+            const documentHeight = $('body').height();
+            if (documentHeight) {
+                const newHeight = documentHeight - e.originalEvent.y;
+                if (newHeight < documentHeight) {
+                    infoContainer.height(newHeight);
+                    lastHorHeight = newHeight.toString() + 'px';
+                }
+            }
+        }
+    };
+    const infoChangeWidthHandler = (e: any) => {
+        if (draggingDragInfoBar) {
+            const documentWidth = $('body').width();
+            if (documentWidth) {
+                const newWidth = documentWidth - e.originalEvent.x;
+                if (newWidth < documentWidth) {
+                    infoContainer.width(newWidth);
+                    lastVertWidth = newWidth.toString() + 'px';
+                }
+            }
+        }
+    };
+    $(document).on('mouseup', () => {
+        draggingDragInfoBar = false;
+    });
+    infoDragBar.on('mousedown', () => {
+        draggingDragInfoBar = true;
+    });
+    if (SPLIT_DIRECTION === 'vertical')
+        $(document).on('mousemove', infoChangeWidthHandler);
+    else
+        $(document).on('mousemove', infoChangeHeightHandler);
+
+    // Set up changing the info drawer layout.
+    layoutToggleBtn.on('click', () => {
+        const oldDir = SPLIT_DIRECTION;
+        SPLIT_DIRECTION = SPLIT_DIRECTION === 'vertical' ?
+            'horizontal' : 'vertical';
+        layoutToggleBtn.removeClass(oldDir);
+        layoutToggleBtn.addClass(SPLIT_DIRECTION);
+        if (oldDir === 'vertical') {
+            infoContainer.removeClass('offcanvas-end');
+            infoContainer.addClass('offcanvas-bottom');
+            infoDragBar.removeClass('gutter-vertical');
+            infoDragBar.addClass('gutter-horizontal');
+            $(document).off('mousemove', infoChangeWidthHandler);
+            $(document).on('mousemove', infoChangeHeightHandler);
+            infoContainer.width('100%');
+            infoContainer.height(lastHorHeight);
+        } else {
+            infoContainer.removeClass('offcanvas-bottom');
+            infoContainer.addClass('offcanvas-end');
+            infoDragBar.removeClass('gutter-horizontal');
+            infoDragBar.addClass('gutter-vertical');
+            $(document).off('mousemove', infoChangeHeightHandler);
+            $(document).on('mousemove', infoChangeWidthHandler);
+            infoContainer.height('100%');
+            infoContainer.width(lastVertWidth);
+        }
+        vscode.postMessage({
+            type: 'sdfv.set_split_direction',
+            direction: SPLIT_DIRECTION,
+        });
+    });
+
+    // Set up toggling the info tray.
+    infoCloseBtn.on('click', () => {
+        expandInfoBtn.show();
+        infoContainer.removeClass('show');
+        VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = true;
+    });
+    expandInfoBtn.on('click', () => {
+        expandInfoBtn.hide();
+        infoContainer.addClass('show');
+        VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = false;
     });
 
     $('#processing-overlay').hide();
@@ -891,16 +970,6 @@ $(() => {
 
     $('#breakpoint-btn').on('click', () => {
         VSCodeSDFV.getInstance().toggleBreakpoints();
-    });
-
-    $('#info-clear-btn').on('click', () => {
-        expandInfoBtn.show();
-        VSCodeSDFV.splitInstance?.collapse(1);
-    });
-
-    $('#expand-info-btn').on('click', () => {
-        expandInfoBtn.hide();
-        VSCodeSDFV.splitInstance?.setSizes(defaultSplitSizes);
     });
 
     window.addEventListener('message', (e) => {

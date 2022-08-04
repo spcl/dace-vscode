@@ -12,7 +12,7 @@
     <script>
         // Reference to the VSCode API.
         let vscode = undefined;
-        const SPLIT_DIRECTION = 'vertical';
+        let SPLIT_DIRECTION = 'vertical';
         let MINIMAP_ENABLED = true;
     </script>
 
@@ -152,51 +152,46 @@
         </div>
     </div>
 
-    <div id="split-container" class="split-container-vertical">
-        <div id="contents">
-            <div id="processing-overlay">
-                <div id="processing-overlay-box">
-                    <div id="processing-overlay-spinner-container">
-                        <div id="processing-overlay-spinner">
-                        </div>
-                    </div>
-                    <div id="processing-overlay-msg-container">
-                        <span id="processing-overlay-msg">
-                        </span>
+    <div id="contents">
+        <div id="processing-overlay">
+            <div id="processing-overlay-box">
+                <div id="processing-overlay-spinner-container">
+                    <div id="processing-overlay-spinner">
                     </div>
                 </div>
-            </div>
-            <div id="expand-info-btn" title="Expand Tray" class="hidden">
-                <span><i class="material-icons">menu_open</i></span>
+                <div id="processing-overlay-msg-container">
+                    <span id="processing-overlay-msg">
+                    </span>
+                </div>
             </div>
         </div>
-        <div id="info-container">
-            <div id="info-header">
-                <div id="info-title-container">
-                    <h5 id="info-title"></h5>
-                </div>
-                <div id="goto-source-btn" class="hidden button">
-                    <span>
-                        Go to source
-                    </span>
-                </div>
-                <div id="goto-cpp-btn" class="hidden button">
-                    <span>
-                        Go to Generated Code
-                    </span>
-                </div>
-                <div class="flex-spacer"></div>
+        <div id="expand-info-btn" title="Expand Tray">
+            <span><i class="material-icons">menu_open</i></span>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-end"
+         tabindex="-1" id="info-container"
+         data-bs-scroll="true"
+         data-bs-backdrop="false"
+         aria-labelledby="info-title">
+        <div class="offcanvas-header" id="info-header">
+            <div id="info-title-container">
+                <h5 class="offcanvas-title" id="info-title"></h5>
+            </div>
+            <div id="info-header-btn-container">
                 <div id="layout-toggle-btn" class="vertical"
-                     title="Toggle layout">
+                     title="Toggle Layout">
                     <span><i class="material-icons">splitscreen</i></span>
                 </div>
-                <div id="info-clear-btn" title="Close Tray">
+                <div id="info-close-btn" title="Close Tray">
                     <span><i class="material-icons">cancel</i></span>
                 </div>
-                <div class="clearfix"></div>
             </div>
-            <div id="info-contents"></div>
         </div>
+        <div class="offcanvas-body" id="info-contents">
+        </div>
+        <div class="gutter gutter-vertical" id="info-drag-bar"></div>
     </div>
 
     <script src="{{ SCRIPT_SRC }}/sdfv.js"></script>

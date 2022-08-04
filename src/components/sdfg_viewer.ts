@@ -195,6 +195,12 @@ export class SdfgViewerProvider
                     );
                 });
                 break;
+            case 'set_split_direction':
+                if (message.direction)
+                    vscode.workspace.getConfiguration('dace.sdfv')?.update(
+                        'layout', message.direction
+                    );
+                break;
             case 'get_current_sdfg':
                 const instance = SdfgViewerProvider.getInstance();
                 if (instance !== undefined && origin !== undefined) {
@@ -518,10 +524,18 @@ export class SdfgViewerProvider
         // the info container to the right instead of at the bottom. Also hide
         // the minimap if the settings say so.
         const sdfvConfig = vscode.workspace.getConfiguration('dace.sdfv');
-        if (sdfvConfig?.get<string>('layout') === 'vertical') {
+        if (sdfvConfig?.get<string>('layout') === 'horizontal') {
             baseHtml = baseHtml.replace(
-                '<div id="split-container" class="split-container-vertical">',
-                '<div id="split-container" style="display: flex;" class="split-container-horizontal">'
+                'offcanvas offcanvas-end',
+                'offcanvas offcanvas-bottom'
+            );
+            baseHtml = baseHtml.replace(
+                'id="layout-toggle-btn" class="vertical"',
+                'id="layout-toggle-btn" class="horizontal"'
+            );
+            baseHtml = baseHtml.replace(
+                'gutter-vertical',
+                'gutter-horizontal'
             );
             baseHtml = baseHtml.replace(
                 'SPLIT_DIRECTION = \'vertical\';',

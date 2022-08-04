@@ -195,7 +195,7 @@ export async function sortTransformations(
         ];
 
         for (const xformList of xformLists) {
-            xformList.sort((a, b) => {
+            xformList.sort((a: any, b: any) => {
                 const sgXformType = 'SubgraphTransformation';
 
                 const aName = a.transformation;
@@ -247,7 +247,7 @@ export function refreshTransformationList(hideLoading: boolean = false): void {
 
 export function clearSelectedTransformation(): void {
     if (VSCodeSDFV.getInstance().getSelectedTransformation() !== null)
-        VSCodeSDFV.getInstance().clearInfoBox();
+        VSCodeSDFV.getInstance().clearInfoBox(true);
 }
 
 /**
@@ -261,7 +261,7 @@ export function showTransformationDetails(xform: any): void {
     $('#goto-source-btn').hide();
     $('#goto-cpp-btn').hide();
 
-    $('#info-title').text(xform.transformation);
+    VSCodeSDFV.getInstance().infoBoxSetTitle(xform.transformation);
 
     const infoContents = $('#info-contents');
     infoContents.html('');
@@ -357,12 +357,14 @@ export function showTransformationDetails(xform: any): void {
     })).appendTo(xformButtonContainer);
 
     generateAttributesTable(undefined, xform, infoContents);
+
+    VSCodeSDFV.getInstance().infoBoxShow(true);
 }
 
 export function applyTransformations(...xforms: JsonTransformation[]): void {
     if (vscode) {
         VSCodeRenderer.getInstance()?.clearSelectedItems();
-        VSCodeSDFV.getInstance().clearInfoBox();
+        VSCodeSDFV.getInstance().clearInfoBox(true);
         const el = document.getElementById('exit-preview-button');
         if (el)
             el.className = 'button hidden';
