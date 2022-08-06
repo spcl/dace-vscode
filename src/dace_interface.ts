@@ -516,17 +516,55 @@ export class DaCeInterface
             !OptimizationPanel.getInstance().isVisible())
             return;
 
+        const handleDaemonConnected = () => {
+            SdfgViewerProvider.getInstance()?.handleMessage({
+                type: 'daemon_connected',
+            });
+            TransformationHistoryProvider.getInstance()?.refresh();
+            TransformationListProvider.getInstance()?.refresh(true);
+            this.querySdfgMetadata();
+        };
+
+        const onBooted = async () => {
+            const customXformPaths = vscode.workspace.getConfiguration(
+                'dace.optimization'
+            )?.get<string[]>('customTransformationsPaths');
+            if (customXformPaths) {
+                const paths = [];
+                for (const path of customXformPaths) {
+                    try {
+                        const u = vscode.Uri.file(path);
+                        const stat = await vscode.workspace.fs.stat(u);
+                        if (stat.type === vscode.FileType.Directory) {
+                            for await (const fileUri of walkDirectory(u, '.py'))
+                                paths.push(fileUri.fsPath);
+                        } else if (stat.type === vscode.FileType.File) {
+                            paths.push(u.fsPath);
+                        }
+                    } catch {
+                        vscode.window.showErrorMessage(
+                            'Failed to load custom transformations from ' +
+                            'path "' + path + '" configured in your settings.'
+                        );
+                    }
+                }
+
+                this.sendPostRequest(
+                    '/add_transformations',
+                    {
+                        paths: paths,
+                    },
+                    handleDaemonConnected
+                );
+            } else {
+                handleDaemonConnected();
+            }
+        };
+
         const callBoot = () => {
             this.daemonBooting = true;
 
-            this.startDaemonInTerminal(() => {
-                SdfgViewerProvider.getInstance()?.handleMessage({
-                    type: 'daemon_connected',
-                });
-                TransformationHistoryProvider.getInstance()?.refresh();
-                TransformationListProvider.getInstance()?.refresh(true);
-                this.querySdfgMetadata();
-            });
+            this.startDaemonInTerminal(onBooted);
         };
 
         if (vscode.workspace.isTrusted) {

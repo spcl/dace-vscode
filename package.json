@@ -187,6 +187,11 @@
                         "default": "",
                         "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter."
                     },
+                    "dace.optimization.customTransformationsPaths": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Paths to search for custom transformations"
+                    },
                     "dace.general.autoOpenSdfgs": {
                         "type": "string",
                         "default": "Ask",

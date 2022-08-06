@@ -9,6 +9,7 @@
 - Allow the minimap to be disabled through the UI
 - Group transformations by type
 - Allow all transformations of a certain type to be applied at once
+- Fix a number of bugs related to property editing
 
 ## 1.2
 

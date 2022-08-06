@@ -32,7 +32,6 @@ import { VSCodeSDFV } from '../vscode_sdfv';
 import {
     createSingleUseModal,
     doForAllNodeTypes,
-    elementUpdateLabel,
     getElementMetadata,
     getTransformationMetadata,
     vscodeWriteGraph
