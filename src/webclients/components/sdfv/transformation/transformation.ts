@@ -356,7 +356,10 @@ export function showTransformationDetails(xform: any): void {
         text: 'Export To File',
     })).appendTo(xformButtonContainer);
 
-    generateAttributesTable(undefined, xform, infoContents);
+    const tableContainer = $('<div>', {
+        'class': 'container-fluid attr-table-base-container',
+    }).appendTo(infoContents);
+    generateAttributesTable(undefined, xform, tableContainer);
 
     VSCodeSDFV.getInstance().infoBoxShow(true);
 }

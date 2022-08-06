@@ -113,7 +113,7 @@ export class VSCodeSDFV extends SDFV {
     private monaco: any | null = null;
     private sdfgString: string | null = null;
     private sdfgMetaDict: { [key: string]: any } | null = null;
-    private queryingMetaDict: boolean = false;
+    private queryMetaDictFunc: Promise<{ [key: string]: any }> | null= null;
     private viewingHistoryState: boolean = false;
     private showingBreakpoints: boolean = false;
     private daemonConnected: boolean = false;
@@ -456,7 +456,10 @@ export class VSCodeSDFV extends SDFV {
                 $('<hr>').appendTo(contents);
             }
 
-            generateAttributesTable(elem, undefined, contents);
+            const tableContainer = $('<div>', {
+                'class': 'container-fluid attr-table-base-container',
+            }).appendTo(contents);
+            generateAttributesTable(elem, undefined, tableContainer);
 
             if (elem instanceof AccessNode) {
                 // If we're processing an access node, add array info too.
@@ -470,7 +473,10 @@ export class VSCodeSDFV extends SDFV {
                 }).appendTo(contents);
 
                 // TODO: Allow container types to be changed here too.
-                generateAttributesTable(sdfg_array, undefined, contents);
+                const tableContainer = $('<div>', {
+                    'class': 'container-fluid attr-table-base-container',
+                }).appendTo(contents);
+                generateAttributesTable(sdfg_array, undefined, tableContainer);
             } else if (elem instanceof NestedSDFG) {
                 // If nested SDFG, add SDFG info too.
                 const sdfg_sdfg = elem.attributes().sdfg;
@@ -480,7 +486,10 @@ export class VSCodeSDFV extends SDFV {
                     'text': 'SDFG properties:',
                 }).appendTo(contents);
 
-                generateAttributesTable(sdfg_sdfg, undefined, contents);
+                const tableContainer = $('<div>', {
+                    'class': 'container-fluid attr-table-base-container',
+                }).appendTo(contents);
+                generateAttributesTable(sdfg_sdfg, undefined, tableContainer);
             } else if (elem instanceof ScopeNode) {
                 // If we're processing a scope node, we want to append the exit
                 // node's props when selecting an entry node, and vice versa.
@@ -512,7 +521,12 @@ export class VSCodeSDFV extends SDFV {
                             other_element.type() + ' ' + other_element.label(),
                     }).appendTo(contents);
 
-                    generateAttributesTable(other_element, undefined, contents);
+                    const tableContainer = $('<div>', {
+                        'class': 'container-fluid attr-table-base-container',
+                    }).appendTo(contents);
+                    generateAttributesTable(
+                        other_element, undefined, tableContainer
+                    );
                 }
             } else if (elem instanceof SDFG) {
                 if (elem.data && elem.data.attributes)
@@ -682,32 +696,28 @@ export class VSCodeSDFV extends SDFV {
         return this.sdfgString;
     }
 
-    public getMetaDict(): { [key: string]: any } {
+    public async getMetaDict(): Promise<{ [key: string]: any }> {
         if (!this.sdfgMetaDict) {
             // If SDFG property metadata isn't available, use the static one and
             // query an up-to-date one from the dace github page. If that
             // doesn't work, query the daemon (waking it up if it isn't up).
-            if (!this.queryingMetaDict) {
-                this.queryingMetaDict = true;
-                fetch(
+            if (!this.queryMetaDictFunc)
+                this.queryMetaDictFunc = fetch(
                     'https://spcl.github.io/dace/metadata/sdfg_meta_dict.json'
                 ).then(
                     (response) => response.json()
-                ).then(
-                    (data) => {
-                        this.sdfgMetaDict = data;
-                        this.queryingMetaDict = false;
-                    }
-                ).catch(
-                    (_reason) => {
-                        vscode.postMessage({
-                            type: 'dace.query_sdfg_metadata',
-                        });
-                        return staticSdfgMetaDict;
-                    }
                 );
-            }
-            return staticSdfgMetaDict;
+
+            return this.queryMetaDictFunc.then((data) => {
+                this.sdfgMetaDict = data;
+                this.queryMetaDictFunc = null;
+                return this.sdfgMetaDict;
+            }).catch((reason) => {
+                console.error(reason);
+                this.sdfgMetaDict = staticSdfgMetaDict;
+                this.queryMetaDictFunc = null;
+                return this.sdfgMetaDict;
+            });
         }
         return this.sdfgMetaDict;
     }

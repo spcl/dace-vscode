@@ -3,6 +3,7 @@
 
 import {
     AccessNode,
+    Edge,
     EntryNode,
     ExitNode,
     find_graph_element_by_uuid,
@@ -301,6 +302,35 @@ export function elementUpdateLabel(
             } else if (element instanceof AccessNode && attributes.data) {
                 element.data.node.label = attributes.data;
             }
+        } else if (element.data.label) {
+            if (element instanceof Edge) {
+                if (element.data.type === 'InterstateEdge') {
+                    let condition = null;
+                    if (element.data.attributes?.condition?.string_data) {
+                        const strdata =
+                            element.data.attributes.condition.string_data;
+                        if (strdata !== '1' && strdata !== 1 &&
+                            strdata !== 'true' && strdata !== true)
+                            condition = strdata;
+                    }
+                    let assignments = null;
+                    if (element.data.attributes?.assignments) {
+                        const assDict = element.data.attributes.assignments;
+                        const assList = [];
+                        for (const k in assDict)
+                            assList.push(
+                                k.toString() + '=' + assDict[k].toString()
+                            );
+                        assignments = assList.join(', ');
+                    }
+                    let newLabel = '';
+                    if (condition)
+                        newLabel += (condition + (assignments ? '; ' : ''));
+                    if (assignments)
+                        newLabel += assignments;
+                    element.data.label = newLabel;
+                }
+            }
         }
     }
 }
@@ -341,10 +371,16 @@ export function unGraphiphySdfg(g: JsonSDFG): void {
 
 export function vscodeWriteGraph(g: JsonSDFG): void {
     unGraphiphySdfg(g);
+    // Stringify with a replacer that removes undefined and sets it to null,
+    // so the values don't get dropped.
     if (vscode)
         vscode.postMessage({
             type: 'dace.write_edit_to_sdfg',
-            sdfg: JSON.stringify(g),
+            sdfg: JSON.stringify(
+                g, (_k, v) => {
+                    return v === undefined ? null : v;
+                }
+            ),
         });
 }
 
@@ -360,56 +396,66 @@ export function reselectRendererElement(elem: SDFGElement): void {
     }
 }
 
-export function getTransformationMetadata(transformation: any): any {
-    let metadata = undefined;
-    const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
+export async function getTransformationMetadata(
+    transformation: any
+): Promise<{ [key: string ]: any}> {
     if (transformation.transformation)
-        metadata = sdfgMetaDict[transformation.transformation];
-    return metadata;
+        return VSCodeSDFV.getInstance().getMetaDict().then(sdfgMetaDict => {
+            return sdfgMetaDict[transformation.transformation];
+        });
+    return {};
 }
 
-export function getElementMetadata(elem: any): any {
-    let metadata: any = undefined;
-    const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
-    if (elem instanceof SDFGElement) {
-        if (elem.data.sdfg) {
-            metadata = sdfgMetaDict[elem.data.sdfg.type];
-        } else if (elem.data.state) {
-            metadata = sdfgMetaDict[elem.data.state.type];
-        } else if (elem.data.node) {
-            const nodeType = elem.data.node.type;
-            if (elem instanceof ScopeNode) {
-                let nodeMeta = sdfgMetaDict[nodeType];
-                let scopeMeta: any = undefined;
-                let entryIdx = nodeType.indexOf('Entry');
-                let exitIdx = nodeType.indexOf('Exit');
-                if (entryIdx)
-                    scopeMeta = sdfgMetaDict[nodeType.substring(0, entryIdx)];
-                else if (exitIdx)
-                    scopeMeta = sdfgMetaDict[nodeType.substring(0, exitIdx)];
+export async function getElementMetadata(
+    elem: any
+): Promise<{ [key: string ]: any}> {
+    return VSCodeSDFV.getInstance().getMetaDict().then(sdfgMetaDict => {
+        if (typeof elem === 'string') {
+            return sdfgMetaDict[elem];
+        } else if (elem instanceof SDFGElement) {
+            if (elem.data.sdfg) {
+                return sdfgMetaDict[elem.data.sdfg.type];
+            } else if (elem.data.state) {
+                return sdfgMetaDict[elem.data.state.type];
+            } else if (elem.data.node) {
+                const nodeType = elem.data.node.type;
+                if (elem instanceof ScopeNode) {
+                    let nodeMeta = sdfgMetaDict[nodeType];
+                    let scopeMeta: any = undefined;
+                    let entryIdx = nodeType.indexOf('Entry');
+                    let exitIdx = nodeType.indexOf('Exit');
+                    if (entryIdx)
+                        scopeMeta = sdfgMetaDict[
+                            nodeType.substring(0, entryIdx)
+                        ];
+                    else if (exitIdx)
+                        scopeMeta = sdfgMetaDict[
+                            nodeType.substring(0, exitIdx)
+                        ];
 
-                metadata = {};
-                if (nodeMeta !== undefined)
-                    Object.keys(nodeMeta).forEach(k => {
-                        metadata[k] = nodeMeta[k];
-                    });
-                if (scopeMeta !== undefined)
-                    Object.keys(scopeMeta).forEach(k => {
-                        metadata[k] = scopeMeta[k];
-                    });
-            } else if (nodeType === 'LibraryNode') {
-                metadata = sdfgMetaDict[elem.data.node.classpath];
-            } else {
-                metadata = sdfgMetaDict[nodeType];
+                    const metadata: { [key: string]: any } = {};
+                    if (nodeMeta !== undefined)
+                        Object.keys(nodeMeta).forEach(k => {
+                            metadata[k] = nodeMeta[k];
+                        });
+                    if (scopeMeta !== undefined)
+                        Object.keys(scopeMeta).forEach(k => {
+                            metadata[k] = scopeMeta[k];
+                        });
+                    return metadata;
+                } else if (nodeType === 'LibraryNode') {
+                    return sdfgMetaDict[elem.data.node.classpath];
+                } else {
+                    return sdfgMetaDict[nodeType];
+                }
+            } else if (elem.data.type) {
+                return sdfgMetaDict[elem.data.type];
             }
-        } else if (elem.data.type) {
-            metadata = sdfgMetaDict[elem.data.type];
+        } else if (elem.type) {
+            return sdfgMetaDict[elem.type];
         }
-    } else if (elem.type) {
-        metadata = sdfgMetaDict[elem.type];
-    }
-
-    return metadata;
+        return {};
+    });
 }
 
 export function doForAllNodeTypes(
