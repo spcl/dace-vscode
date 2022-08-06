@@ -10,6 +10,8 @@
 - Group transformations by type
 - Allow all transformations of a certain type to be applied at once
 - Fix a number of bugs related to property editing
+- Allow configuring of default custom transformation directories
+- Fix and improve Go-To-Source and Go-To-Generated-Code functionality
 
 ## 1.2
 

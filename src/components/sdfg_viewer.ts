@@ -215,16 +215,22 @@ export class SdfgViewerProvider
                 }
                 break;
             case 'go_to_source':
-                // We want to jump to a specific file and location if it
-                // exists.
-                // TODO: remove deprecated root path method.
+                // We want to jump to a specific file and location if it exists.
                 let filePath: string;
-                if (path.isAbsolute(message.filePath))
+                if (path.isAbsolute(message.filePath)) {
                     filePath = message.filePath;
-                else
+                } else if (vscode.workspace.workspaceFolders) {
                     filePath = path.normalize(
-                        vscode.workspace.rootPath + '/' + message.filePath
+                        vscode.workspace.workspaceFolders[0] +
+                        '/' + message.filePath
                     );
+                } else {
+                    vscode.window.showErrorMessage(
+                        'Can\'t jump to the relative path ' + message.filePath +
+                        'without a folder open in VSCode.'
+                    );
+                    return;
+                }
 
                 const fileUri: vscode.Uri = vscode.Uri.file(filePath);
                 this.goToFileLocation(
@@ -236,17 +242,23 @@ export class SdfgViewerProvider
                 );
                 break;
             case 'go_to_cpp':
-                // If the message passes a cache path then use that path, otherwise
-                // get the cache directory of the currently opened SDFG
+                // If the message passes a cache path then use that path,
+                // otherwise reconstruct the folder based on the default cache
+                // directory with respect to the opened workspace folder and the
+                // SDFG name.
                 let cachePath: string = message.cachePath;
                 if (!cachePath) {
-                    const SdfgFileName = DaCeVSCode.getInstance()
-                        .getActiveSdfgFileName();
-                    if (!SdfgFileName)
+                    if (vscode.workspace.workspaceFolders) {
+                        const uri = vscode.Uri.joinPath(
+                            vscode.workspace.workspaceFolders[0].uri,
+                            '.dacecache',
+                            message.sdfgName,
+                        );
+                        cachePath = uri.fsPath;
+                    } else {
+                        vscode.window.showErrorMessage('No folder open');
                         return;
-
-                    const sdfgFilePath = vscode.Uri.file(SdfgFileName).fsPath;
-                    cachePath = path.dirname(sdfgFilePath);
+                    }
                 }
 
                 let mapPath = path.join(
@@ -340,13 +352,13 @@ export class SdfgViewerProvider
         endLine: number,
         endCol: number
     ): void {
-        /* Load the file and show it in a new editor, highlighting the
-        indicated range. */
+        // Load the file and show it in a new editor, highlighting the
+        // indicated range.
         vscode.workspace.openTextDocument(fileUri).then(
             (doc: vscode.TextDocument) => {
 
                 const startPos = new vscode.Position(
-                    startLine, startCol
+                    startLine - 1, startCol
                 );
                 const endPos = new vscode.Position(
                     endLine, endCol
@@ -370,7 +382,7 @@ export class SdfgViewerProvider
 
     public openViewer(uri: vscode.Uri, messages: Message[] = []): void {
         // If the SDFG is currently open, then execute the messages
-        // otherwise store them to execute as soon as the SDFG is loaded
+        // otherwise store them to execute as soon as the SDFG is loaded.
         let editorIsLoaded = false;
         for (const editor of this.getOpenEditors()) {
             if (editor.document.uri.fsPath === uri.fsPath) {
@@ -378,18 +390,18 @@ export class SdfgViewerProvider
                 break;
             }
         }
+
         if (!editorIsLoaded) {
-            // The SDFG isn't yet loaded so we store the msgs
-            // to execute after the SDFG is loaded (calls
-            // 'process_queued_messages')
+            // The SDFG isn't yet loaded so we store the messages to execute
+            // after the SDFG is loaded (calls `process_queued_messages`).
             for (const msg of messages)
                 this.messages.push(msg);
             vscode.commands.executeCommand(
                 'vscode.openWith', uri, SdfgViewerProvider.viewType
             );
         } else {
-            // The SDFG is already loaded so we can just jump to it
-            // and send the messages
+            // The SDFG is already loaded so we can just jump to it and send the
+            // messages.
             vscode.commands.executeCommand(
                 'vscode.openWith', uri, SdfgViewerProvider.viewType
             ).then(_ => {
