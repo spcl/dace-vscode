@@ -226,7 +226,7 @@ export class SdfgViewerProvider
                     );
                 } else {
                     vscode.window.showErrorMessage(
-                        'Can\'t jump to the relative path ' + message.filePath +
+                        'Cannot jump to the relative path ' + message.filePath +
                         'without a folder open in VSCode.'
                     );
                     return;
