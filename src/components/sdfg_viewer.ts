@@ -12,6 +12,7 @@ import { BaseComponent } from './base_component';
 import { ComponentMessageHandler } from './messaging/component_message_handler';
 import { TransformationListProvider } from './transformation_list';
 import { getCppRange, SDFGDebugNode } from '../debugger/breakpoint_handler';
+import { fileExists } from '../utils/utils';
 
 class Message {
     timeStamp: Date;
@@ -216,14 +217,22 @@ export class SdfgViewerProvider
                 break;
             case 'go_to_source':
                 // We want to jump to a specific file and location if it exists.
-                let filePath: string;
+                let filePath: vscode.Uri | null = null;
                 if (path.isAbsolute(message.filePath)) {
-                    filePath = message.filePath;
+                    filePath = vscode.Uri.file(message.filePath);
                 } else if (vscode.workspace.workspaceFolders) {
-                    filePath = path.normalize(
-                        vscode.workspace.workspaceFolders[0] +
-                        '/' + message.filePath
-                    );
+                    // If the provided path is relative, search through the open
+                    // workspace folders to see if one contains a file at the
+                    // provided relative path.
+                    for (const wsFolder of vscode.workspace.workspaceFolders) {
+                        const filePathCandidate = vscode.Uri.joinPath(
+                            wsFolder.uri, message.filePath
+                        );
+                        if (await fileExists(filePathCandidate)) {
+                            filePath = filePathCandidate;
+                            break;
+                        }
+                    }
                 } else {
                     vscode.window.showErrorMessage(
                         'Cannot jump to the relative path ' + message.filePath +
@@ -232,50 +241,56 @@ export class SdfgViewerProvider
                     return;
                 }
 
-                const fileUri: vscode.Uri = vscode.Uri.file(filePath);
-                this.goToFileLocation(
-                    fileUri,
-                    message.startRow,
-                    message.startChar,
-                    message.endRow,
-                    message.endChar
-                );
+                if (filePath)
+                    this.goToFileLocation(
+                        filePath,
+                        message.startRow,
+                        message.startChar,
+                        message.endRow,
+                        message.endChar
+                    );
                 break;
             case 'go_to_cpp':
                 // If the message passes a cache path then use that path,
                 // otherwise reconstruct the folder based on the default cache
                 // directory with respect to the opened workspace folder and the
                 // SDFG name.
-                let cachePath: string = message.cachePath;
-                if (!cachePath) {
-                    if (vscode.workspace.workspaceFolders) {
-                        const uri = vscode.Uri.joinPath(
-                            vscode.workspace.workspaceFolders[0].uri,
-                            '.dacecache',
-                            message.sdfgName,
+                let cacheUri: vscode.Uri | null = null;
+                const cPath: string = message.cachePath ?? path.join(
+                    '.', '.dacecache', message.sdfgName
+                );
+                if (path.isAbsolute(cPath)) {
+                    cacheUri = vscode.Uri.file(message.cachePath);
+                } else if (vscode.workspace.workspaceFolders) {
+                    // If the provided path is relative, search through the open
+                    // workspace folders to see if one contains a file at the
+                    // provided relative path.
+                    for (const wsFolder of vscode.workspace.workspaceFolders) {
+                        const cacheUriCandidate = vscode.Uri.joinPath(
+                            wsFolder.uri, cPath
                         );
-                        cachePath = uri.fsPath;
-                    } else {
-                        vscode.window.showErrorMessage('No folder open');
-                        return;
+                        if (await fileExists(cacheUriCandidate)) {
+                            cacheUri = cacheUriCandidate;
+                            break;
+                        }
                     }
+                } else {
+                    vscode.window.showErrorMessage(
+                        'Cannot jump to the relative path ' + cPath +
+                        'without a folder open in VSCode.'
+                    );
+                    return;
                 }
 
-                let mapPath = path.join(
-                    cachePath,
-                    'map',
-                    'map_cpp.json'
-                );
+                if (!cacheUri)
+                    return;
 
-                let cppPath = path.join(
-                    cachePath,
-                    'src',
-                    'cpu',
-                    message.sdfgName + '.cpp'
+                const cppMapUri = vscode.Uri.joinPath(
+                    cacheUri, 'map', 'map_cpp.json'
                 );
-
-                const cppMapUri = vscode.Uri.file(mapPath);
-                const cppFileUri = vscode.Uri.file(cppPath);
+                const cppFileUri = vscode.Uri.joinPath(
+                    cacheUri, 'src', 'cpu', message.sdfgName + '.cpp'
+                );
                 node = new SDFGDebugNode(
                     message.sdfgId,
                     message.stateId,
