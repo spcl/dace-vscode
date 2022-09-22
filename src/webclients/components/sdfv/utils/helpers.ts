@@ -315,13 +315,13 @@ export function elementUpdateLabel(
                     }
                     let assignments = null;
                     if (element.data.attributes?.assignments) {
-                        const assDict = element.data.attributes.assignments;
-                        const assList = [];
-                        for (const k in assDict)
-                            assList.push(
-                                k.toString() + '=' + assDict[k].toString()
+                        const assignDict = element.data.attributes.assignments;
+                        const assignList = [];
+                        for (const k in assignDict)
+                            assignList.push(
+                                k.toString() + '=' + assignDict[k].toString()
                             );
-                        assignments = assList.join(', ');
+                        assignments = assignList.join(', ');
                     }
                     let newLabel = '';
                     if (condition)
