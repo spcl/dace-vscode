@@ -195,7 +195,7 @@ export async function sortTransformations(
         ];
 
         for (const xformList of xformLists) {
-            xformList.sort((a, b) => {
+            xformList.sort((a: any, b: any) => {
                 const sgXformType = 'SubgraphTransformation';
 
                 const aName = a.transformation;
@@ -247,7 +247,7 @@ export function refreshTransformationList(hideLoading: boolean = false): void {
 
 export function clearSelectedTransformation(): void {
     if (VSCodeSDFV.getInstance().getSelectedTransformation() !== null)
-        VSCodeSDFV.getInstance().clearInfoBox();
+        VSCodeSDFV.getInstance().clearInfoBox(true);
 }
 
 /**
@@ -261,30 +261,30 @@ export function showTransformationDetails(xform: any): void {
     $('#goto-source-btn').hide();
     $('#goto-cpp-btn').hide();
 
-    $('#info-title').text(xform.transformation);
+    VSCodeSDFV.getInstance().infoBoxSetTitle(xform.transformation);
 
     const infoContents = $('#info-contents');
     infoContents.html('');
 
     const xformButtonContainer = $('<div>', {
-        'class': 'transformation-button-container',
+        class: 'transformation-button-container',
     }).appendTo(infoContents);
 
     const xformInfoContainer = $('<div>', {
-        'class': 'transformation-info-container',
+        class: 'transformation-info-container',
     }).appendTo(infoContents);
 
     //let doc_lines = trafo.docstring.split('\n');
     // TODO: Docstring's formatting goes down the gutter
     // this way. Find a way to pretty print it.
     $('<p>', {
-        'class': 'transformation-description-text',
-        'text': xform.docstring,
+        class: 'transformation-description-text',
+        text: xform.docstring,
     }).appendTo(xformInfoContainer);
 
     const xformImage = $('<object>', {
-        'class': 'transformation-image',
-        'type': 'image/gif',
+        class: 'transformation-image',
+        type: 'image/gif',
     }).appendTo(xformInfoContainer);
     xformImage.attr(
         'data',
@@ -292,15 +292,18 @@ export function showTransformationDetails(xform: any): void {
         xform.transformation + '.gif'
     );
 
+    const affectedIds = transformationGetAffectedUUIDs(xform);
+    zoomToUUIDs(affectedIds);
+
     $('<div>', {
-        'class': 'button',
-        'click': () => {
-            zoomToUUIDs(transformationGetAffectedUUIDs(xform));
+        class: 'button',
+        click: () => {
+            zoomToUUIDs(affectedIds);
         },
-        'mouseenter': () => {
-            highlightUUIDs(transformationGetAffectedUUIDs(xform));
+        mouseenter: () => {
+            highlightUUIDs(affectedIds);
         },
-        'mouseleave': () => {
+        mouseleave: () => {
             VSCodeRenderer.getInstance()?.draw_async();
         },
     }).append($('<span>', {
@@ -308,18 +311,18 @@ export function showTransformationDetails(xform: any): void {
     })).appendTo(xformButtonContainer);
 
     $('<div>', {
-        'class': 'button',
-        'click': () => {
+        class: 'button',
+        click: () => {
             if (vscode)
                 vscode.postMessage({
                     type: 'dace.preview_transformation',
                     transformation: xform,
                 });
         },
-        'mouseenter': () => {
-            highlightUUIDs(transformationGetAffectedUUIDs(xform));
+        mouseenter: () => {
+            highlightUUIDs(affectedIds);
         },
-        'mouseleave': () => {
+        mouseleave: () => {
             VSCodeRenderer.getInstance()?.draw_async();
         },
     }).append($('<span>', {
@@ -327,14 +330,14 @@ export function showTransformationDetails(xform: any): void {
     })).appendTo(xformButtonContainer);
 
     $('<div>', {
-        'class': 'button',
-        'click': () => {
-            applyTransformation(xform);
+        class: 'button',
+        click: () => {
+            applyTransformations(xform);
         },
-        'mouseenter': () => {
-            highlightUUIDs(transformationGetAffectedUUIDs(xform));
+        mouseenter: () => {
+            highlightUUIDs(affectedIds);
         },
-        'mouseleave': () => {
+        mouseleave: () => {
             VSCodeRenderer.getInstance()?.draw_async();
         },
     }).append($('<span>', {
@@ -353,21 +356,24 @@ export function showTransformationDetails(xform: any): void {
         text: 'Export To File',
     })).appendTo(xformButtonContainer);
 
-    generateAttributesTable(undefined, xform, infoContents);
+    const tableContainer = $('<div>', {
+        'class': 'container-fluid attr-table-base-container',
+    }).appendTo(infoContents);
+    generateAttributesTable(undefined, xform, tableContainer);
 
-    $('#info-clear-btn').show();
+    VSCodeSDFV.getInstance().infoBoxShow(true);
 }
 
-export function applyTransformation(xform: any): void {
+export function applyTransformations(...xforms: JsonTransformation[]): void {
     if (vscode) {
         VSCodeRenderer.getInstance()?.clearSelectedItems();
-        VSCodeSDFV.getInstance().clearInfoBox();
+        VSCodeSDFV.getInstance().clearInfoBox(true);
         const el = document.getElementById('exit-preview-button');
         if (el)
             el.className = 'button hidden';
         vscode.postMessage({
-            type: 'dace.apply_transformation',
-            transformation: xform,
+            type: 'dace.apply_transformations',
+            transformations: xforms,
         });
     }
 }

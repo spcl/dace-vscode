@@ -73,11 +73,10 @@ import {
     showContextMenu,
     vscodeWriteGraph,
 } from './utils/helpers';
-import Split from 'split.js';
 import { LViewRenderer } from '@spcl/sdfv/out/local_view/lview_renderer';
 
 declare const vscode: any;
-declare const SPLIT_DIRECTION: 'vertical' | 'horizontal';
+declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
 
 type CategorizedTransformationList = [
     JsonTransformation[],
@@ -114,12 +113,14 @@ export class VSCodeSDFV extends SDFV {
     private monaco: any | null = null;
     private sdfgString: string | null = null;
     private sdfgMetaDict: { [key: string]: any } | null = null;
-    private queryingMetaDict: boolean = false;
+    private queryMetaDictFunc: Promise<{ [key: string]: any }> | null= null;
     private viewingHistoryState: boolean = false;
     private showingBreakpoints: boolean = false;
     private daemonConnected: boolean = false;
     private transformations: CategorizedTransformationList = [[], [], [], []];
     private selectedTransformation: JsonTransformation | null = null;
+
+    public infoTrayExplicitlyHidden: boolean = false;
 
     public init_menu(): void {
         this.initInfoBox();
@@ -163,8 +164,9 @@ export class VSCodeSDFV extends SDFV {
     /**
      * Show the info box and its necessary components.
      */
-    public infoBoxShow(): void {
-        $('#info-clear-btn').show();
+    public infoBoxShow(overrideHidden: boolean = false): void {
+        if (!this.infoTrayExplicitlyHidden || overrideHidden)
+            $('#info-container').addClass('show');
     }
 
     /**
@@ -177,17 +179,14 @@ export class VSCodeSDFV extends SDFV {
     /**
      * Clear the info container and its title, and hide the clear button again.
      */
-    public clearInfoBox(): void {
+    public clearInfoBox(hide: boolean = false): void {
         $('#info-contents').html('');
         $('#info-title').text('');
-        $('#info-clear-btn').hide();
         $('#goto-source-btn').hide();
         $('#goto-cpp-btn').hide();
         this.selectedTransformation = null;
-        if (vscode)
-            vscode.postMessage({
-                type: 'transformation_list.deselect',
-            });
+        if (hide)
+            $('#info-container').removeClass('show');
     }
 
     private handleShowGroupsContextMenu(
@@ -457,7 +456,10 @@ export class VSCodeSDFV extends SDFV {
                 $('<hr>').appendTo(contents);
             }
 
-            generateAttributesTable(elem, undefined, contents);
+            const tableContainer = $('<div>', {
+                'class': 'container-fluid attr-table-base-container',
+            }).appendTo(contents);
+            generateAttributesTable(elem, undefined, tableContainer);
 
             if (elem instanceof AccessNode) {
                 // If we're processing an access node, add array info too.
@@ -471,7 +473,10 @@ export class VSCodeSDFV extends SDFV {
                 }).appendTo(contents);
 
                 // TODO: Allow container types to be changed here too.
-                generateAttributesTable(sdfg_array, undefined, contents);
+                const tableContainer = $('<div>', {
+                    'class': 'container-fluid attr-table-base-container',
+                }).appendTo(contents);
+                generateAttributesTable(sdfg_array, undefined, tableContainer);
             } else if (elem instanceof NestedSDFG) {
                 // If nested SDFG, add SDFG info too.
                 const sdfg_sdfg = elem.attributes().sdfg;
@@ -481,7 +486,10 @@ export class VSCodeSDFV extends SDFV {
                     'text': 'SDFG properties:',
                 }).appendTo(contents);
 
-                generateAttributesTable(sdfg_sdfg, undefined, contents);
+                const tableContainer = $('<div>', {
+                    'class': 'container-fluid attr-table-base-container',
+                }).appendTo(contents);
+                generateAttributesTable(sdfg_sdfg, undefined, tableContainer);
             } else if (elem instanceof ScopeNode) {
                 // If we're processing a scope node, we want to append the exit
                 // node's props when selecting an entry node, and vice versa.
@@ -513,7 +521,12 @@ export class VSCodeSDFV extends SDFV {
                             other_element.type() + ' ' + other_element.label(),
                     }).appendTo(contents);
 
-                    generateAttributesTable(other_element, undefined, contents);
+                    const tableContainer = $('<div>', {
+                        'class': 'container-fluid attr-table-base-container',
+                    }).appendTo(contents);
+                    generateAttributesTable(
+                        other_element, undefined, tableContainer
+                    );
                 }
             } else if (elem instanceof SDFG) {
                 if (elem.data && elem.data.attributes)
@@ -528,8 +541,6 @@ export class VSCodeSDFV extends SDFV {
                         elem.data.node.attributes.sdfg
                     );
             }
-
-            $('#info-clear-btn').show();
         } else {
             this.clearInfoBox();
         }
@@ -685,32 +696,28 @@ export class VSCodeSDFV extends SDFV {
         return this.sdfgString;
     }
 
-    public getMetaDict(): { [key: string]: any } {
+    public async getMetaDict(): Promise<{ [key: string]: any }> {
         if (!this.sdfgMetaDict) {
             // If SDFG property metadata isn't available, use the static one and
             // query an up-to-date one from the dace github page. If that
             // doesn't work, query the daemon (waking it up if it isn't up).
-            if (!this.queryingMetaDict) {
-                this.queryingMetaDict = true;
-                fetch(
+            if (!this.queryMetaDictFunc)
+                this.queryMetaDictFunc = fetch(
                     'https://spcl.github.io/dace/metadata/sdfg_meta_dict.json'
                 ).then(
                     (response) => response.json()
-                ).then(
-                    (data) => {
-                        this.sdfgMetaDict = data;
-                        this.queryingMetaDict = false;
-                    }
-                ).catch(
-                    (_reason) => {
-                        vscode.postMessage({
-                            type: 'dace.query_sdfg_metadata',
-                        });
-                        return staticSdfgMetaDict;
-                    }
                 );
-            }
-            return staticSdfgMetaDict;
+
+            return this.queryMetaDictFunc.then((data) => {
+                this.sdfgMetaDict = data;
+                this.queryMetaDictFunc = null;
+                return this.sdfgMetaDict;
+            }).catch((reason) => {
+                console.error(reason);
+                this.sdfgMetaDict = staticSdfgMetaDict;
+                this.queryMetaDictFunc = null;
+                return this.sdfgMetaDict;
+            });
         }
         return this.sdfgMetaDict;
     }
@@ -801,6 +808,7 @@ export class VSCodeSDFV extends SDFV {
             this.renderer = null;
         }
         this.localViewRenderer = localViewRenderer;
+        this.infoBoxShow(true);
     }
 
 }
@@ -849,11 +857,93 @@ export function vscodeHandleEvent(event: string, data: any): void {
 }
 
 $(() => {
-    Split(['#contents', '#info-container'], {
-        sizes: [60, 40],
-        minSize: [0, 0],
-        snapOffset: 10,
-        direction: SPLIT_DIRECTION,
+    const infoContainer = $('#info-container');
+    const layoutToggleBtn = $('#layout-toggle-btn');
+    const infoDragBar = $('#info-drag-bar');
+    const expandInfoBtn = $('#expand-info-btn');
+    const infoCloseBtn = $('#info-close-btn');
+
+    // Set up resizing of the info drawer.
+    let draggingDragInfoBar = false;
+    let lastVertWidth = infoContainer.css('min-width');
+    let lastHorHeight = infoContainer.css('min-height');
+    const infoChangeHeightHandler = (e: any) => {
+        if (draggingDragInfoBar) {
+            const documentHeight = $('body').height();
+            if (documentHeight) {
+                const newHeight = documentHeight - e.originalEvent.y;
+                if (newHeight < documentHeight) {
+                    infoContainer.height(newHeight);
+                    lastHorHeight = newHeight.toString() + 'px';
+                }
+            }
+        }
+    };
+    const infoChangeWidthHandler = (e: any) => {
+        if (draggingDragInfoBar) {
+            const documentWidth = $('body').width();
+            if (documentWidth) {
+                const newWidth = documentWidth - e.originalEvent.x;
+                if (newWidth < documentWidth) {
+                    infoContainer.width(newWidth);
+                    lastVertWidth = newWidth.toString() + 'px';
+                }
+            }
+        }
+    };
+    $(document).on('mouseup', () => {
+        draggingDragInfoBar = false;
+    });
+    infoDragBar.on('mousedown', () => {
+        draggingDragInfoBar = true;
+    });
+    if (SPLIT_DIRECTION === 'vertical')
+        $(document).on('mousemove', infoChangeWidthHandler);
+    else
+        $(document).on('mousemove', infoChangeHeightHandler);
+
+    // Set up changing the info drawer layout.
+    layoutToggleBtn.on('click', () => {
+        const oldDir = SPLIT_DIRECTION;
+        SPLIT_DIRECTION = SPLIT_DIRECTION === 'vertical' ?
+            'horizontal' : 'vertical';
+        layoutToggleBtn.removeClass(oldDir);
+        layoutToggleBtn.addClass(SPLIT_DIRECTION);
+        if (oldDir === 'vertical') {
+            infoContainer.removeClass('offcanvas-end');
+            infoContainer.addClass('offcanvas-bottom');
+            infoDragBar.removeClass('gutter-vertical');
+            infoDragBar.addClass('gutter-horizontal');
+            $(document).off('mousemove', infoChangeWidthHandler);
+            $(document).on('mousemove', infoChangeHeightHandler);
+            infoContainer.width('100%');
+            infoContainer.height(lastHorHeight);
+        } else {
+            infoContainer.removeClass('offcanvas-bottom');
+            infoContainer.addClass('offcanvas-end');
+            infoDragBar.removeClass('gutter-horizontal');
+            infoDragBar.addClass('gutter-vertical');
+            $(document).off('mousemove', infoChangeHeightHandler);
+            $(document).on('mousemove', infoChangeWidthHandler);
+            infoContainer.height('100%');
+            infoContainer.width(lastVertWidth);
+        }
+        vscode.postMessage({
+            type: 'sdfv.set_split_direction',
+            direction: SPLIT_DIRECTION,
+        });
+    });
+
+    // Set up toggling the info tray.
+    infoCloseBtn.on('click', () => {
+        expandInfoBtn.show();
+        infoContainer.removeClass('show');
+        VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = true;
+    });
+    expandInfoBtn.on('click', () => {
+        expandInfoBtn.hide();
+        infoContainer.addClass('show');
+        VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = false;
     });
 
     $('#processing-overlay').hide();
@@ -890,10 +980,6 @@ $(() => {
 
     $('#breakpoint-btn').on('click', () => {
         VSCodeSDFV.getInstance().toggleBreakpoints();
-    });
-
-    $('#info-clear-btn').on('click', () => {
-        VSCodeSDFV.getInstance().clearInfoBox();
     });
 
     window.addEventListener('message', (e) => {

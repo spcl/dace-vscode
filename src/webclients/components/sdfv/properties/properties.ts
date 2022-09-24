@@ -21,7 +21,11 @@ type RangeInput = {
     step: JQuery<HTMLElement>,
 };
 
+// Note that this Property class is not an equivalent to SDFG Properties, but
+// a more general attribute of SDFG elements in VSCode.
 export abstract class Property {
+
+    private _deleted: boolean = false;
 
     constructor (
         protected element: any | undefined,
@@ -31,6 +35,14 @@ export abstract class Property {
         protected subkey: string | undefined,
         protected datatype: string
     ) {
+    }
+
+    public markDeleted(): void {
+        this._deleted = true;
+    }
+
+    public get deleted(): boolean {
+        return this._deleted;
     }
 
     protected writeBack(value: any): void {
@@ -90,6 +102,8 @@ export class KeyProperty {
      * subclass of Property.
      */
 
+    private _deleted: boolean = false;
+
     constructor(
         protected element: any | undefined,
         protected xform: any | undefined,
@@ -97,6 +111,14 @@ export class KeyProperty {
         protected key: string,
         protected input: JQuery<HTMLElement>
     ) {
+    }
+
+    public markDeleted(): void {
+        this._deleted = true;
+    }
+
+    public get deleted(): boolean {
+        return this._deleted;
     }
 
     public getValue(): { value: any, valueChanged: boolean } {
@@ -379,19 +401,23 @@ export class TypeclassProperty extends ComboboxProperty {
             const descriptor = compoundFields[key];
             const type = descriptor['type'];
 
-            const meta = VSCodeSDFV.getInstance().getMetaDict();
-            let valMeta = undefined;
-            if (type in meta['__reverse_type_lookup__'])
-                valMeta = meta['__reverse_type_lookup__'][type];
+            const val = this.compoundValues[key];
+            VSCodeSDFV.getInstance().getMetaDict().then(meta => {
+                let valMeta = undefined;
+                if (type in meta['__reverse_type_lookup__'])
+                    valMeta = meta['__reverse_type_lookup__'][type];
 
-            const attrProp = attributeTablePutEntry(
-                key, this.compoundValues[key],
-                valMeta, this.compoundValues, undefined, undefined,
-                rowbox, false, false, false
-            );
-
-            if (attrProp)
-                this.compoundProp?.getProperties().push(attrProp);
+                const row = $('<div>', {
+                    class: 'row attr-table-row',
+                }).appendTo(rowbox);
+                attributeTablePutEntry(
+                    key, val, valMeta, this.compoundValues, undefined,
+                    undefined, row, false, false, false
+                ).then(attrProp => {
+                    if (attrProp)
+                        this.compoundProp?.getProperties().push(attrProp);
+                });
+            });
         }
 
         // When the confirm button is clicked, transfer the new values from the
@@ -462,10 +488,12 @@ export class ListProperty extends Property {
 
         const newList = [];
         for (let i = 0; i < this.propertiesList.length; i++) {
-            const res = this.propertiesList[i].getValue();
-            if (res !== undefined && res.value !== undefined &&
-                res.value !== '')
-                newList.push(res.value);
+            if (!this.propertiesList[i].deleted) {
+                const res = this.propertiesList[i].getValue();
+                if (res !== undefined && res.value !== undefined &&
+                    res.value !== '')
+                    newList.push(res.value);
+            }
         }
         return {
             value: newList,
@@ -525,27 +553,29 @@ export class DictProperty extends Property {
         let valueChanged = false;
         this.properties.forEach(prop => {
             if ((prop.keyProp || prop.key) && prop.valProp) {
-                const keyRes = prop.keyProp?.getValue();
-                let keyVal = keyRes?.value;
-                if (!keyVal || keyVal === '')
-                    keyVal = prop.key;
-                if (keyVal !== undefined && keyVal !== '') {
-                    prop.valProp.forEach(vp => {
-                        const valRes = vp.getValue();
-                        const valSubkey = vp.getSubkey();
-                        if (vp.getDatatype() === 'CodeBlock' &&
-                            valSubkey !== undefined) {
-                            // For code properties, we need to write back the
-                            // entire code property structure, including
-                            // language info.
-                            let codeVal = vp.getTarget()[vp.getKey()];
-                            codeVal[valSubkey] = valRes.value;
-                            newDict[keyVal] = codeVal;
-                        } else {
-                            newDict[keyVal] = valRes.value;
-                        }
-                    });
-                    valueChanged = true;
+                if (prop.keyProp && !prop.keyProp.deleted) {
+                    const keyRes = prop.keyProp.getValue();
+                    let keyVal = keyRes?.value;
+                    if (!keyVal || keyVal === '')
+                        keyVal = prop.key;
+                    if (keyVal !== undefined && keyVal !== '') {
+                        prop.valProp.forEach(vp => {
+                            const valRes = vp.getValue();
+                            const valSubkey = vp.getSubkey();
+                            if (vp.getDatatype() === 'CodeBlock' &&
+                                valSubkey !== undefined) {
+                                // For code properties, we need to write back
+                                // the entire code property structure, including
+                                // language info.
+                                let codeVal = vp.getTarget()[vp.getKey()];
+                                codeVal[valSubkey] = valRes.value;
+                                newDict[keyVal] = codeVal;
+                            } else {
+                                newDict[keyVal] = valRes.value;
+                            }
+                        });
+                        valueChanged = true;
+                    }
                 }
             }
         });

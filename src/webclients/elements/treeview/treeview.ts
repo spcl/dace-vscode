@@ -9,14 +9,14 @@ export class CustomTreeViewItem {
     public element: any = undefined;
 
     public constructor(
-        private label: string,
-        private tooltip: string | undefined,
-        private icon: string | undefined,
-        private collapsed: boolean,
-        private unfoldDoubleClick: boolean,
-        private labelStyle: string | undefined = undefined,
-        private iconStyle: string | undefined = undefined,
-        private readonly MEDIA_DIR: string | undefined = undefined
+        protected label: string,
+        protected tooltip: string | undefined,
+        protected icon: string | undefined,
+        protected collapsed: boolean,
+        protected unfoldDoubleClick: boolean,
+        protected labelStyle: string | undefined = undefined,
+        protected iconStyle: string | undefined = undefined,
+        protected readonly MEDIA_DIR: string | undefined = undefined
     ) {
     }
 

@@ -226,6 +226,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -384,6 +385,7 @@
     "BatchedMatMul": "dace.libraries.blas.nodes.batched_matmul.BatchedMatMul",
     "Transpose": "dace.libraries.blas.nodes.transpose.Transpose",
     "Axpy": "dace.libraries.blas.nodes.axpy.Axpy",
+    "Einsum": "dace.libraries.blas.nodes.einsum.Einsum",
     "CodeLibraryNode": "dace.libraries.standard.nodes.code.CodeLibraryNode",
     "Gearbox": "dace.libraries.standard.nodes.gearbox.Gearbox",
     "Reduce": "dace.libraries.standard.nodes.reduce.Reduce"
@@ -744,6 +746,18 @@
       "category": "General",
       "default": 0
     },
+    "optional": {
+      "metatype": "bool",
+      "desc": "Specifies whether this array may have a value of None. If False, the array must not be None. If option is not set, it is inferred by other properties and the OptionalArrayInference pass.",
+      "category": "General",
+      "default": null
+    },
+    "pool": {
+      "metatype": "bool",
+      "desc": "Hint to the allocator that using a memory pool is preferred",
+      "category": "General",
+      "default": false
+    },
     "dtype": {
       "metatype": "typeclass",
       "desc": "",
@@ -1099,6 +1113,18 @@
       "category": "General",
       "default": 0
     },
+    "optional": {
+      "metatype": "bool",
+      "desc": "Specifies whether this array may have a value of None. If False, the array must not be None. If option is not set, it is inferred by other properties and the OptionalArrayInference pass.",
+      "category": "General",
+      "default": null
+    },
+    "pool": {
+      "metatype": "bool",
+      "desc": "Hint to the allocator that using a memory pool is preferred",
+      "category": "General",
+      "default": false
+    },
     "dtype": {
       "metatype": "typeclass",
       "desc": "",
@@ -1290,6 +1316,18 @@
       "desc": "Allocation offset elements for manual alignment (pre-padding)",
       "category": "General",
       "default": 0
+    },
+    "optional": {
+      "metatype": "bool",
+      "desc": "Specifies whether this array may have a value of None. If False, the array must not be None. If option is not set, it is inferred by other properties and the OptionalArrayInference pass.",
+      "category": "General",
+      "default": null
+    },
+    "pool": {
+      "metatype": "bool",
+      "desc": "Hint to the allocator that using a memory pool is preferred",
+      "category": "General",
+      "default": false
     },
     "dtype": {
       "metatype": "typeclass",
@@ -1679,6 +1717,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -1800,6 +1839,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -1912,6 +1952,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -2059,6 +2100,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -2089,6 +2131,14 @@
       "category": "General",
       "default": 0,
       "indirected": true
+    },
+    "gpu_block_size": {
+      "metatype": "list",
+      "desc": "GPU kernel block size",
+      "category": "General",
+      "default": null,
+      "indirected": true,
+      "element_type": "int"
     },
     "in_connectors": {
       "metatype": "dict",
@@ -2210,6 +2260,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -2237,6 +2288,13 @@
       "desc": "OpenMP schedule chunk size",
       "category": "General",
       "default": 0
+    },
+    "gpu_block_size": {
+      "metatype": "list",
+      "desc": "GPU kernel block size",
+      "category": "General",
+      "default": null,
+      "element_type": "int"
     }
   },
   "ConsumeEntry": {
@@ -2329,6 +2387,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -2449,6 +2508,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -2583,6 +2643,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -2613,6 +2674,14 @@
       "category": "General",
       "default": 0,
       "indirected": true
+    },
+    "gpu_block_size": {
+      "metatype": "list",
+      "desc": "GPU kernel block size",
+      "category": "General",
+      "default": null,
+      "indirected": true,
+      "element_type": "int"
     },
     "in_connectors": {
       "metatype": "dict",
@@ -2764,6 +2833,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -2791,6 +2861,13 @@
       "desc": "OpenMP schedule chunk size",
       "category": "General",
       "default": 0
+    },
+    "gpu_block_size": {
+      "metatype": "list",
+      "desc": "GPU kernel block size",
+      "category": "General",
+      "default": null,
+      "element_type": "int"
     }
   },
   "LibraryNode": {
@@ -2900,6 +2977,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -3192,6 +3270,7 @@
         "No_Instrumentation",
         "Timer",
         "PAPI_Counters",
+        "LIKWID_Counters",
         "GPU_Events",
         "FPGA"
       ]
@@ -3452,6 +3531,18 @@
     }
   },
   "dace.libraries.blas.nodes.matmul.MatMul": {
+    "alpha": {
+      "metatype": "Property",
+      "desc": "A scalar which will be multiplied with A @ B before adding C",
+      "category": "General",
+      "default": 1
+    },
+    "beta": {
+      "metatype": "Property",
+      "desc": "A scalar which will be multiplied with C before adding C",
+      "category": "General",
+      "default": 0
+    },
     "name": {
       "metatype": "str",
       "desc": "Name of node",
@@ -5419,6 +5510,140 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    }
+  },
+  "dace.libraries.blas.nodes.einsum.Einsum": {
+    "einsum_str": {
+      "metatype": "str",
+      "desc": "The Einstein notation string that describes this einsum",
+      "category": "General",
+      "default": ""
+    },
+    "alpha": {
+      "metatype": "SymbolicProperty",
+      "desc": "The coefficient to multiply the inputs with",
+      "category": "General",
+      "default": 1.0
+    },
+    "beta": {
+      "metatype": "SymbolicProperty",
+      "desc": "The coefficient to multiply the output with when added to the product",
+      "category": "General",
+      "default": 0.0
+    },
+    "name": {
+      "metatype": "str",
+      "desc": "Name of node",
+      "category": "General",
+      "default": ""
+    },
+    "implementation": {
+      "metatype": "LibraryImplementationProperty",
+      "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
+      "category": "General",
+      "default": null,
+      "choices": [
+        "specialize"
+      ]
+    },
+    "schedule": {
+      "metatype": "ScheduleType",
+      "desc": "If set, determines the default device mapping of the node upon expansion, if expanded to a nested SDFG.",
+      "category": "General",
+      "default": "Default",
+      "choices": [
+        "Default",
+        "Sequential",
+        "MPI",
+        "CPU_Multicore",
+        "Unrolled",
+        "SVE_Map",
+        "GPU_Default",
+        "GPU_Device",
+        "GPU_ThreadBlock",
+        "GPU_ThreadBlock_Dynamic",
+        "GPU_Persistent",
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore"
+      ]
+    },
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    },
+    "label": {
+      "metatype": "str",
+      "desc": "Name of the CodeNode",
+      "category": "General",
+      "default": ""
+    },
+    "location": {
+      "metatype": "dict",
+      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "pystr_to_symbolic"
+    },
+    "environments": {
+      "metatype": "set",
+      "desc": "Environments required by CMake to build and run this code node.",
+      "category": "General",
+      "default": []
+    },
+    "in_connectors": {
+      "metatype": "dict",
+      "desc": "A set of input connectors for this node.",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "typeclass"
+    },
+    "out_connectors": {
+      "metatype": "dict",
+      "desc": "A set of output connectors for this node.",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "typeclass"
+    }
+  },
+  "SpecializeEinsum": {
+    "sdfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
     }
   },
   "dace.libraries.standard.nodes.code.CodeLibraryNode": {

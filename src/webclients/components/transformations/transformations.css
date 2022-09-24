@@ -73,28 +73,45 @@ body {
     width: 100%;
 }
 
-.tree-view-list {
+.transformation-category,
+.transformation {
     width: 100%;
 }
 
-.tree-view-item.hover {
+.transformation-category.hover,
+.transformation.hover {
     cursor: pointer;
     background-color: var(--vscode-list-hoverBackground);
 }
 
-.tree-view-item {
+.transformation-category,
+.transformation {
     padding-left: .2rem;
     padding-right: .2rem;
 }
 
-.tree-view-item.selected {
+.transformation.selected {
     color: var(--vscode-list-activeSelectionForeground) !important;
     background-color: var(--vscode-list-activeSelectionBackground) !important;
 }
 
-.tree-view-item.selected .transformation-list-quick-apply {
+.transformation.selected .transformation-list-quick-apply {
     color: var(--vscode-list-activeSelectionForeground) !important;
     background-color: var(--vscode-list-activeSelectionBackground) !important;
+}
+
+.transformation-group {
+    border: 2px solid transparent;
+    padding: .2rem;
+}
+
+.transformation-group.hover {
+    cursor: pointer;
+    border-color: var(--vscode-list-hoverBackground) !important;
+}
+
+.transformation-group.selected {
+    border-color: var(--vscode-list-activeSelectionBackground) !important;
 }
 
 .transformation-list-item-label-container {
@@ -104,19 +121,35 @@ body {
     align-items: center;
 }
 
+.transformation-list-item-label-container > .tree-view-item-label > span,
 .transformation-list-item-label-container > .tree-view-item-label {
     overflow: hidden;
     flex-shrink: 1;
     flex-grow: 1;
 }
 
+.transformation-list-item-label-container > .tree-view-item-label > span {
+    text-overflow: clip;
+    white-space: nowrap;
+}
+
+.transformation-list-apply-all,
 .transformation-list-quick-apply {
     display: none;
+    white-space: nowrap;
 }
 
 .transformation-list-item-label-container.hover-direct .transformation-list-quick-apply {
     padding-left: .8rem;
     background-color: var(--vscode-list-hoverBackground);
+    display: block;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.transformation-list-item-label-container.hover-direct .transformation-list-apply-all {
+    padding-left: .8rem;
     display: block;
     flex-shrink: 0;
     white-space: nowrap;

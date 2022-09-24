@@ -28,6 +28,7 @@ import {
 } from '../vscode_sdfv';
 
 declare const vscode: any;
+declare let MINIMAP_ENABLED: boolean;
 
 export class VSCodeRenderer extends SDFGRenderer {
 
@@ -121,13 +122,28 @@ export class VSCodeRenderer extends SDFGRenderer {
             sdfv, sdfg, container, onMouseEvent, userTransform, debugDraw,
             backgroundColor, modeButtons
         );
+
+        if (this.minimap_canvas) {
+            const disableMinimapButton = $('<div>', {
+                id: 'minimap-close-button',
+                title: 'Disable Minimap',
+                html: '<i class="material-icons">cancel</i>',
+                click: () => {
+                    MINIMAP_ENABLED = false;
+                    this.minimap_canvas?.remove();
+                    this.minimap_ctx = null;
+                    this.minimap_canvas = null;
+                    disableMinimapButton.remove();
+                    vscode.postMessage({
+                        type: 'sdfv.disable_minimap',
+                    });
+                },
+            }).appendTo($(this.container));
+        }
     }
 
     public async localViewSelection(): Promise<void> {
         await super.localViewSelection();
-        // Hide the info button so the local view controls cannot be disabled
-        // by accident.
-        $('#info-clear-btn').hide();
     }
 
     public exitLocalView(): void {
@@ -138,12 +154,13 @@ export class VSCodeRenderer extends SDFGRenderer {
         vscodeWriteGraph(this.sdfg);
     }
 
-    public addNodeToGraph(
+    public async addNodeToGraph(
         addType: SDFGElementType, parentUUID: string, lib: string | null = null,
         edgeStartUUID: string | null = null,
         edgeStartConn: string | null = null, edgeDstConn: string | null = null
-    ): void {
-        const meta = VSCodeSDFV.getInstance().getMetaDict()[addType];
+    ): Promise<void> {
+        const metaDict = await VSCodeSDFV.getInstance().getMetaDict();
+        const meta = metaDict[addType];
 
         const rootSdfg = VSCodeRenderer.getInstance()?.get_sdfg();
         if (!rootSdfg)
@@ -171,10 +188,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                             }
                         },
                     };
-                    const iseMeta =
-                        VSCodeSDFV.getInstance().getMetaDict()[
-                            'InterstateEdge'
-                        ];
+                    const iseMeta = metaDict['InterstateEdge'];
                     for (const key in iseMeta) {
                         const attrs: any =
                             element.attributes.data.attributes;
@@ -205,8 +219,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                                 }
                             },
                         };
-                        const mceMeta =
-                            VSCodeSDFV.getInstance().getMetaDict()['Memlet'];
+                        const mceMeta = metaDict['Memlet'];
                         for (const key in mceMeta) {
                             const attrs: any =
                                 element.attributes.data.attributes;
@@ -280,10 +293,9 @@ export class VSCodeRenderer extends SDFGRenderer {
                                 attributes: {},
                                 type: SDFGElementType.SDFGState
                             };
-                            const stateMeta =
-                                VSCodeSDFV.getInstance().getMetaDict()[
-                                    SDFGElementType.SDFGState
-                                ];
+                            const stateMeta = metaDict[
+                                SDFGElementType.SDFGState
+                            ];
                             for (const key in stateMeta) {
                                 if (nSdfgState.attributes[key] === undefined) {
                                     const val = stateMeta[key];
@@ -301,8 +313,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                                 error: undefined,
                                 sdfg_list_id: maxSdfgId + 1,
                             };
-                            const sdfgMeta =
-                                VSCodeSDFV.getInstance().getMetaDict()['SDFG'];
+                            const sdfgMeta = metaDict['SDFG'];
                             for (const key in sdfgMeta) {
                                 if (nSdfg.attributes[key] === undefined) {
                                     const val = sdfgMeta[key];
@@ -326,10 +337,9 @@ export class VSCodeRenderer extends SDFGRenderer {
                                 scope_entry: element.id,
                                 scope_exit: element.id + 1,
                             };
-                            const exitMeta =
-                                VSCodeSDFV.getInstance().getMetaDict()[
-                                    'MapExit'
-                                ];
+                            const exitMeta = metaDict[
+                                SDFGElementType.MapExit
+                            ];
                             for (const key in exitMeta) {
                                 if (exitElem.attributes[key] === undefined) {
                                     const val = exitMeta[key];
@@ -351,10 +361,9 @@ export class VSCodeRenderer extends SDFGRenderer {
                                 scope_entry: element.id,
                                 scope_exit: element.id + 1,
                             };
-                            const exitMeta =
-                                VSCodeSDFV.getInstance().getMetaDict()[
-                                    'ConsumeExit'
-                                ];
+                            const exitMeta = metaDict[
+                                SDFGElementType.ConsumeExit
+                            ];
                             for (const key in exitMeta) {
                                 if (exitElem.attributes[key] === undefined) {
                                     const val = exitMeta[key];
@@ -503,68 +512,68 @@ export class VSCodeRenderer extends SDFGRenderer {
     }
 
     public showSelectLibraryNodeDialog(callback: CallableFunction): void {
-        const sdfgMetaDict = VSCodeSDFV.getInstance().getMetaDict();
+        VSCodeSDFV.getInstance().getMetaDict().then(sdfgMetaDict => {
+            const modalRet = createSingleUseModal(
+                'Select Library Node', true, ''
+            );
 
-        const modalRet = createSingleUseModal(
-            'Select Library Node', true, ''
-        );
+            const libraries = sdfgMetaDict['__libs__'];
 
-        const libraries = sdfgMetaDict['__libs__'];
+            const container = $('<div>', {
+                'class': 'container-fluid',
+            }).appendTo(modalRet.body);
 
-        const container = $('<div>', {
-            'class': 'container-fluid',
-        }).appendTo(modalRet.body);
+            const row = $('<div>', {
+                'class': 'row',
+            }).appendTo(container);
 
-        const row = $('<div>', {
-            'class': 'row',
-        }).appendTo(container);
+            const headerWrapper = $('<div>', {
+                'class': 'col-3',
+            }).appendTo(row);
+            $('<span>', {
+                'text': 'Library:'
+            }).appendTo(headerWrapper);
 
-        const headerWrapper = $('<div>', {
-            'class': 'col-3',
-        }).appendTo(row);
-        $('<span>', {
-            'text': 'Library:'
-        }).appendTo(headerWrapper);
+            const libInputWrapper = $('<div>', {
+                'class': 'col-9',
+            }).appendTo(row);
+            const libInput = $('<select>', {
+                'id': 'lib-selection-input-list',
+                'class': 'sdfv-property-dropdown',
+                'style': 'width: 100%;',
+                'placeholder': 'Type to search...'
+            }).appendTo(libInputWrapper);
 
-        const libInputWrapper = $('<div>', {
-            'class': 'col-9',
-        }).appendTo(row);
-        const libInput = $('<select>', {
-            'id': 'lib-selection-input-list',
-            'class': 'sdfv-property-dropdown',
-            'style': 'width: 100%;',
-            'placeholder': 'Type to search...'
-        }).appendTo(libInputWrapper);
+            Object.keys(libraries).forEach(libname => {
+                libInput.append(new Option(
+                    libname,
+                    libraries[libname],
+                    false,
+                    false
+                ));
+            });
 
-        Object.keys(libraries).forEach(libname => {
-            libInput.append(new Option(
-                libname,
-                libraries[libname],
-                false,
-                false
-            ));
+            libInput.editableSelect({
+                filter: false,
+                effects: 'fade',
+                duration: 'fast',
+            });
+
+            const backgroundLibInput = $('#lib-selection-input-list');
+
+            modalRet.confirmBtn?.on('click', () => {
+                const libInputVal = backgroundLibInput.val();
+                if (libInputVal && typeof libInputVal === 'string') {
+                    callback();
+                    this.add_mode_lib = libraries[libInputVal];
+                    modalRet.modal.modal('hide');
+                } else {
+                    backgroundLibInput.addClass('is-invalid');
+                }
+            });
+
+            modalRet.modal.modal('show');
         });
-
-        libInput.editableSelect({
-            filter: false,
-            effects: 'fade',
-            duration: 'fast',
-        });
-
-        const backgroundLibInput = $('#lib-selection-input-list');
-
-        modalRet.confirmBtn?.on('click', () => {
-            const libInputVal = backgroundLibInput.val();
-            if (libInputVal && typeof libInputVal === 'string') {
-                callback();
-                this.add_mode_lib = libraries[libInputVal];
-                modalRet.modal.modal('hide');
-            } else {
-                backgroundLibInput.addClass('is-invalid');
-            }
-        });
-
-        modalRet.modal.modal('show');
     }
 
     public clearSelectedItems(): void {
