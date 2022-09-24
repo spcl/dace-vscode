@@ -752,6 +752,12 @@
       "category": "General",
       "default": null
     },
+    "pool": {
+      "metatype": "bool",
+      "desc": "Hint to the allocator that using a memory pool is preferred",
+      "category": "General",
+      "default": false
+    },
     "dtype": {
       "metatype": "typeclass",
       "desc": "",
@@ -1113,6 +1119,12 @@
       "category": "General",
       "default": null
     },
+    "pool": {
+      "metatype": "bool",
+      "desc": "Hint to the allocator that using a memory pool is preferred",
+      "category": "General",
+      "default": false
+    },
     "dtype": {
       "metatype": "typeclass",
       "desc": "",
@@ -1310,6 +1322,12 @@
       "desc": "Specifies whether this array may have a value of None. If False, the array must not be None. If option is not set, it is inferred by other properties and the OptionalArrayInference pass.",
       "category": "General",
       "default": null
+    },
+    "pool": {
+      "metatype": "bool",
+      "desc": "Hint to the allocator that using a memory pool is preferred",
+      "category": "General",
+      "default": false
     },
     "dtype": {
       "metatype": "typeclass",
@@ -3203,9 +3221,7 @@
       "metatype": "dict",
       "desc": "Assignments to perform upon transition (e.g., 'x=x+1; y = 0')",
       "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "str"
+      "default": {}
     },
     "condition": {
       "metatype": "CodeBlock",

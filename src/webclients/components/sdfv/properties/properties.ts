@@ -21,6 +21,8 @@ type RangeInput = {
     step: JQuery<HTMLElement>,
 };
 
+// Note that this Property class is not an equivalent to SDFG Properties, but
+// a more general attribute of SDFG elements in VSCode.
 export abstract class Property {
 
     private _deleted: boolean = false;
