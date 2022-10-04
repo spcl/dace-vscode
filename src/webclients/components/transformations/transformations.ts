@@ -143,11 +143,13 @@ export class Transformation extends TransformationListItem {
             'class': 'transformation-list-quick-apply',
             'text': 'Quick Apply',
             'title': 'Apply transformation with default parameters',
-            'click': () => {
+            'click': (event: Event) => {
+                event.stopPropagation();
                 vscode.postMessage({
                     type: 'sdfv.apply_transformations',
                     transformations: [this.json],
                 });
+                return true;
             },
         }).appendTo(labelContainer);
 

@@ -878,7 +878,7 @@ export async function attributeTablePutEntry(
     const valPropUpdateHandler = valueChangeHandlerOverride !== undefined ?
         valueChangeHandlerOverride : (prop: Property) => {
             const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-            if (!xform && prop.update() && sdfg)
+            if (prop && prop.update() && !xform && sdfg)
                 vscodeWriteGraph(sdfg);
         };
 
