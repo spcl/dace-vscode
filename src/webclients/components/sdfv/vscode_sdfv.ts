@@ -165,8 +165,11 @@ export class VSCodeSDFV extends SDFV {
      * Show the info box and its necessary components.
      */
     public infoBoxShow(overrideHidden: boolean = false): void {
-        if (!this.infoTrayExplicitlyHidden || overrideHidden)
-            $('#info-container').addClass('show');
+        if (!this.infoTrayExplicitlyHidden || overrideHidden) {
+            const infoBox = $('#info-container');
+            infoBoxCheckUncoverTopBar(infoBox, $('#top-bar'));
+            infoBox.addClass('show');
+        }
     }
 
     /**
@@ -856,12 +859,26 @@ export function vscodeHandleEvent(event: string, data: any): void {
     }
 }
 
+function infoBoxCheckUncoverTopBar(
+    infoContainer: JQuery<HTMLElement>, topBar: JQuery<HTMLElement>
+): void {
+    // If the info container is to the side, ensure it doesn't cover up the
+    // top bar when shown.
+    if (infoContainer.hasClass('offcanvas-end')) {
+        const topBarHeight = topBar.outerHeight(false);
+        infoContainer.css('top', topBarHeight + 'px');
+    } else {
+        infoContainer.css('top', '');
+    }
+}
+
 $(() => {
     const infoContainer = $('#info-container');
     const layoutToggleBtn = $('#layout-toggle-btn');
     const infoDragBar = $('#info-drag-bar');
     const expandInfoBtn = $('#expand-info-btn');
     const infoCloseBtn = $('#info-close-btn');
+    const topBar = $('#top-bar');
 
     // Set up resizing of the info drawer.
     let draggingDragInfoBar = false;
@@ -912,8 +929,11 @@ $(() => {
         if (oldDir === 'vertical') {
             infoContainer.removeClass('offcanvas-end');
             infoContainer.addClass('offcanvas-bottom');
+            infoBoxCheckUncoverTopBar(infoContainer, topBar);
             infoDragBar.removeClass('gutter-vertical');
             infoDragBar.addClass('gutter-horizontal');
+            expandInfoBtn.removeClass('expand-info-btn-top');
+            expandInfoBtn.addClass('expand-info-btn-bottom');
             $(document).off('mousemove', infoChangeWidthHandler);
             $(document).on('mousemove', infoChangeHeightHandler);
             infoContainer.width('100%');
@@ -921,8 +941,11 @@ $(() => {
         } else {
             infoContainer.removeClass('offcanvas-bottom');
             infoContainer.addClass('offcanvas-end');
+            infoBoxCheckUncoverTopBar(infoContainer, topBar);
             infoDragBar.removeClass('gutter-horizontal');
             infoDragBar.addClass('gutter-vertical');
+            expandInfoBtn.removeClass('expand-info-btn-bottom');
+            expandInfoBtn.addClass('expand-info-btn-top');
             $(document).off('mousemove', infoChangeHeightHandler);
             $(document).on('mousemove', infoChangeWidthHandler);
             infoContainer.height('100%');
@@ -942,6 +965,7 @@ $(() => {
     });
     expandInfoBtn.on('click', () => {
         expandInfoBtn.hide();
+        infoBoxCheckUncoverTopBar(infoContainer, topBar);
         infoContainer.addClass('show');
         VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = false;
     });
