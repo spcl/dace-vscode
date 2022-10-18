@@ -886,24 +886,24 @@ $(() => {
     let lastHorHeight = infoContainer.css('min-height');
     const infoChangeHeightHandler = (e: any) => {
         if (draggingDragInfoBar) {
-            const documentHeight = $('body').height();
+            const documentHeight = $('body').innerHeight();
             if (documentHeight) {
                 const newHeight = documentHeight - e.originalEvent.y;
                 if (newHeight < documentHeight) {
-                    infoContainer.height(newHeight);
                     lastHorHeight = newHeight.toString() + 'px';
+                    infoContainer.height(lastHorHeight);
                 }
             }
         }
     };
     const infoChangeWidthHandler = (e: any) => {
         if (draggingDragInfoBar) {
-            const documentWidth = $('body').width();
+            const documentWidth = $('body').innerWidth();
             if (documentWidth) {
                 const newWidth = documentWidth - e.originalEvent.x;
                 if (newWidth < documentWidth) {
-                    infoContainer.width(newWidth);
                     lastVertWidth = newWidth.toString() + 'px';
+                    infoContainer.width(lastVertWidth);
                 }
             }
         }
