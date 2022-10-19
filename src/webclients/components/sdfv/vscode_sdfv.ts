@@ -872,6 +872,11 @@ function infoBoxCheckUncoverTopBar(
     }
 }
 
+/**
+ * Check if the info box is wide enough to show keys / values side-by-side.
+ * If not, stack them one on top of the other.
+ * @param infoContainer The info box container.
+ */
 function infoBoxCheckStacking(infoContainer: JQuery<HTMLElement>): void {
     const innerWidth = infoContainer.innerWidth();
     if (innerWidth && innerWidth <= 575) {
