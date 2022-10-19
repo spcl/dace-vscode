@@ -142,6 +142,13 @@ export class VSCodeRenderer extends SDFGRenderer {
         }
     }
 
+    public cutout_selection(_suppressSave: boolean = false): void {
+        super.cutout_selection();
+        // Ensure that cutouts are registered as graph edits.
+        if (!_suppressSave)
+            vscodeWriteGraph(this.sdfg);
+    }
+
     public async localViewSelection(): Promise<void> {
         await super.localViewSelection();
     }
