@@ -243,7 +243,7 @@ pre.code {
   overflow-y: scroll;
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
-  min-width: 570px;
+  min-width: 250px;
   min-height: 200px;
 }
 
@@ -384,6 +384,16 @@ pre.code {
   text-align: left;
   display: flex;
   align-items: center;
+  overflow: hidden;
+  padding-left: 0;
+}
+
+.attr-row-prefix-cell {
+  padding-left: .5rem;
+}
+
+.attr-table-cell.col-12 {
+  margin-bottom: .5rem;
 }
 
 .attr-table-cell-nopad {

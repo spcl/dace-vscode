@@ -866,6 +866,22 @@ export async function attributeTablePutEntry(
     let valProp: Property[] | undefined = undefined;
     let deleteBtn = undefined;
 
+    const wrapperRow = $('<div>', {
+        class: 'd-flex flex-row align-items-center p-0',
+    }).appendTo(row);
+    const prefixCell = $('<div>', {
+        class: 'attr-row-prefix-cell',
+    }).appendTo(wrapperRow);
+    const contentCell = $('<div>', {
+        class: 'attr-row-content-cell flex-grow-1',
+    }).appendTo(wrapperRow);
+    const contentCellWrapper = $('<div>', {
+        class: 'container-fluid'
+    }).appendTo(contentCell);
+    const contentRow = $('<div>', {
+        class: 'row',
+    }).appendTo(contentCellWrapper);
+
     let dtype = undefined;
     let choices = undefined;
     if (meta) {
@@ -892,8 +908,10 @@ export async function attributeTablePutEntry(
     let keyCell = undefined;
     if (editableKey) {
         keyCell = $('<div>', {
-            'class': 'attr-table-cell ' + (invertedSpacing ? 'col-9' : 'col-3'),
-        }).appendTo(row);
+            'class': 'attr-table-cell ' + (
+                invertedSpacing ? 'col-9 attr-cell-l' : 'col-3 attr-cell-s'
+            ),
+        }).appendTo(contentRow);
         const keyInput = $('<input>', {
             'type': 'text',
             'class': 'property-key-input sdfv-property-text',
@@ -904,27 +922,31 @@ export async function attributeTablePutEntry(
     } else {
         keyCell = $('<div>', {
             'class': 'attr-table-heading attr-table-cell ' + (
-                invertedSpacing ? 'col-9' : 'col-3'
+                invertedSpacing ? 'col-9 attr-cell-l' : 'col-3 attr-cell-s'
             ),
             'text': key,
-        }).appendTo(row);
+        }).appendTo(contentRow);
     }
 
     if (meta && meta['desc'])
         row.attr('title', meta['desc']);
 
     if (addDeleteButton) {
-        keyCell.addClass('attr-table-cell-nopad');
+        const deleteWrapper = $('<div>', {
+            style: 'height: 100%; display: flex; align-items: center;',
+        }).appendTo(prefixCell);
         deleteBtn = $('<span>', {
             'class': 'material-icons-outlined sdfv-property-delete-btn',
             'text': 'remove_circle',
             'title': 'Delete entry',
-        }).prependTo(keyCell);
+        }).appendTo(deleteWrapper);
     }
 
     const valueCell = $('<div>', {
-        'class': 'attr-table-cell ' + (invertedSpacing ? 'col-3' : 'col-9'),
-    }).appendTo(row);
+        'class': 'attr-table-cell ' + (
+            invertedSpacing ? 'col-3 attr-cell-s' : 'col-9 attr-cell-l'
+        ),
+    }).appendTo(contentRow);
 
     if (key === 'constants_prop') {
         const constContainer = $('<div>').appendTo(valueCell);

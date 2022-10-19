@@ -872,6 +872,23 @@ function infoBoxCheckUncoverTopBar(
     }
 }
 
+function infoBoxCheckStacking(infoContainer: JQuery<HTMLElement>): void {
+    const innerWidth = infoContainer.innerWidth();
+    if (innerWidth && innerWidth <= 575) {
+        if (infoContainer.attr('stack') !== 'true') {
+            infoContainer.attr('stack', 'true');
+            $('.attr-cell-s').removeClass('col-3').addClass('col-12');
+            $('.attr-cell-l').removeClass('col-9').addClass('col-12');
+        }
+    } else {
+        if (infoContainer.attr('stack') === 'true') {
+            infoContainer.attr('stack', 'false');
+            $('.attr-cell-s').removeClass('col-12').addClass('col-3');
+            $('.attr-cell-l').removeClass('col-12').addClass('col-9');
+        }
+    }
+}
+
 $(() => {
     const infoContainer = $('#info-container');
     const layoutToggleBtn = $('#layout-toggle-btn');
@@ -929,7 +946,6 @@ $(() => {
         if (oldDir === 'vertical') {
             infoContainer.removeClass('offcanvas-end');
             infoContainer.addClass('offcanvas-bottom');
-            infoBoxCheckUncoverTopBar(infoContainer, topBar);
             infoDragBar.removeClass('gutter-vertical');
             infoDragBar.addClass('gutter-horizontal');
             expandInfoBtn.removeClass('expand-info-btn-top');
@@ -941,7 +957,6 @@ $(() => {
         } else {
             infoContainer.removeClass('offcanvas-bottom');
             infoContainer.addClass('offcanvas-end');
-            infoBoxCheckUncoverTopBar(infoContainer, topBar);
             infoDragBar.removeClass('gutter-horizontal');
             infoDragBar.addClass('gutter-vertical');
             expandInfoBtn.removeClass('expand-info-btn-bottom');
@@ -951,11 +966,17 @@ $(() => {
             infoContainer.height('100%');
             infoContainer.width(lastVertWidth);
         }
+        infoBoxCheckStacking(infoContainer);
+        infoBoxCheckUncoverTopBar(infoContainer, topBar);
         vscode.postMessage({
             type: 'sdfv.set_split_direction',
             direction: SPLIT_DIRECTION,
         });
     });
+
+    new ResizeObserver(() => {
+        infoBoxCheckStacking(infoContainer);
+    }).observe(infoContainer[0]);
 
     // Set up toggling the info tray.
     infoCloseBtn.on('click', () => {
