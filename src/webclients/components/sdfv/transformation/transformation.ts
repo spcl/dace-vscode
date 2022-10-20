@@ -84,8 +84,8 @@ export async function sortTransformations(
     setTimeout(() => {
         const selectedXforms: JsonTransformation[] = [];
         const viewportXforms: JsonTransformation[] = [];
-        const globalXforms: JsonTransformation[] = [];
-        const uncatXforms: JsonTransformation[] = [];
+        const passesPipelines: JsonTransformation[] = [];
+        const unsortedXforms: JsonTransformation[] = [];
 
         const renderer = VSCodeRenderer.getInstance();
         if (!renderer)
@@ -106,6 +106,9 @@ export async function sortTransformations(
             if (xform.type === 'SubgraphTransformation') {
                 if (!clearSubgraphXforms)
                     selectedXforms.push(xform);
+                continue;
+            } else if (xform.type === 'Pass' || xform.type === 'Pipeline') {
+                passesPipelines.push(xform);
                 continue;
             }
 
@@ -174,12 +177,12 @@ export async function sortTransformations(
             // Sort in global transformations.
             if (!matched && xform.state_id === -1 &&
                 Object.keys(xform._subgraph).length === 0) {
-                globalXforms.push(xform);
+                viewportXforms.push(xform);
                 matched = true;
             }
 
             if (!matched)
-                uncatXforms.push(xform);
+                unsortedXforms.push(xform);
         }
 
         const xformLists: [
@@ -190,8 +193,8 @@ export async function sortTransformations(
         ] = [
             selectedXforms,
             viewportXforms,
-            globalXforms,
-            uncatXforms,
+            passesPipelines,
+            unsortedXforms,
         ];
 
         for (const xformList of xformLists) {

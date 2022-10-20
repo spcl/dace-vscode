@@ -63,12 +63,13 @@ class TransformationCategory extends TransformationListItem {
 
 export type JsonTransformation = {
     transformation: string,
-    type: string | undefined,
-    exp_idx: number | undefined,
-    sdfg_id: number | undefined,
-    state_id: number | undefined,
-    _subgraph: any | undefined,
-    docstring: string | undefined
+    type?: string,
+    exp_idx?: number,
+    sdfg_id?: number,
+    state_id?: number,
+    _category?: string,
+    _subgraph?: any,
+    docstring?: string,
 };
 
 export class Transformation extends TransformationListItem {
@@ -171,6 +172,74 @@ export class Transformation extends TransformationListItem {
 
 }
 
+export class PassPipeline extends TransformationListItem {
+
+    private name?: string = undefined;
+    private type?: string = undefined;
+
+    public constructor(
+        private json: JsonTransformation, list: TransformationList
+    ) {
+        super(
+            json.transformation, json.docstring, undefined, false, true,
+            json.type === 'Pipeline' ?
+                'color: var(--vscode-textPreformat-foreground);' : '',
+            ''
+        );
+        this.list = list;
+
+        this.name = json.transformation;
+        this.type = json.type;
+    }
+
+    public generateHtml(): JQuery {
+        const item = super.generateHtml();
+
+        item.addClass('transformation');
+
+        item.on('click', () => {
+            if (vscode) {
+                if (this.list !== undefined) {
+                    this.list.selectedItem = this;
+                    this.list.generateHtml();
+                }
+                vscode.postMessage({
+                    type: 'sdfv.select_transformation',
+                    transformation: this.json,
+                });
+            }
+        });
+
+        const labelContainer = item.find('.tree-view-item-label-container');
+        labelContainer.addClass('transformation-list-item-label-container');
+
+        $('<div>', {
+            'class': 'transformation-list-quick-apply',
+            'text': 'Quick Run',
+            'title': 'Run this pass with default parameters',
+            'click': (event: Event) => {
+                event.stopPropagation();
+                vscode.postMessage({
+                    type: 'sdfv.apply_transformations',
+                    transformations: [this.json],
+                });
+                return true;
+            },
+        }).appendTo(labelContainer);
+
+        item.on('mouseover', () => {
+            labelContainer.addClass('hover-direct');
+        });
+
+        item.on('mouseout', () => {
+            labelContainer.removeClass('hover-direct');
+        });
+
+        return item;
+    }
+
+}
+
 export class TransformationGroup extends TransformationListItem {
 
     public constructor(
@@ -234,6 +303,58 @@ export class TransformationGroup extends TransformationListItem {
 
 }
 
+export class PassPipelineGroup extends TransformationListItem {
+
+    public constructor(
+        public readonly groupName: string,
+        public readonly transformations: JsonTransformation[],
+        public readonly list: TransformationList,
+        labelStyle: string,
+        private allowApplyAll: boolean = false
+    ) {
+        super(
+            groupName, undefined, undefined, false, false,
+            labelStyle, ''
+        );
+
+        for (const xf of transformations)
+            this.addItem(new PassPipeline(xf, list));
+    }
+
+    public generateHtml(): JQuery {
+        const item = super.generateHtml();
+
+        item.addClass('transformation-group');
+
+        const labelContainer =
+            item.find('.tree-view-item-label-container').first();
+        labelContainer.addClass('transformation-list-item-label-container');
+
+        if (this.allowApplyAll)
+            $('<div>', {
+                class: 'transformation-list-apply-all',
+                text: 'Run All',
+                title: 'Run all passes with default parameters',
+                click: () => {
+                    vscode.postMessage({
+                        type: 'sdfv.apply_transformations',
+                        transformations: this.transformations,
+                    });
+                },
+            }).appendTo(labelContainer);
+
+        item.on('mouseover', () => {
+            labelContainer.addClass('hover-direct');
+        });
+
+        item.on('mouseout', () => {
+            labelContainer.removeClass('hover-direct');
+        });
+
+        return item;
+    }
+}
+
 class TransformationList extends CustomTreeView {
 
     static CAT_SELECTION_IDX = 0;
@@ -258,20 +379,22 @@ class TransformationList extends CustomTreeView {
             true
         );
         catViewport.list = this;
-        const catGlobal = new TransformationCategory(
-            'Global',
-            'Transformations relevant on a global scale',
+        const catPasses = new TransformationCategory(
+            'Passes & Pipelines',
+            'Passes to be applied on the entire SDFG',
             true
         );
-        catGlobal.list = this;
-        const catUncategorized = new TransformationCategory(
-            'Uncategorized',
-            'Uncategorized Transformations',
-            true
-        );
-        catUncategorized.list = this;
+        catPasses.list = this;
 
-        this.items = [catSelection, catViewport, catGlobal, catUncategorized];
+        const catUncat = new TransformationCategory(
+            'Uncategorized',
+            'Uncategorized, remaining transformations',
+            true
+        );
+        catUncat.list = this;
+        catUncat.hidden = true;
+
+        this.items = [catSelection, catViewport, catPasses, catUncat];
     }
 
     // We don't want to mutate the set of items, categories are supposed to
@@ -312,21 +435,42 @@ class TransformationList extends CustomTreeView {
 
         for (let i = 0; i < this.items.length; i++) {
             const category = transformations[i];
-            const groups: { [key: string]: JsonTransformation[] } = {};
+            const groups: {
+                [key: string]: {
+                    passPipeline: boolean,
+                    xforms: JsonTransformation[],
+                }
+            } = {};
             const subgraphTransformations = [];
             for (let j = 0; j < category.length; j++) {
                 const transformation = category[j];
                 if (transformation.type === 'SubgraphTransformation') {
                     subgraphTransformations.push(transformation);
-                } else {
-                    if (groups[transformation.transformation])
-                        groups[transformation.transformation].push(
+                } else if (
+                    (
+                        transformation.type === 'Pass' ||
+                        transformation.type === 'Pipeline'
+                    ) && transformation._category
+                ) {
+                    if (groups[transformation._category])
+                        groups[transformation._category].xforms.push(
                             transformation
                         );
                     else
-                        groups[transformation.transformation] = [
+                        groups[transformation._category] = {
+                            passPipeline: true,
+                            xforms: [transformation],
+                        };
+                } else {
+                    if (groups[transformation.transformation])
+                        groups[transformation.transformation].xforms.push(
                             transformation
-                        ];
+                        );
+                    else
+                        groups[transformation.transformation] = {
+                            passPipeline: false,
+                            xforms: [transformation],
+                        };
                 }
             }
 
@@ -339,11 +483,17 @@ class TransformationList extends CustomTreeView {
                     false
                 ));
             for (const grpName in groups) {
-                const xfList = groups[grpName];
-                this.items[i].addItem(new TransformationGroup(
-                    grpName, xfList, this, 'color: var(--' + xfGrpColor + ');',
-                    true
-                ));
+                const grp = groups[grpName];
+                if (grp.passPipeline)
+                    this.items[i].addItem(new PassPipelineGroup(
+                        grpName, grp.xforms, this,
+                        'color: var(--' + xfGrpColor + ');', true
+                    ));
+                else
+                    this.items[i].addItem(new TransformationGroup(
+                        grpName, grp.xforms, this,
+                        'color: var(--' + xfGrpColor + ');', true
+                    ));
             }
         }
 
