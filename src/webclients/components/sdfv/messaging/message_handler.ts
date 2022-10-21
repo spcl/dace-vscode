@@ -203,9 +203,10 @@ export class MessageHandler {
                 {
                     const xforms = sdfv.getTransformations();
                     clearSelectedTransformation();
-                    if (xforms.length === 4 &&
-                        (xforms[0].length > 0 || xforms[1].length > 0 ||
-                         xforms[2].length > 0 || xforms[3].length > 0))
+                    if (xforms.selection.length > 0 ||
+                        xforms.viewport.length > 0 ||
+                        xforms.passes.length > 0 ||
+                        xforms.uncategorized.length > 0)
                         refreshTransformationList();
                     else
                         getApplicableTransformations();
@@ -221,13 +222,27 @@ export class MessageHandler {
             case 'get_applicable_transformations_callback':
                 sdfv.setDaemonConnected(true);
                 if (message.transformations !== undefined)
-                    sdfv.setTransformations(
-                        [[], [], [], message.transformations]
-                    );
+                    sdfv.setTransformations({
+                        selection: [],
+                        viewport: [],
+                        passes: [],
+                        uncategorized: [{
+                            title: 'Uncategorized',
+                            ordering: 0,
+                            xforms: message.transformations,
+                        }],
+                    });
                 else
-                    sdfv.setTransformations([[], [], [], []]);
+                    sdfv.setTransformations({
+                        selection: [],
+                        viewport: [],
+                        passes: [],
+                        uncategorized: [],
+                    });
                 const hideLoading = true;
-                sortTransformations(refreshTransformationList, hideLoading);
+                sortTransformations(
+                    true, refreshTransformationList, hideLoading
+                );
                 break;
             case 'flopsCallback':
                 if (renderer?.get_overlay_manager().is_overlay_active(

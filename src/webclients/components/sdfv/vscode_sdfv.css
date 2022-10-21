@@ -243,8 +243,8 @@ pre.code {
   overflow-y: scroll;
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
-  min-width: 250px;
-  min-height: 200px;
+  min-width: 50px;
+  min-height: 50px;
 }
 
 #info-header {

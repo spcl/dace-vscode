@@ -1,7 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { JsonTransformation } from '../../transformations/transformations';
+import { JsonTransformation, JsonTransformationGroup, JsonTransformationList } from '../../transformations/transformations';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { generateAttributesTable } from '../utils/attributes_table';
 import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
@@ -79,13 +79,16 @@ export function getApplicableTransformations(): void {
  * @param {*} callback  Callback to call when sorting has been completed.
  */
 export async function sortTransformations(
-    callback: CallableFunction, ...args: any[]
+    resortAll: boolean = true, callback: CallableFunction, ...args: any[]
 ): Promise<void> {
+    // Run this asynchronosuly to not block the UI thread.
     setTimeout(() => {
-        const selectedXforms: JsonTransformation[] = [];
-        const viewportXforms: JsonTransformation[] = [];
-        const passesPipelines: JsonTransformation[] = [];
-        const unsortedXforms: JsonTransformation[] = [];
+        const sortedTransformations: JsonTransformationList = {
+            'selection': [],
+            'viewport': [],
+            'passes': [],
+            'uncategorized': [],
+        };
 
         const renderer = VSCodeRenderer.getInstance();
         if (!renderer)
@@ -94,21 +97,49 @@ export async function sortTransformations(
         const selectedElements = renderer.get_selected_elements();
         const clearSubgraphXforms = selectedElements.length <= 1;
 
-        const allXforms: JsonTransformation[] = [];
-        for (const cat of VSCodeSDFV.getInstance().getTransformations())
-            for (const transformation of cat)
-                allXforms.push(transformation);
+        // Gather all transformations that need to be sorted. If the resortAll
+        // flag is set, all transformations are sorted, otherwise passes are
+        // skipped.
+        const toSort: JsonTransformation[] = [];
+        const categoriesToSort: (
+            'selection' | 'viewport' | 'passes' | 'uncategorized'
+        )[] = resortAll ?
+            ['selection', 'viewport', 'passes', 'uncategorized'] :
+            ['selection', 'viewport', 'uncategorized'];
+        const currentXformList = VSCodeSDFV.getInstance().getTransformations();
+        for (const category of categoriesToSort) {
+            for (const group of currentXformList[category]) {
+                for (const xform of group.xforms) {
+                    if (clearSubgraphXforms &&
+                        xform.type === 'SubgraphTransformation')
+                        continue;
+                    toSort.push(xform);
+                }
+            }
+        }
+        if (!resortAll) {
+            for (const cat of currentXformList.passes)
+                sortedTransformations.passes.push(cat);
+        }
 
+        // Sort each transformation into the respective category.
         const visibleElements = renderer.visible_elements();
-
-        for (const xform of allXforms) {
+        const buckets: {
+            [key: string]: JsonTransformation[],
+        } = {
+            'selection': [],
+            'viewport': [],
+            'passes': [],
+            'uncategorized': [],
+        };
+        for (const xform of toSort) {
             // Subgraph Transformations always apply to the selection.
             if (xform.type === 'SubgraphTransformation') {
                 if (!clearSubgraphXforms)
-                    selectedXforms.push(xform);
+                    buckets['selection'].push(xform);
                 continue;
             } else if (xform.type === 'Pass' || xform.type === 'Pipeline') {
-                passesPipelines.push(xform);
+                buckets['passes'].push(xform);
                 continue;
             }
 
@@ -123,7 +154,7 @@ export async function sortTransformations(
                                     e.parent_id === xform.state_id &&
                                     e.id === Number(nid);
                             }).length > 0) {
-                            selectedXforms.push(xform);
+                            buckets['selection'].push(xform);
                             matched = true;
                             break;
                         }
@@ -137,7 +168,7 @@ export async function sortTransformations(
                                         e.state_id === xform.state_id &&
                                         e.id === Number(nid);
                                 }).length > 0) {
-                                viewportXforms.push(xform);
+                                buckets['viewport'].push(xform);
                                 matched = true;
                                 break;
                             }
@@ -152,7 +183,7 @@ export async function sortTransformations(
                                     e.sdfg.sdfg_list_id === xform.sdfg_id &&
                                     e.id === Number(nid);
                             }).length > 0) {
-                            selectedXforms.push(xform);
+                            buckets['selection'].push(xform);
                             matched = true;
                             break;
                         }
@@ -165,7 +196,7 @@ export async function sortTransformations(
                                         e.sdfg_id === xform.sdfg_id &&
                                         e.id === Number(nid);
                                 }).length > 0) {
-                                viewportXforms.push(xform);
+                                buckets['viewport'].push(xform);
                                 matched = true;
                                 break;
                             }
@@ -177,50 +208,80 @@ export async function sortTransformations(
             // Sort in global transformations.
             if (!matched && xform.state_id === -1 &&
                 Object.keys(xform._subgraph).length === 0) {
-                viewportXforms.push(xform);
+                xform.CATEGORY = 'Global';
+                buckets['viewport'].push(xform);
                 matched = true;
             }
 
             if (!matched)
-                unsortedXforms.push(xform);
+                buckets['uncategorized'].push(xform);
         }
 
-        const xformLists: [
-            JsonTransformation[],
-            JsonTransformation[],
-            JsonTransformation[],
-            JsonTransformation[],
-        ] = [
-            selectedXforms,
-            viewportXforms,
-            passesPipelines,
-            unsortedXforms,
-        ];
-
-        for (const xformList of xformLists) {
-            xformList.sort((a: any, b: any) => {
-                const sgXformType = 'SubgraphTransformation';
-
-                const aName = a.transformation;
-                const bName = b.transformation;
-                if (aName !== undefined && bName !== undefined) {
-                    if (a.type === sgXformType && b.type !== sgXformType)
-                        return -1;
-                    else if (a.type !== sgXformType && b.type === sgXformType)
-                        return 1;
-                    else
-                        return aName.localeCompare(bName);
-                } else if (aName !== undefined && bName === undefined) {
-                    return -1;
-                } else if (aName === undefined && bName !== undefined) {
-                    return 1;
+        // Perform grouping inside each category and sort the groups.
+        // For each group, perform sorting inside the group where applicable.
+        for (const ct of categoriesToSort) {
+            const groupDict: Map<string, JsonTransformationGroup> = new Map();
+            for (const xform of buckets[ct]) {
+                let groupName = xform.transformation;
+                let groupOrdering = 0;
+                if (xform.type === 'SubgraphTransformation') {
+                    groupName = 'Subgraph Transformations';
+                    groupOrdering = -1;
+                } else if (xform.type === 'Pass' || xform.type === 'Pipeline') {
+                    groupName = xform.CATEGORY ?? 'Others';
+                } else if (xform.CATEGORY === 'Global') {
+                    groupOrdering = 100;
                 }
 
+                if (groupDict.has(groupName))
+                    groupDict.get(groupName)?.xforms.push(xform);
+                else
+                    groupDict.set(groupName, {
+                        title: groupName,
+                        ordering: groupOrdering,
+                        xforms: [xform],
+                    });
+            }
+
+            for (const [_, grp] of groupDict) {
+                sortedTransformations[ct].push(grp);
+
+                // Groups in the passes category are sorted pipelines first and
+                // then all passes. The remaining groups are sorted
+                // alphabetically.
+                if (ct === 'passes') {
+                    grp.xforms.sort((a, b) => {
+                        if (a.type === 'Pipeline' && b.type !== 'Pipeline')
+                            return -1;
+                        else if (a.type !== 'Pipeline' && b.type === 'Pipeline')
+                            return 1;
+
+                        if (a.transformation > b.transformation)
+                            return 1;
+                        if (a.transformation < b.transformation)
+                            return -1;
+                        return 0;
+                    });
+                } else {
+                    grp.xforms.sort();
+                }
+            }
+
+            sortedTransformations[ct].sort((catA, catB) => {
+                if (catA.ordering > catB.ordering)
+                    return 1;
+                if (catA.ordering < catB.ordering)
+                    return -1;
+
+                if (catA.title > catB.title)
+                    return 1;
+                if (catA.title < catB.title)
+                    return -1;
                 return 0;
             });
         }
 
-        VSCodeSDFV.getInstance().setTransformations(xformLists);
+        VSCodeSDFV.getInstance().setTransformations(sortedTransformations);
 
         // Call the callback function if one was provided.
         if (callback !== undefined)

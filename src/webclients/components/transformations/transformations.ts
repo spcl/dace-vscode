@@ -67,10 +67,27 @@ export type JsonTransformation = {
     exp_idx?: number,
     sdfg_id?: number,
     state_id?: number,
-    _category?: string,
+    CATEGORY?: string,
     _subgraph?: any,
     docstring?: string,
 };
+
+export type JsonTransformationGroup = {
+    title: string,
+    ordering: number,
+    xforms: JsonTransformation[],
+};
+
+export type JsonTransformationList = {
+    'selection': JsonTransformationGroup[],
+    'viewport': JsonTransformationGroup[],
+    'passes': JsonTransformationGroup[],
+    'uncategorized': JsonTransformationGroup[],
+};
+
+export type JsonTransformationCategories = (
+    'selection' | 'viewport' | 'passes' | 'uncategorized'
+)[];
 
 export class Transformation extends TransformationListItem {
 
@@ -420,81 +437,34 @@ class TransformationList extends CustomTreeView {
         return count;
     }
 
-    public setTransformations(transformations: JsonTransformation[][]): void {
+    public setTransformations(transformations: JsonTransformationList): void {
         this.clear('', false);
 
-        // Make sure the transformations received are the same length, if not,
-        // there must be an internal error somewhere.
-        if (this.items.length !== transformations.length) {
-            console.error(
-                'Transformation-list length mismatch! Expected ' +
-                this.items.length + ' but got ' + transformations.length + '.'
-            );
-            return;
-        }
-
-        for (let i = 0; i < this.items.length; i++) {
-            const category = transformations[i];
-            const groups: {
-                [key: string]: {
-                    passPipeline: boolean,
-                    xforms: JsonTransformation[],
-                }
-            } = {};
-            const subgraphTransformations = [];
-            for (let j = 0; j < category.length; j++) {
-                const transformation = category[j];
-                if (transformation.type === 'SubgraphTransformation') {
-                    subgraphTransformations.push(transformation);
-                } else if (
-                    (
-                        transformation.type === 'Pass' ||
-                        transformation.type === 'Pipeline'
-                    ) && transformation._category
-                ) {
-                    if (groups[transformation._category])
-                        groups[transformation._category].xforms.push(
-                            transformation
-                        );
-                    else
-                        groups[transformation._category] = {
-                            passPipeline: true,
-                            xforms: [transformation],
-                        };
-                } else {
-                    if (groups[transformation.transformation])
-                        groups[transformation.transformation].xforms.push(
-                            transformation
-                        );
-                    else
-                        groups[transformation.transformation] = {
-                            passPipeline: false,
-                            xforms: [transformation],
-                        };
-                }
-            }
-
-            const sgGrpColor = 'vscode-textPreformat-foreground';
-            const xfGrpColor = 'vscode-textLink-foreground';
-            if (subgraphTransformations.length)
-                this.items[i].addItem(new TransformationGroup(
-                    'SubgraphTransformations', subgraphTransformations,
-                    this, 'color: var(--' + sgGrpColor + ');',
-                    false
-                ));
-            for (const grpName in groups) {
-                const grp = groups[grpName];
-                if (grp.passPipeline)
-                    this.items[i].addItem(new PassPipelineGroup(
-                        grpName, grp.xforms, this,
-                        'color: var(--' + xfGrpColor + ');', true
-                    ));
-                else
+        const allCats: JsonTransformationCategories = [
+            'selection', 'viewport', 'passes', 'uncategorized'
+        ];
+        let i = 0;
+        for (const ct of allCats) {
+            const groups = transformations[ct];
+            for (const grp of groups) {
+                if (grp.title === 'Subgraph Transformations') {
                     this.items[i].addItem(new TransformationGroup(
-                        grpName, grp.xforms, this,
-                        'color: var(--' + xfGrpColor + ');', true
+                        grp.title, grp.xforms, this,
+                        'color: var(--vscode-textPreformat-foreground);', true
                     ));
+                } else if (ct === 'passes') {
+                    this.items[i].addItem(new PassPipelineGroup(
+                        grp.title, grp.xforms, this,
+                        'color: var(--vscode-textLink-foreground);', true
+                    ));
+                } else {
+                    this.items[i].addItem(new TransformationGroup(
+                        grp.title, grp.xforms, this,
+                        'color: var(--vscode-textLink-foreground);', true
+                    ));
+                }
             }
+            i++;
         }
 
         this.notifyDataChanged();

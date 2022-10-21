@@ -216,7 +216,6 @@ def get_transformations(sdfg_json, selected_elements, permissive):
     # delays when booting in daemon mode.
     from dace.transformation.optimizer import SDFGOptimizer
     from dace.transformation import passes
-    from dace.transformation.pass_pipeline import Pipeline, PassCategory
     from dace.sdfg.graph import SubgraphView
 
     old_meta = utils.disable_save_metadata()
@@ -244,8 +243,7 @@ def get_transformations(sdfg_json, selected_elements, permissive):
         try:
             all_passes = passes.available_passes(False)
             for ps in all_passes:
-                if (ps._category == PassCategory.Helper or
-                    ps._category == PassCategory.Analysis):
+                if ps.CATEGORY == 'Helper' or ps.CATEGORY == 'Analysis':
                     continue
                 docstrings[ps.__name__] = ps.__doc__
                 pass_instance = ps()

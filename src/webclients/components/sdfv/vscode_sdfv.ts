@@ -51,7 +51,7 @@ import {
     StaticFlopsOverlay,
     traverse_sdfg_scopes,
 } from '@spcl/sdfv/out';
-import { JsonTransformation } from '../transformations/transformations';
+import { JsonTransformation, JsonTransformationList } from '../transformations/transformations';
 import { refreshAnalysisPane } from './analysis/analysis';
 import {
     BreakpointIndicator,
@@ -117,7 +117,12 @@ export class VSCodeSDFV extends SDFV {
     private viewingHistoryState: boolean = false;
     private showingBreakpoints: boolean = false;
     private daemonConnected: boolean = false;
-    private transformations: CategorizedTransformationList = [[], [], [], []];
+    private transformations: JsonTransformationList = {
+        selection: [],
+        viewport: [],
+        passes: [],
+        uncategorized: [],
+    };
     private selectedTransformation: JsonTransformation | null = null;
 
     public infoTrayExplicitlyHidden: boolean = false;
@@ -737,7 +742,7 @@ export class VSCodeSDFV extends SDFV {
         return this.daemonConnected;
     }
 
-    public getTransformations(): CategorizedTransformationList {
+    public getTransformations(): JsonTransformationList {
         return this.transformations;
     }
 
@@ -785,9 +790,9 @@ export class VSCodeSDFV extends SDFV {
         VSCodeRenderer.getInstance()?.setDaemonConnected(daemonConnected);
     }
 
-    public setTransformations(
-        transformations: CategorizedTransformationList
-    ): void {
+    public setTransformations(transformations: JsonTransformationList): void {
+        console.log(transformations);
+
         this.transformations = transformations;
     }
 
@@ -854,7 +859,7 @@ export function vscodeHandleEvent(event: string, data: any): void {
             if (data && data.multi_selection_changed)
                 getApplicableTransformations();
             else
-                sortTransformations(refreshTransformationList, true);
+                sortTransformations(false, refreshTransformationList, true);
             break;
     }
 }
