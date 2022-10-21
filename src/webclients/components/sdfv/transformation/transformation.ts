@@ -321,7 +321,7 @@ export function clearSelectedTransformation(): void {
  *
  * @param {*} xform     The transformation to display.
  */
-export function showTransformationDetails(xform: any): void {
+export function showTransformationDetails(xform: JsonTransformation): void {
     $('#goto-source-btn').hide();
     $('#goto-cpp-btn').hide();
 
@@ -357,22 +357,24 @@ export function showTransformationDetails(xform: any): void {
     );
 
     const affectedIds = transformationGetAffectedUUIDs(xform);
-    zoomToUUIDs(affectedIds);
+    if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
+        zoomToUUIDs(affectedIds);
 
-    $('<div>', {
-        class: 'button',
-        click: () => {
-            zoomToUUIDs(affectedIds);
-        },
-        mouseenter: () => {
-            highlightUUIDs(affectedIds);
-        },
-        mouseleave: () => {
-            VSCodeRenderer.getInstance()?.draw_async();
-        },
-    }).append($('<span>', {
-        'text': 'Zoom to area',
-    })).appendTo(xformButtonContainer);
+    if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
+        $('<div>', {
+            class: 'button',
+            click: () => {
+                zoomToUUIDs(affectedIds);
+            },
+            mouseenter: () => {
+                highlightUUIDs(affectedIds);
+            },
+            mouseleave: () => {
+                VSCodeRenderer.getInstance()?.draw_async();
+            },
+        }).append($('<span>', {
+            'text': 'Zoom to area',
+        })).appendTo(xformButtonContainer);
 
     $('<div>', {
         class: 'button',
@@ -408,17 +410,18 @@ export function showTransformationDetails(xform: any): void {
         'text': 'Apply',
     })).appendTo(xformButtonContainer);
 
-    $('<div>', {
-        class: 'button',
-        click: () => {
-            vscode.postMessage({
-                type: 'dace.export_transformation_to_file',
-                transformation: xform,
-            });
-        },
-    }).append($('<span>', {
-        text: 'Export To File',
-    })).appendTo(xformButtonContainer);
+    if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
+        $('<div>', {
+            class: 'button',
+            click: () => {
+                vscode.postMessage({
+                    type: 'dace.export_transformation_to_file',
+                    transformation: xform,
+                });
+            },
+        }).append($('<span>', {
+            text: 'Export To File',
+        })).appendTo(xformButtonContainer);
 
     const tableContainer = $('<div>', {
         'class': 'container-fluid attr-table-base-container',
