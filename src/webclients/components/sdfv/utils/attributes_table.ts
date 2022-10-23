@@ -909,7 +909,7 @@ export async function attributeTablePutEntry(
     if (editableKey) {
         keyCell = $('<div>', {
             'class': 'attr-table-cell ' + (
-                invertedSpacing ? 'col-9 attr-cell-l' : 'col-3 attr-cell-s'
+                invertedSpacing ? 'attr-cell-l' : 'attr-cell-s'
             ),
         }).appendTo(contentRow);
         const keyInput = $('<input>', {
@@ -922,7 +922,7 @@ export async function attributeTablePutEntry(
     } else {
         keyCell = $('<div>', {
             'class': 'attr-table-heading attr-table-cell ' + (
-                invertedSpacing ? 'col-9 attr-cell-l' : 'col-3 attr-cell-s'
+                invertedSpacing ? 'attr-cell-l' : 'attr-cell-s'
             ),
             'text': key,
         }).appendTo(contentRow);
@@ -944,7 +944,7 @@ export async function attributeTablePutEntry(
 
     const valueCell = $('<div>', {
         'class': 'attr-table-cell ' + (
-            invertedSpacing ? 'col-3 attr-cell-s' : 'col-9 attr-cell-l'
+            invertedSpacing ? 'attr-cell-s' : 'attr-cell-l'
         ),
     }).appendTo(contentRow);
 

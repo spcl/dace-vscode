@@ -78,13 +78,6 @@ import { LViewRenderer } from '@spcl/sdfv/out/local_view/lview_renderer';
 declare const vscode: any;
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
 
-type CategorizedTransformationList = [
-    JsonTransformation[],
-    JsonTransformation[],
-    JsonTransformation[],
-    JsonTransformation[],
-];
-
 export class VSCodeSDFV extends SDFV {
 
     public static readonly DEBUG_DRAW: boolean = false;
@@ -549,6 +542,8 @@ export class VSCodeSDFV extends SDFV {
                         elem.data.node.attributes.sdfg
                     );
             }
+
+            infoBoxCheckStacking($('#info-container'));
         } else {
             this.clearInfoBox();
         }
@@ -791,8 +786,6 @@ export class VSCodeSDFV extends SDFV {
     }
 
     public setTransformations(transformations: JsonTransformationList): void {
-        console.log(transformations);
-
         this.transformations = transformations;
     }
 
@@ -884,19 +877,10 @@ function infoBoxCheckUncoverTopBar(
  */
 function infoBoxCheckStacking(infoContainer: JQuery<HTMLElement>): void {
     const innerWidth = infoContainer.innerWidth();
-    if (innerWidth && innerWidth <= 575) {
-        if (infoContainer.attr('stack') !== 'true') {
-            infoContainer.attr('stack', 'true');
-            $('.attr-cell-s').removeClass('col-3').addClass('col-12');
-            $('.attr-cell-l').removeClass('col-9').addClass('col-12');
-        }
-    } else {
-        if (infoContainer.attr('stack') === 'true') {
-            infoContainer.attr('stack', 'false');
-            $('.attr-cell-s').removeClass('col-12').addClass('col-3');
-            $('.attr-cell-l').removeClass('col-12').addClass('col-9');
-        }
-    }
+    if (innerWidth && innerWidth <= 575)
+        infoContainer.addClass('stacked');
+    else
+        infoContainer.removeClass('stacked');
 }
 
 $(() => {

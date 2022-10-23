@@ -386,6 +386,7 @@ pre.code {
   align-items: center;
   overflow: hidden;
   padding-left: 0;
+  flex: 0 0 auto;
 }
 
 .attr-row-prefix-cell {
@@ -393,6 +394,24 @@ pre.code {
 }
 
 .attr-table-cell.col-12 {
+  margin-bottom: .5rem;
+}
+
+.attr-cell-s {
+  width: 25%;
+}
+
+.attr-cell-l {
+  width: 75%;
+}
+
+#info-container.stacked .attr-cell-s {
+  width: 100%;
+  margin-bottom: .5rem;
+}
+
+#info-container.stacked .attr-cell-l {
+  width: 100%;
   margin-bottom: .5rem;
 }
 
