@@ -1,6 +1,25 @@
 # Change Log
 
-## Pre-Release (1.3.2)
+## Pre-release (1.5.0)
+
+Currently no new features in the pre-release.
+
+## 1.4
+
+### 1.4.0
+
+- Improve the responsiveness of the information side panel
+- Fix issues with transformation properties not being saved when modified
+- Allow SDFG cutouts to be saved as edits to the SDFG
+- Integrate SDFG passes into the transformation list, allowing passes and
+  pipelines to be applied similar to transformations
+- Clean up and re-organize the transformation list for less visual clutter,
+  hiding uncategorized transformations and removing the separate category for
+  'global' transformations
+
+## 1.3
+
+### 1.3.0 - 1.3.2
 
 - Allow changing the editor layout through the UI
 - Improve the behavior of the information side panel
