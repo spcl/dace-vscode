@@ -248,7 +248,7 @@ def get_transformations(sdfg_json, selected_elements, permissive):
                 docstrings[ps.__name__] = ps.__doc__
                 pass_instance = ps()
                 transformations.append(pass_instance.to_json())
-        except NameError:
+        except (NameError, AttributeError):
             # Compatibility with legacy versions where no method for getting
             # available passes exists.
             pass
