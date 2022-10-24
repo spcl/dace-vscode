@@ -2718,7 +2718,7 @@
       "value_type": "typeclass"
     }
   },
-  "Pipeline": {
+  "PipelineScope": {
     "init_size": {
       "metatype": "SymbolicProperty",
       "desc": "Number of initialization iterations.",
@@ -3368,6 +3368,40 @@
       "default": {},
       "key_type": "str",
       "value_type": "str"
+    }
+  },
+  "Pass": {},
+  "VisitorPass": {},
+  "StatePass": {},
+  "ScopePass": {},
+  "Pipeline": {
+    "_passes": {
+      "metatype": "list",
+      "desc": "List of passes that this pipeline contains",
+      "category": "General",
+      "default": [],
+      "element_type": "Pass"
+    },
+    "_pass_names": {
+      "metatype": "set",
+      "desc": "List of passe names that this pipeline contains",
+      "category": "General",
+      "default": []
+    }
+  },
+  "FixedPointPipeline": {
+    "_passes": {
+      "metatype": "list",
+      "desc": "List of passes that this pipeline contains",
+      "category": "General",
+      "default": [],
+      "element_type": "Pass"
+    },
+    "_pass_names": {
+      "metatype": "set",
+      "desc": "List of passe names that this pipeline contains",
+      "category": "General",
+      "default": []
     }
   },
   "PatternTransformation": {
@@ -6206,6 +6240,9 @@
       "value_type": "typeclass"
     }
   },
+  "StateReachability": {},
+  "AccessSets": {},
+  "FindAccessNodes": {},
   "MapCollapse": {
     "sdfg_id": {
       "metatype": "int",
@@ -8090,5 +8127,289 @@
       "category": "General",
       "default": []
     }
-  }
+  },
+  "ArrayElimination": {},
+  "ConsolidateEdges": {},
+  "ConstantPropagation": {
+    "recursive": {
+      "metatype": "bool",
+      "desc": "Propagagte recursively through nested SDFGs",
+      "category": "General",
+      "default": true
+    },
+    "progress": {
+      "metatype": "bool",
+      "desc": "Show progress",
+      "category": "General",
+      "default": null
+    }
+  },
+  "DeadDataflowElimination": {
+    "skip_library_nodes": {
+      "metatype": "bool",
+      "desc": "If True, does not remove library nodes if their results are unused. Otherwise removes library nodes without side effects.",
+      "category": "General",
+      "default": false
+    },
+    "remove_persistent_memory": {
+      "metatype": "bool",
+      "desc": "If True, marks code with Persistent allocation lifetime as dead",
+      "category": "General",
+      "default": false
+    }
+  },
+  "DeadStateElimination": {},
+  "FuseStates": {
+    "permissive": {
+      "metatype": "bool",
+      "desc": "If True, ignores some race conditions checks.",
+      "category": "General",
+      "default": false
+    },
+    "progress": {
+      "metatype": "bool",
+      "desc": "Whether to print progress, or None for default (print after 5 seconds).",
+      "category": "General",
+      "default": null
+    }
+  },
+  "InlineSDFGs": {
+    "permissive": {
+      "metatype": "bool",
+      "desc": "If True, ignores some checks on inlining.",
+      "category": "General",
+      "default": false
+    },
+    "progress": {
+      "metatype": "bool",
+      "desc": "Whether to print progress, or None for default (print after 5 seconds).",
+      "category": "General",
+      "default": null
+    },
+    "multistate": {
+      "metatype": "bool",
+      "desc": "If True, include multi-state inlining.",
+      "category": "General",
+      "default": true
+    }
+  },
+  "OptionalArrayInference": {},
+  "PatternMatchAndApply": {
+    "transformations": {
+      "metatype": "list",
+      "desc": "The list of transformations to apply",
+      "category": "General",
+      "default": [],
+      "element_type": "PatternTransformation"
+    },
+    "permissive": {
+      "metatype": "bool",
+      "desc": "Whether to apply in permissive mode, i.e., apply in more cases where it may be unsafe.",
+      "category": "General",
+      "default": false
+    },
+    "validate": {
+      "metatype": "bool",
+      "desc": "If True, validates the SDFG after all transformations have been applied.",
+      "category": "General",
+      "default": true
+    },
+    "validate_all": {
+      "metatype": "bool",
+      "desc": "If True, validates the SDFG after each transformation applies.",
+      "category": "General",
+      "default": false
+    },
+    "states": {
+      "metatype": "list",
+      "desc": "If not None, only applies transformations to the given states.",
+      "category": "General",
+      "default": null,
+      "element_type": "SDFGState"
+    },
+    "print_report": {
+      "metatype": "bool",
+      "desc": "Whether to show debug prints (or None to use configuration file).",
+      "category": "General",
+      "default": null
+    },
+    "progress": {
+      "metatype": "bool",
+      "desc": "Whether to show progress printouts (or None to use configuration file).",
+      "category": "General",
+      "default": null
+    }
+  },
+  "PatternMatchAndApplyRepeated": {
+    "order_by_transformation": {
+      "metatype": "bool",
+      "desc": "Whether or not to order by transformation.",
+      "category": "General",
+      "default": true
+    },
+    "transformations": {
+      "metatype": "list",
+      "desc": "The list of transformations to apply",
+      "category": "General",
+      "default": [],
+      "element_type": "PatternTransformation"
+    },
+    "permissive": {
+      "metatype": "bool",
+      "desc": "Whether to apply in permissive mode, i.e., apply in more cases where it may be unsafe.",
+      "category": "General",
+      "default": false
+    },
+    "validate": {
+      "metatype": "bool",
+      "desc": "If True, validates the SDFG after all transformations have been applied.",
+      "category": "General",
+      "default": true
+    },
+    "validate_all": {
+      "metatype": "bool",
+      "desc": "If True, validates the SDFG after each transformation applies.",
+      "category": "General",
+      "default": false
+    },
+    "states": {
+      "metatype": "list",
+      "desc": "If not None, only applies transformations to the given states.",
+      "category": "General",
+      "default": null,
+      "element_type": "SDFGState"
+    },
+    "print_report": {
+      "metatype": "bool",
+      "desc": "Whether to show debug prints (or None to use configuration file).",
+      "category": "General",
+      "default": null
+    },
+    "progress": {
+      "metatype": "bool",
+      "desc": "Whether to show progress printouts (or None to use configuration file).",
+      "category": "General",
+      "default": null
+    }
+  },
+  "PatternApplyOnceEverywhere": {
+    "order_by_transformation": {
+      "metatype": "bool",
+      "desc": "Whether or not to order by transformation.",
+      "category": "General",
+      "default": true
+    },
+    "transformations": {
+      "metatype": "list",
+      "desc": "The list of transformations to apply",
+      "category": "General",
+      "default": [],
+      "element_type": "PatternTransformation"
+    },
+    "permissive": {
+      "metatype": "bool",
+      "desc": "Whether to apply in permissive mode, i.e., apply in more cases where it may be unsafe.",
+      "category": "General",
+      "default": false
+    },
+    "validate": {
+      "metatype": "bool",
+      "desc": "If True, validates the SDFG after all transformations have been applied.",
+      "category": "General",
+      "default": true
+    },
+    "validate_all": {
+      "metatype": "bool",
+      "desc": "If True, validates the SDFG after each transformation applies.",
+      "category": "General",
+      "default": false
+    },
+    "states": {
+      "metatype": "list",
+      "desc": "If not None, only applies transformations to the given states.",
+      "category": "General",
+      "default": null,
+      "element_type": "SDFGState"
+    },
+    "print_report": {
+      "metatype": "bool",
+      "desc": "Whether to show debug prints (or None to use configuration file).",
+      "category": "General",
+      "default": null
+    },
+    "progress": {
+      "metatype": "bool",
+      "desc": "Whether to show progress printouts (or None to use configuration file).",
+      "category": "General",
+      "default": null
+    }
+  },
+  "RemoveUnusedSymbols": {
+    "recursive": {
+      "metatype": "bool",
+      "desc": "Prune nested SDFGs recursively",
+      "category": "General",
+      "default": true
+    }
+  },
+  "ScalarToSymbolPromotion": {
+    "ignore": {
+      "metatype": "set",
+      "desc": "Fields that should not be promoted.",
+      "category": "General",
+      "default": []
+    },
+    "transients_only": {
+      "metatype": "bool",
+      "desc": "Promote only transients.",
+      "category": "General",
+      "default": true
+    },
+    "integers_only": {
+      "metatype": "bool",
+      "desc": "Allow promotion of integer scalars only.",
+      "category": "General",
+      "default": true
+    }
+  },
+  "SimplifyPass": {
+    "validate": {
+      "metatype": "bool",
+      "desc": "Whether to validate the SDFG at the end of the pipeline.",
+      "category": "General",
+      "default": false
+    },
+    "validate_all": {
+      "metatype": "bool",
+      "desc": "Whether to validate the SDFG after each pass.",
+      "category": "General",
+      "default": false
+    },
+    "skip": {
+      "metatype": "set",
+      "desc": "Set of pass names to skip.",
+      "category": "General",
+      "default": []
+    },
+    "verbose": {
+      "metatype": "bool",
+      "desc": "Whether to print reports after every pass.",
+      "category": "General",
+      "default": false
+    },
+    "_passes": {
+      "metatype": "list",
+      "desc": "List of passes that this pipeline contains",
+      "category": "General",
+      "default": [],
+      "element_type": "Pass"
+    },
+    "_pass_names": {
+      "metatype": "set",
+      "desc": "List of passe names that this pipeline contains",
+      "category": "General",
+      "default": []
+    }
+  },
+  "TransientReuse": {}
 }

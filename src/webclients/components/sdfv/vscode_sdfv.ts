@@ -51,7 +51,7 @@ import {
     StaticFlopsOverlay,
     traverse_sdfg_scopes,
 } from '@spcl/sdfv/out';
-import { JsonTransformation } from '../transformations/transformations';
+import { JsonTransformation, JsonTransformationList } from '../transformations/transformations';
 import { refreshAnalysisPane } from './analysis/analysis';
 import {
     BreakpointIndicator,
@@ -77,13 +77,6 @@ import { LViewRenderer } from '@spcl/sdfv/out/local_view/lview_renderer';
 
 declare const vscode: any;
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
-
-type CategorizedTransformationList = [
-    JsonTransformation[],
-    JsonTransformation[],
-    JsonTransformation[],
-    JsonTransformation[],
-];
 
 export class VSCodeSDFV extends SDFV {
 
@@ -117,7 +110,12 @@ export class VSCodeSDFV extends SDFV {
     private viewingHistoryState: boolean = false;
     private showingBreakpoints: boolean = false;
     private daemonConnected: boolean = false;
-    private transformations: CategorizedTransformationList = [[], [], [], []];
+    private transformations: JsonTransformationList = {
+        selection: [],
+        viewport: [],
+        passes: [],
+        uncategorized: [],
+    };
     private selectedTransformation: JsonTransformation | null = null;
 
     public infoTrayExplicitlyHidden: boolean = false;
@@ -165,8 +163,11 @@ export class VSCodeSDFV extends SDFV {
      * Show the info box and its necessary components.
      */
     public infoBoxShow(overrideHidden: boolean = false): void {
-        if (!this.infoTrayExplicitlyHidden || overrideHidden)
-            $('#info-container').addClass('show');
+        if (!this.infoTrayExplicitlyHidden || overrideHidden) {
+            const infoBox = $('#info-container');
+            infoBoxCheckUncoverTopBar(infoBox, $('#top-bar'));
+            infoBox.addClass('show');
+        }
     }
 
     /**
@@ -541,6 +542,8 @@ export class VSCodeSDFV extends SDFV {
                         elem.data.node.attributes.sdfg
                     );
             }
+
+            infoBoxCheckStacking($('#info-container'));
         } else {
             this.clearInfoBox();
         }
@@ -734,7 +737,7 @@ export class VSCodeSDFV extends SDFV {
         return this.daemonConnected;
     }
 
-    public getTransformations(): CategorizedTransformationList {
+    public getTransformations(): JsonTransformationList {
         return this.transformations;
     }
 
@@ -782,9 +785,7 @@ export class VSCodeSDFV extends SDFV {
         VSCodeRenderer.getInstance()?.setDaemonConnected(daemonConnected);
     }
 
-    public setTransformations(
-        transformations: CategorizedTransformationList
-    ): void {
+    public setTransformations(transformations: JsonTransformationList): void {
         this.transformations = transformations;
     }
 
@@ -851,9 +852,35 @@ export function vscodeHandleEvent(event: string, data: any): void {
             if (data && data.multi_selection_changed)
                 getApplicableTransformations();
             else
-                sortTransformations(refreshTransformationList, true);
+                sortTransformations(false, refreshTransformationList, true);
             break;
     }
+}
+
+function infoBoxCheckUncoverTopBar(
+    infoContainer: JQuery<HTMLElement>, topBar: JQuery<HTMLElement>
+): void {
+    // If the info container is to the side, ensure it doesn't cover up the
+    // top bar when shown.
+    if (infoContainer.hasClass('offcanvas-end')) {
+        const topBarHeight = topBar.outerHeight(false);
+        infoContainer.css('top', topBarHeight + 'px');
+    } else {
+        infoContainer.css('top', '');
+    }
+}
+
+/**
+ * Check if the info box is wide enough to show keys / values side-by-side.
+ * If not, stack them one on top of the other.
+ * @param infoContainer The info box container.
+ */
+function infoBoxCheckStacking(infoContainer: JQuery<HTMLElement>): void {
+    const innerWidth = infoContainer.innerWidth();
+    if (innerWidth && innerWidth <= 575)
+        infoContainer.addClass('stacked');
+    else
+        infoContainer.removeClass('stacked');
 }
 
 $(() => {
@@ -862,6 +889,7 @@ $(() => {
     const infoDragBar = $('#info-drag-bar');
     const expandInfoBtn = $('#expand-info-btn');
     const infoCloseBtn = $('#info-close-btn');
+    const topBar = $('#top-bar');
 
     // Set up resizing of the info drawer.
     let draggingDragInfoBar = false;
@@ -869,24 +897,24 @@ $(() => {
     let lastHorHeight = infoContainer.css('min-height');
     const infoChangeHeightHandler = (e: any) => {
         if (draggingDragInfoBar) {
-            const documentHeight = $('body').height();
+            const documentHeight = $('body').innerHeight();
             if (documentHeight) {
                 const newHeight = documentHeight - e.originalEvent.y;
                 if (newHeight < documentHeight) {
-                    infoContainer.height(newHeight);
                     lastHorHeight = newHeight.toString() + 'px';
+                    infoContainer.height(lastHorHeight);
                 }
             }
         }
     };
     const infoChangeWidthHandler = (e: any) => {
         if (draggingDragInfoBar) {
-            const documentWidth = $('body').width();
+            const documentWidth = $('body').innerWidth();
             if (documentWidth) {
                 const newWidth = documentWidth - e.originalEvent.x;
                 if (newWidth < documentWidth) {
-                    infoContainer.width(newWidth);
                     lastVertWidth = newWidth.toString() + 'px';
+                    infoContainer.width(lastVertWidth);
                 }
             }
         }
@@ -914,6 +942,8 @@ $(() => {
             infoContainer.addClass('offcanvas-bottom');
             infoDragBar.removeClass('gutter-vertical');
             infoDragBar.addClass('gutter-horizontal');
+            expandInfoBtn.removeClass('expand-info-btn-top');
+            expandInfoBtn.addClass('expand-info-btn-bottom');
             $(document).off('mousemove', infoChangeWidthHandler);
             $(document).on('mousemove', infoChangeHeightHandler);
             infoContainer.width('100%');
@@ -923,16 +953,24 @@ $(() => {
             infoContainer.addClass('offcanvas-end');
             infoDragBar.removeClass('gutter-horizontal');
             infoDragBar.addClass('gutter-vertical');
+            expandInfoBtn.removeClass('expand-info-btn-bottom');
+            expandInfoBtn.addClass('expand-info-btn-top');
             $(document).off('mousemove', infoChangeHeightHandler);
             $(document).on('mousemove', infoChangeWidthHandler);
             infoContainer.height('100%');
             infoContainer.width(lastVertWidth);
         }
+        infoBoxCheckStacking(infoContainer);
+        infoBoxCheckUncoverTopBar(infoContainer, topBar);
         vscode.postMessage({
             type: 'sdfv.set_split_direction',
             direction: SPLIT_DIRECTION,
         });
     });
+
+    new ResizeObserver(() => {
+        infoBoxCheckStacking(infoContainer);
+    }).observe(infoContainer[0]);
 
     // Set up toggling the info tray.
     infoCloseBtn.on('click', () => {
@@ -942,6 +980,7 @@ $(() => {
     });
     expandInfoBtn.on('click', () => {
         expandInfoBtn.hide();
+        infoBoxCheckUncoverTopBar(infoContainer, topBar);
         infoContainer.addClass('show');
         VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = false;
     });

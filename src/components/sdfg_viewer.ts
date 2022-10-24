@@ -557,6 +557,10 @@ export class SdfgViewerProvider
                 'offcanvas offcanvas-bottom'
             );
             baseHtml = baseHtml.replace(
+                'expand-info-btn-top',
+                'expand-info-btn-bottom'
+            );
+            baseHtml = baseHtml.replace(
                 'id="layout-toggle-btn" class="vertical"',
                 'id="layout-toggle-btn" class="horizontal"'
             );

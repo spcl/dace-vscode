@@ -16,7 +16,8 @@ export class CustomTreeViewItem {
         protected unfoldDoubleClick: boolean,
         protected labelStyle: string | undefined = undefined,
         protected iconStyle: string | undefined = undefined,
-        protected readonly MEDIA_DIR: string | undefined = undefined
+        protected readonly MEDIA_DIR: string | undefined = undefined,
+        public hidden: boolean = false
     ) {
     }
 
@@ -30,7 +31,7 @@ export class CustomTreeViewItem {
 
     public generateHtml(): JQuery {
         const item = $('<li>', {
-            'class': 'tree-view-item',
+            'class': 'tree-view-item' + (this.hidden ? ' hidden' : ''),
             'mouseover': (event: MouseEvent) => {
                 item.addClass('hover');
                 event.stopPropagation();

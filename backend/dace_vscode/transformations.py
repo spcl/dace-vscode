@@ -1,8 +1,12 @@
 # Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
+from email.errors import UndecodableBytesDefect
 from dace import nodes, serialize
-from dace.transformation.transformation import SubgraphTransformation
+from dace.transformation.transformation import (SubgraphTransformation,
+                                                TransformationBase)
+from dace.transformation.pass_pipeline import Pass, Pipeline
+from matplotlib.pyplot import isinteractive
 from dace_vscode import utils
 import sys
 import traceback
@@ -149,13 +153,25 @@ def apply_transformations(sdfg_json, transformation_json_list):
                 },
             }
         try:
-            target_sdfg = sdfg.sdfg_list[transformation.sdfg_id]
-            transformation._sdfg = target_sdfg
-            if isinstance(transformation, SubgraphTransformation):
-                sdfg.append_transformation(transformation)
-                transformation.apply(target_sdfg)
+            if isinstance(transformation, TransformationBase):
+                target_sdfg = sdfg.sdfg_list[transformation.sdfg_id]
+                transformation._sdfg = target_sdfg
+                if isinstance(transformation, SubgraphTransformation):
+                    sdfg.append_transformation(transformation)
+                    transformation.apply(target_sdfg)
+                else:
+                    transformation.apply_pattern(target_sdfg)
+            elif isinstance(transformation, Pipeline):
+                pipeline_results = dict()
+                transformation.apply_pass(sdfg, pipeline_results)
+            elif isinstance(transformation, Pass):
+                # Convert passes to pipelines to ensure all dependencies are
+                # run.
+                pipeline_results = dict()
+                pipeline = Pipeline([transformation])
+                pipeline.apply_pass(sdfg, pipeline_results)
             else:
-                transformation.apply_pattern(target_sdfg)
+                raise Exception('Invalid transformation type')
         except Exception as e:
             print(traceback.format_exc(), file=sys.stderr)
             sys.stderr.flush()
@@ -199,6 +215,7 @@ def get_transformations(sdfg_json, selected_elements, permissive):
     # We lazy import DaCe, not to break cyclic imports, but to avoid any large
     # delays when booting in daemon mode.
     from dace.transformation.optimizer import SDFGOptimizer
+    from dace.transformation import passes
     from dace.sdfg.graph import SubgraphView
 
     old_meta = utils.disable_save_metadata()
@@ -221,6 +238,20 @@ def get_transformations(sdfg_json, selected_elements, permissive):
         for transformation in matches:
             transformations.append(transformation.to_json())
             docstrings[type(transformation).__name__] = transformation.__doc__
+
+        # Obtain available passes.
+        try:
+            all_passes = passes.available_passes(False)
+            for ps in all_passes:
+                if ps.CATEGORY == 'Helper' or ps.CATEGORY == 'Analysis':
+                    continue
+                docstrings[ps.__name__] = ps.__doc__
+                pass_instance = ps()
+                transformations.append(pass_instance.to_json())
+        except (NameError, AttributeError):
+            # Compatibility with legacy versions where no method for getting
+            # available passes exists.
+            pass
 
         selected_states = [
             utils.sdfg_find_state_from_element(sdfg, n)

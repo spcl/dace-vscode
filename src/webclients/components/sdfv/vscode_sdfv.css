@@ -243,8 +243,8 @@ pre.code {
   overflow-y: scroll;
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
-  min-width: 570px;
-  min-height: 200px;
+  min-width: 50px;
+  min-height: 50px;
 }
 
 #info-header {
@@ -311,9 +311,17 @@ pre.code {
 #expand-info-btn {
   cursor: pointer;
   position: absolute;
+  margin: .4rem;
+}
+
+#expand-info-btn.expand-info-btn-top {
+  top: 0;
+  right: 0;
+}
+
+#expand-info-btn.expand-info-btn-bottom {
   bottom: 0;
   right: 0;
-  margin: .4rem;
 }
 
 #info-contents {
@@ -376,6 +384,35 @@ pre.code {
   text-align: left;
   display: flex;
   align-items: center;
+  overflow: hidden;
+  padding-left: 0;
+  flex: 0 0 auto;
+}
+
+.attr-row-prefix-cell {
+  padding-left: .5rem;
+}
+
+.attr-table-cell.col-12 {
+  margin-bottom: .5rem;
+}
+
+.attr-cell-s {
+  width: 25%;
+}
+
+.attr-cell-l {
+  width: 75%;
+}
+
+#info-container.stacked .attr-cell-s {
+  width: 100%;
+  margin-bottom: .5rem;
+}
+
+#info-container.stacked .attr-cell-l {
+  width: 100%;
+  margin-bottom: .5rem;
 }
 
 .attr-table-cell-nopad {
