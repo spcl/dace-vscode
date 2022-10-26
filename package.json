@@ -620,6 +620,7 @@
         "@types/jquery-editable-select": "^2.2.1",
         "@types/mocha": "^7.0.1",
         "@types/node": "^12.20.55",
+        "@types/uuid": "^8.3.4",
         "@types/vscode": "^1.68.0",
         "@typescript-eslint/eslint-plugin": "^5.28.0",
         "@typescript-eslint/parser": "^5.28.0",
@@ -655,6 +656,7 @@
         "monaco-editor": "^0.26.1",
         "process": "^0.11.10",
         "stream-browserify": "^3.0.0",
+        "uuid": "^9.0.0",
         "vscode-debugadapter": "^1.46.0"
     }
 }

@@ -17,11 +17,15 @@ import {
     CustomTreeView,
     CustomTreeViewItem,
 } from '../../elements/treeview/treeview';
+import {
+    ICPCWebclientMessagingComponent
+} from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
 
 let transformationList: TransformationList | null = null;
 let loadingIndicator: JQuery | null = null;
+let icpcHandler: ICPCWebclientMessagingComponent | null = null;
 
 class TransformationListItem extends CustomTreeViewItem {
 
@@ -488,6 +492,36 @@ class TransformationList extends CustomTreeView {
 
 }
 
+function deselect(): void {
+    if (transformationList)
+        transformationList.selectedItem = undefined;
+    transformationList?.generateHtml();
+}
+
+function setTransformations(
+    transformations: JsonTransformationList, hideLoading: boolean = true
+): void {
+    transformationList?.setTransformations(transformations);
+    if (hideLoading)
+        loadingIndicator?.hide();
+}
+
+function clearTransformations(reason?: string): void {
+    loadingIndicator?.hide();
+    if (reason !== undefined)
+        transformationList?.clear(reason);
+    else
+        transformationList?.clear();
+}
+
+function showLoading(): void {
+    loadingIndicator?.show();
+}
+
+function hideLoading(): void {
+    loadingIndicator?.hide();
+}
+
 $(() => {
     loadingIndicator = $('#transformation-loading-indicator');
 
@@ -497,44 +531,12 @@ $(() => {
     transformationList.generateHtml();
     transformationList.show();
 
-    // Add a listener to receive messages from the extension.
-    window.addEventListener('message', e => {
-        const message = e.data;
-        switch (message.type) {
-            case 'deselect':
-                if (transformationList)
-                    transformationList.selectedItem = undefined;
-                transformationList?.generateHtml();
-                break;
-            case 'set_transformations':
-                transformationList?.setTransformations(
-                    message.transformations
-                );
-                if (message.hideLoading)
-                    loadingIndicator?.hide();
-                break;
-            case 'clear_transformations':
-                loadingIndicator?.hide();
-                if (message.reason !== undefined)
-                    transformationList?.clear(
-                        message.reason
-                    );
-                else
-                    transformationList?.clear();
-                break;
-            case 'show_loading':
-                loadingIndicator?.show();
-                break;
-            case 'hide_loading':
-                loadingIndicator?.hide();
-                break;
-            default:
-                break;
-        }
-    });
+    icpcHandler = new ICPCWebclientMessagingComponent(window, vscode);
+    icpcHandler.register(deselect);
+    icpcHandler.register(setTransformations);
+    icpcHandler.register(clearTransformations);
+    icpcHandler.register(showLoading);
+    icpcHandler.register(hideLoading);
 
-    if (vscode)
-        vscode.postMessage({
-            type: 'sdfv.refresh_transformation_list',
-        });
+    icpcHandler.invoke('refreshTransformationList');
 });
