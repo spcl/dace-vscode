@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import {
+    ICPCMessage,
     ICPCMessagingComponent,
     ICPCProcedure
 } from '../../common/messaging/icpc_messaging_component';
@@ -9,10 +10,10 @@ export class ICPCExtensionMessagingComponent extends ICPCMessagingComponent {
     public constructor(webview: vscode.Webview) {
         super(webview);
         webview.onDidReceiveMessage(message => {
-            if (message.component) {
-            } else {
+            if (message.component)
+                ICPCExtensionHost.getInstance().icHandle(message);
+            else
                 this.handle(message);
-            }
         });
     }
 
@@ -52,6 +53,11 @@ export class ICPCExtensionHost {
         component: string, f: Function, name?: string, obj?: any
     ): void {
         this.registerProcedure(component, { f, name, obj });
+    }
+
+    public icHandle(message: ICPCMessage): void {
+        if (!message.component)
+        const component = this.components.get(message.component);
     }
 
 }

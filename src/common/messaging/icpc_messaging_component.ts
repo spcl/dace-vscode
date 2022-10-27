@@ -27,7 +27,11 @@ export interface ICPCProcedure {
     name?: string;
 }
 
-export abstract class ICPCMessagingComponent {
+export interface ICPCMessagingComponentInterface {
+}
+
+export abstract class ICPCMessagingComponent
+    implements ICPCMessagingComponentInterface {
 
     protected constructor(
         private target: any,
