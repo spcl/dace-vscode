@@ -8,25 +8,25 @@ import {
     StaticFlopsOverlay,
 } from '@spcl/sdfv/out';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
+import { VSCodeSDFV } from '../vscode_sdfv';
 
 declare const vscode: any;
 
 /**
  * Register all current SDFG's symbols in the analysis pane.
  */
-export function analysisPaneRegisterSymbols(): void {
-    const renderer = VSCodeRenderer.getInstance();
-    if (renderer !== null && vscode !== undefined)
-        vscode.postMessage({
-            type: 'analysis.add_symbols',
-            symbols: renderer.get_sdfg().attributes.symbols,
-        });
+export async function analysisPaneRegisterSymbols(): Promise<void> {
+    const symbols = VSCodeRenderer.getInstance()?.get_sdfg().attributes.symbols;
+    if (symbols)
+        return VSCodeSDFV.getInstance().msgHandler?.invoke(
+            'analysisAddSymbols', [symbols]
+        );
 }
 
 /**
  * Refresh the symbols and their values in the analysis pane.
  */
-export function analysisPaneRefreshSymbols(): void {
+export async function analysisPaneRefreshSymbols(): Promise<void> {
     const renderer = VSCodeRenderer.getInstance();
     if (renderer !== null && vscode !== undefined) {
         const symbolResolver =
@@ -36,14 +36,13 @@ export function analysisPaneRefreshSymbols(): void {
             if (map[symbol] === undefined)
                 map[symbol] = '';
         });
-        vscode.postMessage({
-            type: 'analysis.set_symbols',
-            symbols: map,
-        });
+        return VSCodeSDFV.getInstance().msgHandler?.invoke(
+            'analysisSetSymbols', [map]
+        );
     }
 }
 
-export function refreshAnalysisPane(): void {
+export async function refreshAnalysisPane(): Promise<void> {
     const renderer = VSCodeRenderer.getInstance();
     if (renderer !== null && vscode !== undefined) {
         const overlayManager = renderer.get_overlay_manager();
@@ -70,34 +69,37 @@ export function refreshAnalysisPane(): void {
                 break;
         }
 
-        vscode.postMessage({
-            type: 'analysis.refresh_analysis_pane',
-            symbols: map,
-            heatmapScalingMethod: overlayManager.get_heatmap_scaling_method(),
-            heatmapScalingAdditionalVal: additionalMethodVal,
-            availableOverlays: [
-                {
-                    class: 'MemoryVolumeOverlay',
-                    label: 'Logical Memory Volume',
-                    type: MemoryVolumeOverlay.type,
-                },
-                {
-                    class: 'StaticFlopsOverlay',
-                    label: 'Arithmetic Operations',
-                    type: StaticFlopsOverlay.type,
-                },
-                {
-                    class: 'MemoryLocationOverlay',
-                    label: 'Memory Location',
-                    type: MemoryLocationOverlay.type,
-                },
-                {
-                    class: 'OperationalIntensityOverlay',
-                    label: 'Operational Intensity',
-                    type: OperationalIntensityOverlay.type,
-                },
-            ],
-            activeOverlays: activeOverlays,
-        });
+        const symbols = map;
+        const availableOverlays = [
+            {
+                class: 'MemoryVolumeOverlay',
+                label: 'Logical Memory Volume',
+                type: MemoryVolumeOverlay.type,
+            },
+            {
+                class: 'StaticFlopsOverlay',
+                label: 'Arithmetic Operations',
+                type: StaticFlopsOverlay.type,
+            },
+            {
+                class: 'MemoryLocationOverlay',
+                label: 'Memory Location',
+                type: MemoryLocationOverlay.type,
+            },
+            {
+                class: 'OperationalIntensityOverlay',
+                label: 'Operational Intensity',
+                type: OperationalIntensityOverlay.type,
+            },
+        ];
+        return VSCodeSDFV.getInstance().msgHandler?.invoke(
+            'updateAnalysisPanel', [
+                activeOverlays,
+                symbols,
+                overlayManager.get_heatmap_scaling_method(),
+                additionalMethodVal,
+                availableOverlays
+            ]
+        );
     }
 }

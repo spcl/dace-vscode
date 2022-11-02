@@ -23,10 +23,6 @@ import {
 
 declare const vscode: any;
 
-let transformationList: TransformationList | null = null;
-let loadingIndicator: JQuery | null = null;
-let icpcHandler: ICPCWebclientMessagingComponent | null = null;
-
 class TransformationListItem extends CustomTreeViewItem {
 
     public constructor(
@@ -146,16 +142,13 @@ export class Transformation extends TransformationListItem {
         item.addClass('transformation');
 
         item.on('click', () => {
-            if (vscode) {
-                if (this.list !== undefined) {
-                    this.list.selectedItem = this;
-                    this.list.generateHtml();
-                }
-                vscode.postMessage({
-                    type: 'sdfv.select_transformation',
-                    transformation: this.json,
-                });
+            if (this.list !== undefined) {
+                this.list.selectedItem = this;
+                this.list.generateHtml();
             }
+            TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                'selectTransformation', [this.json], 'sdfv'
+            );
         });
 
         const labelContainer = item.find('.tree-view-item-label-container');
@@ -167,21 +160,19 @@ export class Transformation extends TransformationListItem {
             'title': 'Apply transformation with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                vscode.postMessage({
-                    type: 'sdfv.apply_transformations',
-                    transformations: [this.json],
-                });
+                TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                    'applyTransformation', [this.json], 'sdfv'
+                );
                 return true;
             },
         }).appendTo(labelContainer);
 
         item.on('mouseover', () => {
             labelContainer.addClass('hover-direct');
-            if (vscode)
-                vscode.postMessage({
-                    type: 'sdfv.highlight_elements',
-                    elements: this.getAffectedElementsUUIDs(),
-                });
+            TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                'highlightElements', [this.getAffectedElementsUUIDs()],
+                'sdfv'
+            );
         });
 
         item.on('mouseout', () => {
@@ -219,16 +210,13 @@ export class PassPipeline extends TransformationListItem {
         item.addClass('transformation');
 
         item.on('click', () => {
-            if (vscode) {
-                if (this.list !== undefined) {
-                    this.list.selectedItem = this;
-                    this.list.generateHtml();
-                }
-                vscode.postMessage({
-                    type: 'sdfv.select_transformation',
-                    transformation: this.json,
-                });
+            if (this.list !== undefined) {
+                this.list.selectedItem = this;
+                this.list.generateHtml();
             }
+            TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                'selectTransformation', [this.json], 'sdfv'
+            );
         });
 
         const labelContainer = item.find('.tree-view-item-label-container');
@@ -240,10 +228,9 @@ export class PassPipeline extends TransformationListItem {
             'title': 'Run this pass with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                vscode.postMessage({
-                    type: 'sdfv.apply_transformations',
-                    transformations: [this.json],
-                });
+                TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                    'applyTransformation', [this.json], 'sdfv'
+                );
                 return true;
             },
         }).appendTo(labelContainer);
@@ -296,10 +283,9 @@ export class TransformationGroup extends TransformationListItem {
                 text: 'Apply All',
                 title: 'Apply all transformations with default parameters',
                 click: () => {
-                    vscode.postMessage({
-                        type: 'sdfv.apply_transformations',
-                        transformations: this.transformations,
-                    });
+                    TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                        'applyTransformation', [this.transformations], 'sdfv'
+                    );
                 },
             }).appendTo(labelContainer);
 
@@ -309,10 +295,9 @@ export class TransformationGroup extends TransformationListItem {
             if (this.children)
                 for (const item of (this.children as Transformation[]))
                     affectedUUIDs.push(...item.getAffectedElementsUUIDs());
-            vscode.postMessage({
-                type: 'sdfv.highlight_elements',
-                elements: affectedUUIDs,
-            });
+            TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                'highlightElements', [affectedUUIDs], 'sdfv'
+            );
         });
 
         item.on('mouseout', () => {
@@ -357,10 +342,9 @@ export class PassPipelineGroup extends TransformationListItem {
                 text: 'Run All',
                 title: 'Run all passes with default parameters',
                 click: () => {
-                    vscode.postMessage({
-                        type: 'sdfv.apply_transformations',
-                        transformations: this.transformations,
-                    });
+                    TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                        'applyTransformation', [this.transformations], 'sdfv'
+                    );
                 },
             }).appendTo(labelContainer);
 
@@ -492,51 +476,79 @@ class TransformationList extends CustomTreeView {
 
 }
 
-function deselect(): void {
-    if (transformationList)
-        transformationList.selectedItem = undefined;
-    transformationList?.generateHtml();
-}
+class TransofrmationListPanel {
 
-function setTransformations(
-    transformations: JsonTransformationList, hideLoading: boolean = true
-): void {
-    transformationList?.setTransformations(transformations);
-    if (hideLoading)
-        loadingIndicator?.hide();
-}
+    private static readonly INSTANCE = new TransofrmationListPanel();
 
-function clearTransformations(reason?: string): void {
-    loadingIndicator?.hide();
-    if (reason !== undefined)
-        transformationList?.clear(reason);
-    else
-        transformationList?.clear();
-}
+    private constructor() { }
 
-function showLoading(): void {
-    loadingIndicator?.show();
-}
+    public static getInstance(): TransofrmationListPanel {
+        return this.INSTANCE;
+    }
 
-function hideLoading(): void {
-    loadingIndicator?.hide();
+    private loadingIndicator?: JQuery;
+    private transformationList?: TransformationList;
+    private messageHandler?: ICPCWebclientMessagingComponent;
+
+    public init(): void {
+        this.loadingIndicator = $('#transformation-loading-indicator');
+        this.transformationList = new TransformationList(
+            $('#transformation-list')
+        );
+        this.transformationList.generateHtml();
+        this.transformationList.show();
+
+        this.messageHandler =
+            new ICPCWebclientMessagingComponent(window, vscode);
+        this.messageHandler.register(this.deselect, this);
+        this.messageHandler.register(this.setTransformations, this);
+        this.messageHandler.register(this.clearTransformations, this);
+        this.messageHandler.register(this.showLoading, this);
+        this.messageHandler.register(this.hideLoading, this);
+
+        // TODO: check if this is the right way to do it or if we should invoke
+        // the refresh method of the corresponding extension component.
+        this.messageHandler.invoke(
+            'refreshTransformationList', undefined, 'sdfv'
+        );
+    }
+
+    public deselect(): void {
+        if (this.transformationList)
+            this.transformationList.selectedItem = undefined;
+        this.transformationList?.generateHtml();
+    }
+
+    public setTransformations(
+        transformations: JsonTransformationList, hideLoading: boolean = true
+    ): void {
+        this.transformationList?.setTransformations(transformations);
+        if (hideLoading)
+            this.loadingIndicator?.hide();
+    }
+
+    public clearTransformations(reason?: string): void {
+        this.loadingIndicator?.hide();
+        if (reason !== undefined)
+            this.transformationList?.clear(reason);
+        else
+            this.transformationList?.clear();
+    }
+
+    public showLoading(): void {
+        this.loadingIndicator?.show();
+    }
+
+    public hideLoading(): void {
+        this.loadingIndicator?.hide();
+    }
+
+    public get msgHandler(): ICPCWebclientMessagingComponent | undefined {
+        return this.messageHandler;
+    }
+
 }
 
 $(() => {
-    loadingIndicator = $('#transformation-loading-indicator');
-
-    transformationList = new TransformationList(
-        $('#transformation-list')
-    );
-    transformationList.generateHtml();
-    transformationList.show();
-
-    icpcHandler = new ICPCWebclientMessagingComponent(window, vscode);
-    icpcHandler.register(deselect);
-    icpcHandler.register(setTransformations);
-    icpcHandler.register(clearTransformations);
-    icpcHandler.register(showLoading);
-    icpcHandler.register(hideLoading);
-
-    icpcHandler.invoke('refreshTransformationList');
+    TransofrmationListPanel.getInstance().init();
 });

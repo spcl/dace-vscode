@@ -7,11 +7,11 @@ import {
 
 export class ICPCExtensionMessagingComponent extends ICPCMessagingComponent {
 
-    public constructor(webview: vscode.Webview) {
+    public constructor(webview: vscode.Webview, componentName: string) {
         super(webview);
         webview.onDidReceiveMessage(message => {
-            if (message.component)
-                ICPCExtensionHost.getInstance().icHandle(message);
+            if (message.component && message.component !== componentName)
+                ICPCExtensionHost.getInstance().icHandle(message, this);
             else
                 this.handle(message);
         });
@@ -32,21 +32,29 @@ export class ICPCExtensionHost {
     private components: Map<string, ICPCExtensionMessagingComponent> =
         new Map();
 
-    public registerComponent(component: string, webview: vscode.Webview) {
-        if (this.components.has(component))
-            throw new Error(`Component ${component} already registered`);
-        this.components.set(
-            component, new ICPCExtensionMessagingComponent(webview)
+    public registerComponent(
+        component: string, webview: vscode.Webview
+    ): ICPCExtensionMessagingComponent {
+        const existingHandler = this.components.get(component);
+        if (existingHandler)
+            return existingHandler;
+
+        const newHandler = new ICPCExtensionMessagingComponent(
+            webview, component
         );
+
+        this.components.set(component, newHandler);
+        return newHandler;
     }
 
     public registerProcedure(
         component: string, procedure: ICPCProcedure
     ): void {
         const handler = this.components.get(component);
-        if (!handler)
-            throw new Error(`Component ${component} not registered`);
-        handler.registerProcedure(procedure);
+        if (handler)
+            handler.registerProcedure(procedure);
+        else
+            console.error(`Component ${component} not registered`);
     }
 
     public register(
@@ -55,9 +63,19 @@ export class ICPCExtensionHost {
         this.registerProcedure(component, { f, name, obj });
     }
 
-    public icHandle(message: ICPCMessage): void {
-        if (!message.component)
+    public icHandle(
+        message: ICPCMessage, responseHandler: ICPCExtensionMessagingComponent
+    ): void {
+        if (!message.component) {
+            console.error('No component specified');
+            return;
+        }
+
         const component = this.components.get(message.component);
+        if (component)
+            component.handle(message, responseHandler);
+        else
+            console.error(`Component ${message.component} not registered`);
     }
 
 }

@@ -6,69 +6,40 @@ import * as net from 'net';
 import * as os from 'os';
 import * as vscode from 'vscode';
 
-import {
-    MessageReceiverInterface
-} from './components/messaging/message_receiver_interface';
 import { OptimizationPanel } from './components/optimization_panel';
 import { SdfgViewerProvider } from './components/sdfg_viewer';
 import {
     TransformationHistoryProvider
 } from './components/transformation_history';
-import { TransformationListProvider } from './components/transformation_list';
+import {
+    TransformationListProvider
+} from './components/transformation_list';
 import { DaCeVSCode } from './extension';
-import { showUntrustedWorkspaceWarning, walkDirectory } from './utils/utils';
-import { JsonTransformation } from './webclients/components/transformations/transformations';
+import {
+    showUntrustedWorkspaceWarning,
+    walkDirectory
+} from './utils/utils';
+import {
+    JsonTransformation
+} from './webclients/components/transformations/transformations';
 
 enum InteractionMode {
     PREVIEW,
     APPLY,
 }
 
-export class DaCeInterface
-    implements MessageReceiverInterface {
+export class DaCeInterface {
 
     private static INSTANCE = new DaCeInterface();
 
     private constructor() { }
 
+    /*
     public handleMessage(message: any, origin: vscode.Webview): void {
         switch (message.type) {
-            case 'write_edit_to_sdfg':
-                if (message.sdfg)
-                    this.writeToActiveDocument(JSON.parse(message.sdfg));
-                break;
             case 'run_sdfg':
                 if (message.name !== undefined)
                     this.runSdfgInTerminal(message.name, undefined, origin);
-                break;
-            case 'expand_library_node':
-                this.expandLibraryNode(message.nodeId);
-                break;
-            case 'apply_transformations':
-                if (message.transformations !== undefined)
-                    this.applyTransformations(message.transformations);
-                break;
-            case 'preview_transformation':
-                if (message.transformation !== undefined)
-                    this.previewTransformation(message.transformation);
-                break;
-            case 'export_transformation_to_file':
-                if (message.transformation !== undefined)
-                    this.exportTransformation(message.transformation);
-                break;
-            case 'load_transformations':
-                if (message.sdfg !== undefined &&
-                    message.selectedElements !== undefined)
-                    this.loadTransformations(
-                        message.sdfg,
-                        message.selectedElements
-                    );
-                break;
-            case 'preview_history_point':
-                this.previewHistoryPoint(message.index);
-                break;
-            case 'apply_history_point':
-                this.applyHistoryPoint(message.index);
                 break;
             case 'get_flops':
                 this.getFlops();
@@ -76,20 +47,9 @@ export class DaCeInterface
             case 'query_sdfg_metadata':
                 this.querySdfgMetadata();
                 break;
-            case 'specialize_graph':
-                if (message.symbolMap !== undefined) {
-                    const sdfgFile =
-                        DaCeVSCode.getInstance().getActiveSdfgFileName();
-                    if (sdfgFile) {
-                        const uri = vscode.Uri.file(sdfgFile);
-                        this.specializeGraph(uri, message.symbolMap);
-                    }
-                }
-                break;
-            default:
-                break;
         }
     }
+    */
 
     public static getInstance(): DaCeInterface {
         return this.INSTANCE;
@@ -517,9 +477,7 @@ export class DaCeInterface
             return;
 
         const handleDaemonConnected = () => {
-            SdfgViewerProvider.getInstance()?.handleMessage({
-                type: 'daemon_connected',
-            });
+            SdfgViewerProvider.getInstance()?.onDaemonConnected();
             TransformationHistoryProvider.getInstance()?.refresh();
             TransformationListProvider.getInstance()?.refresh(true);
             this.querySdfgMetadata();
@@ -576,35 +534,27 @@ export class DaCeInterface
     }
 
     public previewSdfg(sdfg: any, history_mode: boolean = false) {
-        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-            type: 'preview_sdfg',
-            text: JSON.stringify(sdfg),
-            histState: history_mode,
-        });
+        DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+            'previewSdfg', [JSON.stringify(sdfg), history_mode]
+        );
     }
 
     public exitPreview(refreshTransformations: boolean = false) {
-        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-            type: 'exit_preview',
-            refreshTransformations: refreshTransformations,
-        });
+        DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+            'previewSdfg', [undefined, false, refreshTransformations]
+        );
     }
 
     public showSpinner(message?: string) {
-        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-            type: 'processing',
-            show: true,
-            text: message ?
-                message : 'Processing, please wait',
-        });
+        DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+            'setProcessingOverlay', [true, message ?? 'Processing, please wait']
+        );
     }
 
     public hideSpinner() {
-        DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-            type: 'processing',
-            show: false,
-            text: '',
-        });
+        DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+            'setProcessingOverlay', [false, '']
+        );
     }
 
     private sendApplyTransformationRequest(
@@ -639,27 +589,33 @@ export class DaCeInterface
         });
     }
 
-    public expandLibraryNode(nodeid: any) {
-        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
-            if (sdfg) {
-                this.showSpinner('Expanding library node');
-                this.sendPostRequest(
-                    '/expand_library_node',
-                    {
-                        sdfg: sdfg,
-                        nodeid: nodeid,
-                    },
-                    (data: any) => {
-                        this.hideSpinner();
-                        this.writeToActiveDocument(data.sdfg);
-                    },
-                    async (error: any): Promise<void> => {
-                        this.genericErrorHandler(error.message, error.details);
-                        this.hideSpinner();
-                    },
-                    true
-                );
-            }
+    public async expandLibraryNode(nodeid: any): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+                if (sdfg) {
+                    this.showSpinner('Expanding library node');
+                    this.sendPostRequest(
+                        '/expand_library_node',
+                        {
+                            sdfg: sdfg,
+                            nodeid: nodeid,
+                        },
+                        (data: any) => {
+                            this.hideSpinner();
+                            this.writeToActiveDocument(data.sdfg);
+                            resolve();
+                        },
+                        async (error: any): Promise<void> => {
+                            this.genericErrorHandler(
+                                error.message, error.details
+                            );
+                            this.hideSpinner();
+                            reject(error.message);
+                        },
+                        true
+                    );
+                }
+            });
         });
     }
 
@@ -718,7 +674,7 @@ export class DaCeInterface
     }
 
     public writeToActiveDocument(json: any): void {
-        const activeEditor = DaCeVSCode.getInstance().getActiveEditor();
+        const activeEditor = DaCeVSCode.getInstance().getActiveWebview();
         if (activeEditor) {
             const sdfvInstance = SdfgViewerProvider.getInstance();
             const document = sdfvInstance?.findEditorForWebview(
@@ -736,7 +692,9 @@ export class DaCeInterface
         }
     }
 
-    private gotoHistoryPoint(index: Number | undefined, mode: InteractionMode) {
+    private gotoHistoryPoint(
+        index: number | undefined, mode: InteractionMode
+    ): void {
         const trafoHistProvider = TransformationHistoryProvider.getInstance();
         if (trafoHistProvider)
             trafoHistProvider.activeHistoryItemIndex = index;
@@ -803,43 +761,45 @@ export class DaCeInterface
         });
     }
 
-    public applyHistoryPoint(index: Number | undefined) {
+    public applyHistoryPoint(index?: number) {
         this.gotoHistoryPoint(index, InteractionMode.APPLY);
     }
 
-    public previewHistoryPoint(index: Number | undefined) {
+    public previewHistoryPoint(index?: number) {
         this.gotoHistoryPoint(index, InteractionMode.PREVIEW);
     }
 
-    public getFlops(): void {
-        if (!this.daemonRunning) {
-            this.promptStartDaemon();
-            return;
-        }
-
-        this.showSpinner('Calculating FLOP count');
-
-        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
-            if (!sdfg) {
-                console.log('No active SDFG editor!');
-                return;
+    public async getFlops(): Promise<any> {
+        return new Promise((resolve, reject) => {
+            if (!this.daemonRunning) {
+                this.promptStartDaemon();
+                reject('Daemon not running');
             }
 
-            function callback(data: any) {
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                    type: 'flopsCallback',
-                    map: data.arithOpsMap,
-                });
-                DaCeInterface.getInstance().hideSpinner();
-            }
+            this.showSpinner('Calculating FLOP count');
 
-            this.sendPostRequest(
-                '/get_arith_ops',
-                {
-                    'sdfg': sdfg,
-                },
-                callback
-            );
+            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+                if (!sdfg) {
+                    const msg = 'No active SDFG editor!';
+                    console.warn(msg);
+                    reject(msg);
+                }
+
+                this.sendPostRequest(
+                    '/get_arith_ops',
+                    {
+                        'sdfg': sdfg,
+                    },
+                    (data: any) => {
+                        resolve(data.arithOpsMap);
+                        DaCeInterface.getInstance().hideSpinner();
+                    },
+                    (error: any) => {
+                        this.genericErrorHandler(error.message, error.details);
+                        reject(error.message);
+                    }
+                );
+            });
         });
     }
 
@@ -859,29 +819,33 @@ export class DaCeInterface
         );
     }
 
-    public specializeGraph(
-        uri: vscode.Uri, symbolMap: { [symbol: string]: any | undefined }
-    ): void {
-        this.showSpinner('Specializing');
-        this.sendPostRequest(
-            '/specialize_sdfg',
-            {
-                'path': uri.fsPath,
-                'symbol_map': symbolMap,
-            },
-            (data: any) => {
-                this.hideSpinner();
-                this.writeToActiveDocument(data.sdfg);
-            }
-        );
+    public async specializeGraph(
+        uri: vscode.Uri, symbolMap?: { [symbol: string]: any | undefined }
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.showSpinner('Specializing');
+            this.sendPostRequest(
+                '/specialize_sdfg',
+                {
+                    'path': uri.fsPath,
+                    'symbol_map': symbolMap,
+                },
+                (data: any) => {
+                    this.hideSpinner();
+                    this.writeToActiveDocument(data.sdfg);
+                    resolve();
+                },
+                (error: any) => {
+                    this.genericErrorHandler(error.message, error.details);
+                    reject(error.message);
+                }
+            );
+        });
     }
 
     public async querySdfgMetadata(): Promise<void> {
         async function callback(data: any) {
-            SdfgViewerProvider.getInstance()?.handleMessage({
-                type: 'set_sdfg_metadata',
-                metaDict: data.metaDict,
-            });
+            SdfgViewerProvider.getInstance()?.setMetadata(data.metaDict);
         };
 
         if (this.daemonRunning)
@@ -893,52 +857,40 @@ export class DaCeInterface
 
     public async loadTransformations(
         sdfg: any, selectedElements: any
-    ): Promise<void> {
-        TransformationListProvider.getInstance()?.handleMessage({
-            type: 'show_loading',
-        });
+    ): Promise<any[]> {
+        await TransformationListProvider.getInstance()?.showLoading();
 
-        if (!this.daemonRunning) {
-            this.promptStartDaemon();
-            return;
-        }
-
-        async function callback(data: any): Promise<void> {
-            for (const elem of data.transformations) {
-                let docstring = '';
-                if (data.docstrings)
-                    docstring = data.docstrings[
-                        elem.transformation
-                    ];
-                elem.docstring = docstring;
+        return new Promise<any[]>((resolve, reject) => {
+            if (!this.daemonRunning) {
+                this.promptStartDaemon();
+                reject('Daemon not running');
             }
 
-            SdfgViewerProvider.getInstance()?.handleMessage({
-                type: 'get_applicable_transformations_callback',
-                transformations: data.transformations,
-            });
-        }
+            this.sendPostRequest(
+                '/transformations',
+                {
+                    sdfg: JSON.parse(sdfg),
+                    selected_elements: JSON.parse(selectedElements),
+                    permissive: false,
+                },
+                (data: any) => {
+                    for (const elem of data.transformations) {
+                        let docstring = '';
+                        if (data.docstrings)
+                            docstring = data.docstrings[
+                                elem.transformation
+                            ];
+                        elem.docstring = docstring;
+                    }
 
-        async function clearSpinner(): Promise<void> {
-            SdfgViewerProvider.getInstance()?.handleMessage({
-                type: 'get_applicable_transformations_callback',
-                transformations: undefined,
-            });
-        }
-
-        this.sendPostRequest(
-            '/transformations',
-            {
-                sdfg: JSON.parse(sdfg),
-                selected_elements: JSON.parse(selectedElements),
-                permissive: false,
-            },
-            callback,
-            async (error: any): Promise<void> => {
-                this.genericErrorHandler(error.message, error.details);
-                clearSpinner();
-            },
-        );
+                    resolve(data.transformations);
+                },
+                (error: any) => {
+                    this.genericErrorHandler(error.message, error.details);
+                    reject(error.message);
+                },
+            );
+        });
     }
 
     /**
@@ -948,45 +900,56 @@ export class DaCeInterface
      * files, which are sent to the DaCe daemon to be loaded in as
      * transformations.
      */
-    public addCustomTransformations(fromDir: boolean = false): void {
-        // When done adding transformations, attempt a refresh.
-        const callback = (data: any) => {
-            if (data.done)
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                    type: 'get_applicable_transformations',
-                });
-        };
-
-        vscode.window.showOpenDialog({
-            canSelectFiles: true,
-            canSelectMany: true,
-            canSelectFolders: fromDir,
-            filters: {
-                'Python': ['py'],
-            },
-            openLabel: 'Load',
-            title: 'Load Custom Transformations',
-        }).then(async (uri) => {
-            if (uri) {
-                const paths = [];
-                for (const u of uri) {
-                    const stat = await vscode.workspace.fs.stat(u);
-                    if (stat.type === vscode.FileType.Directory) {
-                        for await (const fileUri of walkDirectory(u, '.py'))
-                            paths.push(fileUri.fsPath);
-                    } else if (stat.type === vscode.FileType.File) {
-                        paths.push(u.fsPath);
+    public async addCustomTransformations(
+        fromDir: boolean = false
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            vscode.window.showOpenDialog({
+                canSelectFiles: true,
+                canSelectMany: true,
+                canSelectFolders: fromDir,
+                filters: {
+                    'Python': ['py'],
+                },
+                openLabel: 'Load',
+                title: 'Load Custom Transformations',
+            }).then(async (uri) => {
+                if (uri) {
+                    const paths = [];
+                    for (const u of uri) {
+                        const stat = await vscode.workspace.fs.stat(u);
+                        if (stat.type === vscode.FileType.Directory) {
+                            for await (const fileUri of walkDirectory(u, '.py'))
+                                paths.push(fileUri.fsPath);
+                        } else if (stat.type === vscode.FileType.File) {
+                            paths.push(u.fsPath);
+                        }
                     }
-                }
 
-                this.sendPostRequest(
-                    '/add_transformations',
-                    {
-                        paths: paths,
-                    },
-                    callback
-                );
-            }
+                    this.sendPostRequest(
+                        '/add_transformations',
+                        {
+                            paths: paths,
+                        },
+                        (data: any) => {
+                            // When done adding transformations, attempt a
+                            // refresh.
+                            if (data.done) {
+                                resolve();
+                                DaCeVSCode.getInstance().getActiveEditor()?.
+                                    messageHandler?.invoke(
+                                        'refreshTransformationList'
+                                    );
+                            }
+                        },
+                        (error: any) => {
+                            reject(error.message);
+                        }
+                    );
+                } else {
+                    reject();
+                }
+            });
         });
     }
 

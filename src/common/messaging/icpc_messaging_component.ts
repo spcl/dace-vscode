@@ -25,13 +25,10 @@ export interface ICPCProcedure {
     f: Function;
     obj?: any;
     name?: string;
+    staticArgs?: any[];
 }
 
-export interface ICPCMessagingComponentInterface {
-}
-
-export abstract class ICPCMessagingComponent
-    implements ICPCMessagingComponentInterface {
+export abstract class ICPCMessagingComponent {
 
     protected constructor(
         private target: any,
@@ -45,9 +42,11 @@ export abstract class ICPCMessagingComponent
     protected sendRequest(
         id: string, procedure: string, args?: any[], component?: string
     ): void {
+        console.log('Sending request for procedure', procedure, 'with id', id);
         const message: ICPCRequestMessage = {
             type: ICPCMessageType.REQUEST,
             id: id,
+            component: component,
             procedure: procedure,
             args: args,
         };
@@ -57,6 +56,7 @@ export abstract class ICPCMessagingComponent
     protected sendResponse(
         id: string, response?: any, success: boolean = true
     ): void {
+        console.log('Sending response for request', id);
         const message: ICPCResponseMessage = {
             type: ICPCMessageType.RESPONSE,
             id: id,
@@ -93,8 +93,10 @@ export abstract class ICPCMessagingComponent
         this.localProcedures.set(name, procedure);
     }
 
-    public register(f: Function, name?: string, obj?: any): void {
-        this.registerProcedure({ f, name, obj });
+    public register(
+        f: Function, obj?: any, name?: string, staticArgs?: any[]
+    ): void {
+        this.registerProcedure({ f, name, obj, staticArgs });
     }
 
     public deregister(fun: Function): void {
@@ -104,8 +106,9 @@ export abstract class ICPCMessagingComponent
     public async invoke(
         procedure: string, args?: any[], component?: string
     ): Promise<any> {
+        console.log('Invoking procedure', procedure);
         let uuid = uuidv4();
-        while (!this.callbacks.has(uuid))
+        while (this.callbacks.has(uuid))
             uuid = uuidv4();
         return new Promise((resolve, reject) => {
             this.callbacks.set(uuid, { resolve: resolve, reject: reject });
@@ -116,13 +119,14 @@ export abstract class ICPCMessagingComponent
     protected async handleRequest(
         message: ICPCRequestMessage, responseHandler?: ICPCMessagingComponent
     ): Promise<void> {
+        console.log('Handling request for procedure', message.procedure);
         const procedure = this.localProcedures.get(message.procedure);
         const _responseHandler = responseHandler || this;
         if (procedure) {
             try {
-                let promiseOrResponse = procedure.f.apply(
-                    procedure.obj, message.args
-                );
+                const args = procedure.staticArgs ?
+                    procedure.staticArgs.concat(message.args) : message.args;
+                let promiseOrResponse = procedure.f.apply(procedure.obj, args);
                 // Await promises if the procedure is async.
                 const response = (
                     promiseOrResponse && typeof promiseOrResponse === 'function'
@@ -130,6 +134,7 @@ export abstract class ICPCMessagingComponent
 
                 _responseHandler.sendResponse(message.id, response, true);
             } catch (e) {
+                console.error(e);
                 _responseHandler.sendResponse(message.id, e, false);
             }
         } else {
@@ -138,6 +143,7 @@ export abstract class ICPCMessagingComponent
     }
 
     protected handleResponse(message: ICPCResponseMessage): void {
+        console.log('Handling response for request', message.id, message);
         const callback = this.callbacks.get(message.id);
         if (callback) {
             if (message.success)

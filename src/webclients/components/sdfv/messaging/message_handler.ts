@@ -3,17 +3,15 @@
 
 import {
     instrumentation_report_read_complete,
-    LogicalGroupOverlay,
-    OperationalIntensityOverlay,
-    RuntimeMicroSecondsOverlay,
-    StaticFlopsOverlay,
+    LogicalGroupOverlay, RuntimeMicroSecondsOverlay,
+    StaticFlopsOverlay
 } from '@spcl/sdfv/out';
 import {
-    analysisPaneRegisterSymbols, refreshAnalysisPane
+    analysisPaneRegisterSymbols
 } from '../analysis/analysis';
 import {
     BreakpointIndicator,
-    refreshBreakpoints,
+    refreshBreakpoints
 } from '../breakpoints/breakpoints';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import {
@@ -22,9 +20,8 @@ import {
     getApplicableTransformations,
     refreshTransformationList,
     showTransformationDetails,
-    sortTransformations,
+    sortTransformations
 } from '../transformation/transformation';
-import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
 import { VSCodeSDFV } from '../vscode_sdfv';
 
 export class MessageHandler {
@@ -38,7 +35,6 @@ export class MessageHandler {
     }
 
     public handleMessage(message: any): void {
-        let el = undefined;
         const renderer = VSCodeRenderer.getInstance();
         const sdfv = VSCodeSDFV.getInstance();
         switch (message.type) {
@@ -183,9 +179,6 @@ export class MessageHandler {
             case 'refresh_symbol_list':
                 analysisPaneRegisterSymbols();
                 break;
-            case 'refresh_analysis_pane':
-                refreshAnalysisPane();
-                break;
             case 'refresh_sdfg_breakpoints':
                 refreshBreakpoints();
                 break;
@@ -198,22 +191,6 @@ export class MessageHandler {
                 break;
             case 'refresh_transformation_list':
                 refreshTransformationList();
-                break;
-            case 'resync_transformation_list':
-                {
-                    const xforms = sdfv.getTransformations();
-                    clearSelectedTransformation();
-                    if (xforms.selection.length > 0 ||
-                        xforms.viewport.length > 0 ||
-                        xforms.passes.length > 0 ||
-                        xforms.uncategorized.length > 0)
-                        refreshTransformationList();
-                    else
-                        getApplicableTransformations();
-                }
-                break;
-            case 'refresh_sdfg':
-                sdfv.refreshSdfg();
                 break;
             case 'get_applicable_transformations':
                 clearSelectedTransformation();
@@ -244,75 +221,6 @@ export class MessageHandler {
                     true, refreshTransformationList, hideLoading
                 );
                 break;
-            case 'flopsCallback':
-                if (renderer?.get_overlay_manager().is_overlay_active(
-                    StaticFlopsOverlay
-                )) {
-                    const overlay = renderer.get_overlay_manager().get_overlay(
-                        StaticFlopsOverlay
-                    );
-                    if (overlay !== undefined && message.map !== undefined &&
-                        overlay instanceof StaticFlopsOverlay)
-                        overlay.update_flops_map(message.map);
-                } else if (renderer?.get_overlay_manager().is_overlay_active(
-                    OperationalIntensityOverlay
-                )) {
-                    const overlay = renderer.get_overlay_manager().get_overlay(
-                        OperationalIntensityOverlay
-                    );
-                    if (overlay !== undefined && message.map !== undefined &&
-                        overlay instanceof OperationalIntensityOverlay)
-                        overlay.update_flops_map(message.map);
-                }
-                break;
-            case 'update':
-                sdfv.setViewingHistoryState(false);
-                el = document.getElementById('exit-preview-button');
-                if (el)
-                    el.className = 'button hidden';
-                if (message.preventRefreshes)
-                    sdfv.setRendererContent(message.text, false, true);
-                else
-                    sdfv.setRendererContent(message.text);
-                break;
-            case 'processing':
-                if (message.show && message.show === true) {
-                    $('#processing-overlay').show();
-                    $('#processing-overlay-msg').text(message.text);
-                } else {
-                    $('#processing-overlay').hide();
-                    $('#processing-overlay-msg').text();
-                }
-                break;
-            case 'preview_sdfg':
-                sdfv.setRendererContent(message.text, true);
-                el = document.getElementById('exit-preview-button');
-                if (el)
-                    el.className = 'button';
-
-                if (message.histState !== undefined && message.histState) {
-                    sdfv.clearInfoBox();
-                    sdfv.setViewingHistoryState(true);
-                    refreshTransformationList();
-                }
-                break;
-            case 'exit_preview':
-                sdfv.resetRendererContent();
-                sdfv.setViewingHistoryState(false);
-                el = document.getElementById('exit-preview-button');
-                if (el)
-                    el.className = 'button hidden';
-                if (message.refreshTransformations)
-                    refreshTransformationList();
-                break;
-            case 'highlight_elements':
-                if (message.elements)
-                    highlightUUIDs(Object.values(message.elements));
-                break;
-            case 'zoom_to_node':
-                if (message.uuid !== undefined)
-                    zoomToUUIDs([message.uuid]);
-                break;
             case 'select_transformation':
                 if (message.transformation !== undefined) {
                     showTransformationDetails(message.transformation);
@@ -327,10 +235,6 @@ export class MessageHandler {
                     renderer?.set_sdfg(message.sdfg);
                     renderer?.updateNewElement(message.uuid);
                 }
-                break;
-            case 'set_sdfg_metadata':
-                if (message.metaDict)
-                    sdfv.setMetaDict(message.metaDict);
                 break;
             case 'unbound_breakpoint':
                 {
@@ -364,9 +268,6 @@ export class MessageHandler {
                 break;
             case 'display_breakpoints':
                 sdfv.setShowingBreakpoints(message.display);
-                break;
-            case 'daemon_connected':
-                sdfv.setDaemonConnected(true);
                 break;
         }
     }

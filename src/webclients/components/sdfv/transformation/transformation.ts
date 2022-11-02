@@ -7,8 +7,6 @@ import { generateAttributesTable } from '../utils/attributes_table';
 import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
 import { VSCodeSDFV } from '../vscode_sdfv';
 
-declare const vscode: any;
-
 /**
  * Get the set of element uuids affected by a given transformation.
  */
@@ -62,15 +60,13 @@ export function getCleanedSelectedElements(): string {
 /**
  * Request a list of applicable transformations from DaCe.
  */
-export function getApplicableTransformations(): void {
-    const renderer = VSCodeRenderer.getInstance();
-    if (renderer !== null && vscode !== undefined) {
-        vscode.postMessage({
-            type: 'dace.load_transformations',
-            sdfg: VSCodeSDFV.getInstance().getSdfgString(),
-            selectedElements: getCleanedSelectedElements(),
-        });
-    }
+export async function getApplicableTransformations(): Promise<any[]> {
+    return VSCodeSDFV.getInstance().msgHandler?.invoke(
+        'loadTransformations', [
+            VSCodeSDFV.getInstance().getSdfgString(),
+            getCleanedSelectedElements(),
+        ]
+    );
 }
 
 /**
@@ -292,21 +288,21 @@ export async function sortTransformations(
 /**
  * Refresh the list of transformations shown in VSCode's transformation pane.
  */
-export function refreshTransformationList(hideLoading: boolean = false): void {
+export async function refreshTransformationList(
+    hideLoading: boolean = false
+): Promise<void> {
     const transformations = VSCodeSDFV.getInstance().getTransformations();
-    if (vscode !== undefined && transformations !== undefined)
+    if (transformations !== undefined)
         if (VSCodeSDFV.getInstance().getViewingHistoryState())
-            vscode.postMessage({
-                type: 'transformation_list.clear_transformations',
-                reason:
+            await VSCodeSDFV.getInstance().msgHandler?.invoke(
+                'clearTransformations', [
                     'Can\'t show transformations while viewing a history state',
-            });
+                ]
+            );
         else
-            vscode.postMessage({
-                type: 'transformation_list.set_transformations',
-                transformations: transformations,
-                hideLoading: hideLoading,
-            });
+            await VSCodeSDFV.getInstance().msgHandler?.invoke(
+                'setTransformations', [transformations, hideLoading]
+            );
 }
 
 export function clearSelectedTransformation(): void {
@@ -379,11 +375,9 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     $('<div>', {
         class: 'button',
         click: () => {
-            if (vscode)
-                vscode.postMessage({
-                    type: 'dace.preview_transformation',
-                    transformation: xform,
-                });
+            VSCodeSDFV.getInstance().msgHandler?.invoke(
+                'previewTransformation', [xform]
+            );
         },
         mouseenter: () => {
             highlightUUIDs(affectedIds);
@@ -414,10 +408,9 @@ export function showTransformationDetails(xform: JsonTransformation): void {
         $('<div>', {
             class: 'button',
             click: () => {
-                vscode.postMessage({
-                    type: 'dace.export_transformation_to_file',
-                    transformation: xform,
-                });
+                VSCodeSDFV.getInstance().msgHandler?.invoke(
+                    'exportTransformation', [xform]
+                );
             },
         }).append($('<span>', {
             text: 'Export To File',
@@ -431,16 +424,13 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     VSCodeSDFV.getInstance().infoBoxShow(true);
 }
 
-export function applyTransformations(...xforms: JsonTransformation[]): void {
-    if (vscode) {
-        VSCodeRenderer.getInstance()?.clearSelectedItems();
-        VSCodeSDFV.getInstance().clearInfoBox(true);
-        const el = document.getElementById('exit-preview-button');
-        if (el)
-            el.className = 'button hidden';
-        vscode.postMessage({
-            type: 'dace.apply_transformations',
-            transformations: xforms,
-        });
-    }
+export async function applyTransformations(
+    ...xforms: JsonTransformation[]
+): Promise<void> {
+    VSCodeRenderer.getInstance()?.clearSelectedItems();
+    VSCodeSDFV.getInstance().clearInfoBox(true);
+    $('#exit-preview-button').hide();
+    return VSCodeSDFV.getInstance().msgHandler?.invoke(
+        'applyTransformations', [xforms]
+    );
 }

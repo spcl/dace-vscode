@@ -5,19 +5,23 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeInterface } from '../dace_interface';
 import { DaCeVSCode } from '../extension';
+import {
+    JsonTransformationList
+} from '../webclients/components/transformations/transformations';
 
-import { BaseComponent } from './base_component';
-import { ComponentMessageHandler } from './messaging/component_message_handler';
+import { SingletonComponent } from './base_component';
 
 export class TransformationListProvider
-extends BaseComponent
+extends SingletonComponent
 implements vscode.WebviewViewProvider {
+
+    public static readonly COMPONENT_NAME = 'transformationList';
 
     private static readonly viewType: string = 'transformationList';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: TransformationListProvider | undefined = undefined;
+    private static INSTANCE?: TransformationListProvider;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         TransformationListProvider.INSTANCE = new TransformationListProvider(
@@ -77,41 +81,46 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            webviewView.webview.onDidReceiveMessage(message => {
-                ComponentMessageHandler.getInstance().handleMessage(
-                    message,
-                    webviewView.webview
-                );
-            });
+            this.initMessaging(
+                TransformationListProvider.COMPONENT_NAME, webviewView.webview
+            );
         });
     }
 
-    public handleMessage(
-        message: any,
-        _origin: vscode.Webview | undefined = undefined
-    ): void {
-        switch (message.type) {
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
+    public async setTransformations(
+        transformations: JsonTransformationList, hideLoading: boolean = true
+    ): Promise<void> {
+        return this.invokeRemote('setTransformations', [
+            transformations, hideLoading
+        ]);
     }
 
-    public clearList(reason: string | undefined) {
-        this.handleMessage({
-            type: 'clear_transformations',
-            reason: reason,
-        });
+    public async showLoading(): Promise<void> {
+        return this.invokeRemote('showLoading');
+    }
+
+    public async hideLoading(): Promise<void> {
+        return this.invokeRemote('hideLoading');
+    }
+
+    public async deselect(): Promise<void> {
+        return this.invokeRemote('deselect');
+    }
+
+    public async clearTransformations(
+        reason: string | undefined
+    ): Promise<void> {
+        return this.invokeRemote('clearTransformations', [reason]);
     }
 
     public refresh(hard: boolean = false) {
-        this.clearList(undefined);
+        this.clearTransformations(undefined);
         if (hard)
             vscode.commands.executeCommand('transformationList.sync');
         else
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'resync_transformation_list',
-            });
+            DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+                'resyncTransformations'
+            );
     }
 
     public show() {

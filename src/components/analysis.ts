@@ -4,13 +4,15 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeInterface } from '../dace_interface';
+import { DaCeVSCode } from '../extension';
 
-import { BaseComponent } from './base_component';
-import { ComponentMessageHandler } from './messaging/component_message_handler';
+import { SingletonComponent } from './base_component';
 
 export class AnalysisProvider
-extends BaseComponent
+extends SingletonComponent
 implements vscode.WebviewViewProvider {
+
+    public static readonly COMPONENT_NAME = 'sdfgAnalysis';
 
     private static readonly viewType: string = 'sdfgAnalysis';
 
@@ -73,13 +75,49 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            webviewView.webview.onDidReceiveMessage(message => {
-                ComponentMessageHandler.getInstance().handleMessage(
-                    message,
-                    webviewView.webview
-                );
-            });
+            this.initMessaging(
+                AnalysisProvider.COMPONENT_NAME, webviewView.webview
+            );
+            this.messageHandler?.register(this.refresh, this);
+            this.messageHandler?.register(
+                this.instrumentationReportChangeCriterium, this
+            );
+            this.messageHandler?.register(this.specialize, this);
+            this.messageHandler?.register(this.setOverlays, this);
+            this.messageHandler?.register(
+                this.onLoadInstrumentationReport, this
+            );
+            this.messageHandler?.register(this.updateScalingMethod, this);
+            this.messageHandler?.register(this.symbolValueChanged, this);
         });
+    }
+
+    public symbolValueChanged(symbol: string, value: any): void {
+        // TODO: Implement, call SDFV
+    }
+
+    public updateScalingMethod(method: string, subMethod: string): void {
+        // TODO: Implement, call SDFV
+    }
+
+    public setOverlays(overlays: any[]): void {
+        // TODO: Implement, call SDFV
+    }
+
+    public onLoadInstrumentationReport(report: any, criterium: string) {
+        // TODO: Implement, call SDFV
+    }
+
+    public instrumentationReportChangeCriterium(criterium: string): void {
+        // TODO: Implement, call SDFV
+    }
+
+    public specialize(symbols: { [key: string]: any }): void {
+        const sdfgFile = DaCeVSCode.getInstance().getActiveSdfgFileName();
+        if (sdfgFile) {
+            const uri = vscode.Uri.file(sdfgFile);
+            DaCeInterface.getInstance().specializeGraph(uri, symbols);
+        }
     }
 
     public show() {
@@ -92,19 +130,8 @@ implements vscode.WebviewViewProvider {
         return this.view.visible;
     }
 
-    public handleMessage(message: any, origin?: vscode.Webview): void {
-        switch (message.type) {
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
-    }
-
-    public clear(reason: string | undefined) {
-        this.view?.webview.postMessage({
-            type: 'clear',
-            reason: reason,
-        });
+    public async clear(reason?: string): Promise<void>{
+        return this.invokeRemote('clear', [reason]);
     }
 
     public refresh() {

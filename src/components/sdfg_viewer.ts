@@ -3,44 +3,38 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { DaCeInterface } from '../dace_interface';
 
-import { TransformationHistoryProvider } from './transformation_history';
-import { OutlineProvider } from './outline';
+import { BreakpointHandler, getCppRange, SDFGDebugNode } from '../debugger/breakpoint_handler';
 import { DaCeVSCode } from '../extension';
+import { fileExists } from '../utils/utils';
 import { AnalysisProvider } from './analysis';
 import { BaseComponent } from './base_component';
-import { ComponentMessageHandler } from './messaging/component_message_handler';
+import {
+    ICPCExtensionMessagingComponent
+} from './messaging/icpc_extension_messaging_component';
+import { OutlineProvider } from './outline';
+import { TransformationHistoryProvider } from './transformation_history';
 import { TransformationListProvider } from './transformation_list';
-import { getCppRange, SDFGDebugNode } from '../debugger/breakpoint_handler';
-import { fileExists } from '../utils/utils';
 
-class Message {
-    timeStamp: Date;
-    sdfgName: string;
-    message: any;
+class ProcedureCall {
 
-    constructor(sdfgName: string, message: any) {
-        this.sdfgName = sdfgName;
-        this.timeStamp = new Date();
-        this.message = message;
+    constructor(
+        private readonly sdfgName: string,
+        private readonly messageHandler: ICPCExtensionMessagingComponent,
+        private readonly procedure: string,
+        private readonly args?: any[],
+    ) { }
+
+    public async execute(): Promise<any> {
+        return this.messageHandler.invoke(this.procedure, this.args);
     }
 
-    public checkTimestamp(): boolean {
-        // Checks if the msg isn't too old. We give the webview
-        // 30s to handle a msg otherwise its outdated
-        return new Date().getTime() < this.timeStamp.getTime() + 30000;
-    }
-
-    public sendMessage() {
-        DaCeVSCode.getInstance().getActiveEditor()?.postMessage(this.message);
-    }
-
-    public executeMessage(sdfgName: string): boolean {
+    public async checkExecute(sdfgName: string): Promise<boolean> {
         // Sends the msg if it corresponds to the SDFG and is not outdated
         // Returns true if the Message can be deleted
         if (sdfgName === this.sdfgName) {
-            if (this.checkTimestamp())
-                this.sendMessage();
+            this.execute();
             return true;
         }
         return false;
@@ -55,9 +49,10 @@ export class SdfgViewer {
         public readonly document: vscode.TextDocument
     ) { }
 
-    public wrapperFile?: string = undefined;
-    public argv?: string[] = undefined;
-    public linkFile?: string = undefined;
+    public wrapperFile?: string;
+    public argv?: string[];
+    public linkFile?: string;
+    public messageHandler?: ICPCExtensionMessagingComponent;
 
 }
 
@@ -65,9 +60,11 @@ export class SdfgViewerProvider
     extends BaseComponent
     implements vscode.CustomTextEditorProvider {
 
+    public static readonly COMPONENT_NAME = 'sdfv';
+
     public static INSTANCE: SdfgViewerProvider | undefined = undefined;
 
-    private messages: Message[] = [];
+    private queuedProcedureCalls: ProcedureCall[] = [];
 
     public static getInstance(): SdfgViewerProvider | undefined {
         return this.INSTANCE;
@@ -104,10 +101,12 @@ export class SdfgViewerProvider
      * @param webview       Active SDFG editor webview.
      */
     private updateActiveEditor(
-        document: vscode.TextDocument,
+        editor: SdfgViewer, document: vscode.TextDocument,
         webview: vscode.Webview
     ): void {
-        DaCeVSCode.getInstance().updateActiveSdfg(document.fileName, webview);
+        DaCeVSCode.getInstance().updateActiveSdfg(
+            editor, document.fileName, webview
+        );
     }
 
     /**
@@ -115,20 +114,13 @@ export class SdfgViewerProvider
      *
      * This also forces the transformation view to update, if the webview is the
      * last active SDFG editor.
-     *
-     * @param document      SDFG document with updated contents.
-     * @param webviewPanel  SDFG editor webview panel to update.
      */
-    private updateWebview(
-        document: vscode.TextDocument,
-        webview: vscode.Webview,
-        preventRefreshes: boolean = false
+    public updateEditor(
+        editor: SdfgViewer, preventRefreshes: boolean = false
     ): void {
-        webview.postMessage({
-            type: 'update',
-            text: document.getText(),
-            preventRefreshes: preventRefreshes,
-        });
+        editor.messageHandler?.invoke(
+            'updateContents', [editor.document.getText(), preventRefreshes]
+        );
     }
 
     /**
@@ -137,16 +129,10 @@ export class SdfgViewerProvider
      * This updates the corresponding webview accordingly.
      * If this is the last active SDFG document, we also force a reload of the
      * attached transformation panel.
-     *
-     * @param document      Changed document.
-     * @param webview       Attached webview.
      */
-    private documentChanged(
-        document: vscode.TextDocument,
-        webview: vscode.Webview
-    ): void {
-        this.updateWebview(document, webview);
-        if (DaCeVSCode.getInstance().getActiveEditor() === webview) {
+    private documentChanged(editor: SdfgViewer): void {
+        this.updateEditor(editor);
+        if (DaCeVSCode.getInstance().getActiveEditor() === editor) {
             TransformationListProvider.getInstance()?.refresh();
             TransformationHistoryProvider.getInstance()?.refresh();
             OutlineProvider.getInstance()?.refresh();
@@ -180,184 +166,164 @@ export class SdfgViewerProvider
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
     }
 
-    public async handleMessage(
-        message: any,
-        origin: vscode.Webview | undefined = undefined
+    public disableMinimap(): void {
+        vscode.workspace.getConfiguration('dace.sdfv')?.update(
+            'minimap', false
+        ).then(() => {
+            vscode.window.showInformationMessage(
+                'Minimap disabled, you can re-enable the feature in ' +
+                'your settings.'
+            );
+        });
+    }
+
+    public setSplitDirection(dir?: 'vertical' | 'horizontal'): void {
+        vscode.workspace.getConfiguration('dace.sdfv')?.update('layout', dir);
+    }
+
+    public requestUpdateEditor(
+        editor: SdfgViewer, preventRefreshes: boolean = false
+    ): void {
+        this.updateEditor(editor, preventRefreshes);
+    }
+
+    public async setOutline(outlineList: any[]): Promise<void> {
+        return OutlineProvider.getInstance()?.setOutline(outlineList);
+    }
+
+    public async goToSource(
+        pFilePath: string, startRow: number, startChar: number, endRow: number,
+        endChar: number
     ): Promise<void> {
-        let node: any;
-        switch (message.type) {
-            case 'disable_minimap':
-                vscode.workspace.getConfiguration('dace.sdfv')?.update(
-                    'minimap', false
-                ).then(() => {
-                    vscode.window.showInformationMessage(
-                        'Minimap disabled, you can re-enable the feature in ' +
-                        'your settings.'
-                    );
-                });
-                break;
-            case 'set_split_direction':
-                if (message.direction)
-                    vscode.workspace.getConfiguration('dace.sdfv')?.update(
-                        'layout', message.direction
-                    );
-                break;
-            case 'get_current_sdfg':
-                const instance = SdfgViewerProvider.getInstance();
-                if (instance !== undefined && origin !== undefined) {
-                    const editor: SdfgViewer | undefined =
-                        instance.findEditorForWebview(origin);
-                    if (editor !== undefined) {
-                        if (message.preventRefreshes)
-                            this.updateWebview(editor.document, origin, true);
-                        else
-                            this.updateWebview(editor.document, origin);
-                    }
-                }
-                break;
-            case 'go_to_source':
-                // We want to jump to a specific file and location if it exists.
-                let filePath: vscode.Uri | null = null;
-                if (path.isAbsolute(message.filePath)) {
-                    filePath = vscode.Uri.file(message.filePath);
-                } else if (vscode.workspace.workspaceFolders) {
-                    // If the provided path is relative, search through the open
-                    // workspace folders to see if one contains a file at the
-                    // provided relative path.
-                    for (const wsFolder of vscode.workspace.workspaceFolders) {
-                        const filePathCandidate = vscode.Uri.joinPath(
-                            wsFolder.uri, message.filePath
-                        );
-                        if (await fileExists(filePathCandidate)) {
-                            filePath = filePathCandidate;
-                            break;
-                        }
-                    }
-                } else {
-                    vscode.window.showErrorMessage(
-                        'Cannot jump to the relative path ' + message.filePath +
-                        'without a folder open in VSCode.'
-                    );
-                    return;
-                }
-
-                if (filePath)
-                    this.goToFileLocation(
-                        filePath,
-                        message.startRow,
-                        message.startChar,
-                        message.endRow,
-                        message.endChar
-                    );
-                break;
-            case 'go_to_cpp':
-                // If the message passes a cache path then use that path,
-                // otherwise reconstruct the folder based on the default cache
-                // directory with respect to the opened workspace folder and the
-                // SDFG name.
-                let cacheUri: vscode.Uri | null = null;
-                const cPath: string = message.cachePath ?? path.join(
-                    '.', '.dacecache', message.sdfgName
+        // We want to jump to a specific file and location if it exists.
+        let fPath: vscode.Uri | null = null;
+        if (path.isAbsolute(pFilePath)) {
+            fPath = vscode.Uri.file(pFilePath);
+        } else if (vscode.workspace.workspaceFolders) {
+            // If the provided path is relative, search through the open
+            // workspace folders to see if one contains a file at the
+            // provided relative path.
+            for (const wsFolder of vscode.workspace.workspaceFolders) {
+                const filePathCandidate = vscode.Uri.joinPath(
+                    wsFolder.uri, pFilePath
                 );
-                if (path.isAbsolute(cPath)) {
-                    cacheUri = vscode.Uri.file(message.cachePath);
-                } else if (vscode.workspace.workspaceFolders) {
-                    // If the provided path is relative, search through the open
-                    // workspace folders to see if one contains a file at the
-                    // provided relative path.
-                    for (const wsFolder of vscode.workspace.workspaceFolders) {
-                        const cacheUriCandidate = vscode.Uri.joinPath(
-                            wsFolder.uri, cPath
-                        );
-                        if (await fileExists(cacheUriCandidate)) {
-                            cacheUri = cacheUriCandidate;
-                            break;
-                        }
-                    }
-                } else {
-                    vscode.window.showErrorMessage(
-                        'Cannot jump to the relative path ' + cPath +
-                        'without a folder open in VSCode.'
-                    );
-                    return;
+                if (await fileExists(filePathCandidate)) {
+                    fPath = filePathCandidate;
+                    break;
                 }
-
-                if (!cacheUri)
-                    return;
-
-                const cppMapUri = vscode.Uri.joinPath(
-                    cacheUri, 'map', 'map_cpp.json'
-                );
-                const cppFileUri = vscode.Uri.joinPath(
-                    cacheUri, 'src', 'cpu', message.sdfgName + '.cpp'
-                );
-                node = new SDFGDebugNode(
-                    message.sdfgId,
-                    message.stateId,
-                    message.nodeId,
-                );
-
-                getCppRange(node, cppMapUri).then(lineRange => {
-                    // If there is no matching location we just goto the file
-                    // without highlighting and indicate it with a message
-                    if (!lineRange || !lineRange.from) {
-                        lineRange = { to: Number.MAX_VALUE, from: 0 };
-                        lineRange.from = 1;
-                        vscode.window.showInformationMessage(
-                            'Could not find a specific line for Node:' +
-                            node.printer()
-                        );
-                    }
-
-                    // Subtract 1 as we don't want to highlight the first line
-                    // as the 'to' value is inclusive
-                    if (!lineRange.to) {
-                        lineRange.to = lineRange.from - 1;
-                    }
-
-                    this.goToFileLocation(
-                        cppFileUri,
-                        lineRange.from - 1,
-                        0,
-                        lineRange.to,
-                        0
-                    );
-                });
-                break;
-            case 'go_to_sdfg':
-                const msgs = [];
-                if (message.zoomTo) {
-                    msgs.push(
-                        new Message(message.sdfgName, {
-                            type: 'zoom_to_node',
-                            uuid: message.zoomTo,
-                        })
-                    );
-                }
-                if (message.displayBps) {
-                    msgs.push(
-                        new Message(message.sdfgName, {
-                            type: 'display_breakpoints',
-                            display: message.displayBps,
-                        })
-                    );
-                }
-                SdfgViewerProvider.getInstance()?.openViewer(
-                    vscode.Uri.file(message.path),
-                    msgs
-                );
-                break;
-            case 'process_queued_messages':
-                if (message.sdfgName) {
-                    this.sendMessages(message.sdfgName);
-                }
-                break;
-            default:
-                DaCeVSCode.getInstance().getActiveEditor()?.postMessage(
-                    message
-                );
-                break;
+            }
+        } else {
+            vscode.window.showErrorMessage(
+                'Cannot jump to the relative path ' + pFilePath +
+                ' without a folder open in VSCode.'
+            );
+            return;
         }
+
+        if (fPath)
+            this.goToFileLocation(fPath, startRow, startChar, endRow, endChar);
+    }
+
+    public async goToCPP(
+        sdfgName: string, sdfgId: number, stateId: number, nodeId: number,
+        cachePath?: string,
+    ): Promise<void> {
+        // If the message passes a cache path then use that path,
+        // otherwise reconstruct the folder based on the default cache
+        // directory with respect to the opened workspace folder and the
+        // SDFG name.
+        let cacheUri: vscode.Uri | null = null;
+        const cPath: string = cachePath ?? path.join(
+            '.', '.dacecache', sdfgName
+        );
+        if (path.isAbsolute(cPath)) {
+            cacheUri = vscode.Uri.file(cPath);
+        } else if (vscode.workspace.workspaceFolders) {
+            // If the provided path is relative, search through the open
+            // workspace folders to see if one contains a file at the
+            // provided relative path.
+            for (const wsFolder of vscode.workspace.workspaceFolders) {
+                const cacheUriCandidate = vscode.Uri.joinPath(
+                    wsFolder.uri, cPath
+                );
+                if (await fileExists(cacheUriCandidate)) {
+                    cacheUri = cacheUriCandidate;
+                    break;
+                }
+            }
+        } else {
+            vscode.window.showErrorMessage(
+                'Cannot jump to the relative path ' + cPath +
+                'without a folder open in VSCode.'
+            );
+            return;
+        }
+
+        if (!cacheUri)
+            return;
+
+        const cppMapUri = vscode.Uri.joinPath(
+            cacheUri, 'map', 'map_cpp.json'
+        );
+        const cppFileUri = vscode.Uri.joinPath(
+            cacheUri, 'src', 'cpu', sdfgName + '.cpp'
+        );
+        const node = new SDFGDebugNode(sdfgId, stateId, nodeId);
+
+        getCppRange(node, cppMapUri).then(lineRange => {
+            // If there is no matching location we just goto the file
+            // without highlighting and indicate it with a message
+            if (!lineRange || !lineRange.from) {
+                lineRange = { to: Number.MAX_VALUE, from: 0 };
+                lineRange.from = 1;
+                vscode.window.showInformationMessage(
+                    'Could not find a specific line for Node:' +
+                    node.printer()
+                );
+            }
+
+            // Subtract 1 as we don't want to highlight the first line
+            // as the 'to' value is inclusive
+            if (!lineRange.to)
+                lineRange.to = lineRange.from - 1;
+
+            this.goToFileLocation(
+                cppFileUri, lineRange.from - 1, 0, lineRange.to, 0
+            );
+        });
+    }
+
+    public async goToSDFG(
+        zoomTo: string, sdfgName: string, filePath: string,
+        displayBps: boolean = false
+    ): Promise<void> {
+        const activeEditor = DaCeVSCode.getInstance().getActiveEditor();
+        const calls = [];
+        if (zoomTo && activeEditor?.messageHandler) {
+            calls.push(new ProcedureCall(
+                sdfgName, activeEditor.messageHandler, 'zoomToNode', [zoomTo]
+            ));
+        }
+
+        if (displayBps && activeEditor?.messageHandler) {
+            calls.push(new ProcedureCall(
+                sdfgName, activeEditor.messageHandler, 'displayBreakpoints',
+                [displayBps]
+            ));
+        }
+
+        SdfgViewerProvider.getInstance()?.openViewer(
+            vscode.Uri.file(filePath), calls
+        );
+    }
+
+    public async processQueuedInvocations(sdfgName: string): Promise<void> {
+        const retainedInvocations = [];
+        for (const call of this.queuedProcedureCalls) {
+            if (!call.checkExecute(sdfgName))
+                retainedInvocations.push(call);
+        }
+        this.queuedProcedureCalls = retainedInvocations;
     }
 
     public goToFileLocation(
@@ -395,7 +361,9 @@ export class SdfgViewerProvider
         );
     }
 
-    public openViewer(uri: vscode.Uri, messages: Message[] = []): void {
+    public openViewer(
+        uri: vscode.Uri, procedureCalls: ProcedureCall[] = []
+    ): void {
         // If the SDFG is currently open, then execute the messages
         // otherwise store them to execute as soon as the SDFG is loaded.
         let editorIsLoaded = false;
@@ -409,8 +377,8 @@ export class SdfgViewerProvider
         if (!editorIsLoaded) {
             // The SDFG isn't yet loaded so we store the messages to execute
             // after the SDFG is loaded (calls `process_queued_messages`).
-            for (const msg of messages)
-                this.messages.push(msg);
+            for (const call of procedureCalls)
+                this.queuedProcedureCalls.push(call);
             vscode.commands.executeCommand(
                 'vscode.openWith', uri, SdfgViewerProvider.viewType
             );
@@ -420,21 +388,54 @@ export class SdfgViewerProvider
             vscode.commands.executeCommand(
                 'vscode.openWith', uri, SdfgViewerProvider.viewType
             ).then(_ => {
-                messages.forEach(msg => {
-                    msg.sendMessage();
+                procedureCalls.forEach(call => {
+                    call.execute();
                 });
             });
         }
 
     }
 
-    private sendMessages(sdfgName: string) {
-        const keepMsgs: Message[] = [];
-        for (const msg of this.messages) {
-            if (!msg.executeMessage(sdfgName))
-                keepMsgs.push(msg);
-        }
-        this.messages = keepMsgs;
+    public async refreshTransformationHistory(
+        resetActive: boolean = false
+    ): Promise<void> {
+        return TransformationHistoryProvider.getInstance()?.refresh(
+            resetActive
+        );
+    }
+
+    public async analysisAddSymbols(symbols: any): Promise<void> {
+        return AnalysisProvider.getInstance()?.invokeRemote(
+            'addSymbols', [symbols]
+        );
+    }
+
+    public async analysisSetSymbols(symbols: any): Promise<void> {
+        return AnalysisProvider.getInstance()?.invokeRemote(
+            'setSymbols', [symbols]
+        );
+    }
+
+    public async updateAnalysisPanel(
+        activeOverlays: any[], symbols: any, scalingMethod?: string,
+        scalingSubMethod?: string, availableOverlays?: any[]
+    ): Promise<void> {
+        return AnalysisProvider.getInstance()?.invokeRemote(
+            'refresh', [
+                activeOverlays, symbols, scalingMethod, scalingSubMethod,
+                availableOverlays
+            ]
+        );
+    }
+
+    public async onDaemonConnected(): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.
+            invoke('setDaemonConnected', [true]);
+    }
+
+    public async setMetadata(metadata: any): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.
+            invoke('setMetaDict', [metadata]);
     }
 
     public async resolveCustomTextEditor(
@@ -443,7 +444,8 @@ export class SdfgViewerProvider
         _token: vscode.CancellationToken
     ): Promise<void> {
         // Add this editor to the list of all editors.
-        this.openEditors.push(new SdfgViewer(webviewPanel.webview, document));
+        const editor = new SdfgViewer(webviewPanel.webview, document);
+        this.openEditors.push(editor);
 
         // Make sure that if the webview (editor) gets closed again, we remove
         // it from the open editors list.
@@ -473,11 +475,13 @@ export class SdfgViewerProvider
 
             // We want to track the last active SDFG viewer/file.
             if (webviewPanel.active)
-                this.updateActiveEditor(document, webviewPanel.webview);
+                this.updateActiveEditor(editor, document, webviewPanel.webview);
             // Store a ref to the document if it becomes active.
             webviewPanel.onDidChangeViewState(e => {
                 if (e.webviewPanel.active)
-                    this.updateActiveEditor(document, webviewPanel.webview);
+                    this.updateActiveEditor(
+                        editor, document, webviewPanel.webview
+                    );
                 else
                     DaCeVSCode.getInstance().clearActiveSdfg();
             });
@@ -488,7 +492,7 @@ export class SdfgViewerProvider
                 e => {
                     if (e.document.uri.toString() === document.uri.toString() &&
                         e.contentChanges.length > 0)
-                        this.documentChanged(document, webviewPanel.webview);
+                        this.documentChanged(editor);
                 }
             );
             // Get rid of it when the editor closes.
@@ -497,14 +501,47 @@ export class SdfgViewerProvider
             });
 
             // Handle received messages from the webview.
-            webviewPanel.webview.onDidReceiveMessage(message => {
-                ComponentMessageHandler.getInstance().handleMessage(
-                    message,
-                    webviewPanel.webview
-                );
-            });
+            editor.messageHandler = new ICPCExtensionMessagingComponent(
+                webviewPanel.webview, 'sdfv'
+            );
+            editor.messageHandler.register(this.disableMinimap, this);
+            editor.messageHandler.register(this.setSplitDirection, this);
+            editor.messageHandler.register(
+                this.requestUpdateEditor, this, undefined, [editor]
+            );
+            editor.messageHandler.register(this.goToSource, this);
+            editor.messageHandler.register(this.goToCPP, this);
+            editor.messageHandler.register(this.setOutline, this);
+            editor.messageHandler.register(this.processQueuedInvocations, this);
+            editor.messageHandler.register(this.analysisAddSymbols, this);
+            editor.messageHandler.register(this.analysisSetSymbols, this);
+            editor.messageHandler.register(this.updateAnalysisPanel, this);
+            editor.messageHandler.register(
+                this.refreshTransformationHistory, this
+            );
 
-            this.updateWebview(document, webviewPanel.webview);
+            const dace = DaCeInterface.getInstance();
+            editor.messageHandler.register(dace.loadTransformations, dace);
+            editor.messageHandler.register(dace.expandLibraryNode, dace);
+            editor.messageHandler.register(dace.previewTransformation, dace);
+            editor.messageHandler.register(dace.applyTransformations, dace);
+            editor.messageHandler.register(dace.exportTransformation, dace);
+            editor.messageHandler.register(dace.writeToActiveDocument, dace);
+            editor.messageHandler.register(dace.getFlops, dace);
+
+            const xfList = TransformationListProvider.getInstance()!;
+            editor.messageHandler.register(xfList.clearTransformations, xfList);
+            editor.messageHandler.register(xfList.setTransformations, xfList);
+
+            const bpHandler = BreakpointHandler.getInstance()!;
+            editor.messageHandler.register(bpHandler.addBreakpoint, bpHandler);
+            editor.messageHandler.register(
+                bpHandler.removeBreakpoint, bpHandler
+            );
+            editor.messageHandler.register(bpHandler.getSavedNodes, bpHandler);
+            editor.messageHandler.register(bpHandler.hasSavedNodes, bpHandler);
+
+            this.updateEditor(editor);
             webviewPanel.reveal();
         });
     }
@@ -513,7 +550,6 @@ export class SdfgViewerProvider
      * Load the HTML to be displayed in the editor's webview.
      *
      * @param webview  Webview to load for
-     * @param document Document to show in the editor's webview
      *
      * @returns        HTML to be displayed
      */

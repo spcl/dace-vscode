@@ -2,12 +2,13 @@
 // All rights reserved.
 
 import * as vscode from 'vscode';
-
 import {
-    MessageReceiverInterface,
-} from './messaging/message_receiver_interface';
+    ICPCExtensionHost,
+    ICPCExtensionMessagingComponent
+} from './messaging/icpc_extension_messaging_component';
 
-export abstract class BaseComponent implements MessageReceiverInterface {
+
+export abstract class BaseComponent {
 
     // Identifiers for code placement into the webview's HTML.
     protected readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
@@ -19,6 +20,22 @@ export abstract class BaseComponent implements MessageReceiverInterface {
     ) {
     }
 
-    public abstract handleMessage(message: any, origin: vscode.Webview): void;
+}
+
+export abstract class SingletonComponent extends BaseComponent {
+
+    protected messageHandler?: ICPCExtensionMessagingComponent;
+
+    protected initMessaging(component: string, webview: vscode.Webview): void {
+        this.messageHandler = ICPCExtensionHost.getInstance().registerComponent(
+            component, webview
+        );
+    }
+
+    public async invokeRemote(procedure: string, args?: any[]): Promise<any> {
+        if (!this.messageHandler)
+            console.warn(this.type, 'message handler not initialized');
+        return this.messageHandler?.invoke(procedure, args);
+    }
 
 }

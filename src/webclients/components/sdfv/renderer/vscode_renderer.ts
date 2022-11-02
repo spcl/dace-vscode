@@ -134,9 +134,9 @@ export class VSCodeRenderer extends SDFGRenderer {
                     this.minimap_ctx = null;
                     this.minimap_canvas = null;
                     disableMinimapButton.remove();
-                    vscode.postMessage({
-                        type: 'sdfv.disable_minimap',
-                    });
+                    VSCodeSDFV.getInstance().msgHandler?.invoke(
+                        'disableMinimap'
+                    );
                 },
             }).appendTo($(this.container));
         }
@@ -460,11 +460,14 @@ export class VSCodeRenderer extends SDFGRenderer {
                 uuids.push(otherUUID);
         }
 
+        // TODO: this call seems to have been missing.
+        /*
         vscode.postMessage({
             type: 'dace.remove_nodes',
             sdfg: JSON.stringify(g),
             uuids: uuids,
         });
+        */
     }
 
     /**

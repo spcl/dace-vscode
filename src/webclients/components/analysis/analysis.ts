@@ -12,10 +12,11 @@ import 'material-icons/iconfont/material-icons.css';
 import './analysis.css';
 
 import { OverlayType, SymbolMap } from '@spcl/sdfv/out';
+import {
+    ICPCWebclientMessagingComponent
+} from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
-
-let symbolResolution: SymbolResolution | null = null;
 
 class SymbolResolution {
 
@@ -113,11 +114,9 @@ class SymbolResolution {
                             event.target.value = 1;
                         }
                         this.symbols[symbol] = value;
-                        vscode.postMessage({
-                            type: 'sdfv.symbol_value_changed',
-                            symbol: symbol,
-                            value: value,
-                        });
+                        AnalysisPanel.getInstance().msgHandler?.invoke(
+                            'symbolValueChanged', [symbol, value]
+                        );
                     }
                 });
                 $('<button>', {
@@ -126,11 +125,9 @@ class SymbolResolution {
                     'click': () => {
                         input.val('');
                         this.symbols[symbol] = undefined;
-                        vscode.postMessage({
-                            type: 'sdfv.symbol_value_changed',
-                            symbol: symbol,
-                            value: undefined,
-                        });
+                        AnalysisPanel.getInstance().msgHandler?.invoke(
+                            'symbolValueChanged', [symbol, undefined]
+                        );
                     },
                 }).appendTo(definitionContainer);
                 let definition = this.symbols[symbol];
@@ -144,261 +141,272 @@ class SymbolResolution {
     }
 
     public specializeGraph(): void {
-        vscode.postMessage({
-            type: 'dace.specialize_graph',
-            symbolMap: this.symbols,
-        });
+        AnalysisPanel.getInstance().msgHandler?.invoke(
+            'specialize', [this.symbols]
+        );
     }
 
 }
 
-function clearRuntimeReport() {
-    $('#runtime-report-file-input').val('');
-    const rtReportLabel = $('#runtime-report-filename-label');
-    rtReportLabel.val('Load runtime report');
-    rtReportLabel.prop('title', '');
-    $('input[type="checkbox"][value="daceStaticFlopsOverlay"]').prop(
-        'disabled', false
-    );
-    if (vscode)
-        vscode.postMessage({
-            type: 'sdfv.clear_instrumentation_report',
-        });
-}
+class AnalysisPanel {
 
-function onScalingUpdated(): void {
-    const scalingMethod = $('#scaling-method-input').val();
-    let additionalVal = undefined;
-    switch (scalingMethod) {
-        case 'hist':
-            $('#scaling-method-hist-buckets-container').show();
-            $('#scaling-method-exp-base-container').hide();
-            additionalVal = $('#scaling-method-hist-buckets-input').val();
-            break;
-        case 'exponential_interpolation':
-            $('#scaling-method-hist-buckets-container').hide();
-            $('#scaling-method-exp-base-container').show();
-            additionalVal = $('#scaling-method-exp-base-input').val();
-            break;
-        default:
-            $('#scaling-method-exp-base-container').hide();
-            $('#scaling-method-hist-buckets-container').hide();
-            break;
+    private static readonly INSTANCE: AnalysisPanel = new AnalysisPanel();
+
+    private constructor() { }
+
+    public static getInstance(): AnalysisPanel {
+        return this.INSTANCE;
     }
 
-    if (vscode)
-        vscode.postMessage({
-            type: 'sdfv.update_heatmap_scaling_method',
-            method: scalingMethod,
-            additionalVal: additionalVal,
+    private symbolResolution?: SymbolResolution;
+    private messageHandler?: ICPCWebclientMessagingComponent;
+
+    private noneMessage?: JQuery<HTMLElement>;
+    private contents?: JQuery<HTMLElement>;
+    private overlayToggles?: JQuery<HTMLElement>;
+
+    public init(): void {
+        this.symbolResolution = new SymbolResolution();
+
+        this.noneMessage = $('#none-message');
+        this.contents = $('#contents');
+        this.overlayToggles = $('#overlay-toggles');
+        $('#specialize-btn').on('click', () => {
+            this.symbolResolution?.specializeGraph();
         });
+
+        $('#scaling-method-input').on('change', this.onScalingUpdated);
+        $('#scaling-method-hist-buckets-input').on(
+            'change', this.onScalingUpdated
+        );
+        $('#scaling-method-exp-base-input').on('change', this.onScalingUpdated);
+
+        $('#runtime-report-file-input').on('change', function () {
+            const fr = new FileReader();
+            const that = this as HTMLInputElement;
+            fr.onload = () => {
+                if (fr && that.files) {
+                    const rtReportLabel = $('#runtime-report-filename-label');
+                    rtReportLabel.val(that.files[0].name);
+                    rtReportLabel.prop('title', (that.files[0] as any).path);
+                    const cb = $(
+                        'input[type="checkbox"][value="StaticFlopsOverlay"]'
+                    );
+                    cb.prop('checked', false);
+                    cb.prop('disabled', true);
+                    if (fr.result && typeof fr.result === 'string')
+                        AnalysisPanel.getInstance().msgHandler?.invoke(
+                            'onLoadInstrumentationReport',
+                            [
+                                JSON.parse(fr.result),
+                                $('#runtime-time-criterium-select').val(),
+                            ]
+                        );
+                }
+            };
+            if (that.files)
+                fr.readAsText(that.files[0]);
+        });
+
+        $('#runtime-time-criterium-select').on('change', () => {
+            this.messageHandler?.invoke(
+                'instrumentationReportChangeCriterium',
+                [$('#runtime-time-criterium-select').val()]
+            );
+        });
+
+        $('#runtime-report-clear-btn').on('click', this.clearRuntimeReport);
+
+        $('#runtime-report-browse-btn').on('click', () => {
+            $('#runtime-report-file-input').trigger('click');
+        });
+
+        this.messageHandler = new ICPCWebclientMessagingComponent(
+            window, vscode
+        );
+        this.messageHandler.register(
+            this.symbolResolution.addSymbol, this.symbolResolution
+        );
+        this.messageHandler.register(
+            this.symbolResolution.addSymbols, this.symbolResolution
+        );
+        this.messageHandler.register(
+            this.symbolResolution.defineSymbol, this.symbolResolution
+        );
+        this.messageHandler.register(
+            this.symbolResolution.removeSymbolDefinition, this.symbolResolution
+        );
+        this.messageHandler.register(
+            this.symbolResolution.removeAllSymbolDefinitions,
+            this.symbolResolution
+        );
+        this.messageHandler.register(
+            this.symbolResolution.removeSymbol, this.symbolResolution
+        );
+        this.messageHandler.register(this.clear, this);
+        this.messageHandler.register(this.setSymbols, this);
+        this.messageHandler.register(this.refresh, this);
+        this.messageHandler.register(this.onAutoloadReport, this);
+
+        this.messageHandler?.invoke('refresh');
+    }
+
+    public clear(reason?: string): void {
+        this.symbolResolution?.clearSymbols();
+        this.overlayToggles?.html('');
+        $('input[type=radio][value=median]').prop('checked', true);
+        this.contents?.hide();
+        if (reason)
+            this.noneMessage?.text(reason);
+        else
+            this.noneMessage?.text('No analysis available');
+        this.noneMessage?.show();
+    }
+
+    public refresh(
+        activeOverlays: any[], symbols: any, scalingMethod?: string,
+        scalingSubMethod?: string, availableOverlays?: any[]
+    ): void {
+        if (scalingMethod !== undefined) {
+            $('#scaling-method-input').val(scalingMethod);
+
+            if (scalingSubMethod !== undefined) {
+                switch (scalingSubMethod) {
+                    case 'hist':
+                        $('#scaling-method-hist-buckets-container')
+                            .show();
+                        break;
+                    case 'exponential_interpolation':
+                        $('#scaling-method-exp-base-container').show();
+                        break;
+                    default:
+                        $('#scaling-method-exp-base-container').hide();
+                        $('#scaling-method-hist-buckets-container')
+                            .hide();
+                        break;
+                }
+            }
+        }
+
+
+        if (availableOverlays !== undefined) {
+            const nodeOverlaySelect = $('#node-overlays-input');
+            const edgeOverlaySelect = $('#edge-overlays-input');
+
+            nodeOverlaySelect.html('');
+            edgeOverlaySelect.html('');
+
+            nodeOverlaySelect.append(new Option('None', 'none', true));
+            edgeOverlaySelect.append(new Option('None', 'none', true));
+
+            for (const overlay of availableOverlays) {
+                const option = new Option(
+                    overlay.label, overlay.class, false,
+                    activeOverlays.includes(overlay.class)
+                );
+                switch (overlay.type) {
+                    case OverlayType.BOTH:
+                        // TODO(later): Not an issue yet, but once we have
+                        // overlays that are of type both, this must be
+                        // considered.
+                    case OverlayType.NODE:
+                        nodeOverlaySelect.append(option);
+                        break;
+                    case OverlayType.EDGE:
+                        edgeOverlaySelect.append(option);
+                        break;
+                }
+            }
+
+            const updateHandler = () => {
+                const overlays = [];
+                if (nodeOverlaySelect.val() !== 'none')
+                    overlays.push(nodeOverlaySelect.val());
+                if (edgeOverlaySelect.val() !== 'none')
+                    overlays.push(edgeOverlaySelect.val());
+                this.messageHandler?.invoke('setOverlays', [overlays]);
+            };
+
+            nodeOverlaySelect.on('change', updateHandler);
+            edgeOverlaySelect.on('change', updateHandler);
+        }
+
+        this.setSymbols(symbols);
+    }
+
+    public setSymbols(newSymbols: any): void {
+        if (newSymbols !== undefined) {
+            const symbols: SymbolMap = {};
+            Object.keys(newSymbols).forEach((symbol) => {
+                if (newSymbols[symbol] === '')
+                    symbols[symbol] = undefined;
+                else
+                    symbols[symbol] = newSymbols[symbol];
+            });
+            this.symbolResolution?.setSymbols(symbols);
+        }
+
+        this.noneMessage?.hide();
+        this.contents?.show();
+    }
+
+    public clearRuntimeReport(): void {
+        $('#runtime-report-file-input').val('');
+        const rtReportLabel = $('#runtime-report-filename-label');
+        rtReportLabel.val('Load runtime report');
+        rtReportLabel.prop('title', '');
+        $('input[type="checkbox"][value="daceStaticFlopsOverlay"]').prop(
+            'disabled', false
+        );
+        this.messageHandler?.invoke('clearRuntimeReport');
+    }
+
+    public onScalingUpdated(): void {
+        const scalingMethod = $('#scaling-method-input').val();
+        let additionalVal = undefined;
+        switch (scalingMethod) {
+            case 'hist':
+                $('#scaling-method-hist-buckets-container').show();
+                $('#scaling-method-exp-base-container').hide();
+                additionalVal = $('#scaling-method-hist-buckets-input').val();
+                break;
+            case 'exponential_interpolation':
+                $('#scaling-method-hist-buckets-container').hide();
+                $('#scaling-method-exp-base-container').show();
+                additionalVal = $('#scaling-method-exp-base-input').val();
+                break;
+            default:
+                $('#scaling-method-exp-base-container').hide();
+                $('#scaling-method-hist-buckets-container').hide();
+                break;
+        }
+
+        this.messageHandler?.invoke(
+            'updateScalingMethod', [scalingMethod, additionalVal]
+        );
+    }
+
+    public onAutoloadReport(path: string): string {
+        const cb = $('input[type="checkbox"][value="daceStaticFlopsOverlay"]');
+        const rtReportLabel = $('#runtime-report-filename-label');
+        rtReportLabel.val(path);
+        rtReportLabel.prop('title', path);
+        cb.prop('checked', false);
+        cb.prop('disabled', true);
+        const crit = $('#runtime-time-criterium-select').val();
+        if (crit && typeof crit === 'string')
+            return crit;
+        return 'med';
+    }
+
+    public get msgHandler(): ICPCWebclientMessagingComponent | undefined {
+        return this.messageHandler;
+    }
+
 }
 
 $(() => {
     ($('[data-bs-toggle="tooltip"') as any)?.tooltip();
 
-    symbolResolution = new SymbolResolution();
-
-    // Add a listener to receive messages from the extension.
-    window.addEventListener('message', e => {
-        const message = e.data;
-        switch (message.type) {
-            case 'add_symbol':
-                if (message.symbol !== undefined)
-                    symbolResolution?.addSymbol(message.symbol);
-                break;
-            case 'add_symbols':
-                if (message.symbols !== undefined)
-                    symbolResolution?.addSymbol(message.symbols);
-                break;
-            case 'define_symbol':
-                if (message.symbol !== undefined)
-                    symbolResolution?.defineSymbol(
-                        message.symbol,
-                        message.definition
-                    );
-                break;
-            case 'remove_symbol_definition':
-                if (message.symbol !== undefined)
-                    symbolResolution?.removeSymbolDefinition(
-                        message.symbol
-                    );
-                break;
-            case 'remove_symbol':
-                if (message.symbol !== undefined)
-                    symbolResolution?.removeSymbol(message.symbol);
-                break;
-            case 'remove_all_symbol_definitions':
-                symbolResolution?.removeAllSymbolDefinitions();
-                break;
-            case 'refresh_analysis_pane':
-                if (message.heatmapScalingMethod !== undefined) {
-                    $('#scaling-method-input').val(
-                        message.heatmapScalingMethod
-                    );
-
-                    if (message.heatmapScalingAdditionalVal !== undefined) {
-                        switch (message.heatmapScalingMethod) {
-                            case 'hist':
-                                $('#scaling-method-hist-buckets-container')
-                                    .show();
-                                break;
-                            case 'exponential_interpolation':
-                                $('#scaling-method-exp-base-container').show();
-                                break;
-                            default:
-                                $('#scaling-method-exp-base-container').hide();
-                                $('#scaling-method-hist-buckets-container')
-                                    .hide();
-                                break;
-                        }
-                    }
-                }
-
-
-                if (message.availableOverlays !== undefined) {
-                    const nodeOverlaySelect = $('#node-overlays-input');
-                    const edgeOverlaySelect = $('#edge-overlays-input');
-
-                    nodeOverlaySelect.html('');
-                    edgeOverlaySelect.html('');
-
-                    nodeOverlaySelect.append(new Option('None', 'none', true));
-                    edgeOverlaySelect.append(new Option('None', 'none', true));
-
-                    for (const overlay of message.availableOverlays) {
-                        const option = new Option(
-                            overlay.label, overlay.class, false,
-                            message.activeOverlays.includes(overlay.class)
-                        );
-                        switch (overlay.type) {
-                            case OverlayType.BOTH:
-                                // TODO(later): Not an issue yet, but once
-                                // we have overlays that are of type both,
-                                // this must be considered.
-                            case OverlayType.NODE:
-                                nodeOverlaySelect.append(option);
-                                break;
-                            case OverlayType.EDGE:
-                                edgeOverlaySelect.append(option);
-                                break;
-                        }
-                    }
-
-                    const updateHandler = () => {
-                        const overlays = [];
-                        if (nodeOverlaySelect.val() !== 'none')
-                            overlays.push(nodeOverlaySelect.val());
-                        if (edgeOverlaySelect.val() !== 'none')
-                            overlays.push(edgeOverlaySelect.val());
-                        vscode.postMessage({
-                            type: 'sdfv.set_overlays',
-                            overlays: overlays,
-                        });
-                    };
-
-                    nodeOverlaySelect.on('change', updateHandler);
-                    edgeOverlaySelect.on('change', updateHandler);
-                }
-                // Fall through into the next case to also set the symbols.
-            case 'set_symbols':
-                if (message.symbols !== undefined) {
-                    const symbols: SymbolMap = {};
-                    Object.keys(message.symbols).forEach((symbol) => {
-                        if (message.symbols[symbol] === '')
-                            symbols[symbol] = undefined;
-                        else
-                            symbols[symbol] = message.symbols[symbol];
-                    });
-                    symbolResolution?.setSymbols(symbols);
-                }
-
-                $('#none-message').hide();
-                $('#contents').show();
-                break;
-            case 'clear':
-                symbolResolution?.clearSymbols();
-                $('#overlay-toggles').html('');
-                $('input[type=radio][value=median]').prop('checked', true);
-                $('#contents').hide();
-                const noneMessage = $('#none-message');
-                if (message.reason)
-                    noneMessage.text(message.reason);
-                else
-                    noneMessage.text('No analysis available');
-                noneMessage.show();
-                break;
-            case 'autoload_report':
-                const cb = $(
-                    'input[type="checkbox"][value="daceStaticFlopsOverlay"]'
-                );
-                const rtReportLabel = $('#runtime-report-filename-label');
-                rtReportLabel.val(message.path);
-                rtReportLabel.prop('title', message.path);
-                cb.prop('checked', false);
-                cb.prop('disabled', true);
-                vscode.postMessage({
-                    type: 'sdfv.load_instrumentation_report',
-                    result: message.json,
-                    criterium: $('#runtime-time-criterium-select').val(),
-                });
-                break;
-            default:
-                break;
-        }
-    });
-
-    $('#scaling-method-input').on('change', onScalingUpdated);
-    $('#scaling-method-hist-buckets-input').on('change', onScalingUpdated);
-    $('#scaling-method-exp-base-input').on('change', onScalingUpdated);
-
-    $('#runtime-report-file-input').on('change', function () {
-        const fr = new FileReader();
-        const that = this as HTMLInputElement;
-        fr.onload = () => {
-            if (fr && vscode && that.files) {
-                const rtReportLabel = $('#runtime-report-filename-label');
-                rtReportLabel.val(that.files[0].name);
-                rtReportLabel.prop('title', (that.files[0] as any).path);
-                const cb = $(
-                    'input[type="checkbox"][value="StaticFlopsOverlay"]'
-                );
-                cb.prop('checked', false);
-                cb.prop('disabled', true);
-                if (fr.result && typeof fr.result === 'string')
-                    vscode.postMessage({
-                        type: 'sdfv.load_instrumentation_report',
-                        result: JSON.parse(fr.result),
-                        criterium: $('#runtime-time-criterium-select').val(),
-                    });
-            }
-        };
-        if (that.files)
-            fr.readAsText(that.files[0]);
-    });
-
-    $('#runtime-time-criterium-select').on('change', () => {
-        if (vscode)
-            vscode.postMessage({
-                type: 'sdfv.instrumentation_report_change_criterium',
-                criterium: $('#runtime-time-criterium-select').val(),
-            });
-    });
-
-    $('#runtime-report-clear-btn').on('click', () => {
-        clearRuntimeReport();
-    });
-
-    $('#runtime-report-browse-btn').on('click', () => {
-        $('#runtime-report-file-input').trigger('click');
-    });
-
-    $('#specialize-btn').on('click', () => {
-        symbolResolution?.specializeGraph();
-    });
-
-    if (vscode)
-        vscode.postMessage({
-            type: 'sdfv.refresh_analysis_pane',
-        });
+    AnalysisPanel.getInstance().init();
 });

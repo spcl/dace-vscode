@@ -5,18 +5,19 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeInterface } from '../dace_interface';
 
-import { BaseComponent } from './base_component';
-import { ComponentMessageHandler } from './messaging/component_message_handler';
+import { SingletonComponent } from './base_component';
 
 export class OutlineProvider
-extends BaseComponent
+extends SingletonComponent
 implements vscode.WebviewViewProvider {
+
+    public static readonly COMPONENT_NAME = 'sdfgOutline';
 
     private static readonly viewType: string = 'sdfgOutline';
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: OutlineProvider | undefined = undefined;
+    private static INSTANCE?: OutlineProvider;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         OutlineProvider.INSTANCE = new OutlineProvider(ctx, this.viewType);
@@ -83,28 +84,29 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            webviewView.webview.onDidReceiveMessage(message => {
-                ComponentMessageHandler.getInstance().handleMessage(
-                    message,
-                    webviewView.webview
-                );
-            });
+            this.initMessaging(
+                OutlineProvider.COMPONENT_NAME, webviewView.webview
+            );
+            this.messageHandler?.register(this.zoomToNode, this);
+            this.messageHandler?.register(this.highlightElement, this);
+            this.messageHandler?.register(this.refresh, this);
         });
     }
 
-    public handleMessage(message: any, origin: vscode.Webview): void {
-        switch (message.type) {
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
+    public async setOutline(outlineList: any[]): Promise<void> {
+        return this.invokeRemote('setOutline', [outlineList]);
     }
 
-    public clearOutline(reason: string | undefined) {
-        this.view?.webview.postMessage({
-            type: 'clear_outline',
-            reason: reason,
-        });
+    public async clearOutline(reason?: string): Promise<void> {
+        return this.invokeRemote('clearOutline', [reason]);
+    }
+
+    public async highlightElement(elementUUID: string): Promise<void> {
+        // TODO: call sdfv ('highlightUUIDs')
+    }
+
+    public async zoomToNode(elementUUID: string): Promise<void> {
+        // TODO: call sdfv ('zoomToUUIDs')
     }
 
     public refresh() {

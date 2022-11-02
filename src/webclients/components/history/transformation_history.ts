@@ -17,10 +17,11 @@ import {
     CustomTreeView,
     CustomTreeViewItem,
 } from '../../elements/treeview/treeview';
+import {
+    ICPCWebclientMessagingComponent
+} from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
-
-let transformationHistList: TransformationHistoryList | null = null;
 
 class TransformationHistoryItem extends CustomTreeViewItem {
 
@@ -43,16 +44,13 @@ class TransformationHistoryItem extends CustomTreeViewItem {
 
         if (!this.disabled)
             item.on('click', () => {
-                if (vscode) {
-                    if (this.list !== undefined) {
-                        this.list.selectedItem = this;
-                        this.list.generateHtml();
-                    }
-                    vscode.postMessage({
-                        type: 'dace.preview_history_point',
-                        index: this.index,
-                    });
+                if (this.list !== undefined) {
+                    this.list.selectedItem = this;
+                    this.list.generateHtml();
                 }
+                TransformationHistoryPanel.getInstance().msgHandler?.invoke(
+                    'previewHistoryPoint', [this.index]
+                );
             });
         else
             item.addClass('disabled');
@@ -65,11 +63,9 @@ class TransformationHistoryItem extends CustomTreeViewItem {
                 'html': '<i class="material-icons">restore</i>&nbsp;Revert To',
                 'title': '',
                 'click': (e: MouseEvent) => {
-                    if (vscode)
-                        vscode.postMessage({
-                            type: 'dace.apply_history_point',
-                            index: this.index,
-                        });
+                    TransformationHistoryPanel.getInstance().msgHandler?.invoke(
+                        'applyHistoryPoint', [this.index]
+                    );
                     e.stopPropagation();
                 },
             }).appendTo(labelContainer);
@@ -109,10 +105,7 @@ class TransformationHistoryList extends CustomTreeView {
             this.notifyDataChanged();
     }
 
-    public parseHistory(
-        history: any,
-        activeIndex: number | undefined = undefined
-    ): void {
+    public parseHistory(history: any, activeIndex?: number): void {
         super.clear();
         let encounteredDummy = false;
         for (let i = 0; i < history.length; i++) {
@@ -191,36 +184,52 @@ class TransformationHistoryList extends CustomTreeView {
 
 }
 
+class TransformationHistoryPanel {
+
+    private static readonly INSTANCE = new TransformationHistoryPanel();
+
+    private constructor() { }
+
+    public static getInstance(): TransformationHistoryPanel {
+        return this.INSTANCE;
+    }
+
+    private transformationHistList?: TransformationHistoryList;
+    private messageHandler?: ICPCWebclientMessagingComponent;
+
+    public init(): void {
+        this.transformationHistList = new TransformationHistoryList(
+            $('#transformation-list')
+        );
+        this.transformationHistList.generateHtml();
+        this.transformationHistList.show();
+
+        this.messageHandler = new ICPCWebclientMessagingComponent(
+            window, vscode
+        );
+        this.messageHandler.register(this.setHistory, this);
+        this.messageHandler.register(this.clearHistory, this);
+
+        this.messageHandler.invoke('refresh');
+    }
+
+    public setHistory(history: any, activeIndex?: number): void {
+        this.transformationHistList?.parseHistory(history, activeIndex);
+    }
+
+    public clearHistory(reason?: string): void {
+        if (reason !== undefined)
+            this.transformationHistList?.clear(reason);
+        else
+            this.transformationHistList?.clear();
+    }
+
+    public get msgHandler(): ICPCWebclientMessagingComponent | undefined {
+        return this.messageHandler;
+    }
+
+}
+
 $(() => {
-    transformationHistList = new TransformationHistoryList(
-        $('#transformation-list')
-    );
-    transformationHistList.generateHtml();
-    transformationHistList.show();
-
-    // Add a listener to receive messages from the extension.
-    window.addEventListener('message', e => {
-        const message = e.data;
-        switch (message.type) {
-            case 'set_history':
-                transformationHistList?.parseHistory(
-                    message.history,
-                    message.activeIndex
-                );
-                break;
-            case 'clear_history':
-                if (message.reason !== undefined)
-                    transformationHistList?.clear(message.reason);
-                else
-                    transformationHistList?.clear();
-                break;
-            default:
-                break;
-        }
-    });
-
-    if (vscode)
-        vscode.postMessage({
-            type: 'transformation_history.refresh',
-        });
+    TransformationHistoryPanel.getInstance().init();
 });

@@ -297,15 +297,14 @@ export function attrTablePutSelect(
             'class': 'btn btn-sm btn-primary sdfv-property-expand-libnode-btn',
             'text': 'Expand',
             'click': () => {
-                if (vscode)
-                    vscode.postMessage({
-                        type: 'dace.expand_library_node',
-                        nodeId: [
-                            elem.sdfg.sdfg_list_id,
-                            elem.parent_id,
-                            elem.id,
-                        ],
-                    });
+                const nodeId = [
+                    elem.sdfg.sdfg_list_id,
+                    elem.parent_id,
+                    elem.id,
+                ];
+                VSCodeSDFV.getInstance().msgHandler?.invoke(
+                    'expandLibraryNode', [nodeId]
+                );
             },
         }).appendTo(cell);
         const inPreviewMode = !document.getElementById(

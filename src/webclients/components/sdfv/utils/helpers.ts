@@ -373,15 +373,10 @@ export function vscodeWriteGraph(g: JsonSDFG): void {
     unGraphiphySdfg(g);
     // Stringify with a replacer that removes undefined and sets it to null,
     // so the values don't get dropped.
-    if (vscode)
-        vscode.postMessage({
-            type: 'dace.write_edit_to_sdfg',
-            sdfg: JSON.stringify(
-                g, (_k, v) => {
-                    return v === undefined ? null : v;
-                }
-            ),
-        });
+    const nv = JSON.stringify(g, (_k, v) => {
+        return v === undefined ? null : v;
+    });
+    VSCodeSDFV.getInstance().msgHandler?.invoke('writeToActiveDocument', [nv]);
 }
 
 export function reselectRendererElement(elem: SDFGElement): void {
