@@ -18,7 +18,7 @@ import {
     CustomTreeViewItem,
 } from '../../elements/treeview/treeview';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent, remoteInvokeable
 } from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
@@ -48,7 +48,7 @@ class TransformationHistoryItem extends CustomTreeViewItem {
                     this.list.selectedItem = this;
                     this.list.generateHtml();
                 }
-                TransformationHistoryPanel.getInstance().msgHandler?.invoke(
+                TransformationHistoryPanel.getInstance().invoke(
                     'previewHistoryPoint', [this.index]
                 );
             });
@@ -63,7 +63,7 @@ class TransformationHistoryItem extends CustomTreeViewItem {
                 'html': '<i class="material-icons">restore</i>&nbsp;Revert To',
                 'title': '',
                 'click': (e: MouseEvent) => {
-                    TransformationHistoryPanel.getInstance().msgHandler?.invoke(
+                    TransformationHistoryPanel.getInstance().invoke(
                         'applyHistoryPoint', [this.index]
                     );
                     e.stopPropagation();
@@ -184,48 +184,43 @@ class TransformationHistoryList extends CustomTreeView {
 
 }
 
-class TransformationHistoryPanel {
+class TransformationHistoryPanel extends ICPCWebclientMessagingComponent {
 
     private static readonly INSTANCE = new TransformationHistoryPanel();
 
-    private constructor() { }
+    private constructor() {
+        super();
+    }
 
     public static getInstance(): TransformationHistoryPanel {
         return this.INSTANCE;
     }
 
     private transformationHistList?: TransformationHistoryList;
-    private messageHandler?: ICPCWebclientMessagingComponent;
 
     public init(): void {
+        super.init(vscode, window);
+
         this.transformationHistList = new TransformationHistoryList(
             $('#transformation-list')
         );
         this.transformationHistList.generateHtml();
         this.transformationHistList.show();
 
-        this.messageHandler = new ICPCWebclientMessagingComponent(
-            window, vscode
-        );
-        this.messageHandler.register(this.setHistory, this);
-        this.messageHandler.register(this.clearHistory, this);
-
-        this.messageHandler.invoke('refresh');
+        this.invoke('refresh');
     }
 
+    @remoteInvokeable()
     public setHistory(history: any, activeIndex?: number): void {
         this.transformationHistList?.parseHistory(history, activeIndex);
     }
 
+    @remoteInvokeable()
     public clearHistory(reason?: string): void {
         if (reason !== undefined)
             this.transformationHistList?.clear(reason);
         else
             this.transformationHistList?.clear();
-    }
-
-    public get msgHandler(): ICPCWebclientMessagingComponent | undefined {
-        return this.messageHandler;
     }
 
 }

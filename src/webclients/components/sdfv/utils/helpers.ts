@@ -18,7 +18,7 @@ import {
     sdfg_range_elem_to_string,
 } from '@spcl/sdfv/out';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
-import { VSCodeSDFV } from '../vscode_sdfv';
+import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 
 declare const vscode: any;
 
@@ -376,7 +376,7 @@ export function vscodeWriteGraph(g: JsonSDFG): void {
     const nv = JSON.stringify(g, (_k, v) => {
         return v === undefined ? null : v;
     });
-    VSCodeSDFV.getInstance().msgHandler?.invoke('writeToActiveDocument', [nv]);
+    SDFVComponent.getInstance().invoke('writeToActiveDocument', [nv]);
 }
 
 export function reselectRendererElement(elem: SDFGElement): void {

@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { ICPCWebclientMessagingComponent } from '../../webclients/messaging/icpc_webclient_messaging_component';
 
 export enum ICPCMessageType {
     REQUEST = 'icpc_request',
@@ -36,8 +37,12 @@ type ICPCCallback = {
 export abstract class ICPCMessagingComponent {
 
     protected constructor(
-        private target: any,
+        private target?: any,
     ) {
+    }
+
+    protected initializeTarget(target: any): void {
+        this.target = target;
     }
 
     protected localProcedures: Map<string, ICPCProcedure> = new Map();
@@ -47,9 +52,6 @@ export abstract class ICPCMessagingComponent {
     protected sendRequest(
         id: string, procedure: string, args?: any[]
     ): void {
-        console.log(
-            'Sending request for procedure', procedure, 'with id', id
-        );
         const message: ICPCRequestMessage = {
             type: ICPCMessageType.REQUEST,
             id: id,
@@ -57,19 +59,20 @@ export abstract class ICPCMessagingComponent {
             args: args,
         };
         try {
+            if (!this.target)
+                throw new Error('Component uninitialized');
             this.target.postMessage(message);
         } catch (e) {
             console.error(
                 `Error while sending request for procedure ${procedure}`, e
             );
-            console.log('Message was', message);
+            console.error('Message was', message);
         }
     }
 
     protected sendResponse(
         id: string, response?: any, success: boolean = true
     ): void {
-        console.log('Sending response for request', id);
         const message: ICPCResponseMessage = {
             type: ICPCMessageType.RESPONSE,
             id: id,
@@ -77,10 +80,12 @@ export abstract class ICPCMessagingComponent {
             success: success,
         };
         try {
+            if (!this.target)
+                throw new Error('Component uninitialized');
             this.target.postMessage(message);
         } catch (e) {
             console.error(`Error while sending response for request ${id}`, e);
-            console.log('Message was', message);
+            console.error('Message was', message);
         }
     }
 
@@ -124,7 +129,6 @@ export abstract class ICPCMessagingComponent {
     public async invoke(
         procedure: string, args?: any[]
     ): Promise<any> {
-        console.log('Invoking procedure', procedure);
         let uuid = uuidv4();
         while (this.callbacks.has(uuid))
             uuid = uuidv4();
@@ -141,7 +145,6 @@ export abstract class ICPCMessagingComponent {
     protected async handleRequest(
         message: ICPCRequestMessage, responseHandler?: ICPCMessagingComponent
     ): Promise<void> {
-        console.log('Handling request for procedure', message.procedure);
         const procedure = this.localProcedures.get(message.procedure);
         const _responseHandler = responseHandler || this;
         if (procedure) {
@@ -168,10 +171,6 @@ export abstract class ICPCMessagingComponent {
 
     protected handleResponse(message: ICPCResponseMessage): void {
         const callback = this.callbacks.get(message.id);
-        console.log(
-            'Handling response for request', callback?.procedure, message.id,
-            message
-        );
         if (callback) {
             if (message.success)
                 callback.resolve(message.response);
@@ -181,4 +180,34 @@ export abstract class ICPCMessagingComponent {
         }
     }
 
+}
+
+const SubMethods = Symbol('SubMethods');
+
+export function ICPCListener<T extends { new(...args: any[]): {} }>(Base: T) {
+    return class extends Base {
+
+        constructor(...args: any[]) {
+            super(...args);
+            console.log('ICPCListener constructor');
+            const subMethods = Base.prototype[SubMethods];
+            if (subMethods) {
+                for (const method of subMethods) {
+                    console.log(method);
+                    console.log(this);
+                }
+            }
+        }
+
+    };
+}
+
+export function ICPCRequest(staticArgs?: any[]) {
+    return (target: any, memberName: string, desc: PropertyDescriptor) => {
+        const originalVal = desc.value;
+        desc.value = function(...args: any[]) {
+            console.log(this);
+            return originalVal.apply(this, args);
+        };
+    };
 }

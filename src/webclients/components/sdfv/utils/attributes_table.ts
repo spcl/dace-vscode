@@ -28,7 +28,7 @@ import {
     ValueProperty
 } from '../properties/properties';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
-import { VSCodeSDFV } from '../vscode_sdfv';
+import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 import {
     createSingleUseModal,
     doForAllNodeTypes,
@@ -302,7 +302,7 @@ export function attrTablePutSelect(
                     elem.parent_id,
                     elem.id,
                 ];
-                VSCodeSDFV.getInstance().msgHandler?.invoke(
+                SDFVComponent.getInstance().invoke(
                     'expandLibraryNode', [nodeId]
                 );
             },

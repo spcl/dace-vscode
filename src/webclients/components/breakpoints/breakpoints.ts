@@ -15,22 +15,22 @@ import './breakpoints.css';
 
 import { ISDFGDebugNodeInfo } from '../../../debugger/breakpoint_handler';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent, remoteInvokeable
 } from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
 
-class BreakpointPanel {
+class BreakpointPanel extends ICPCWebclientMessagingComponent {
 
     private static readonly INSTANCE: BreakpointPanel = new BreakpointPanel();
 
-    private constructor() { }
+    private constructor() {
+        super();
+    }
 
     public static getInstance(): BreakpointPanel {
         return this.INSTANCE;
     }
-
-    private messageHandler?: ICPCWebclientMessagingComponent;
 
     private rootList?: JQuery<HTMLElement>;
 
@@ -42,9 +42,9 @@ class BreakpointPanel {
             'label': node.sdfgPath,
             'title': node.sdfgPath,
         }).on('click', _ => {
-            this.messageHandler?.invoke('goToSDFG', [node]);
+            this.invoke('goToSDFG', [node]);
         }).on('contextmenu', _ => {
-            this.messageHandler?.invoke('goToCPP', [node]);
+            this.invoke('goToCPP', [node]);
         });
 
         const breakpoint = $('<div>', {
@@ -71,7 +71,7 @@ class BreakpointPanel {
             'class': 'remove-bp',
         }).text('X');
         removeBp.on('click', () => {
-            this.messageHandler?.invoke('removeBreakpoint', [node]);
+            this.invoke('removeBreakpoint', [node]);
             return false;
         });
 
@@ -88,18 +88,14 @@ class BreakpointPanel {
     }
 
     public init(): void {
-        this.messageHandler = new ICPCWebclientMessagingComponent(
-            window, vscode
-        );
+        super.init(vscode, window);
 
         this.rootList = $('#sdfg-debug-list');
 
-        this.messageHandler.register(this.onRefresh, this);
-        this.messageHandler.register(this.addSDFGBreakpoint, this);
-
-        this.messageHandler.invoke('refresh');
+        this.invoke('refresh');
     }
 
+    @remoteInvokeable()
     public onRefresh(nodes?: ISDFGDebugNodeInfo[]): void {
         this.rootList?.html('');
         if (nodes && this.rootList) {
@@ -109,6 +105,7 @@ class BreakpointPanel {
         this.rootList?.show();
     }
 
+    @remoteInvokeable()
     public addSDFGBreakpoint(
         node: ISDFGDebugNodeInfo, unbounded: boolean = false
     ): void {

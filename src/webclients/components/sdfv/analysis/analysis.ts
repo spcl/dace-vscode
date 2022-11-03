@@ -8,7 +8,7 @@ import {
     StaticFlopsOverlay,
 } from '@spcl/sdfv/out';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
-import { VSCodeSDFV } from '../vscode_sdfv';
+import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 
 declare const vscode: any;
 
@@ -18,7 +18,7 @@ declare const vscode: any;
 export async function analysisPaneRegisterSymbols(): Promise<void> {
     const symbols = VSCodeRenderer.getInstance()?.get_sdfg().attributes.symbols;
     if (symbols)
-        return VSCodeSDFV.getInstance().msgHandler?.invoke(
+        return SDFVComponent.getInstance().invoke(
             'analysisAddSymbols', [symbols]
         );
 }
@@ -36,7 +36,7 @@ export async function analysisPaneRefreshSymbols(): Promise<void> {
             if (map[symbol] === undefined)
                 map[symbol] = '';
         });
-        return VSCodeSDFV.getInstance().msgHandler?.invoke(
+        return SDFVComponent.getInstance().invoke(
             'analysisSetSymbols', [map]
         );
     }
@@ -92,7 +92,7 @@ export async function refreshAnalysisPane(): Promise<void> {
                 type: OperationalIntensityOverlay.type,
             },
         ];
-        return VSCodeSDFV.getInstance().msgHandler?.invoke(
+        return SDFVComponent.getInstance().invoke(
             'updateAnalysisPanel', [
                 activeOverlays,
                 symbols,

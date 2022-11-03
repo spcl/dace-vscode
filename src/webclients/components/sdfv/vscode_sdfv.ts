@@ -53,7 +53,7 @@ import {
 } from '@spcl/sdfv/out';
 import { LViewRenderer } from '@spcl/sdfv/out/local_view/lview_renderer';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent, remoteInvokeable
 } from '../../messaging/icpc_webclient_messaging_component';
 import {
     JsonTransformation,
@@ -142,37 +142,13 @@ export class VSCodeSDFV extends SDFV {
 
     public infoTrayExplicitlyHidden: boolean = false;
 
-    private messageHandler?: ICPCWebclientMessagingComponent;
-
     public async initialize(): Promise<void> {
-        this.initMessaging();
         this.initDOM();
         this.initInfoBox();
         this.initSearch();
 
         await this.refreshSdfg();
         this.processingOverlay?.hide();
-    }
-
-    private initMessaging(): void {
-        this.messageHandler = new ICPCWebclientMessagingComponent(
-            window, vscode
-        );
-
-        this.messageHandler.register(this.updateContents, this);
-        this.messageHandler.register(this.setDaemonConnected, this);
-        this.messageHandler.register(this.setMetaDict, this);
-        this.messageHandler.register(this.previewSdfg, this);
-        this.messageHandler.register(this.setShowingBreakpoints, this);
-        this.messageHandler.register(this.outline, this);
-        this.messageHandler.register(this.setProcessingOverlay, this);
-        this.messageHandler.register(this.resyncTransformations, this);
-        this.messageHandler.register(this.selectTransformation, this);
-
-        this.messageHandler.register(zoomToUUIDs);
-        this.messageHandler.register(highlightUUIDs);
-        this.messageHandler.register(refreshAnalysisPane);
-        this.messageHandler.register(refreshTransformationList);
     }
 
     private initDOM(): void {
@@ -259,7 +235,9 @@ export class VSCodeSDFV extends SDFV {
             infoBoxCheckStacking(this.infoContainer);
             infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
 
-            this.messageHandler?.invoke('setSplitDirection', [SPLIT_DIRECTION]);
+            SDFVComponent.getInstance().invoke(
+                'setSplitDirection', [SPLIT_DIRECTION]
+            );
         });
 
         if (this.infoContainer)
@@ -606,7 +584,7 @@ export class VSCodeSDFV extends SDFV {
             }
         );
 
-        return this.messageHandler?.invoke('setOutline', [outlineList]);
+        return SDFVComponent.getInstance().invoke('setOutline', [outlineList]);
     }
 
     /**
@@ -753,9 +731,11 @@ export class VSCodeSDFV extends SDFV {
     }
 
     public async refreshSdfg(): Promise<void> {
-        return this.messageHandler?.invoke('getUpToDateContents').then(sdfg => {
-            this.updateContents(sdfg);
-        });
+        return SDFVComponent.getInstance().invoke('getUpToDateContents').then(
+            sdfg => {
+                this.updateContents(sdfg);
+            }
+        );
     }
 
     public setRendererContent(
@@ -802,7 +782,9 @@ export class VSCodeSDFV extends SDFV {
             );
 
         const sdfgName = this.renderer.get_sdfg().attributes.name;
-        this.messageHandler?.invoke('processQueuedInvocations', [sdfgName]);
+        SDFVComponent.getInstance().invoke(
+            'processQueuedInvocations', [sdfgName]
+        );
     }
 
     public resetRendererContent(): void {
@@ -846,7 +828,7 @@ export class VSCodeSDFV extends SDFV {
         filePath: string, startRow: number, startChar: number, endRow: number,
         endChar: number
     ): Promise<void> {
-        return this.messageHandler?.invoke(
+        return SDFVComponent.getInstance().invoke(
             'goToSource', [filePath, startRow, startChar, endRow, endChar]
         );
     }
@@ -858,7 +840,7 @@ export class VSCodeSDFV extends SDFV {
     public async gotoCpp(
         sdfgName: string, sdfgId: number, stateId: number, nodeId: number
     ): Promise<void> {
-        return this.messageHandler?.invoke(
+        return SDFVComponent.getInstance().invoke(
             'goToCPP', [sdfgName, sdfgId, stateId, nodeId]
         );
     }
@@ -1056,8 +1038,42 @@ export class VSCodeSDFV extends SDFV {
         this.setSelectedTransformation(transformation);
     }
 
-    public get msgHandler(): ICPCWebclientMessagingComponent | undefined {
-        return this.messageHandler;
+}
+
+export class SDFVComponent extends ICPCWebclientMessagingComponent {
+
+    private static readonly INSTANCE = new SDFVComponent();
+
+    private constructor() {
+        super();
+
+    }
+
+    public static getInstance(): SDFVComponent {
+        return SDFVComponent.INSTANCE;
+    }
+
+    private readonly sdfv = VSCodeSDFV.getInstance();
+
+    public init(): void {
+        super.init(vscode, window);
+
+        this.register(this.sdfv.updateContents, this.sdfv);
+        this.register(this.sdfv.setDaemonConnected, this.sdfv);
+        this.register(this.sdfv.setMetaDict, this.sdfv);
+        this.register(this.sdfv.previewSdfg, this.sdfv);
+        this.register(this.sdfv.setShowingBreakpoints, this.sdfv);
+        this.register(this.sdfv.outline, this.sdfv);
+        this.register(this.sdfv.setProcessingOverlay, this.sdfv);
+        this.register(this.sdfv.resyncTransformations, this.sdfv);
+        this.register(this.sdfv.selectTransformation, this.sdfv);
+
+        this.register(zoomToUUIDs);
+        this.register(highlightUUIDs);
+        this.register(refreshAnalysisPane);
+        this.register(refreshTransformationList);
+
+        this.sdfv.initialize();
     }
 
 }
@@ -1090,12 +1106,13 @@ export function vscodeHandleEvent(event: string, data: any): void {
             refreshAnalysisPane();
             break;
         case SDFGRendererEvent.EXIT_PREVIEW:
-            VSCodeSDFV.getInstance().msgHandler?.invoke(
+            SDFVComponent.getInstance().invoke(
                 'getUpToDateContents'
             ).then(sdfg => {
-                const sdfv = VSCodeSDFV.getInstance();
-                sdfv.updateContents(sdfg, true);
-                sdfv.msgHandler?.invoke('refreshTransformationHistory', [true]);
+                VSCodeSDFV.getInstance().updateContents(sdfg, true);
+                SDFVComponent.getInstance().invoke(
+                    'refreshTransformationHistory', [true]
+                );
             });
             break;
         case SDFGRendererEvent.COLLAPSE_STATE_CHANGED:
@@ -1112,7 +1129,7 @@ export function vscodeHandleEvent(event: string, data: any): void {
             if (data && data.type) {
                 switch (data.type) {
                     case 'flops':
-                        VSCodeSDFV.getInstance().msgHandler?.invoke('getFLops')
+                        SDFVComponent.getInstance().invoke('getFLops')
                             .then((flopsMap) => {
                                 if (!flopsMap)
                                     return;
@@ -1159,7 +1176,7 @@ function infoBoxCheckStacking(infoContainer?: JQuery<HTMLElement>): void {
 }
 
 $(() => {
-    void VSCodeSDFV.getInstance().initialize();
+    SDFVComponent.getInstance().init();
 
     $('#breakpoint-btn').on('click', () => {
         VSCodeSDFV.getInstance().toggleBreakpoints();

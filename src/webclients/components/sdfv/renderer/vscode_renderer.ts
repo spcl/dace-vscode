@@ -23,6 +23,7 @@ import {
     vscodeWriteGraph,
 } from '../utils/helpers';
 import {
+    SDFVComponent,
     vscodeHandleEvent,
     VSCodeSDFV,
 } from '../vscode_sdfv';
@@ -134,7 +135,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                     this.minimap_ctx = null;
                     this.minimap_canvas = null;
                     disableMinimapButton.remove();
-                    VSCodeSDFV.getInstance().msgHandler?.invoke(
+                    SDFVComponent.getInstance().invoke(
                         'disableMinimap'
                     );
                 },

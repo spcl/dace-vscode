@@ -14,7 +14,7 @@ import {
     State,
 } from '@spcl/sdfv/out';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
-import { VSCodeSDFV } from '../vscode_sdfv';
+import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 
 declare const vscode: any;
 
@@ -50,7 +50,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
     constructor(renderer: VSCodeRenderer) {
         super(renderer);
 
-        VSCodeSDFV.getInstance().msgHandler?.invoke(
+        SDFVComponent.getInstance().invoke(
             'getSavedNodes', [this.renderer.get_sdfg().attributes.name]
         ).then(() => {
             this.refresh();
@@ -118,7 +118,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
                     this.eraseBreakpoint(
                         foregroundElem, this.renderer.get_context()
                     );
-                    VSCodeSDFV.getInstance().msgHandler?.invoke(
+                    SDFVComponent.getInstance().invoke(
                         'removeBreakpoint',
                         [sdfgElem, this.renderer.get_sdfg().attributes.name]
                     );
@@ -128,7 +128,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
                         foregroundElem, this.renderer.get_context(),
                         BreakpointType.BOUND
                     );
-                    VSCodeSDFV.getInstance().msgHandler?.invoke(
+                    SDFVComponent.getInstance().invoke(
                         'addBreakpoint',
                         [sdfgElem, this.renderer.get_sdfg().attributes.name]
                     );

@@ -17,7 +17,7 @@ import {
     CustomTreeViewItem,
 } from '../../elements/treeview/treeview';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent, remoteInvokeable
 } from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
@@ -45,14 +45,14 @@ class OutlineItem extends CustomTreeViewItem {
         const item = super.generateHtml();
 
         item.on('click', (e) => {
-            OutlinePanel.getInstance().msgHandler?.invoke(
+            OutlinePanel.getInstance().invoke(
                 'zoomToNode', [[this.elementUUID]]
             );
             e.stopPropagation();
         });
 
         item.on('mouseover', () => {
-            OutlinePanel.getInstance().msgHandler?.invoke(
+            OutlinePanel.getInstance().invoke(
                 'highlightElement', [[this.elementUUID]]
             );
         });
@@ -94,33 +94,31 @@ class OutlineList extends CustomTreeView {
 
 }
 
-class OutlinePanel {
+class OutlinePanel extends ICPCWebclientMessagingComponent {
 
     private static readonly INSTANCE: OutlinePanel = new OutlinePanel();
 
-    private constructor() { }
+    private constructor() {
+        super();
+    }
 
     public static getInstance(): OutlinePanel {
         return this.INSTANCE;
     }
 
     private outlineList?: OutlineList;
-    private messageHandler?: ICPCWebclientMessagingComponent;
 
     public init(): void {
+        super.init(vscode, window);
+
         this.outlineList = new OutlineList($('#outline-list'));
         this.outlineList.generateHtml();
         this.outlineList.show();
 
-        this.messageHandler = new ICPCWebclientMessagingComponent(
-            window, vscode
-        );
-        this.messageHandler.register(this.setOutline, this);
-        this.messageHandler.register(this.clearOutline, this);
-
-        this.messageHandler.invoke('refresh');
+        this.invoke('refresh');
     }
 
+    @remoteInvokeable()
     public setOutline(outlineList: any[]): void {
         this.outlineList?.clear();
         this.setOutlineRecursive(outlineList, this.outlineList);
@@ -150,15 +148,12 @@ class OutlinePanel {
         }
     }
 
+    @remoteInvokeable()
     public clearOutline(reason?: string): void {
         if (reason !== undefined)
             this.outlineList?.clear(reason);
         else
             this.outlineList?.clear();
-    }
-
-    public get msgHandler(): ICPCWebclientMessagingComponent | undefined {
-        return this.messageHandler;
     }
 
 }

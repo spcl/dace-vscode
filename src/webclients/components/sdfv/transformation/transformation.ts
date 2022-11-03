@@ -5,7 +5,7 @@ import { JsonTransformation, JsonTransformationGroup, JsonTransformationList } f
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { generateAttributesTable } from '../utils/attributes_table';
 import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
-import { VSCodeSDFV } from '../vscode_sdfv';
+import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 
 /**
  * Get the set of element uuids affected by a given transformation.
@@ -61,7 +61,7 @@ export function getCleanedSelectedElements(): string {
  * Request a list of applicable transformations from DaCe.
  */
 export async function getApplicableTransformations(): Promise<any[]> {
-    return VSCodeSDFV.getInstance().msgHandler?.invoke(
+    return SDFVComponent.getInstance().invoke(
         'loadTransformations', [
             VSCodeSDFV.getInstance().getSdfgString(),
             getCleanedSelectedElements(),
@@ -321,13 +321,13 @@ export async function refreshTransformationList(
     const transformations = VSCodeSDFV.getInstance().getTransformations();
     if (transformations !== undefined)
         if (VSCodeSDFV.getInstance().getViewingHistoryState())
-            await VSCodeSDFV.getInstance().msgHandler?.invoke(
+            await SDFVComponent.getInstance().invoke(
                 'clearTransformations', [
                     'Can\'t show transformations while viewing a history state',
                 ]
             );
         else
-            await VSCodeSDFV.getInstance().msgHandler?.invoke(
+            await SDFVComponent.getInstance().invoke(
                 'setTransformations', [transformations, hideLoading]
             );
 }
@@ -402,7 +402,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     $('<div>', {
         class: 'button',
         click: () => {
-            VSCodeSDFV.getInstance().msgHandler?.invoke(
+            SDFVComponent.getInstance().invoke(
                 'previewTransformation', [xform]
             );
         },
@@ -435,7 +435,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
         $('<div>', {
             class: 'button',
             click: () => {
-                VSCodeSDFV.getInstance().msgHandler?.invoke(
+                SDFVComponent.getInstance().invoke(
                     'exportTransformation', [xform]
                 );
             },
@@ -457,7 +457,7 @@ export async function applyTransformations(
     VSCodeRenderer.getInstance()?.clearSelectedItems();
     VSCodeSDFV.getInstance().clearInfoBox(true);
     $('#exit-preview-button').hide();
-    return VSCodeSDFV.getInstance().msgHandler?.invoke(
+    return SDFVComponent.getInstance().invoke(
         'applyTransformations', [xforms]
     );
 }

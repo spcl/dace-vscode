@@ -18,8 +18,9 @@ import {
     CustomTreeViewItem,
 } from '../../elements/treeview/treeview';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent, remoteInvokeable
 } from '../../messaging/icpc_webclient_messaging_component';
+import { ICPCListener, ICPCRequest } from '../../../common/messaging/icpc_messaging_component';
 
 declare const vscode: any;
 
@@ -146,7 +147,7 @@ export class Transformation extends TransformationListItem {
                 this.list.selectedItem = this;
                 this.list.generateHtml();
             }
-            TransofrmationListPanel.getInstance().msgHandler?.invoke(
+            TransofrmationListPanel.getInstance().invoke(
                 'selectTransformation', [this.json]
             );
         });
@@ -160,7 +161,7 @@ export class Transformation extends TransformationListItem {
             'title': 'Apply transformation with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                TransofrmationListPanel.getInstance().invoke(
                     'applyTransformations', [[this.json]]
                 );
                 return true;
@@ -169,7 +170,7 @@ export class Transformation extends TransformationListItem {
 
         item.on('mouseover', () => {
             labelContainer.addClass('hover-direct');
-            TransofrmationListPanel.getInstance().msgHandler?.invoke(
+            TransofrmationListPanel.getInstance().invoke(
                 'highlightElements', [this.getAffectedElementsUUIDs()]
             );
         });
@@ -213,7 +214,7 @@ export class PassPipeline extends TransformationListItem {
                 this.list.selectedItem = this;
                 this.list.generateHtml();
             }
-            TransofrmationListPanel.getInstance().msgHandler?.invoke(
+            TransofrmationListPanel.getInstance().invoke(
                 'selectTransformation', [this.json]
             );
         });
@@ -227,7 +228,7 @@ export class PassPipeline extends TransformationListItem {
             'title': 'Run this pass with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                TransofrmationListPanel.getInstance().invoke(
                     'applyTransformations', [[this.json]]
                 );
                 return true;
@@ -282,7 +283,7 @@ export class TransformationGroup extends TransformationListItem {
                 text: 'Apply All',
                 title: 'Apply all transformations with default parameters',
                 click: () => {
-                    TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                    TransofrmationListPanel.getInstance().invoke(
                         'applyTransformations', [this.transformations]
                     );
                 },
@@ -294,7 +295,7 @@ export class TransformationGroup extends TransformationListItem {
             if (this.children)
                 for (const item of (this.children as Transformation[]))
                     affectedUUIDs.push(...item.getAffectedElementsUUIDs());
-            TransofrmationListPanel.getInstance().msgHandler?.invoke(
+            TransofrmationListPanel.getInstance().invoke(
                 'highlightElements', [affectedUUIDs]
             );
         });
@@ -341,7 +342,7 @@ export class PassPipelineGroup extends TransformationListItem {
                 text: 'Run All',
                 title: 'Run all passes with default parameters',
                 click: () => {
-                    TransofrmationListPanel.getInstance().msgHandler?.invoke(
+                    TransofrmationListPanel.getInstance().invoke(
                         'applyTransformations', [this.transformations]
                     );
                 },
@@ -475,11 +476,13 @@ class TransformationList extends CustomTreeView {
 
 }
 
-class TransofrmationListPanel {
+class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
 
     private static readonly INSTANCE = new TransofrmationListPanel();
 
-    private constructor() { }
+    private constructor() {
+        super();
+    }
 
     public static getInstance(): TransofrmationListPanel {
         return this.INSTANCE;
@@ -487,9 +490,10 @@ class TransofrmationListPanel {
 
     private loadingIndicator?: JQuery;
     private transformationList?: TransformationList;
-    private messageHandler?: ICPCWebclientMessagingComponent;
 
     public init(): void {
+        super.init(vscode, window);
+
         this.loadingIndicator = $('#transformation-loading-indicator');
         this.transformationList = new TransformationList(
             $('#transformation-list')
@@ -497,23 +501,17 @@ class TransofrmationListPanel {
         this.transformationList.generateHtml();
         this.transformationList.show();
 
-        this.messageHandler =
-            new ICPCWebclientMessagingComponent(window, vscode);
-        this.messageHandler.register(this.deselect, this);
-        this.messageHandler.register(this.setTransformations, this);
-        this.messageHandler.register(this.clearTransformations, this);
-        this.messageHandler.register(this.showLoading, this);
-        this.messageHandler.register(this.hideLoading, this);
-
-        this.messageHandler.invoke('refresh');
+        this.invoke('refresh');
     }
 
+    @remoteInvokeable()
     public deselect(): void {
         if (this.transformationList)
             this.transformationList.selectedItem = undefined;
         this.transformationList?.generateHtml();
     }
 
+    @remoteInvokeable()
     public setTransformations(
         transformations: JsonTransformationList, hideLoading: boolean = true
     ): void {
@@ -522,6 +520,7 @@ class TransofrmationListPanel {
             this.loadingIndicator?.hide();
     }
 
+    @remoteInvokeable()
     public clearTransformations(reason?: string): void {
         this.loadingIndicator?.hide();
         if (reason !== undefined)
@@ -530,16 +529,14 @@ class TransofrmationListPanel {
             this.transformationList?.clear();
     }
 
+    @remoteInvokeable()
     public showLoading(): void {
         this.loadingIndicator?.show();
     }
 
+    @remoteInvokeable()
     public hideLoading(): void {
         this.loadingIndicator?.hide();
-    }
-
-    public get msgHandler(): ICPCWebclientMessagingComponent | undefined {
-        return this.messageHandler;
     }
 
 }

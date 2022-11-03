@@ -13,7 +13,7 @@ import './analysis.css';
 
 import { OverlayType, SymbolMap } from '@spcl/sdfv/out';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent, remoteInvokeable
 } from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
@@ -114,7 +114,7 @@ class SymbolResolution {
                             event.target.value = 1;
                         }
                         this.symbols[symbol] = value;
-                        AnalysisPanel.getInstance().msgHandler?.invoke(
+                        AnalysisPanel.getInstance().invoke(
                             'symbolValueChanged', [symbol, value]
                         );
                     }
@@ -125,7 +125,7 @@ class SymbolResolution {
                     'click': () => {
                         input.val('');
                         this.symbols[symbol] = undefined;
-                        AnalysisPanel.getInstance().msgHandler?.invoke(
+                        AnalysisPanel.getInstance().invoke(
                             'symbolValueChanged', [symbol, undefined]
                         );
                     },
@@ -141,31 +141,34 @@ class SymbolResolution {
     }
 
     public specializeGraph(): void {
-        AnalysisPanel.getInstance().msgHandler?.invoke(
+        AnalysisPanel.getInstance().invoke(
             'specialize', [this.symbols]
         );
     }
 
 }
 
-class AnalysisPanel {
+class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
     private static readonly INSTANCE: AnalysisPanel = new AnalysisPanel();
 
-    private constructor() { }
+    private constructor() {
+        super();
+    }
 
     public static getInstance(): AnalysisPanel {
         return this.INSTANCE;
     }
 
     private symbolResolution?: SymbolResolution;
-    private messageHandler?: ICPCWebclientMessagingComponent;
 
     private noneMessage?: JQuery<HTMLElement>;
     private contents?: JQuery<HTMLElement>;
     private overlayToggles?: JQuery<HTMLElement>;
 
     public init(): void {
+        super.init(vscode, window);
+
         this.symbolResolution = new SymbolResolution();
 
         this.noneMessage = $('#none-message');
@@ -195,7 +198,7 @@ class AnalysisPanel {
                     cb.prop('checked', false);
                     cb.prop('disabled', true);
                     if (fr.result && typeof fr.result === 'string')
-                        AnalysisPanel.getInstance().msgHandler?.invoke(
+                        AnalysisPanel.getInstance().invoke(
                             'onLoadInstrumentationReport',
                             [
                                 JSON.parse(fr.result),
@@ -209,7 +212,7 @@ class AnalysisPanel {
         });
 
         $('#runtime-time-criterium-select').on('change', () => {
-            this.messageHandler?.invoke(
+            this.invoke(
                 'instrumentationReportChangeCriterium',
                 [$('#runtime-time-criterium-select').val()]
             );
@@ -221,36 +224,30 @@ class AnalysisPanel {
             $('#runtime-report-file-input').trigger('click');
         });
 
-        this.messageHandler = new ICPCWebclientMessagingComponent(
-            window, vscode
-        );
-        this.messageHandler.register(
+        this.register(
             this.symbolResolution.addSymbol, this.symbolResolution
         );
-        this.messageHandler.register(
+        this.register(
             this.symbolResolution.addSymbols, this.symbolResolution
         );
-        this.messageHandler.register(
+        this.register(
             this.symbolResolution.defineSymbol, this.symbolResolution
         );
-        this.messageHandler.register(
+        this.register(
             this.symbolResolution.removeSymbolDefinition, this.symbolResolution
         );
-        this.messageHandler.register(
+        this.register(
             this.symbolResolution.removeAllSymbolDefinitions,
             this.symbolResolution
         );
-        this.messageHandler.register(
+        this.register(
             this.symbolResolution.removeSymbol, this.symbolResolution
         );
-        this.messageHandler.register(this.clear, this);
-        this.messageHandler.register(this.setSymbols, this);
-        this.messageHandler.register(this.refresh, this);
-        this.messageHandler.register(this.onAutoloadReport, this);
 
-        this.messageHandler?.invoke('refresh');
+        this.invoke('refresh');
     }
 
+    @remoteInvokeable()
     public clear(reason?: string): void {
         this.symbolResolution?.clearSymbols();
         this.overlayToggles?.html('');
@@ -263,6 +260,7 @@ class AnalysisPanel {
         this.noneMessage?.show();
     }
 
+    @remoteInvokeable()
     public refresh(
         activeOverlays: any[], symbols: any, scalingMethod?: string,
         scalingSubMethod?: string, availableOverlays?: any[]
@@ -324,7 +322,7 @@ class AnalysisPanel {
                     overlays.push(nodeOverlaySelect.val());
                 if (edgeOverlaySelect.val() !== 'none')
                     overlays.push(edgeOverlaySelect.val());
-                this.messageHandler?.invoke('setOverlays', [overlays]);
+                this.invoke('setOverlays', [overlays]);
             };
 
             nodeOverlaySelect.on('change', updateHandler);
@@ -334,6 +332,7 @@ class AnalysisPanel {
         this.setSymbols(symbols);
     }
 
+    @remoteInvokeable()
     public setSymbols(newSymbols: any): void {
         if (newSymbols !== undefined) {
             const symbols: SymbolMap = {};
@@ -358,7 +357,7 @@ class AnalysisPanel {
         $('input[type="checkbox"][value="daceStaticFlopsOverlay"]').prop(
             'disabled', false
         );
-        this.messageHandler?.invoke('clearRuntimeReport');
+        this.invoke('clearRuntimeReport');
     }
 
     public onScalingUpdated(): void {
@@ -381,11 +380,12 @@ class AnalysisPanel {
                 break;
         }
 
-        this.messageHandler?.invoke(
+        this.invoke(
             'updateScalingMethod', [scalingMethod, additionalVal]
         );
     }
 
+    @remoteInvokeable()
     public onAutoloadReport(path: string): string {
         const cb = $('input[type="checkbox"][value="daceStaticFlopsOverlay"]');
         const rtReportLabel = $('#runtime-report-filename-label');
@@ -397,10 +397,6 @@ class AnalysisPanel {
         if (crit && typeof crit === 'string')
             return crit;
         return 'med';
-    }
-
-    public get msgHandler(): ICPCWebclientMessagingComponent | undefined {
-        return this.messageHandler;
     }
 
 }
