@@ -12,8 +12,6 @@ export class AnalysisProvider
 extends SingletonComponent
 implements vscode.WebviewViewProvider {
 
-    public static readonly COMPONENT_NAME = 'sdfgAnalysis';
-
     private static readonly viewType: string = 'sdfgAnalysis';
 
     private view?: vscode.WebviewView;
@@ -75,9 +73,7 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            this.initMessaging(
-                AnalysisProvider.COMPONENT_NAME, webviewView.webview
-            );
+            this.initMessaging(webviewView.webview);
             this.messageHandler?.register(this.refresh, this);
             this.messageHandler?.register(
                 this.instrumentationReportChangeCriterium, this

@@ -3,7 +3,6 @@
 
 import * as vscode from 'vscode';
 import {
-    ICPCExtensionHost,
     ICPCExtensionMessagingComponent
 } from './messaging/icpc_extension_messaging_component';
 
@@ -26,10 +25,8 @@ export abstract class SingletonComponent extends BaseComponent {
 
     protected messageHandler?: ICPCExtensionMessagingComponent;
 
-    protected initMessaging(component: string, webview: vscode.Webview): void {
-        this.messageHandler = ICPCExtensionHost.getInstance().registerComponent(
-            component, webview
-        );
+    protected initMessaging(webview: vscode.Webview): void {
+        this.messageHandler = new ICPCExtensionMessagingComponent(webview);
     }
 
     public async invokeRemote(procedure: string, args?: any[]): Promise<any> {

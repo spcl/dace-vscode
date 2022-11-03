@@ -14,8 +14,6 @@ export class SdfgBreakpointProvider
 extends SingletonComponent
 implements vscode.WebviewViewProvider {
 
-    public static readonly COMPONENT_NAME = 'sdfgBreakpoints';
-
     private static readonly viewType: string = 'sdfgBreakpoints';
 
     private view?: vscode.WebviewView;
@@ -76,9 +74,7 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            this.initMessaging(
-                SdfgBreakpointProvider.COMPONENT_NAME, webviewView.webview
-            );
+            this.initMessaging(webviewView.webview);
             this.messageHandler?.register(this.removeBreakpoint, this);
             this.messageHandler?.register(this.goToCPP, this);
             this.messageHandler?.register(this.goToSDFG, this);

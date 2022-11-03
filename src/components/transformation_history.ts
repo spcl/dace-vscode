@@ -12,8 +12,6 @@ export class TransformationHistoryProvider
 extends SingletonComponent
 implements vscode.WebviewViewProvider {
 
-    public static readonly COMPONENT_NAME = 'transformationHistory';
-
     private static readonly viewType: string = 'transformationHistory';
 
     private view?: vscode.WebviewView;
@@ -78,10 +76,7 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            this.initMessaging(
-                TransformationHistoryProvider.COMPONENT_NAME,
-                webviewView.webview
-            );
+            this.initMessaging(webviewView.webview);
             this.messageHandler?.register(this.refresh, this);
             this.messageHandler?.register(this.previewHistoryPoint, this);
             this.messageHandler?.register(this.applyHistoryPoint, this);

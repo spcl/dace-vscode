@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { DaCeInterface } from '../dace_interface';
 import { DaCeVSCode } from '../extension';
 import {
+    JsonTransformation,
     JsonTransformationList
 } from '../webclients/components/transformations/transformations';
 
@@ -14,8 +15,6 @@ import { SingletonComponent } from './base_component';
 export class TransformationListProvider
 extends SingletonComponent
 implements vscode.WebviewViewProvider {
-
-    public static readonly COMPONENT_NAME = 'transformationList';
 
     private static readonly viewType: string = 'transformationList';
 
@@ -81,10 +80,34 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            this.initMessaging(
-                TransformationListProvider.COMPONENT_NAME, webviewView.webview
-            );
+            this.initMessaging(webviewView.webview);
+
+            this.messageHandler?.register(this.selectTransformation, this);
+            this.messageHandler?.register(this.applyTransformations, this);
+            this.messageHandler?.register(this.highlightElements, this);
+            this.messageHandler?.register(this.refresh, this);
         });
+    }
+
+    public selectTransformation(transformation: JsonTransformation): void {
+        DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+            'selectTransformation', [transformation]
+        );
+    }
+
+    public async highlightElements(uuids: string[]): Promise<void> {
+        return DaCeVSCode.getInstance()
+            .getActiveEditor()?.messageHandler?.invoke(
+                'highlightUUIDs', [uuids]
+            );
+    }
+
+    public async applyTransformations(
+        transformations: JsonTransformation[]
+    ): Promise<void> {
+        return DaCeInterface.getInstance().applyTransformations(
+            transformations
+        );
     }
 
     public async setTransformations(

@@ -69,6 +69,33 @@ export async function getApplicableTransformations(): Promise<any[]> {
     );
 }
 
+export async function refreshXform(sdfv: VSCodeSDFV): Promise<void> {
+    clearSelectedTransformation();
+    return getApplicableTransformations().then(transformations => {
+        sdfv.setDaemonConnected(true);
+        if (transformations !== undefined)
+            sdfv.setTransformations({
+                selection: [],
+                viewport: [],
+                passes: [],
+                uncategorized: [{
+                    title: 'Uncategorized',
+                    ordering: 0,
+                    xforms: transformations,
+                }],
+            });
+        else
+            sdfv.setTransformations({
+                selection: [],
+                viewport: [],
+                passes: [],
+                uncategorized: [],
+            });
+
+        sortTransformations(true, refreshTransformationList, true);
+    });
+}
+
 /**
  * Asynchronouly sort the list of transformations in the timing thread.
  *

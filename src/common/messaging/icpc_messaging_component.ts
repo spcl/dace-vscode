@@ -8,7 +8,6 @@ export enum ICPCMessageType {
 export interface ICPCMessage {
     type: ICPCMessageType;
     id: string;
-    component?: string;
 }
 
 export interface ICPCRequestMessage extends ICPCMessage {
@@ -28,6 +27,12 @@ export interface ICPCProcedure {
     staticArgs?: any[];
 }
 
+type ICPCCallback = {
+    resolve: Function;
+    reject: Function;
+    procedure: string;
+};
+
 export abstract class ICPCMessagingComponent {
 
     protected constructor(
@@ -36,21 +41,29 @@ export abstract class ICPCMessagingComponent {
     }
 
     protected localProcedures: Map<string, ICPCProcedure> = new Map();
-    protected callbacks: Map<string, { resolve: Function, reject: Function }> =
+    protected callbacks: Map<string, ICPCCallback> =
         new Map();
 
     protected sendRequest(
-        id: string, procedure: string, args?: any[], component?: string
+        id: string, procedure: string, args?: any[]
     ): void {
-        console.log('Sending request for procedure', procedure, 'with id', id);
+        console.log(
+            'Sending request for procedure', procedure, 'with id', id
+        );
         const message: ICPCRequestMessage = {
             type: ICPCMessageType.REQUEST,
             id: id,
-            component: component,
             procedure: procedure,
             args: args,
         };
-        this.target.postMessage(message);
+        try {
+            this.target.postMessage(message);
+        } catch (e) {
+            console.error(
+                `Error while sending request for procedure ${procedure}`, e
+            );
+            console.log('Message was', message);
+        }
     }
 
     protected sendResponse(
@@ -63,7 +76,12 @@ export abstract class ICPCMessagingComponent {
             response: response,
             success: success,
         };
-        this.target.postMessage(message);
+        try {
+            this.target.postMessage(message);
+        } catch (e) {
+            console.error(`Error while sending response for request ${id}`, e);
+            console.log('Message was', message);
+        }
     }
 
     public handle(
@@ -104,15 +122,19 @@ export abstract class ICPCMessagingComponent {
     }
 
     public async invoke(
-        procedure: string, args?: any[], component?: string
+        procedure: string, args?: any[]
     ): Promise<any> {
         console.log('Invoking procedure', procedure);
         let uuid = uuidv4();
         while (this.callbacks.has(uuid))
             uuid = uuidv4();
         return new Promise((resolve, reject) => {
-            this.callbacks.set(uuid, { resolve: resolve, reject: reject });
-            this.sendRequest(uuid, procedure, args, component);
+            this.callbacks.set(uuid, {
+                resolve: resolve,
+                reject: reject,
+                procedure: procedure,
+            });
+            this.sendRequest(uuid, procedure, args);
         });
     }
 
@@ -128,9 +150,11 @@ export abstract class ICPCMessagingComponent {
                     procedure.staticArgs.concat(message.args) : message.args;
                 let promiseOrResponse = procedure.f.apply(procedure.obj, args);
                 // Await promises if the procedure is async.
-                const response = (
-                    promiseOrResponse && typeof promiseOrResponse === 'function'
-                ) ? await promiseOrResponse : promiseOrResponse;
+                let response = undefined;
+                if (promiseOrResponse && promiseOrResponse instanceof Promise)
+                    response = await promiseOrResponse;
+                else
+                    response = promiseOrResponse;
 
                 _responseHandler.sendResponse(message.id, response, true);
             } catch (e) {
@@ -143,8 +167,11 @@ export abstract class ICPCMessagingComponent {
     }
 
     protected handleResponse(message: ICPCResponseMessage): void {
-        console.log('Handling response for request', message.id, message);
         const callback = this.callbacks.get(message.id);
+        console.log(
+            'Handling response for request', callback?.procedure, message.id,
+            message
+        );
         if (callback) {
             if (message.success)
                 callback.resolve(message.response);

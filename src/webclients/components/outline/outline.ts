@@ -46,14 +46,14 @@ class OutlineItem extends CustomTreeViewItem {
 
         item.on('click', (e) => {
             OutlinePanel.getInstance().msgHandler?.invoke(
-                'zoomToNode', [this.elementUUID]
+                'zoomToNode', [[this.elementUUID]]
             );
             e.stopPropagation();
         });
 
         item.on('mouseover', () => {
             OutlinePanel.getInstance().msgHandler?.invoke(
-                'highlightElement', [this.elementUUID]
+                'highlightElement', [[this.elementUUID]]
             );
         });
 

@@ -272,7 +272,7 @@ export class DaCeVSCode {
         });
         this.registerCommand('transformationList.sync', () => {
             DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
-                'refreshTransformationList'
+                'resyncTransformations'
             );
         });
         this.registerCommand('transformationHistory.sync', () => {
@@ -293,9 +293,7 @@ export class DaCeVSCode {
             );
         });
         this.registerCommand('sdfg.sync', () => {
-            const activeEditor = DaCeVSCode.getInstance().getActiveEditor();
-            if (activeEditor)
-                SdfgViewerProvider.getInstance()?.updateEditor(activeEditor);
+            DaCeVSCode.getInstance().getActiveEditor()?.updateSdfg();
         });
         this.registerCommand('sdfg.applyTransformations',
             (t) => DaCeInterface.getInstance().applyTransformations(t));

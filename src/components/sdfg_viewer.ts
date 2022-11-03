@@ -54,13 +54,25 @@ export class SdfgViewer {
     public linkFile?: string;
     public messageHandler?: ICPCExtensionMessagingComponent;
 
+    /**
+     * Update the contents of this editor's renderer.
+     *
+     * @param preventRefreshes Prevent refreshes to the transformation list etc.
+     */
+    public async updateSdfg(preventRefreshes: boolean = false): Promise<void> {
+        return this.messageHandler?.invoke(
+            'updateContents', [this.document.getText(), preventRefreshes]
+        );
+    }
+
+    public async refreshTransformationList(): Promise<void> {
+    }
+
 }
 
 export class SdfgViewerProvider
     extends BaseComponent
     implements vscode.CustomTextEditorProvider {
-
-    public static readonly COMPONENT_NAME = 'sdfv';
 
     public static INSTANCE: SdfgViewerProvider | undefined = undefined;
 
@@ -85,9 +97,7 @@ export class SdfgViewerProvider
         return vscode.window.registerCustomEditorProvider(
             SdfgViewerProvider.viewType,
             SdfgViewerProvider.INSTANCE,
-            {
-                webviewOptions: options
-            }
+            { webviewOptions: options }
         );
     }
 
@@ -110,20 +120,6 @@ export class SdfgViewerProvider
     }
 
     /**
-     * Update the contents of the editor's webview.
-     *
-     * This also forces the transformation view to update, if the webview is the
-     * last active SDFG editor.
-     */
-    public updateEditor(
-        editor: SdfgViewer, preventRefreshes: boolean = false
-    ): void {
-        editor.messageHandler?.invoke(
-            'updateContents', [editor.document.getText(), preventRefreshes]
-        );
-    }
-
-    /**
      * Callback for when the document changes.
      *
      * This updates the corresponding webview accordingly.
@@ -131,7 +127,7 @@ export class SdfgViewerProvider
      * attached transformation panel.
      */
     private documentChanged(editor: SdfgViewer): void {
-        this.updateEditor(editor);
+        editor.updateSdfg();
         if (DaCeVSCode.getInstance().getActiveEditor() === editor) {
             TransformationListProvider.getInstance()?.refresh();
             TransformationHistoryProvider.getInstance()?.refresh();
@@ -181,14 +177,12 @@ export class SdfgViewerProvider
         vscode.workspace.getConfiguration('dace.sdfv')?.update('layout', dir);
     }
 
-    public requestUpdateEditor(
-        editor: SdfgViewer, preventRefreshes: boolean = false
-    ): void {
-        this.updateEditor(editor, preventRefreshes);
+    public getUpToDateContents(editor: SdfgViewer): string {
+        return editor.document.getText();
     }
 
     public async setOutline(outlineList: any[]): Promise<void> {
-        return OutlineProvider.getInstance()?.setOutline(outlineList);
+        await OutlineProvider.getInstance()?.setOutline(outlineList);
     }
 
     public async goToSource(
@@ -502,12 +496,12 @@ export class SdfgViewerProvider
 
             // Handle received messages from the webview.
             editor.messageHandler = new ICPCExtensionMessagingComponent(
-                webviewPanel.webview, 'sdfv'
+                webviewPanel.webview
             );
             editor.messageHandler.register(this.disableMinimap, this);
             editor.messageHandler.register(this.setSplitDirection, this);
             editor.messageHandler.register(
-                this.requestUpdateEditor, this, undefined, [editor]
+                this.getUpToDateContents, this, undefined, [editor]
             );
             editor.messageHandler.register(this.goToSource, this);
             editor.messageHandler.register(this.goToCPP, this);
@@ -541,7 +535,7 @@ export class SdfgViewerProvider
             editor.messageHandler.register(bpHandler.getSavedNodes, bpHandler);
             editor.messageHandler.register(bpHandler.hasSavedNodes, bpHandler);
 
-            this.updateEditor(editor);
+            //this.updateEditor(editor);
             webviewPanel.reveal();
         });
     }

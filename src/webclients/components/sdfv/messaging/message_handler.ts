@@ -189,47 +189,6 @@ export class MessageHandler {
                         sdfv.outline(renderer, graph);
                 }
                 break;
-            case 'refresh_transformation_list':
-                refreshTransformationList();
-                break;
-            case 'get_applicable_transformations':
-                clearSelectedTransformation();
-                getApplicableTransformations();
-                break;
-            case 'get_applicable_transformations_callback':
-                sdfv.setDaemonConnected(true);
-                if (message.transformations !== undefined)
-                    sdfv.setTransformations({
-                        selection: [],
-                        viewport: [],
-                        passes: [],
-                        uncategorized: [{
-                            title: 'Uncategorized',
-                            ordering: 0,
-                            xforms: message.transformations,
-                        }],
-                    });
-                else
-                    sdfv.setTransformations({
-                        selection: [],
-                        viewport: [],
-                        passes: [],
-                        uncategorized: [],
-                    });
-                const hideLoading = true;
-                sortTransformations(
-                    true, refreshTransformationList, hideLoading
-                );
-                break;
-            case 'select_transformation':
-                if (message.transformation !== undefined) {
-                    showTransformationDetails(message.transformation);
-                    sdfv.setSelectedTransformation(message.transformation);
-                }
-                break;
-            case 'clear_selected_transformation':
-                clearSelectedTransformation();
-                break;
             case 'added_node':
                 if (message.uuid !== 'error') {
                     renderer?.set_sdfg(message.sdfg);

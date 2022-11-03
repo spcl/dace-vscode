@@ -63,23 +63,25 @@ export class DaCeInterface {
 
     private port: number = -1;
 
-    private getRandomPort(callback: CallableFunction) {
-        const rangeMin = 1024;
-        const rangeMax = 65535;
-        const portCandidate = Math.floor(
-            Math.random() * (rangeMax - rangeMin) + rangeMin
-        );
+    private async getRandomPort(): Promise<number> {
+        return new Promise(resolve => {
+            const rangeMin = 1024;
+            const rangeMax = 65535;
+            const portCandidate = Math.floor(
+                Math.random() * (rangeMax - rangeMin) + rangeMin
+            );
 
-        const tempServer = net.createServer();
-        tempServer.listen(portCandidate, () => {
-            tempServer.once('close', () => {
-                this.port = portCandidate;
-                callback();
+            const tempServer = net.createServer();
+            tempServer.listen(portCandidate, () => {
+                tempServer.once('close', () => {
+                    this.port = portCandidate;
+                    resolve(portCandidate);
+                });
+                tempServer.close();
             });
-            tempServer.close();
-        });
-        tempServer.on('error', () => {
-            this.getRandomPort(callback);
+            tempServer.on('error', () => {
+                return this.getRandomPort();
+            });
         });
     }
 
@@ -190,33 +192,36 @@ export class DaCeInterface {
         return vscode.Uri.joinPath(extensionUri, 'backend', 'run_dace.py');
     }
 
-    public async startDaemonInTerminal(callback?: CallableFunction) {
-        if (this.daemonTerminal === undefined)
-            this.daemonTerminal = vscode.window.createTerminal({
-                hideFromUser: false,
-                name: 'SDFG Optimizer',
-                isTransient: true,
-            });
+    public async startDaemonInTerminal(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (this.daemonTerminal === undefined)
+                this.daemonTerminal = vscode.window.createTerminal({
+                    hideFromUser: false,
+                    name: 'SDFG Optimizer',
+                    isTransient: true,
+                });
 
-        const scriptUri = this.getRunDaceScriptUri();
-        if (scriptUri) {
-            vscode.window.setStatusBarMessage(
-                'Trying to start and connect to a DaCe daemon', 5000
-            );
-            const pyCmd: string = await this.getPythonExecCommand(
-                scriptUri, true
-            );
-
-            this.getRandomPort(() => {
-                this.daemonTerminal?.sendText(
-                    pyCmd + ' ' + scriptUri.fsPath + ' -p ' +
-                    this.port.toString()
+            const scriptUri = this.getRunDaceScriptUri();
+            if (scriptUri) {
+                vscode.window.setStatusBarMessage(
+                    'Trying to start and connect to a DaCe daemon', 5000
                 );
-                this.pollDaemon(callback, true);
-            });
-        } else {
-            this.daemonBooting = false;
-        }
+
+                this.getPythonExecCommand(
+                    scriptUri, true
+                ).then(pyCmd => {
+                    this.getRandomPort().then(port => {
+                        this.daemonTerminal?.sendText(
+                            pyCmd + ' ' + scriptUri.fsPath + ' -p ' +
+                            port.toString()
+                        );
+                        this.pollDaemon(resolve, reject);
+                    });
+                });
+            } else {
+                this.daemonBooting = false;
+            }
+        });
     }
 
     private runSdfgInTerminal(name: string, path?: string,
@@ -269,7 +274,9 @@ export class DaCeInterface {
         }
     }
 
-    private pollDaemon(callback?: CallableFunction, terminalMode?: boolean) {
+    private pollDaemon(
+        callback?: CallableFunction, failureCallback?: CallableFunction
+    ): void {
         // We poll the daemon every second to see if it's awake.
         const connectionIntervalId = setInterval(() => {
             console.log('Checking for daemon');
@@ -299,6 +306,7 @@ export class DaCeInterface {
 
         // If we were unable to connect after 10 seconds, stop trying.
         setTimeout(() => {
+            clearInterval(connectionIntervalId);
             if (!this.daemonRunning) {
                 // We were unable to start and connect to a daemon, show a
                 // message hinting at a potentially missing DaCe instance.
@@ -310,17 +318,16 @@ export class DaCeInterface {
                 ).then(opt => {
                     switch (opt) {
                         case 'Retry':
-                            clearInterval(connectionIntervalId);
                             this.startDaemonInTerminal();
                             break;
                         case 'Install DaCe':
-                            clearInterval(connectionIntervalId);
                             vscode.commands.executeCommand('dace.installDace');
                             break;
                     }
                 });
-            } else {
-                clearInterval(connectionIntervalId);
+
+                if (failureCallback)
+                    failureCallback();
             }
         }, 10000);
     }
@@ -421,7 +428,9 @@ export class DaCeInterface {
         if (this.daemonRunning)
             doSend();
         else if (startIfSleeping)
-            this.startDaemonInTerminal(doSend);
+            this.startDaemonInTerminal().then(() => {
+                doSend();
+            });
     }
 
     private sendGetRequest(url: string,
@@ -443,7 +452,7 @@ export class DaCeInterface {
         );
     }
 
-    public promptStartDaemon() {
+    public async promptStartDaemon(): Promise<void> {
         if (this.daemonBooting)
             return;
 
@@ -452,19 +461,27 @@ export class DaCeInterface {
         if (!OptimizationPanel.getInstance().isVisible())
             return;
 
-        vscode.window.showWarningMessage(
-            'The DaCe daemon isn\'t running, so this action can\'t be ' +
-            'performed. Do you want to start it?',
-            'Yes',
-            'No'
-        ).then(opt => {
-            switch (opt) {
-                case 'Yes':
-                    DaCeInterface.getInstance().startDaemonInTerminal();
-                    break;
-                case 'No':
-                    break;
-            }
+        return new Promise((resolve, reject) => {
+            vscode.window.showWarningMessage(
+                'The DaCe daemon isn\'t running, so this action can\'t be ' +
+                'performed. Do you want to start it?',
+                'Yes',
+                'No'
+            ).then(opt => {
+                switch (opt) {
+                    case 'Yes':
+                        DaCeInterface.getInstance().startDaemonInTerminal()
+                            .then(() => {
+                                resolve();
+                            }).catch(() => {
+                                reject();
+                            });
+                        break;
+                    case 'No':
+                        reject();
+                        break;
+                }
+            });
         });
     }
 
@@ -522,7 +539,9 @@ export class DaCeInterface {
         const callBoot = () => {
             this.daemonBooting = true;
 
-            this.startDaemonInTerminal(onBooted);
+            this.startDaemonInTerminal().then(() => {
+                onBooted();
+            });
         };
 
         if (vscode.workspace.isTrusted) {
@@ -557,14 +576,12 @@ export class DaCeInterface {
         );
     }
 
-    private sendApplyTransformationRequest(
+    private async sendApplyTransformationRequest(
         transformations: JsonTransformation[], callback: CallableFunction,
         processingMessage?: string
-    ) {
-        if (!this.daemonRunning) {
-            this.promptStartDaemon();
-            return;
-        }
+    ): Promise<void> {
+        if (!this.daemonRunning)
+            await this.promptStartDaemon();
 
         this.showSpinner(
             processingMessage ? processingMessage : (
@@ -705,7 +722,7 @@ export class DaCeInterface {
             return;
         }
 
-        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+        DaCeVSCode.getInstance().getActiveSdfg().then(async (sdfg) => {
             if (!sdfg)
                 return;
 
@@ -725,8 +742,11 @@ export class DaCeInterface {
                 }
             } else {
                 if (!this.daemonRunning) {
-                    this.promptStartDaemon();
-                    return;
+                    try {
+                        await this.promptStartDaemon();
+                    } catch {
+                        return;
+                    }
                 }
 
                 this.showSpinner('Loading SDFG');
@@ -770,10 +790,14 @@ export class DaCeInterface {
     }
 
     public async getFlops(): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             if (!this.daemonRunning) {
-                this.promptStartDaemon();
-                reject('Daemon not running');
+                try {
+                    await this.promptStartDaemon();
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
             }
 
             this.showSpinner('Calculating FLOP count');
@@ -783,6 +807,7 @@ export class DaCeInterface {
                     const msg = 'No active SDFG editor!';
                     console.warn(msg);
                     reject(msg);
+                    return;
                 }
 
                 this.sendPostRequest(
@@ -860,10 +885,14 @@ export class DaCeInterface {
     ): Promise<any[]> {
         await TransformationListProvider.getInstance()?.showLoading();
 
-        return new Promise<any[]>((resolve, reject) => {
+        return new Promise<any[]>(async (resolve, reject) => {
             if (!this.daemonRunning) {
-                this.promptStartDaemon();
-                reject('Daemon not running');
+                try {
+                    await this.promptStartDaemon();
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
             }
 
             this.sendPostRequest(

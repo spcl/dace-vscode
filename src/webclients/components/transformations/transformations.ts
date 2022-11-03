@@ -147,7 +147,7 @@ export class Transformation extends TransformationListItem {
                 this.list.generateHtml();
             }
             TransofrmationListPanel.getInstance().msgHandler?.invoke(
-                'selectTransformation', [this.json], 'sdfv'
+                'selectTransformation', [this.json]
             );
         });
 
@@ -161,7 +161,7 @@ export class Transformation extends TransformationListItem {
             'click': (event: Event) => {
                 event.stopPropagation();
                 TransofrmationListPanel.getInstance().msgHandler?.invoke(
-                    'applyTransformation', [this.json], 'sdfv'
+                    'applyTransformations', [[this.json]]
                 );
                 return true;
             },
@@ -170,8 +170,7 @@ export class Transformation extends TransformationListItem {
         item.on('mouseover', () => {
             labelContainer.addClass('hover-direct');
             TransofrmationListPanel.getInstance().msgHandler?.invoke(
-                'highlightElements', [this.getAffectedElementsUUIDs()],
-                'sdfv'
+                'highlightElements', [this.getAffectedElementsUUIDs()]
             );
         });
 
@@ -215,7 +214,7 @@ export class PassPipeline extends TransformationListItem {
                 this.list.generateHtml();
             }
             TransofrmationListPanel.getInstance().msgHandler?.invoke(
-                'selectTransformation', [this.json], 'sdfv'
+                'selectTransformation', [this.json]
             );
         });
 
@@ -229,7 +228,7 @@ export class PassPipeline extends TransformationListItem {
             'click': (event: Event) => {
                 event.stopPropagation();
                 TransofrmationListPanel.getInstance().msgHandler?.invoke(
-                    'applyTransformation', [this.json], 'sdfv'
+                    'applyTransformations', [[this.json]]
                 );
                 return true;
             },
@@ -284,7 +283,7 @@ export class TransformationGroup extends TransformationListItem {
                 title: 'Apply all transformations with default parameters',
                 click: () => {
                     TransofrmationListPanel.getInstance().msgHandler?.invoke(
-                        'applyTransformation', [this.transformations], 'sdfv'
+                        'applyTransformations', [this.transformations]
                     );
                 },
             }).appendTo(labelContainer);
@@ -296,7 +295,7 @@ export class TransformationGroup extends TransformationListItem {
                 for (const item of (this.children as Transformation[]))
                     affectedUUIDs.push(...item.getAffectedElementsUUIDs());
             TransofrmationListPanel.getInstance().msgHandler?.invoke(
-                'highlightElements', [affectedUUIDs], 'sdfv'
+                'highlightElements', [affectedUUIDs]
             );
         });
 
@@ -343,7 +342,7 @@ export class PassPipelineGroup extends TransformationListItem {
                 title: 'Run all passes with default parameters',
                 click: () => {
                     TransofrmationListPanel.getInstance().msgHandler?.invoke(
-                        'applyTransformation', [this.transformations], 'sdfv'
+                        'applyTransformations', [this.transformations]
                     );
                 },
             }).appendTo(labelContainer);
@@ -506,11 +505,7 @@ class TransofrmationListPanel {
         this.messageHandler.register(this.showLoading, this);
         this.messageHandler.register(this.hideLoading, this);
 
-        // TODO: check if this is the right way to do it or if we should invoke
-        // the refresh method of the corresponding extension component.
-        this.messageHandler.invoke(
-            'refreshTransformationList', undefined, 'sdfv'
-        );
+        this.messageHandler.invoke('refresh');
     }
 
     public deselect(): void {

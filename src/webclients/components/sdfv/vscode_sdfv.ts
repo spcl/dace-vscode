@@ -67,8 +67,9 @@ import {
 import { VSCodeRenderer } from './renderer/vscode_renderer';
 import {
     clearSelectedTransformation,
-    getApplicableTransformations,
     refreshTransformationList,
+    refreshXform,
+    showTransformationDetails,
     sortTransformations
 } from './transformation/transformation';
 import {
@@ -111,7 +112,6 @@ export class VSCodeSDFV extends SDFV {
             'OperationalIntensityOverlay': OperationalIntensityOverlay,
         };
 
-    private exitPreviewButton?: JQuery<HTMLElement>;
     private processingOverlay?: JQuery<HTMLElement>;
     private processingOverlayMsg?: JQuery<HTMLElement>;
     private infoContainer?: JQuery<HTMLElement>;
@@ -167,6 +167,7 @@ export class VSCodeSDFV extends SDFV {
         this.messageHandler.register(this.outline, this);
         this.messageHandler.register(this.setProcessingOverlay, this);
         this.messageHandler.register(this.resyncTransformations, this);
+        this.messageHandler.register(this.selectTransformation, this);
 
         this.messageHandler.register(zoomToUUIDs);
         this.messageHandler.register(highlightUUIDs);
@@ -175,7 +176,6 @@ export class VSCodeSDFV extends SDFV {
     }
 
     private initDOM(): void {
-        this.exitPreviewButton = $('#exit-preview-button');
         this.processingOverlay = $('#processing-overlay');
         this.processingOverlayMsg = $('#processing-overlay-msg');
 
@@ -753,7 +753,9 @@ export class VSCodeSDFV extends SDFV {
     }
 
     public async refreshSdfg(): Promise<void> {
-        return this.messageHandler?.invoke('requestUpdateEditor');
+        return this.messageHandler?.invoke('getUpToDateContents').then(sdfg => {
+            this.updateContents(sdfg);
+        });
     }
 
     public setRendererContent(
@@ -782,7 +784,7 @@ export class VSCodeSDFV extends SDFV {
         if (!previewing) {
             this.sdfgString = sdfgString;
             if (!preventRefreshes)
-                getApplicableTransformations();
+                refreshXform(this);
         }
 
         const graph = this.renderer.get_graph();
@@ -990,7 +992,7 @@ export class VSCodeSDFV extends SDFV {
         newContent: string, preventRefreshes: boolean = false
     ): void {
         this.setViewingHistoryState(false);
-        this.exitPreviewButton?.hide();
+        $('#exit-preview-button')?.addClass('hidden');
         this.setRendererContent(newContent, false, preventRefreshes);
     }
 
@@ -1008,7 +1010,7 @@ export class VSCodeSDFV extends SDFV {
     ): void {
         if (pSdfg) {
             this.setRendererContent(pSdfg, true);
-            this.exitPreviewButton?.show();
+            $('#exit-preview-button')?.removeClass('hidden');
             if (histState) {
                 this.clearInfoBox();
                 this.setViewingHistoryState(true);
@@ -1018,7 +1020,7 @@ export class VSCodeSDFV extends SDFV {
             // No SDFG provided, exit preview.
             this.resetRendererContent();
             this.setViewingHistoryState(false);
-            this.exitPreviewButton?.hide();
+            $('#exit-preview-button')?.addClass('hidden');
             if (refresh)
                 refreshTransformationList();
         }
@@ -1034,16 +1036,24 @@ export class VSCodeSDFV extends SDFV {
         }
     }
 
-    public async resyncTransformations(): Promise<void> {
+    public async resyncTransformations(hard: boolean = false): Promise<void> {
         const xforms = this.getTransformations();
         clearSelectedTransformation();
-        if (xforms.selection.length > 0 ||
-            xforms.viewport.length > 0 ||
-            xforms.passes.length > 0 ||
-            xforms.uncategorized.length > 0)
-            await refreshTransformationList();
+        if (hard ||
+            (xforms.selection.length === 0 &&
+             xforms.viewport.length === 0 &&
+             xforms.passes.length === 0 &&
+             xforms.uncategorized.length === 0))
+            await refreshXform(this);
         else
-            await getApplicableTransformations();
+            await refreshTransformationList();
+    }
+
+    public async selectTransformation(
+        transformation: JsonTransformation
+    ): Promise<void> {
+        showTransformationDetails(transformation);
+        this.setSelectedTransformation(transformation);
     }
 
     public get msgHandler(): ICPCWebclientMessagingComponent | undefined {
@@ -1081,12 +1091,12 @@ export function vscodeHandleEvent(event: string, data: any): void {
             break;
         case SDFGRendererEvent.EXIT_PREVIEW:
             VSCodeSDFV.getInstance().msgHandler?.invoke(
-                'requestUpdateEditor', [true]
-            );
-            VSCodeSDFV.getInstance().msgHandler?.invoke(
-                'refreshTransformationHistory', [true]
-            );
-            VSCodeSDFV.getInstance().setViewingHistoryState(false);
+                'getUpToDateContents'
+            ).then(sdfg => {
+                const sdfv = VSCodeSDFV.getInstance();
+                sdfv.updateContents(sdfg, true);
+                sdfv.msgHandler?.invoke('refreshTransformationHistory', [true]);
+            });
             break;
         case SDFGRendererEvent.COLLAPSE_STATE_CHANGED:
         case SDFGRendererEvent.ELEMENT_POSITION_CHANGED:
@@ -1094,7 +1104,7 @@ export function vscodeHandleEvent(event: string, data: any): void {
             break;
         case SDFGRendererEvent.SELECTION_CHANGED:
             if (data && data.multi_selection_changed)
-                getApplicableTransformations();
+                refreshXform(VSCodeSDFV.getInstance());
             else
                 sortTransformations(false, refreshTransformationList, true);
             break;

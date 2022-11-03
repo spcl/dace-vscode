@@ -4,14 +4,13 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeInterface } from '../dace_interface';
+import { DaCeVSCode } from '../extension';
 
 import { SingletonComponent } from './base_component';
 
 export class OutlineProvider
 extends SingletonComponent
 implements vscode.WebviewViewProvider {
-
-    public static readonly COMPONENT_NAME = 'sdfgOutline';
 
     private static readonly viewType: string = 'sdfgOutline';
 
@@ -84,9 +83,7 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            this.initMessaging(
-                OutlineProvider.COMPONENT_NAME, webviewView.webview
-            );
+            this.initMessaging(webviewView.webview);
             this.messageHandler?.register(this.zoomToNode, this);
             this.messageHandler?.register(this.highlightElement, this);
             this.messageHandler?.register(this.refresh, this);
@@ -94,19 +91,25 @@ implements vscode.WebviewViewProvider {
     }
 
     public async setOutline(outlineList: any[]): Promise<void> {
-        return this.invokeRemote('setOutline', [outlineList]);
+        await this.invokeRemote('setOutline', [outlineList]);
     }
 
     public async clearOutline(reason?: string): Promise<void> {
-        return this.invokeRemote('clearOutline', [reason]);
+        await this.invokeRemote('clearOutline', [reason]);
     }
 
     public async highlightElement(elementUUID: string): Promise<void> {
-        // TODO: call sdfv ('highlightUUIDs')
+        return DaCeVSCode.getInstance()
+            .getActiveEditor()?.messageHandler?.invoke(
+                'highlightUUIDs', [elementUUID]
+            );
     }
 
     public async zoomToNode(elementUUID: string): Promise<void> {
-        // TODO: call sdfv ('zoomToUUIDs')
+        return DaCeVSCode.getInstance()
+            .getActiveEditor()?.messageHandler?.invoke(
+                'zoomToUUIDs', [elementUUID]
+            );
     }
 
     public refresh() {

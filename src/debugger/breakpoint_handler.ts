@@ -3,10 +3,9 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DaCeVSCode } from '../extension';
-import { SdfgViewerProvider } from '../components/sdfg_viewer';
 import { SdfgBreakpointProvider } from '../components/sdfg_breakpoints';
-import { JsonSDFGNode } from '@spcl/sdfv/out';
+import { SdfgViewerProvider } from '../components/sdfg_viewer';
+import { DaCeVSCode } from '../extension';
 
 export type ISDFGDebugNodeInfo = {
     cache: string | undefined,
