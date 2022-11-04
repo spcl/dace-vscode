@@ -1,12 +1,10 @@
 # Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
-from email.errors import UndecodableBytesDefect
 from dace import nodes, serialize
 from dace.transformation.transformation import (SubgraphTransformation,
                                                 TransformationBase)
 from dace.transformation.pass_pipeline import Pass, Pipeline
-from matplotlib.pyplot import isinteractive
 from dace_vscode import utils
 import sys
 import traceback
