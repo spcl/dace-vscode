@@ -7,7 +7,7 @@ import {
 } from './messaging/icpc_extension_messaging_component';
 
 
-export abstract class BaseComponent {
+export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
 
     // Identifiers for code placement into the webview's HTML.
     protected readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
@@ -17,22 +17,13 @@ export abstract class BaseComponent {
         protected readonly context: vscode.ExtensionContext,
         protected readonly type: string
     ) {
+        super();
     }
 
-}
-
-export abstract class SingletonComponent extends BaseComponent {
-
-    protected messageHandler?: ICPCExtensionMessagingComponent;
-
-    protected initMessaging(webview: vscode.Webview): void {
-        this.messageHandler = new ICPCExtensionMessagingComponent(webview);
-    }
-
-    public async invokeRemote(procedure: string, args?: any[]): Promise<any> {
-        if (!this.messageHandler)
-            console.warn(this.type, 'message handler not initialized');
-        return this.messageHandler?.invoke(procedure, args);
+    public async invoke(procedure: string, args?: any[]): Promise<any> {
+        if (!this.target)
+            return undefined;
+        return super.invoke(procedure, args);
     }
 
 }

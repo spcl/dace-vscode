@@ -3,13 +3,14 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeInterface } from '../dace_interface';
 import { DaCeVSCode } from '../extension';
 
-import { SingletonComponent } from './base_component';
+import { BaseComponent } from './base_component';
 
 export class TransformationHistoryProvider
-extends SingletonComponent
+extends BaseComponent
 implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = 'transformationHistory';
@@ -76,29 +77,29 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            this.initMessaging(webviewView.webview);
-            this.messageHandler?.register(this.refresh, this);
-            this.messageHandler?.register(this.previewHistoryPoint, this);
-            this.messageHandler?.register(this.applyHistoryPoint, this);
+            this.setTarget(webviewView.webview);
         });
     }
 
+    @ICPCRequest()
     public applyHistoryPoint(index: number): void {
         DaCeInterface.getInstance().applyHistoryPoint(index);
     }
 
+    @ICPCRequest()
     public previewHistoryPoint(index: number): void {
         DaCeInterface.getInstance().previewHistoryPoint(index);
     }
 
     public async clearList(reason: string | undefined): Promise<void> {
-        return this.invokeRemote('clearHistory', [reason]);
+        return this.invoke('clearHistory', [reason]);
     }
 
     public async setHistory(history: any, activeIndex?: number): Promise<void> {
-        return this.invokeRemote('setHistory', [history, activeIndex]);
+        return this.invoke('setHistory', [history, activeIndex]);
     }
 
+    @ICPCRequest()
     public async refresh(resetAcitve: boolean = false): Promise<void> {
         return this.clearList(undefined).then(() => {
             DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {

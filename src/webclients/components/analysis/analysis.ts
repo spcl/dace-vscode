@@ -13,8 +13,9 @@ import './analysis.css';
 
 import { OverlayType, SymbolMap } from '@spcl/sdfv/out';
 import {
-    ICPCWebclientMessagingComponent, remoteInvokeable
+    ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
+import { ICPCRequest } from '../../../common/messaging/icpc_messaging_component';
 
 declare const vscode: any;
 
@@ -247,7 +248,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
         this.invoke('refresh');
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public clear(reason?: string): void {
         this.symbolResolution?.clearSymbols();
         this.overlayToggles?.html('');
@@ -260,7 +261,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
         this.noneMessage?.show();
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public refresh(
         activeOverlays: any[], symbols: any, scalingMethod?: string,
         scalingSubMethod?: string, availableOverlays?: any[]
@@ -332,7 +333,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
         this.setSymbols(symbols);
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public setSymbols(newSymbols: any): void {
         if (newSymbols !== undefined) {
             const symbols: SymbolMap = {};
@@ -385,7 +386,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
         );
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public onAutoloadReport(path: string): string {
         const cb = $('input[type="checkbox"][value="daceStaticFlopsOverlay"]');
         const rtReportLabel = $('#runtime-report-filename-label');

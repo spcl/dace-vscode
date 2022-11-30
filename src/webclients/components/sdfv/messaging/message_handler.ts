@@ -1,29 +1,6 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
-// All rights reserved.
 
-import {
-    instrumentation_report_read_complete,
-    LogicalGroupOverlay, RuntimeMicroSecondsOverlay,
-    StaticFlopsOverlay
-} from '@spcl/sdfv/out';
-import {
-    analysisPaneRegisterSymbols
-} from '../analysis/analysis';
-import {
-    BreakpointIndicator,
-    refreshBreakpoints
-} from '../breakpoints/breakpoints';
-import { VSCodeRenderer } from '../renderer/vscode_renderer';
-import {
-    applyTransformations,
-    clearSelectedTransformation,
-    getApplicableTransformations,
-    refreshTransformationList,
-    showTransformationDetails,
-    sortTransformations
-} from '../transformation/transformation';
-import { VSCodeSDFV } from '../vscode_sdfv';
-
+/*
 export class MessageHandler {
 
     private static readonly INSTANCE = new MessageHandler();
@@ -232,3 +209,4 @@ export class MessageHandler {
     }
 
 }
+*/

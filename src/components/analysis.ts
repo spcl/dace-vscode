@@ -3,13 +3,14 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeInterface } from '../dace_interface';
 import { DaCeVSCode } from '../extension';
 
-import { SingletonComponent } from './base_component';
+import { BaseComponent } from './base_component';
 
 export class AnalysisProvider
-extends SingletonComponent
+extends BaseComponent
 implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = 'sdfgAnalysis';
@@ -73,41 +74,36 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            this.initMessaging(webviewView.webview);
-            this.messageHandler?.register(this.refresh, this);
-            this.messageHandler?.register(
-                this.instrumentationReportChangeCriterium, this
-            );
-            this.messageHandler?.register(this.specialize, this);
-            this.messageHandler?.register(this.setOverlays, this);
-            this.messageHandler?.register(
-                this.onLoadInstrumentationReport, this
-            );
-            this.messageHandler?.register(this.updateScalingMethod, this);
-            this.messageHandler?.register(this.symbolValueChanged, this);
+            this.setTarget(webviewView.webview);
         });
     }
 
+    @ICPCRequest()
     public symbolValueChanged(symbol: string, value: any): void {
         // TODO: Implement, call SDFV
     }
 
+    @ICPCRequest()
     public updateScalingMethod(method: string, subMethod: string): void {
         // TODO: Implement, call SDFV
     }
 
+    @ICPCRequest()
     public setOverlays(overlays: any[]): void {
         // TODO: Implement, call SDFV
     }
 
+    @ICPCRequest()
     public onLoadInstrumentationReport(report: any, criterium: string) {
         // TODO: Implement, call SDFV
     }
 
+    @ICPCRequest()
     public instrumentationReportChangeCriterium(criterium: string): void {
         // TODO: Implement, call SDFV
     }
 
+    @ICPCRequest()
     public specialize(symbols: { [key: string]: any }): void {
         const sdfgFile = DaCeVSCode.getInstance().getActiveSdfgFileName();
         if (sdfgFile) {
@@ -127,9 +123,10 @@ implements vscode.WebviewViewProvider {
     }
 
     public async clear(reason?: string): Promise<void>{
-        return this.invokeRemote('clear', [reason]);
+        return this.invoke('clear', [reason]);
     }
 
+    @ICPCRequest()
     public refresh() {
         vscode.commands.executeCommand('sdfgAnalysis.sync');
     }

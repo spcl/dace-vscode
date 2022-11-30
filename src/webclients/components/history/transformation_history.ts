@@ -14,11 +14,14 @@ import '../../elements/treeview/treeview.css';
 import './transformation_history.css';
 
 import {
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
+import {
     CustomTreeView,
-    CustomTreeViewItem,
+    CustomTreeViewItem
 } from '../../elements/treeview/treeview';
 import {
-    ICPCWebclientMessagingComponent, remoteInvokeable
+    ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
@@ -210,12 +213,12 @@ class TransformationHistoryPanel extends ICPCWebclientMessagingComponent {
         this.invoke('refresh');
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public setHistory(history: any, activeIndex?: number): void {
         this.transformationHistList?.parseHistory(history, activeIndex);
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public clearHistory(reason?: string): void {
         if (reason !== undefined)
             this.transformationHistList?.clear(reason);

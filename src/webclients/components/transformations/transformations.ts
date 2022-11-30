@@ -14,13 +14,15 @@ import '../../elements/treeview/treeview.css';
 import './transformations.css';
 
 import {
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
+import {
     CustomTreeView,
-    CustomTreeViewItem,
+    CustomTreeViewItem
 } from '../../elements/treeview/treeview';
 import {
-    ICPCWebclientMessagingComponent, remoteInvokeable
+    ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
-import { ICPCListener, ICPCRequest } from '../../../common/messaging/icpc_messaging_component';
 
 declare const vscode: any;
 
@@ -504,14 +506,14 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
         this.invoke('refresh');
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public deselect(): void {
         if (this.transformationList)
             this.transformationList.selectedItem = undefined;
         this.transformationList?.generateHtml();
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public setTransformations(
         transformations: JsonTransformationList, hideLoading: boolean = true
     ): void {
@@ -520,7 +522,7 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
             this.loadingIndicator?.hide();
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public clearTransformations(reason?: string): void {
         this.loadingIndicator?.hide();
         if (reason !== undefined)
@@ -529,12 +531,12 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
             this.transformationList?.clear();
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public showLoading(): void {
         this.loadingIndicator?.show();
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public hideLoading(): void {
         this.loadingIndicator?.hide();
     }

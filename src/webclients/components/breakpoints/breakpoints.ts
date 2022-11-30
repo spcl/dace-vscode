@@ -13,9 +13,12 @@ import '@spcl/sdfv/sdfv.css';
 
 import './breakpoints.css';
 
+import {
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
 import { ISDFGDebugNodeInfo } from '../../../debugger/breakpoint_handler';
 import {
-    ICPCWebclientMessagingComponent, remoteInvokeable
+    ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
@@ -95,7 +98,7 @@ class BreakpointPanel extends ICPCWebclientMessagingComponent {
         this.invoke('refresh');
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public onRefresh(nodes?: ISDFGDebugNodeInfo[]): void {
         this.rootList?.html('');
         if (nodes && this.rootList) {
@@ -105,7 +108,7 @@ class BreakpointPanel extends ICPCWebclientMessagingComponent {
         this.rootList?.show();
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public addSDFGBreakpoint(
         node: ISDFGDebugNodeInfo, unbounded: boolean = false
     ): void {

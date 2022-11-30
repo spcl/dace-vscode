@@ -5,11 +5,14 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { DaCeInterface } from '../dace_interface';
 
-import { BreakpointHandler, getCppRange, SDFGDebugNode } from '../debugger/breakpoint_handler';
+import {
+    BreakpointHandler,
+    getCppRange,
+    SDFGDebugNode
+} from '../debugger/breakpoint_handler';
 import { DaCeVSCode } from '../extension';
 import { fileExists } from '../utils/utils';
 import { AnalysisProvider } from './analysis';
-import { BaseComponent } from './base_component';
 import {
     ICPCExtensionMessagingComponent
 } from './messaging/icpc_extension_messaging_component';
@@ -42,17 +45,18 @@ class ProcedureCall {
 
 }
 
-export class SdfgViewer {
+export class SdfgViewer extends ICPCExtensionMessagingComponent {
 
     public constructor(
         public readonly webview: vscode.Webview,
         public readonly document: vscode.TextDocument
-    ) { }
+    ) {
+        super(webview);
+    }
 
     public wrapperFile?: string;
     public argv?: string[];
     public linkFile?: string;
-    public messageHandler?: ICPCExtensionMessagingComponent;
 
     /**
      * Update the contents of this editor's renderer.
@@ -60,7 +64,7 @@ export class SdfgViewer {
      * @param preventRefreshes Prevent refreshes to the transformation list etc.
      */
     public async updateSdfg(preventRefreshes: boolean = false): Promise<void> {
-        return this.messageHandler?.invoke(
+        return this.invoke(
             'updateContents', [this.document.getText(), preventRefreshes]
         );
     }
@@ -70,34 +74,32 @@ export class SdfgViewer {
 
 }
 
-export class SdfgViewerProvider
-    extends BaseComponent
-    implements vscode.CustomTextEditorProvider {
+export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
-    public static INSTANCE: SdfgViewerProvider | undefined = undefined;
+    public static INSTANCE: SdfgViewerProvider = new SdfgViewerProvider();
 
     private queuedProcedureCalls: ProcedureCall[] = [];
 
-    public static getInstance(): SdfgViewerProvider | undefined {
+    public static getInstance(): SdfgViewerProvider {
         return this.INSTANCE;
     }
+
+    protected readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
+    protected readonly scriptSrcIdentifier = /{{ SCRIPT_SRC }}/g;
+
+    protected context?: vscode.ExtensionContext;
 
     private static readonly viewType: string = 'sdfgCustom.sdfv';
 
     private openEditors: SdfgViewer[] = [];
 
-    public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
-        SdfgViewerProvider.INSTANCE = new SdfgViewerProvider(
-            ctx,
-            this.viewType
-        );
+    public register(ctx: vscode.ExtensionContext): vscode.Disposable {
+        this.context = ctx;
         const options: vscode.WebviewPanelOptions = {
             retainContextWhenHidden: true,
         };
         return vscode.window.registerCustomEditorProvider(
-            SdfgViewerProvider.viewType,
-            SdfgViewerProvider.INSTANCE,
-            { webviewOptions: options }
+            SdfgViewerProvider.viewType, this, { webviewOptions: options }
         );
     }
 
@@ -293,15 +295,15 @@ export class SdfgViewerProvider
     ): Promise<void> {
         const activeEditor = DaCeVSCode.getInstance().getActiveEditor();
         const calls = [];
-        if (zoomTo && activeEditor?.messageHandler) {
+        if (zoomTo && activeEditor) {
             calls.push(new ProcedureCall(
-                sdfgName, activeEditor.messageHandler, 'zoomToNode', [zoomTo]
+                sdfgName, activeEditor, 'zoomToNode', [zoomTo]
             ));
         }
 
-        if (displayBps && activeEditor?.messageHandler) {
+        if (displayBps && activeEditor) {
             calls.push(new ProcedureCall(
-                sdfgName, activeEditor.messageHandler, 'displayBreakpoints',
+                sdfgName, activeEditor, 'displayBreakpoints',
                 [displayBps]
             ));
         }
@@ -399,13 +401,13 @@ export class SdfgViewerProvider
     }
 
     public async analysisAddSymbols(symbols: any): Promise<void> {
-        return AnalysisProvider.getInstance()?.invokeRemote(
+        return AnalysisProvider.getInstance()?.invoke(
             'addSymbols', [symbols]
         );
     }
 
     public async analysisSetSymbols(symbols: any): Promise<void> {
-        return AnalysisProvider.getInstance()?.invokeRemote(
+        return AnalysisProvider.getInstance()?.invoke(
             'setSymbols', [symbols]
         );
     }
@@ -414,7 +416,7 @@ export class SdfgViewerProvider
         activeOverlays: any[], symbols: any, scalingMethod?: string,
         scalingSubMethod?: string, availableOverlays?: any[]
     ): Promise<void> {
-        return AnalysisProvider.getInstance()?.invokeRemote(
+        return AnalysisProvider.getInstance()?.invoke(
             'refresh', [
                 activeOverlays, symbols, scalingMethod, scalingSubMethod,
                 availableOverlays
@@ -423,13 +425,15 @@ export class SdfgViewerProvider
     }
 
     public async onDaemonConnected(): Promise<void> {
-        return DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.
-            invoke('setDaemonConnected', [true]);
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'setDaemonConnected', [true]
+        );
     }
 
     public async setMetadata(metadata: any): Promise<void> {
-        return DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.
-            invoke('setMetaDict', [metadata]);
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'setMetaDict', [metadata]
+        );
     }
 
     public async resolveCustomTextEditor(
@@ -450,18 +454,13 @@ export class SdfgViewerProvider
             DaCeVSCode.getInstance()?.clearActiveSdfg();
         });
 
+        const extPath = this.context?.extensionPath ?? '';
         webviewPanel.webview.options = {
             enableScripts: true,
             localResourceRoots: [
-                vscode.Uri.file(path.join(
-                    this.context.extensionPath, 'media'
-                )),
-                vscode.Uri.file(path.join(
-                    this.context.extensionPath, 'node_modules'
-                )),
-                vscode.Uri.file(path.join(
-                    this.context.extensionPath, 'dist', 'web'
-                )),
+                vscode.Uri.file(path.join(extPath, 'media')),
+                vscode.Uri.file(path.join(extPath, 'node_modules')),
+                vscode.Uri.file(path.join(extPath, 'dist', 'web')),
             ],
         };
         this.getHtml(webviewPanel.webview).then((html) => {
@@ -495,45 +494,42 @@ export class SdfgViewerProvider
             });
 
             // Handle received messages from the webview.
-            editor.messageHandler = new ICPCExtensionMessagingComponent(
-                webviewPanel.webview
-            );
-            editor.messageHandler.register(this.disableMinimap, this);
-            editor.messageHandler.register(this.setSplitDirection, this);
-            editor.messageHandler.register(
+            editor.register(this.disableMinimap, this);
+            editor.register(this.setSplitDirection, this);
+            editor.register(
                 this.getUpToDateContents, this, undefined, [editor]
             );
-            editor.messageHandler.register(this.goToSource, this);
-            editor.messageHandler.register(this.goToCPP, this);
-            editor.messageHandler.register(this.setOutline, this);
-            editor.messageHandler.register(this.processQueuedInvocations, this);
-            editor.messageHandler.register(this.analysisAddSymbols, this);
-            editor.messageHandler.register(this.analysisSetSymbols, this);
-            editor.messageHandler.register(this.updateAnalysisPanel, this);
-            editor.messageHandler.register(
+            editor.register(this.goToSource, this);
+            editor.register(this.goToCPP, this);
+            editor.register(this.setOutline, this);
+            editor.register(this.processQueuedInvocations, this);
+            editor.register(this.analysisAddSymbols, this);
+            editor.register(this.analysisSetSymbols, this);
+            editor.register(this.updateAnalysisPanel, this);
+            editor.register(
                 this.refreshTransformationHistory, this
             );
 
             const dace = DaCeInterface.getInstance();
-            editor.messageHandler.register(dace.loadTransformations, dace);
-            editor.messageHandler.register(dace.expandLibraryNode, dace);
-            editor.messageHandler.register(dace.previewTransformation, dace);
-            editor.messageHandler.register(dace.applyTransformations, dace);
-            editor.messageHandler.register(dace.exportTransformation, dace);
-            editor.messageHandler.register(dace.writeToActiveDocument, dace);
-            editor.messageHandler.register(dace.getFlops, dace);
+            editor.register(dace.loadTransformations, dace);
+            editor.register(dace.expandLibraryNode, dace);
+            editor.register(dace.previewTransformation, dace);
+            editor.register(dace.applyTransformations, dace);
+            editor.register(dace.exportTransformation, dace);
+            editor.register(dace.writeToActiveDocument, dace);
+            editor.register(dace.getFlops, dace);
 
             const xfList = TransformationListProvider.getInstance()!;
-            editor.messageHandler.register(xfList.clearTransformations, xfList);
-            editor.messageHandler.register(xfList.setTransformations, xfList);
+            editor.register(xfList.clearTransformations, xfList);
+            editor.register(xfList.setTransformations, xfList);
 
             const bpHandler = BreakpointHandler.getInstance()!;
-            editor.messageHandler.register(bpHandler.addBreakpoint, bpHandler);
-            editor.messageHandler.register(
+            editor.register(bpHandler.addBreakpoint, bpHandler);
+            editor.register(
                 bpHandler.removeBreakpoint, bpHandler
             );
-            editor.messageHandler.register(bpHandler.getSavedNodes, bpHandler);
-            editor.messageHandler.register(bpHandler.hasSavedNodes, bpHandler);
+            editor.register(bpHandler.getSavedNodes, bpHandler);
+            editor.register(bpHandler.hasSavedNodes, bpHandler);
 
             //this.updateEditor(editor);
             webviewPanel.reveal();
@@ -549,8 +545,9 @@ export class SdfgViewerProvider
      */
     private async getHtml(webview: vscode.Webview): Promise<string> {
         // Load the base HTML we want to display in the webview/editor.
+        const extPath = this.context?.extensionPath ?? '';
         const fpBaseHtml: vscode.Uri = vscode.Uri.file(path.join(
-            this.context.extensionPath,
+            extPath,
             'media',
             'components',
             'sdfv',
@@ -562,7 +559,7 @@ export class SdfgViewerProvider
 
         // Set the media base-path in the HTML, to load scripts and styles.
         const fpMediaFolder: vscode.Uri = vscode.Uri.file(
-            path.join(this.context.extensionPath, 'media')
+            path.join(extPath, 'media')
         );
         const mediaFolderUri = webview.asWebviewUri(fpMediaFolder);
         baseHtml = baseHtml.replace(
@@ -570,7 +567,7 @@ export class SdfgViewerProvider
         );
 
         const fpScriptFolder: vscode.Uri = vscode.Uri.file(
-            path.join(this.context.extensionPath, 'dist', 'web')
+            path.join(extPath, 'dist', 'web')
         );
         const scriptsFolder = webview.asWebviewUri(fpScriptFolder);
         baseHtml = baseHtml.replace(

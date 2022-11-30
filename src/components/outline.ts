@@ -3,13 +3,14 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeInterface } from '../dace_interface';
 import { DaCeVSCode } from '../extension';
 
-import { SingletonComponent } from './base_component';
+import { BaseComponent } from './base_component';
 
 export class OutlineProvider
-extends SingletonComponent
+extends BaseComponent
 implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = 'sdfgOutline';
@@ -83,35 +84,33 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            this.initMessaging(webviewView.webview);
-            this.messageHandler?.register(this.zoomToNode, this);
-            this.messageHandler?.register(this.highlightElement, this);
-            this.messageHandler?.register(this.refresh, this);
+            this.setTarget(webviewView.webview);
         });
     }
 
     public async setOutline(outlineList: any[]): Promise<void> {
-        await this.invokeRemote('setOutline', [outlineList]);
+        await this.invoke('setOutline', [outlineList]);
     }
 
     public async clearOutline(reason?: string): Promise<void> {
-        await this.invokeRemote('clearOutline', [reason]);
+        await this.invoke('clearOutline', [reason]);
     }
 
+    @ICPCRequest()
     public async highlightElement(elementUUID: string): Promise<void> {
-        return DaCeVSCode.getInstance()
-            .getActiveEditor()?.messageHandler?.invoke(
-                'highlightUUIDs', [elementUUID]
-            );
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'highlightUUIDs', [elementUUID]
+        );
     }
 
+    @ICPCRequest()
     public async zoomToNode(elementUUID: string): Promise<void> {
-        return DaCeVSCode.getInstance()
-            .getActiveEditor()?.messageHandler?.invoke(
-                'zoomToUUIDs', [elementUUID]
-            );
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'zoomToUUIDs', [elementUUID]
+        );
     }
 
+    @ICPCRequest()
     public refresh() {
         vscode.commands.executeCommand('sdfgOutline.sync');
     }

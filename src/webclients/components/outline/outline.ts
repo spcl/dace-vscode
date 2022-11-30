@@ -13,11 +13,14 @@ import './outline.css';
 import * as $ from 'jquery';
 
 import {
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
+import {
     CustomTreeView,
-    CustomTreeViewItem,
+    CustomTreeViewItem
 } from '../../elements/treeview/treeview';
 import {
-    ICPCWebclientMessagingComponent, remoteInvokeable
+    ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
@@ -118,7 +121,7 @@ class OutlinePanel extends ICPCWebclientMessagingComponent {
         this.invoke('refresh');
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public setOutline(outlineList: any[]): void {
         this.outlineList?.clear();
         this.setOutlineRecursive(outlineList, this.outlineList);
@@ -148,7 +151,7 @@ class OutlinePanel extends ICPCWebclientMessagingComponent {
         }
     }
 
-    @remoteInvokeable()
+    @ICPCRequest()
     public clearOutline(reason?: string): void {
         if (reason !== undefined)
             this.outlineList?.clear(reason);

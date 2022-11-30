@@ -58,7 +58,7 @@ export class DaCeVSCode {
                 'sdfgAnalysis.focus'
             );
 
-        this.analysisProvider.invokeRemote(
+        this.analysisProvider.invoke(
             'onAutoloadReport', [url.fsPath]
         ).then((criterium: string) => {
             this.analysisProvider?.onLoadInstrumentationReport(
@@ -200,7 +200,9 @@ export class DaCeVSCode {
         this.context = context;
 
         // Register the SDFG custom editor.
-        context.subscriptions.push(SdfgViewerProvider.register(context));
+        context.subscriptions.push(
+            SdfgViewerProvider.getInstance().register(context)
+        );
 
         // Register all webview view components.
         context.subscriptions.push(
@@ -271,7 +273,7 @@ export class DaCeVSCode {
             }, false , 'Loading custom transformations');
         });
         this.registerCommand('transformationList.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+            DaCeVSCode.getInstance().getActiveEditor()?.invoke(
                 'resyncTransformations'
             );
         });
@@ -280,7 +282,7 @@ export class DaCeVSCode {
                 TransformationHistoryProvider.getInstance()?.refresh();
         });
         this.registerCommand('sdfgAnalysis.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+            DaCeVSCode.getInstance().getActiveEditor()?.invoke(
                 'refreshAnalysisPane'
             );
         });
@@ -288,7 +290,7 @@ export class DaCeVSCode {
             SdfgBreakpointProvider.getInstance()?.refresh();
         });
         this.registerCommand('sdfgOutline.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+            DaCeVSCode.getInstance().getActiveEditor()?.invoke(
                 'outline'
             );
         });

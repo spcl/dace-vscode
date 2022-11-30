@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from 'uuid';
-import { ICPCWebclientMessagingComponent } from '../../webclients/messaging/icpc_webclient_messaging_component';
 
 export enum ICPCMessageType {
     REQUEST = 'icpc_request',
@@ -37,7 +36,7 @@ type ICPCCallback = {
 export abstract class ICPCMessagingComponent {
 
     protected constructor(
-        private target?: any,
+        protected target?: any,
     ) {
     }
 
@@ -48,6 +47,7 @@ export abstract class ICPCMessagingComponent {
     protected localProcedures: Map<string, ICPCProcedure> = new Map();
     protected callbacks: Map<string, ICPCCallback> =
         new Map();
+    protected requestHandlers: Set<any> = new Set();
 
     protected sendRequest(
         id: string, procedure: string, args?: any[]
@@ -126,9 +126,7 @@ export abstract class ICPCMessagingComponent {
         this.localProcedures.delete(fun.name);
     }
 
-    public async invoke(
-        procedure: string, args?: any[]
-    ): Promise<any> {
+    public async invoke(procedure: string, args?: any[]): Promise<any> {
         let uuid = uuidv4();
         while (this.callbacks.has(uuid))
             uuid = uuidv4();
@@ -180,34 +178,57 @@ export abstract class ICPCMessagingComponent {
         }
     }
 
-}
+    /**
+     * Regsiter methods annotated with @ICPCRequest of an object to a component.
+     * @param obj       The object for which to register ICPC requests.
+     * @param component The component to register the requests to.
+     */
+    public static registerAnnotatedProcedures(
+        obj: any, component: ICPCMessagingComponent
+    ): void {
+        // Loop over all methods the provided object has available. If they are
+        // marked as ICPC methods, add them to the local procedures of the
+        // provided component.
+        const descs = Object.getOwnPropertyDescriptors(
+            Object.getPrototypeOf(obj)
+        );
+        for (const name in descs) {
+            const desc = descs[name];
+            const fun = desc.value;
 
-const SubMethods = Symbol('SubMethods');
-
-export function ICPCListener<T extends { new(...args: any[]): {} }>(Base: T) {
-    return class extends Base {
-
-        constructor(...args: any[]) {
-            super(...args);
-            console.log('ICPCListener constructor');
-            const subMethods = Base.prototype[SubMethods];
-            if (subMethods) {
-                for (const method of subMethods) {
-                    console.log(method);
-                    console.log(this);
-                }
-            }
+            if (fun && fun.remoteInvokeable)
+                component.register(fun, obj, name, fun.staticArgs);
         }
+    }
 
-    };
+    /**
+     * Register an ICPC request handler.
+     * An ICPC request handler is an object that may have methods annotated with
+     * the @ICPCRequest decorator, making them remotely invokeable.
+     * @param handler The handler to register.
+     */
+    public registerRequestHandler(handler: any): void {
+        this.requestHandlers.add(handler);
+        ICPCMessagingComponent.registerAnnotatedProcedures(handler, this);
+    }
+
 }
 
-export function ICPCRequest(staticArgs?: any[]) {
-    return (target: any, memberName: string, desc: PropertyDescriptor) => {
-        const originalVal = desc.value;
-        desc.value = function(...args: any[]) {
-            console.log(this);
-            return originalVal.apply(this, args);
-        };
+/**
+ * Marks a method as being available for remote invocation.
+ * @param internal   If true, the method will not be available to components
+ *                   other than the one that contains the method.
+ * @param name       If provided, this name will be used to identify the method.
+ * @param staticArgs If provided, these arguments will be prepended to the
+ *                   arguments provided by the remote caller.
+ */
+export const ICPCRequest = (
+    internal: boolean = false, name?: string, staticArgs?: any[]
+) => {
+    return (_target: any, _memberName: string, desc: PropertyDescriptor) => {
+        desc.value.remoteInvokeable = true;
+        desc.value.internal = internal;
+        desc.value.procName = name;
+        desc.value.staticArgs = staticArgs;
     };
-}
+};

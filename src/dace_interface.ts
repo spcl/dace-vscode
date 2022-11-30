@@ -5,6 +5,7 @@ import { request } from 'http';
 import * as net from 'net';
 import * as os from 'os';
 import * as vscode from 'vscode';
+import { ICPCRequest } from './common/messaging/icpc_messaging_component';
 
 import { OptimizationPanel } from './components/optimization_panel';
 import { SdfgViewerProvider } from './components/sdfg_viewer';
@@ -553,25 +554,25 @@ export class DaCeInterface {
     }
 
     public previewSdfg(sdfg: any, history_mode: boolean = false) {
-        DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+        DaCeVSCode.getInstance().getActiveEditor()?.invoke(
             'previewSdfg', [JSON.stringify(sdfg), history_mode]
         );
     }
 
     public exitPreview(refreshTransformations: boolean = false) {
-        DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+        DaCeVSCode.getInstance().getActiveEditor()?.invoke(
             'previewSdfg', [undefined, false, refreshTransformations]
         );
     }
 
     public showSpinner(message?: string) {
-        DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+        DaCeVSCode.getInstance().getActiveEditor()?.invoke(
             'setProcessingOverlay', [true, message ?? 'Processing, please wait']
         );
     }
 
     public hideSpinner() {
-        DaCeVSCode.getInstance().getActiveEditor()?.messageHandler?.invoke(
+        DaCeVSCode.getInstance().getActiveEditor()?.invoke(
             'setProcessingOverlay', [false, '']
         );
     }
@@ -606,6 +607,7 @@ export class DaCeInterface {
         });
     }
 
+    @ICPCRequest()
     public async expandLibraryNode(nodeid: any): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
@@ -636,6 +638,7 @@ export class DaCeInterface {
         });
     }
 
+    @ICPCRequest()
     public applyTransformations(transformations: JsonTransformation[]): void {
         this.sendApplyTransformationRequest(transformations, (data: any) => {
             this.hideSpinner();
@@ -643,6 +646,7 @@ export class DaCeInterface {
         });
     }
 
+    @ICPCRequest()
     public previewTransformation(transformation: any): void {
         this.sendApplyTransformationRequest(
             [transformation],
@@ -664,6 +668,7 @@ export class DaCeInterface {
      * scripts.
      * @param transformation Transformation to export, in JSON format.
      */
+    @ICPCRequest()
     public exportTransformation(transformation: any): void {
         vscode.window.showSaveDialog({
             filters: {
@@ -690,6 +695,7 @@ export class DaCeInterface {
         });
     }
 
+    @ICPCRequest()
     public writeToActiveDocument(json: any): void {
         const activeEditor = DaCeVSCode.getInstance().getActiveWebview();
         if (activeEditor) {
@@ -789,6 +795,7 @@ export class DaCeInterface {
         this.gotoHistoryPoint(index, InteractionMode.PREVIEW);
     }
 
+    @ICPCRequest()
     public async getFlops(): Promise<any> {
         return new Promise(async (resolve, reject) => {
             if (!this.daemonRunning) {
@@ -880,6 +887,7 @@ export class DaCeInterface {
             );
     }
 
+    @ICPCRequest()
     public async loadTransformations(
         sdfg: any, selectedElements: any
     ): Promise<any[]> {
@@ -965,10 +973,9 @@ export class DaCeInterface {
                             // refresh.
                             if (data.done) {
                                 resolve();
-                                DaCeVSCode.getInstance().getActiveEditor()?.
-                                    messageHandler?.invoke(
-                                        'refreshTransformationList'
-                                    );
+                                const editor =
+                                    DaCeVSCode.getInstance().getActiveEditor();
+                                editor?.invoke('refreshTransformationList');
                             }
                         },
                         (error: any) => {

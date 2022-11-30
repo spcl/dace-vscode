@@ -3,15 +3,16 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import {
     BreakpointHandler,
     ISDFGDebugNodeInfo
 } from '../debugger/breakpoint_handler';
-import { SingletonComponent } from './base_component';
+import { BaseComponent } from './base_component';
 import { SdfgViewerProvider } from './sdfg_viewer';
 
 export class SdfgBreakpointProvider
-extends SingletonComponent
+extends BaseComponent
 implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = 'sdfgBreakpoints';
@@ -74,13 +75,11 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            this.initMessaging(webviewView.webview);
-            this.messageHandler?.register(this.removeBreakpoint, this);
-            this.messageHandler?.register(this.goToCPP, this);
-            this.messageHandler?.register(this.goToSDFG, this);
+            this.setTarget(webviewView.webview);
         });
     }
 
+    @ICPCRequest()
     public goToSDFG(node: ISDFGDebugNodeInfo) {
         if (node.sdfgName && node.sdfgPath)
             SdfgViewerProvider.getInstance()?.goToSDFG(
@@ -89,6 +88,7 @@ implements vscode.WebviewViewProvider {
             );
     }
 
+    @ICPCRequest()
     public goToCPP(node: ISDFGDebugNodeInfo) {
         if (node.sdfgName && node.sdfgPath)
             SdfgViewerProvider.getInstance()?.goToCPP(
@@ -97,6 +97,7 @@ implements vscode.WebviewViewProvider {
             );
     }
 
+    @ICPCRequest()
     public removeBreakpoint(node: ISDFGDebugNodeInfo): void {
         // TODO: Inform the BPHandler and SDFV
     }
@@ -104,7 +105,7 @@ implements vscode.WebviewViewProvider {
     public async addBreakpoint(
         node: ISDFGDebugNodeInfo, unbounded: boolean = false
     ): Promise<void> {
-        return this.invokeRemote('addSDFGBreakpoint', [node, unbounded]);
+        return this.invoke('addSDFGBreakpoint', [node, unbounded]);
     }
 
     public show() {
@@ -118,12 +119,12 @@ implements vscode.WebviewViewProvider {
     }
 
     public async clear(): Promise<void> {
-        return this.invokeRemote('refresh', [undefined]);
+        return this.invoke('refresh', [undefined]);
     }
 
     public async refresh(): Promise<void> {
         const nodes = BreakpointHandler.getInstance()?.getAllNodes();
-        return this.invokeRemote('onRefresh', [nodes]);
+        return this.invoke('onRefresh', [nodes]);
     }
 
 }

@@ -53,7 +53,10 @@ import {
 } from '@spcl/sdfv/out';
 import { LViewRenderer } from '@spcl/sdfv/out/local_view/lview_renderer';
 import {
-    ICPCWebclientMessagingComponent, remoteInvokeable
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
+import {
+    ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
 import {
     JsonTransformation,
@@ -491,6 +494,7 @@ export class VSCodeSDFV extends SDFV {
         return externalRet;
     }
 
+    @ICPCRequest()
     public async outline(
         pRenderer?: SDFGRenderer, pGraph?: DagreSDFG
     ): Promise<void> {
@@ -911,6 +915,7 @@ export class VSCodeSDFV extends SDFV {
         this.sdfgString = sdfgString;
     }
 
+    @ICPCRequest()
     public setMetaDict(sdfgMetaDict: { [key: string]: any } | null): void {
         this.sdfgMetaDict = sdfgMetaDict;
     }
@@ -919,6 +924,7 @@ export class VSCodeSDFV extends SDFV {
         this.viewingHistoryState = viewingHistoryState;
     }
 
+    @ICPCRequest()
     public setShowingBreakpoints(showingBreakpoints: boolean): void {
         this.showingBreakpoints = showingBreakpoints;
         const alreadyActive =
@@ -938,6 +944,7 @@ export class VSCodeSDFV extends SDFV {
         }
     }
 
+    @ICPCRequest()
     public setDaemonConnected(daemonConnected: boolean = true): void {
         this.daemonConnected = daemonConnected;
         VSCodeRenderer.getInstance()?.setDaemonConnected(daemonConnected);
@@ -970,6 +977,7 @@ export class VSCodeSDFV extends SDFV {
         this.infoBoxShow(true);
     }
 
+    @ICPCRequest()
     public updateContents(
         newContent: string, preventRefreshes: boolean = false
     ): void {
@@ -987,6 +995,7 @@ export class VSCodeSDFV extends SDFV {
      * @param histState Whether or not this is a history state
      * @param refresh   Whether or not to refresh the transformation list
      */
+    @ICPCRequest()
     public previewSdfg(
         pSdfg?: string, histState: boolean = false, refresh: boolean = false
     ): void {
@@ -1008,6 +1017,7 @@ export class VSCodeSDFV extends SDFV {
         }
     }
 
+    @ICPCRequest()
     public setProcessingOverlay(show: boolean = false, text?: string): void {
         if (show) {
             this.processingOverlay?.show();
@@ -1018,6 +1028,7 @@ export class VSCodeSDFV extends SDFV {
         }
     }
 
+    @ICPCRequest()
     public async resyncTransformations(hard: boolean = false): Promise<void> {
         const xforms = this.getTransformations();
         clearSelectedTransformation();
@@ -1031,6 +1042,7 @@ export class VSCodeSDFV extends SDFV {
             await refreshTransformationList();
     }
 
+    @ICPCRequest()
     public async selectTransformation(
         transformation: JsonTransformation
     ): Promise<void> {
@@ -1046,34 +1058,23 @@ export class SDFVComponent extends ICPCWebclientMessagingComponent {
 
     private constructor() {
         super();
-
     }
 
     public static getInstance(): SDFVComponent {
         return SDFVComponent.INSTANCE;
     }
 
-    private readonly sdfv = VSCodeSDFV.getInstance();
-
     public init(): void {
         super.init(vscode, window);
-
-        this.register(this.sdfv.updateContents, this.sdfv);
-        this.register(this.sdfv.setDaemonConnected, this.sdfv);
-        this.register(this.sdfv.setMetaDict, this.sdfv);
-        this.register(this.sdfv.previewSdfg, this.sdfv);
-        this.register(this.sdfv.setShowingBreakpoints, this.sdfv);
-        this.register(this.sdfv.outline, this.sdfv);
-        this.register(this.sdfv.setProcessingOverlay, this.sdfv);
-        this.register(this.sdfv.resyncTransformations, this.sdfv);
-        this.register(this.sdfv.selectTransformation, this.sdfv);
 
         this.register(zoomToUUIDs);
         this.register(highlightUUIDs);
         this.register(refreshAnalysisPane);
         this.register(refreshTransformationList);
 
-        this.sdfv.initialize();
+        const sdfv = VSCodeSDFV.getInstance();
+        this.registerRequestHandler(sdfv);
+        sdfv.initialize();
     }
 
 }
