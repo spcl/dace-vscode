@@ -1,7 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as $ from 'jquery';
+import $ = require('jquery');
 (window as any).jQuery = $;
 
 // JQuery Plugin to allow for editable selects.
@@ -50,8 +50,8 @@ import {
     State,
     StaticFlopsOverlay,
     traverse_sdfg_scopes
-} from '@spcl/sdfv/out';
-import { LViewRenderer } from '@spcl/sdfv/out/local_view/lview_renderer';
+} from '@spcl/sdfv/src';
+import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
 import {
     ICPCRequest
 } from '../../../common/messaging/icpc_messaging_component';
@@ -88,6 +88,7 @@ import {
 } from './utils/helpers';
 
 declare const vscode: any;
+declare const MINIMAP_ENABLED: boolean | undefined;
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
 
 export class VSCodeSDFV extends SDFV {
@@ -189,6 +190,9 @@ export class VSCodeSDFV extends SDFV {
                     if (newWidth < documentWidth) {
                         this.infoBarLastVertWidth = newWidth.toString() + 'px';
                         this.infoContainer?.width(this.infoBarLastVertWidth);
+
+                        if (MINIMAP_ENABLED)
+                            $('#minimap').css('right', (newWidth + 5).toString() + 'px');
                     }
                 }
             }

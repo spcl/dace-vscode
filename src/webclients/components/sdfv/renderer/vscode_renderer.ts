@@ -14,7 +14,7 @@ import {
     SDFGElementType,
     JsonSDFGState,
     memlet_tree_complete,
-} from '@spcl/sdfv/out';
+} from '@spcl/sdfv/src';
 import {
     createSingleUseModal,
     findJsonSDFGElementByUUID,

@@ -1,7 +1,11 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { JsonTransformation, JsonTransformationGroup, JsonTransformationList } from '../../transformations/transformations';
+import {
+    JsonTransformation,
+    JsonTransformationGroup,
+    JsonTransformationList
+} from '../../transformations/transformations';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { generateAttributesTable } from '../utils/attributes_table';
 import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
@@ -369,6 +373,8 @@ export function showTransformationDetails(xform: JsonTransformation): void {
         text: xform.docstring,
     }).appendTo(xformInfoContainer);
 
+    // TODO: Silence error messages that are being printed if this doesn't
+    // exist.
     const xformImage = $('<object>', {
         class: 'transformation-image',
         type: 'image/gif',
@@ -456,7 +462,7 @@ export async function applyTransformations(
 ): Promise<void> {
     VSCodeRenderer.getInstance()?.clearSelectedItems();
     VSCodeSDFV.getInstance().clearInfoBox(true);
-    $('#exit-preview-button').hide();
+    $('#exit-preview-button').addClass('hidden');
     return SDFVComponent.getInstance().invoke(
         'applyTransformations', [xforms]
     );

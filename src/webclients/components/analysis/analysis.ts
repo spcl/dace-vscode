@@ -1,7 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as $ from 'jquery';
+import $ = require('jquery');
 (window as any).jQuery = $;
 
 import 'bootstrap';
@@ -11,11 +11,13 @@ import 'material-icons/iconfont/material-icons.css';
 
 import './analysis.css';
 
-import { OverlayType, SymbolMap } from '@spcl/sdfv/out';
+import { OverlayType, SymbolMap } from '@spcl/sdfv/src';
 import {
     ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
-import { ICPCRequest } from '../../../common/messaging/icpc_messaging_component';
+import {
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
 
 declare const vscode: any;
 

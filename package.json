@@ -644,7 +644,6 @@
     },
     "dependencies": {
         "@popperjs/core": "^2.10.1",
-        "@spcl/sdfv": "^1.0.32",
         "@types/dagre": "^0.7.46",
         "@types/jquery": "^3.5.6",
         "bootstrap": "^5.2.0",
@@ -658,5 +657,8 @@
         "stream-browserify": "^3.0.0",
         "uuid": "^9.0.0",
         "vscode-debugadapter": "^1.46.0"
-    }
+    },
+    "workspaces": [
+        "./packages/sdfv"
+    ]
 }

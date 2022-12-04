@@ -330,7 +330,7 @@ export class DaCeInterface {
                 if (failureCallback)
                     failureCallback();
             }
-        }, 10000);
+        }, 20000);
     }
 
     private sendRequest(url: string,

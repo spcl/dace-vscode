@@ -10,7 +10,8 @@ import '../../elements/treeview/treeview.css';
 
 import './outline.css';
 
-import * as $ from 'jquery';
+import $ = require('jquery');
+(window as any).jQuery = $;
 
 import {
     ICPCRequest

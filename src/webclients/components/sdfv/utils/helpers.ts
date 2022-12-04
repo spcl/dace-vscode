@@ -16,7 +16,7 @@ import {
     SDFGElement,
     SDFGElementType,
     sdfg_range_elem_to_string,
-} from '@spcl/sdfv/out';
+} from '@spcl/sdfv/src';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 

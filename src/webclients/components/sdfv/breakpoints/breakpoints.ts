@@ -12,9 +12,9 @@ import {
     SDFV,
     SimpleRect,
     State,
-} from '@spcl/sdfv/out';
+} from '@spcl/sdfv/src';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
-import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
+import { SDFVComponent } from '../vscode_sdfv';
 
 declare const vscode: any;
 

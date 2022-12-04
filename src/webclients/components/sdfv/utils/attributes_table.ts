@@ -11,7 +11,7 @@ import {
     SDFGElement,
     sdfg_property_to_string,
     State
-} from '@spcl/sdfv/out';
+} from '@spcl/sdfv/src';
 import { editor as monaco_editor } from 'monaco-editor';
 import { Range } from '../../../../types';
 import {
