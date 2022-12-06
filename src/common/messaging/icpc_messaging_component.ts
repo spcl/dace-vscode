@@ -13,6 +13,7 @@ export interface ICPCMessage {
 export interface ICPCRequestMessage extends ICPCMessage {
     procedure: string;
     args?: any[];
+    component?: string;
 }
 
 export interface ICPCResponseMessage extends ICPCMessage {
@@ -31,6 +32,7 @@ type ICPCCallback = {
     resolve: Function;
     reject: Function;
     procedure: string;
+    component?: string;
 };
 
 export abstract class ICPCMessagingComponent {
@@ -50,13 +52,14 @@ export abstract class ICPCMessagingComponent {
     protected requestHandlers: Set<any> = new Set();
 
     protected sendRequest(
-        id: string, procedure: string, args?: any[]
+        id: string, procedure: string, args?: any[], component?: string
     ): void {
         const message: ICPCRequestMessage = {
             type: ICPCMessageType.REQUEST,
             id: id,
             procedure: procedure,
             args: args,
+            component: component,
         };
         try {
             if (!this.target)
@@ -126,7 +129,9 @@ export abstract class ICPCMessagingComponent {
         this.localProcedures.delete(fun.name);
     }
 
-    public async invoke(procedure: string, args?: any[]): Promise<any> {
+    public async invoke(
+        procedure: string, args?: any[], component?: string
+    ): Promise<any> {
         let uuid = uuidv4();
         while (this.callbacks.has(uuid))
             uuid = uuidv4();
@@ -135,8 +140,9 @@ export abstract class ICPCMessagingComponent {
                 resolve: resolve,
                 reject: reject,
                 procedure: procedure,
+                component: component,
             });
-            this.sendRequest(uuid, procedure, args);
+            this.sendRequest(uuid, procedure, args, component);
         });
     }
 

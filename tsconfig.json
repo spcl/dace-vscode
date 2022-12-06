@@ -23,6 +23,7 @@
 		"media"
 	],
 	"include": [
-		"src"
+		"src",
+		"packages/sdfv/src"
 	]
 }

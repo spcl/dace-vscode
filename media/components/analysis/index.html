@@ -17,9 +17,9 @@
 
 <body>
     <div id="contents-container" class="container-fluid">
-        <div id="none-message" class="hidden row">
+        <div id="none-message" class="row" style="display: none;">
         </div>
-        <div id="contents" class="hidden row">
+        <div id="contents" class="row" style="display: none;">
             <div>
                 <div id="heatmap-scaling-method-container">
                     <div>
@@ -50,7 +50,8 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-row mt-2 hidden"
+                        <div class="form-row mt-2"
+                             style="display: none;"
                              id="scaling-method-hist-buckets-container">
                             <label class="form-label"
                                    for="scaling-method-hist-buckets-input">
@@ -71,7 +72,8 @@
                                    value="0"
                                    id="scaling-method-hist-buckets-input">
                         </div>
-                        <div class="form-row mt-2 hidden"
+                        <div class="form-row mt-2"
+                             style="display: none;"
                              id="scaling-method-exp-base-container">
                             <label class="form-label"
                                    for="scaling-method-exp-base-input">
@@ -126,8 +128,9 @@
                         </div>
                     </div>
                 </div>
-                <hr class="horizontal-divider">
-                <div id="runtime-measurement">
+                <hr class="horizontal-divider" id="runtime-measurement-divider"
+                    style="display: none;">
+                <div id="runtime-measurement" style="display: none;">
                     <div>
                         <span>
                             Runtime Measurements:
@@ -135,7 +138,7 @@
                     </div>
                     <div>
                         <input type="file" id="runtime-report-file-input"
-                               class="hidden">
+                               style="display: none;">
                         <div class="input-group mb-2">
                             <input type="text" class="form-control"
                                    id="runtime-report-filename-label"

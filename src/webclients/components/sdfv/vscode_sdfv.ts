@@ -62,7 +62,7 @@ import {
     JsonTransformation,
     JsonTransformationList
 } from '../transformations/transformations';
-import { refreshAnalysisPane } from './analysis/analysis';
+import { AnalysisController } from './analysis/analysis_controller';
 import {
     BreakpointIndicator,
     refreshBreakpoints
@@ -114,6 +114,7 @@ export class VSCodeSDFV extends SDFV {
             'BreakpointIndicator': BreakpointIndicator,
             'MemoryLocationOverlay': MemoryLocationOverlay,
             'OperationalIntensityOverlay': OperationalIntensityOverlay,
+            'LogicalGroupOverlay': LogicalGroupOverlay,
         };
 
     private processingOverlay?: JQuery<HTMLElement>;
@@ -778,7 +779,7 @@ export class VSCodeSDFV extends SDFV {
         const graph = this.renderer.get_graph();
         if (graph)
             this.outline(this.renderer, graph);
-        refreshAnalysisPane();
+        AnalysisController.getInstance().refreshAnalysisPane();
         refreshBreakpoints();
 
         const selectedElements = this.renderer.get_selected_elements();
@@ -823,7 +824,7 @@ export class VSCodeSDFV extends SDFV {
         const graph = renderer?.get_graph();
         if (renderer && graph) {
             this.outline(renderer, graph);
-            refreshAnalysisPane();
+            AnalysisController.getInstance().refreshAnalysisPane();
             refreshBreakpoints();
         }
     }
@@ -1054,6 +1055,26 @@ export class VSCodeSDFV extends SDFV {
         this.setSelectedTransformation(transformation);
     }
 
+    @ICPCRequest()
+    public async setOverlays(overlays: string[]): Promise<void> {
+        const overlayManager =
+            VSCodeRenderer.getInstance()?.get_overlay_manager();
+        const activeOverlays = overlayManager?.get_overlays();
+
+        const toActivate = [];
+        for (const ol of overlays)
+            toActivate.push(VSCodeSDFV.OVERLAYS[ol]);
+
+        // Deregister any previously active overlays.
+        overlayManager?.deregisterAll(toActivate);
+
+        // Register all the selected overlays.
+        for (const ol of toActivate) {
+            if (!overlayManager?.is_overlay_active(ol))
+                overlayManager?.register_overlay(ol);
+        }
+    }
+
 }
 
 export class SDFVComponent extends ICPCWebclientMessagingComponent {
@@ -1073,12 +1094,13 @@ export class SDFVComponent extends ICPCWebclientMessagingComponent {
 
         this.register(zoomToUUIDs);
         this.register(highlightUUIDs);
-        this.register(refreshAnalysisPane);
         this.register(refreshTransformationList);
 
         const sdfv = VSCodeSDFV.getInstance();
         this.registerRequestHandler(sdfv);
         sdfv.initialize();
+
+        this.registerRequestHandler(AnalysisController.getInstance());
     }
 
 }
@@ -1108,7 +1130,7 @@ export function vscodeHandleEvent(event: string, data: any): void {
             VSCodeRenderer.getInstance()?.showNoDaemonDialog();
             break;
         case SDFGRendererEvent.ACTIVE_OVERLAYS_CHANGED:
-            refreshAnalysisPane();
+            AnalysisController.getInstance().refreshAnalysisPane();
             break;
         case SDFGRendererEvent.EXIT_PREVIEW:
             SDFVComponent.getInstance().invoke(

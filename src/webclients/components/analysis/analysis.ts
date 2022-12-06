@@ -167,45 +167,72 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
     private noneMessage?: JQuery<HTMLElement>;
     private contents?: JQuery<HTMLElement>;
-    private overlayToggles?: JQuery<HTMLElement>;
 
-    public init(): void {
-        super.init(vscode, window);
+    private nodeOverlaySelect?: JQuery<HTMLSelectElement>;
+    private edgeOverlaySelect?: JQuery<HTMLSelectElement>;
 
-        this.symbolResolution = new SymbolResolution();
+    private scalingMethodInput?: JQuery<HTMLSelectElement>;
+    private scalingMethodHistBucketsContainer?: JQuery<HTMLElement>;
+    private scalingMethodHistBucketsInput?: JQuery<HTMLInputElement>;
+    private scalingMethodExpBaseContainer?: JQuery<HTMLElement>;
+    private scalingMethodExpBaseInput?: JQuery<HTMLInputElement>;
 
+    private runtimeReportFileInput?: JQuery<HTMLInputElement>;
+    private runtimeReportFilenameLabel?: JQuery<HTMLSpanElement>;
+    private runtimeTimeCriteriumSelect?: JQuery<HTMLSelectElement>;
+
+    public get rtReportLabel(): JQuery<HTMLSpanElement> | undefined {
+        return this.runtimeReportFilenameLabel;
+    }
+
+    public get rtTimeCriteriumSelect(): JQuery<HTMLSelectElement> | undefined {
+        return this.runtimeTimeCriteriumSelect;
+    }
+
+    private initDOM(): void {
         this.noneMessage = $('#none-message');
         this.contents = $('#contents');
-        this.overlayToggles = $('#overlay-toggles');
-        $('#specialize-btn').on('click', () => {
-            this.symbolResolution?.specializeGraph();
+
+        this.nodeOverlaySelect = $('#node-overlays-input');
+        this.edgeOverlaySelect = $('#edge-overlays-input');
+
+        this.scalingMethodInput = $('#scaling-method-input');
+        this.scalingMethodInput?.on('change', () => {
+            this.onScalingUpdated();
         });
 
-        $('#scaling-method-input').on('change', this.onScalingUpdated);
-        $('#scaling-method-hist-buckets-input').on(
-            'change', this.onScalingUpdated
-        );
-        $('#scaling-method-exp-base-input').on('change', this.onScalingUpdated);
+        this.scalingMethodHistBucketsContainer =
+            $('#scaling-method-hist-buckets-container');
+        this.scalingMethodHistBucketsInput =
+            $('#scaling-method-hist-buckets-input');
+        this.scalingMethodHistBucketsInput?.on('change', () => {
+            this.onScalingUpdated();
+        });
 
-        $('#runtime-report-file-input').on('change', function () {
+        this.scalingMethodExpBaseContainer =
+            $('#scaling-method-exp-base-container');
+        this.scalingMethodExpBaseInput = $('#scaling-method-exp-base-input');
+        this.scalingMethodExpBaseInput?.on('change', () => {
+            this.onScalingUpdated();
+        });
+
+        this.runtimeReportFileInput = $('#runtime-report-file-input');
+        this.runtimeReportFileInput?.on('change', function () {
             const fr = new FileReader();
             const that = this as HTMLInputElement;
             fr.onload = () => {
                 if (fr && that.files) {
-                    const rtReportLabel = $('#runtime-report-filename-label');
-                    rtReportLabel.val(that.files[0].name);
-                    rtReportLabel.prop('title', (that.files[0] as any).path);
-                    const cb = $(
-                        'input[type="checkbox"][value="StaticFlopsOverlay"]'
+                    const aPanel = AnalysisPanel.getInstance();
+                    aPanel.rtReportLabel?.val(that.files[0].name);
+                    aPanel.rtReportLabel?.prop(
+                        'title', (that.files[0] as any).path
                     );
-                    cb.prop('checked', false);
-                    cb.prop('disabled', true);
                     if (fr.result && typeof fr.result === 'string')
-                        AnalysisPanel.getInstance().invoke(
+                        aPanel.invoke(
                             'onLoadInstrumentationReport',
                             [
                                 JSON.parse(fr.result),
-                                $('#runtime-time-criterium-select').val(),
+                                aPanel.rtTimeCriteriumSelect?.val(),
                             ]
                         );
                 }
@@ -214,18 +241,34 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
                 fr.readAsText(that.files[0]);
         });
 
-        $('#runtime-time-criterium-select').on('change', () => {
+        this.runtimeReportFilenameLabel = $('#runtime-report-filename-label');
+
+        this.runtimeTimeCriteriumSelect = $('#runtime-time-criterium-select');
+        this.runtimeTimeCriteriumSelect?.on('change', () => {
             this.invoke(
                 'instrumentationReportChangeCriterium',
-                [$('#runtime-time-criterium-select').val()]
+                [this.runtimeTimeCriteriumSelect?.val()]
             );
         });
 
-        $('#runtime-report-clear-btn').on('click', this.clearRuntimeReport);
-
-        $('#runtime-report-browse-btn').on('click', () => {
-            $('#runtime-report-file-input').trigger('click');
+        $('#specialize-btn').on('click', () => {
+            this.symbolResolution?.specializeGraph();
         });
+
+        $('#runtime-report-clear-btn').on('click', () => {
+            this.clearRuntimeReport();
+        });
+        $('#runtime-report-browse-btn').on('click', () => {
+            this.runtimeReportFileInput?.trigger('click');
+        });
+    }
+
+    public init(): void {
+        super.init(vscode, window);
+
+        this.initDOM();
+
+        this.symbolResolution = new SymbolResolution();
 
         this.register(
             this.symbolResolution.addSymbol, this.symbolResolution
@@ -253,8 +296,6 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
     @ICPCRequest()
     public clear(reason?: string): void {
         this.symbolResolution?.clearSymbols();
-        this.overlayToggles?.html('');
-        $('input[type=radio][value=median]').prop('checked', true);
         this.contents?.hide();
         if (reason)
             this.noneMessage?.text(reason);
@@ -269,21 +310,20 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
         scalingSubMethod?: string, availableOverlays?: any[]
     ): void {
         if (scalingMethod !== undefined) {
-            $('#scaling-method-input').val(scalingMethod);
-
+            this.scalingMethodInput?.val(scalingMethod);
             if (scalingSubMethod !== undefined) {
                 switch (scalingSubMethod) {
                     case 'hist':
-                        $('#scaling-method-hist-buckets-container')
-                            .show();
+                        this.scalingMethodHistBucketsContainer?.show();
+                        this.scalingMethodExpBaseContainer?.hide();
                         break;
                     case 'exponential_interpolation':
-                        $('#scaling-method-exp-base-container').show();
+                        this.scalingMethodHistBucketsContainer?.hide();
+                        this.scalingMethodExpBaseContainer?.show();
                         break;
                     default:
-                        $('#scaling-method-exp-base-container').hide();
-                        $('#scaling-method-hist-buckets-container')
-                            .hide();
+                        this.scalingMethodHistBucketsContainer?.hide();
+                        this.scalingMethodExpBaseContainer?.hide();
                         break;
                 }
             }
@@ -291,14 +331,11 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
 
         if (availableOverlays !== undefined) {
-            const nodeOverlaySelect = $('#node-overlays-input');
-            const edgeOverlaySelect = $('#edge-overlays-input');
+            this.nodeOverlaySelect?.html('');
+            this.edgeOverlaySelect?.html('');
 
-            nodeOverlaySelect.html('');
-            edgeOverlaySelect.html('');
-
-            nodeOverlaySelect.append(new Option('None', 'none', true));
-            edgeOverlaySelect.append(new Option('None', 'none', true));
+            this.nodeOverlaySelect?.append(new Option('None', 'none', true));
+            this.edgeOverlaySelect?.append(new Option('None', 'none', true));
 
             for (const overlay of availableOverlays) {
                 const option = new Option(
@@ -311,25 +348,36 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
                         // overlays that are of type both, this must be
                         // considered.
                     case OverlayType.NODE:
-                        nodeOverlaySelect.append(option);
+                        this.nodeOverlaySelect?.append(option);
                         break;
                     case OverlayType.EDGE:
-                        edgeOverlaySelect.append(option);
+                        this.edgeOverlaySelect?.append(option);
                         break;
                 }
             }
 
             const updateHandler = () => {
                 const overlays = [];
-                if (nodeOverlaySelect.val() !== 'none')
-                    overlays.push(nodeOverlaySelect.val());
-                if (edgeOverlaySelect.val() !== 'none')
-                    overlays.push(edgeOverlaySelect.val());
+                if (this.nodeOverlaySelect?.val() !== 'none')
+                    overlays.push(this.nodeOverlaySelect?.val());
+                if (this.edgeOverlaySelect?.val() !== 'none')
+                    overlays.push(this.edgeOverlaySelect?.val());
+
+                if (this.nodeOverlaySelect?.val()?.toString().startsWith(
+                    'Runtime'
+                )) {
+                    $('#runtime-measurement-divider').show();
+                    $('#runtime-measurement').show();
+                } else {
+                    $('#runtime-measurement-divider').hide();
+                    $('#runtime-measurement').hide();
+                }
+
                 this.invoke('setOverlays', [overlays]);
             };
 
-            nodeOverlaySelect.on('change', updateHandler);
-            edgeOverlaySelect.on('change', updateHandler);
+            this.nodeOverlaySelect?.on('change', updateHandler);
+            this.edgeOverlaySelect?.on('change', updateHandler);
         }
 
         this.setSymbols(symbols);
@@ -353,33 +401,57 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
     }
 
     public clearRuntimeReport(): void {
-        $('#runtime-report-file-input').val('');
-        const rtReportLabel = $('#runtime-report-filename-label');
-        rtReportLabel.val('Load runtime report');
-        rtReportLabel.prop('title', '');
-        $('input[type="checkbox"][value="daceStaticFlopsOverlay"]').prop(
-            'disabled', false
-        );
-        this.invoke('clearRuntimeReport');
+        this.runtimeReportFileInput?.val('');
+        this.runtimeReportFilenameLabel?.val('Load runtime report');
+        this.runtimeReportFilenameLabel?.prop('title', '');
+        const nodeType = this.nodeOverlaySelect?.val();
+        const edgeType = this.edgeOverlaySelect?.val();
+        const clearTypes = [];
+        if (nodeType && typeof nodeType === 'string')
+            clearTypes.push(nodeType);
+        if (edgeType && typeof edgeType === 'string')
+            clearTypes.push(edgeType);
+        this.invoke('clearRuntimeReport', [clearTypes]);
     }
 
     public onScalingUpdated(): void {
-        const scalingMethod = $('#scaling-method-input').val();
-        let additionalVal = undefined;
+        const scalingMethod = this.scalingMethodInput?.val();
+        let additionalVal: number | undefined = undefined;
+        let tmpVal: any = undefined;
         switch (scalingMethod) {
             case 'hist':
-                $('#scaling-method-hist-buckets-container').show();
-                $('#scaling-method-exp-base-container').hide();
-                additionalVal = $('#scaling-method-hist-buckets-input').val();
+                this.scalingMethodHistBucketsContainer?.show();
+                this.scalingMethodExpBaseContainer?.hide();
+                tmpVal = this.scalingMethodHistBucketsInput?.val();
+                try {
+                    if (typeof tmpVal === 'string')
+                        additionalVal = parseInt(tmpVal);
+                    else if (typeof additionalVal === 'number')
+                        additionalVal = tmpVal;
+                    else
+                        additionalVal = 0;
+                } catch (_) {
+                    additionalVal = 0;
+                }
                 break;
             case 'exponential_interpolation':
-                $('#scaling-method-hist-buckets-container').hide();
-                $('#scaling-method-exp-base-container').show();
-                additionalVal = $('#scaling-method-exp-base-input').val();
+                this.scalingMethodHistBucketsContainer?.hide();
+                this.scalingMethodExpBaseContainer?.show();
+                tmpVal = this.scalingMethodExpBaseInput?.val();
+                try {
+                    if (typeof tmpVal === 'string')
+                        additionalVal = parseInt(tmpVal);
+                    else if (typeof additionalVal === 'number')
+                        additionalVal = tmpVal;
+                    else
+                        additionalVal = 2;
+                } catch (_) {
+                    additionalVal = 2;
+                }
                 break;
             default:
-                $('#scaling-method-exp-base-container').hide();
-                $('#scaling-method-hist-buckets-container').hide();
+                this.scalingMethodHistBucketsContainer?.hide();
+                this.scalingMethodExpBaseContainer?.hide();
                 break;
         }
 
@@ -390,13 +462,9 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
     @ICPCRequest()
     public onAutoloadReport(path: string): string {
-        const cb = $('input[type="checkbox"][value="daceStaticFlopsOverlay"]');
-        const rtReportLabel = $('#runtime-report-filename-label');
-        rtReportLabel.val(path);
-        rtReportLabel.prop('title', path);
-        cb.prop('checked', false);
-        cb.prop('disabled', true);
-        const crit = $('#runtime-time-criterium-select').val();
+        this.runtimeReportFilenameLabel?.val(path);
+        this.runtimeReportFilenameLabel?.prop('title', path);
+        const crit = this.runtimeTimeCriteriumSelect?.val();
         if (crit && typeof crit === 'string')
             return crit;
         return 'med';

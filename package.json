@@ -613,7 +613,8 @@
         "test": "node ./out/test/runTest.js",
         "webpack": "npm run clean && webpack --mode development",
         "webpack-prod": "npm run clean && webpack --mode production",
-        "webpack-dev": "npm run clean && webpack --mode development --watch"
+        "webpack-dev": "npm run clean && webpack --mode development --watch",
+        "postinstall": "patch-package --patch-dir ./packages/sdfv/patches"
     },
     "devDependencies": {
         "@types/glob": "^7.1.3",

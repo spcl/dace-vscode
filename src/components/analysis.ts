@@ -79,18 +79,28 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest()
-    public symbolValueChanged(symbol: string, value: any): void {
-        // TODO: Implement, call SDFV
+    public async symbolValueChanged(
+        symbol: string, value?: number
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'onSymbolValueChanged', [symbol, value]
+        );
     }
 
     @ICPCRequest()
-    public updateScalingMethod(method: string, subMethod: string): void {
-        // TODO: Implement, call SDFV
+    public async updateScalingMethod(
+        method: string, subMethod?: number
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'onHeatmapScalingChanged', [method, subMethod]
+        );
     }
 
     @ICPCRequest()
-    public setOverlays(overlays: any[]): void {
-        // TODO: Implement, call SDFV
+    public async setOverlays(overlays: string[]): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'setOverlays', [overlays]
+        );
     }
 
     @ICPCRequest()
@@ -101,6 +111,13 @@ implements vscode.WebviewViewProvider {
     @ICPCRequest()
     public instrumentationReportChangeCriterium(criterium: string): void {
         // TODO: Implement, call SDFV
+    }
+
+    @ICPCRequest()
+    public async clearRuntimeReport(types?: string[]): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'clearRuntimeReport', [types]
+        );
     }
 
     @ICPCRequest()

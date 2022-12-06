@@ -36,6 +36,8 @@ class TransformationHistoryItem extends CustomTreeViewItem {
         private disabled: boolean
     ) {
         super(label, tooltip, '', false, false);
+        console.log(index, label);
+
         this.list = list;
     }
 

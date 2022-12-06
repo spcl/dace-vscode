@@ -35,23 +35,6 @@ export class DaCeInterface {
 
     private constructor() { }
 
-    /*
-    public handleMessage(message: any, origin: vscode.Webview): void {
-        switch (message.type) {
-            case 'run_sdfg':
-                if (message.name !== undefined)
-                    this.runSdfgInTerminal(message.name, undefined, origin);
-                break;
-            case 'get_flops':
-                this.getFlops();
-                break;
-            case 'query_sdfg_metadata':
-                this.querySdfgMetadata();
-                break;
-        }
-    }
-    */
-
     public static getInstance(): DaCeInterface {
         return this.INSTANCE;
     }

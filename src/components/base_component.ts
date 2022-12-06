@@ -17,7 +17,7 @@ export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
         protected readonly context: vscode.ExtensionContext,
         protected readonly type: string
     ) {
-        super();
+        super(type);
     }
 
     public async invoke(procedure: string, args?: any[]): Promise<any> {

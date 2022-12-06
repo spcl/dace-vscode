@@ -51,7 +51,7 @@ export class SdfgViewer extends ICPCExtensionMessagingComponent {
         public readonly webview: vscode.Webview,
         public readonly document: vscode.TextDocument
     ) {
-        super(webview);
+        super('SDFV', webview);
     }
 
     public wrapperFile?: string;
