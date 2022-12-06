@@ -2,30 +2,37 @@
 // All rights reserved.
 
 import {
-    SDFGRenderer,
-    JsonSDFG,
-    ModeButtons,
     EntryNode,
     ExitNode,
-    get_uuid_graph_element,
     find_graph_element_by_uuid,
-    SDFGElement,
-    set_positioning_info,
-    SDFGElementType,
+    get_uuid_graph_element,
+    JsonSDFG,
     JsonSDFGState,
     memlet_tree_complete,
+    ModeButtons,
+    OperationalIntensityOverlay,
+    SDFGElement,
+    SDFGElementType,
+    SDFGRenderer,
+    set_positioning_info,
+    StaticFlopsOverlay
 } from '@spcl/sdfv/src';
+import { AnalysisController } from '../analysis/analysis_controller';
+import {
+    refreshTransformationList,
+    refreshXform,
+    sortTransformations
+} from '../transformation/transformation';
 import {
     createSingleUseModal,
     findJsonSDFGElementByUUID,
     findMaximumSdfgId,
     unGraphiphySdfg,
-    vscodeWriteGraph,
+    vscodeWriteGraph
 } from '../utils/helpers';
 import {
     SDFVComponent,
-    vscodeHandleEvent,
-    VSCodeSDFV,
+    VSCodeSDFV
 } from '../vscode_sdfv';
 
 declare const vscode: any;
@@ -55,7 +62,52 @@ export class VSCodeRenderer extends SDFGRenderer {
             userTransform, debugDraw, backgroundColor, modeButtons
         );
         VSCodeSDFV.getInstance().set_renderer(this.INSTANCE);
-        this.INSTANCE.register_ext_event_handler(vscodeHandleEvent);
+
+        this.INSTANCE.on('add_element', this.INSTANCE.addNodeToGraph);
+        this.INSTANCE.on(
+            'query_libnode', this.INSTANCE.showSelectLibraryNodeDialog
+        );
+        this.INSTANCE.on(
+            'active_overlays_changed',
+            AnalysisController.getInstance().refreshAnalysisPane
+        );
+        this.INSTANCE.on('exit_preview', () => {
+            SDFVComponent.getInstance().invoke(
+                'getUpToDateContents'
+            ).then(sdfg => {
+                VSCodeSDFV.getInstance().updateContents(sdfg, true);
+                SDFVComponent.getInstance().invoke(
+                    'refreshTransformationHistory', [true]
+                );
+            });
+        });
+        this.INSTANCE.on('graph_edited', this.INSTANCE.sendNewSdfgToVscode);
+        this.INSTANCE.on('selection_changed', multSelectionChanged => {
+            if (multSelectionChanged)
+                refreshXform(VSCodeSDFV.getInstance());
+            else
+                sortTransformations(false, refreshTransformationList, true);
+        });
+        this.INSTANCE.on('backend_data_requested', (type, overlay) => {
+            switch (type) {
+                case 'flops':
+                    SDFVComponent.getInstance().invoke('getFLops')
+                        .then((flopsMap) => {
+                            if (!flopsMap)
+                                return;
+                            const renderer = VSCodeRenderer.getInstance();
+                            const oMan = renderer?.get_overlay_manager();
+                            const oType = VSCodeSDFV.OVERLAYS[overlay];
+                            const ol = oMan?.get_overlay(oType);
+                            (ol as
+                                StaticFlopsOverlay |
+                                OperationalIntensityOverlay
+                            )?.update_flops_map(flopsMap);
+                        });
+                    break;
+            }
+        });
+
         return this.INSTANCE;
     }
 
@@ -163,9 +215,8 @@ export class VSCodeRenderer extends SDFGRenderer {
     }
 
     public async addNodeToGraph(
-        addType: SDFGElementType, parentUUID: string, lib: string | null = null,
-        edgeStartUUID: string | null = null,
-        edgeStartConn: string | null = null, edgeDstConn: string | null = null
+        addType: SDFGElementType, parentUUID: string, lib?: string,
+        edgeStartUUID?: string, edgeStartConn?: string, edgeDstConn?: string
     ): Promise<void> {
         const metaDict = await VSCodeSDFV.getInstance().getMetaDict();
         const meta = metaDict[addType];

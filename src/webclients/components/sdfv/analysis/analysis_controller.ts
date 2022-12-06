@@ -99,7 +99,7 @@ export class AnalysisController {
             const map = symbolResolver?.get_symbol_value_map();
             Object.keys(map).forEach((symbol) => {
                 if (map[symbol] === undefined)
-                    map[symbol] = '';
+                    map[symbol] = -1;
             });
 
             const activeOverlays = [];
@@ -188,7 +188,7 @@ export class AnalysisController {
             const map = symbolResolver?.get_symbol_value_map();
             Object.keys(map).forEach((symbol) => {
                 if (map[symbol] === undefined)
-                    map[symbol] = '';
+                    map[symbol] = -1;
             });
             return SDFVComponent.getInstance().invoke(
                 'analysisSetSymbols', [map]
