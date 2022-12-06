@@ -91,7 +91,7 @@ export class VSCodeRenderer extends SDFGRenderer {
         this.INSTANCE.on('backend_data_requested', (type, overlay) => {
             switch (type) {
                 case 'flops':
-                    SDFVComponent.getInstance().invoke('getFLops')
+                    SDFVComponent.getInstance().invoke('getFlops')
                         .then((flopsMap) => {
                             if (!flopsMap)
                                 return;

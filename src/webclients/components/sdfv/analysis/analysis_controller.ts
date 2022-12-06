@@ -96,11 +96,8 @@ export class AnalysisController {
         if (renderer !== null && vscode !== undefined) {
             const overlayManager = renderer.get_overlay_manager();
             const symbolResolver = overlayManager?.get_symbol_resolver();
+            symbolResolver?.removeStaleSymbols();
             const map = symbolResolver?.get_symbol_value_map();
-            Object.keys(map).forEach((symbol) => {
-                if (map[symbol] === undefined)
-                    map[symbol] = -1;
-            });
 
             const activeOverlays = [];
             for (const activeOverlay of overlayManager.get_overlays())
@@ -118,7 +115,10 @@ export class AnalysisController {
                     break;
             }
 
-            const symbols = map;
+            const symbols: { [sym: string]: number | undefined | string } = {};
+            Object.keys(map).forEach((symbol) => {
+                symbols[symbol] = map[symbol] ?? '';
+            });
             const availableOverlays = [
                 {
                     class: 'MemoryVolumeOverlay',
@@ -137,7 +137,7 @@ export class AnalysisController {
                 },
                 {
                     class: 'MemoryLocationOverlay',
-                    label: 'Memory Location Intensity',
+                    label: 'Memory Location',
                     type: MemoryLocationOverlay.type,
                 },
                 {
@@ -186,12 +186,12 @@ export class AnalysisController {
             const symbolResolver =
                 renderer.get_overlay_manager()?.get_symbol_resolver();
             const map = symbolResolver?.get_symbol_value_map();
+            const symbols: { [sym: string]: number | undefined | string } = {};
             Object.keys(map).forEach((symbol) => {
-                if (map[symbol] === undefined)
-                    map[symbol] = -1;
+                symbols[symbol] = map[symbol] ?? '';
             });
             return SDFVComponent.getInstance().invoke(
-                'analysisSetSymbols', [map]
+                'analysisSetSymbols', [symbols]
             );
         }
     }

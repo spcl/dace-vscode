@@ -104,9 +104,6 @@ export abstract class ICPCMessagingComponent {
             case ICPCMessageType.RESPONSE:
                 this.handleResponse(message as ICPCResponseMessage);
                 break;
-            default:
-                console.warn(`Unknown message type: ${message.type}`);
-                break;
         }
     }
 

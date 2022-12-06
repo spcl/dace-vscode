@@ -77,9 +77,10 @@ class SymbolResolution {
         this.updateSymbolList();
     }
 
-    public clearSymbols(): void {
+    public clearSymbols(preventUpdate: boolean = false): void {
         this.symbols = {};
-        this.updateSymbolList();
+        if (!preventUpdate)
+            this.updateSymbolList();
     }
 
     public updateSymbolList(): void {
