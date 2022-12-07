@@ -987,7 +987,7 @@ export class VSCodeSDFV extends SDFV {
         newContent: string, preventRefreshes: boolean = false
     ): void {
         this.setViewingHistoryState(false);
-        $('#exit-preview-button')?.addClass('hidden');
+        $('#exit-preview-button')?.hide();
         this.setRendererContent(newContent, false, preventRefreshes);
     }
 
@@ -1006,7 +1006,7 @@ export class VSCodeSDFV extends SDFV {
     ): void {
         if (pSdfg) {
             this.setRendererContent(pSdfg, true);
-            $('#exit-preview-button')?.removeClass('hidden');
+            $('#exit-preview-button')?.show();
             if (histState) {
                 this.clearInfoBox();
                 this.setViewingHistoryState(true);
@@ -1016,7 +1016,7 @@ export class VSCodeSDFV extends SDFV {
             // No SDFG provided, exit preview.
             this.resetRendererContent();
             this.setViewingHistoryState(false);
-            $('#exit-preview-button')?.addClass('hidden');
+            $('#exit-preview-button')?.hide();
             if (refresh)
                 refreshTransformationList();
         }

@@ -307,9 +307,7 @@ export function attrTablePutSelect(
                 );
             },
         }).appendTo(cell);
-        const inPreviewMode = !document.getElementById(
-            'exit-preview-button'
-        )?.classList.contains('hidden');
+        const inPreviewMode = $('#exit-preview-button').is(':visible');
         if (inPreviewMode) {
             expandButton.prop('disabled', 'disabled');
             expandButton.addClass('btn-disabled');

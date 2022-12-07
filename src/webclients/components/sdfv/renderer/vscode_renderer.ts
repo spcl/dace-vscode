@@ -3,15 +3,12 @@
 
 import {
     EntryNode,
-    ExitNode,
     find_graph_element_by_uuid,
-    get_uuid_graph_element,
     JsonSDFG,
     JsonSDFGState,
     memlet_tree_complete,
     ModeButtons,
     OperationalIntensityOverlay,
-    SDFGElement,
     SDFGElementType,
     SDFGRenderer,
     set_positioning_info,
@@ -27,7 +24,6 @@ import {
     createSingleUseModal,
     findJsonSDFGElementByUUID,
     findMaximumSdfgId,
-    unGraphiphySdfg,
     vscodeWriteGraph
 } from '../utils/helpers';
 import {

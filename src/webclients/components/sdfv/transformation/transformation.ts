@@ -462,7 +462,7 @@ export async function applyTransformations(
 ): Promise<void> {
     VSCodeRenderer.getInstance()?.clearSelectedItems();
     VSCodeSDFV.getInstance().clearInfoBox(true);
-    $('#exit-preview-button').addClass('hidden');
+    $('#exit-preview-button').hide();
     return SDFVComponent.getInstance().invoke(
         'applyTransformations', [xforms]
     );
