@@ -45,7 +45,17 @@ body {
     display: none;
 }
 
-.transformation-history-current-badge,
+.transformation-history-current-badge {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding-left: .8rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.tree-view-item.hover .transformation-history-current-badge,
 .tree-view-item.hover .transformation-history-apply-button {
     display: flex;
     flex-direction: row;

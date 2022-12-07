@@ -279,7 +279,7 @@ export function elementUpdateLabel(
                         element.parent_id + '/' +
                         element.data.node.scope_exit + '/-1'
                     );
-                    if (exitElem) {
+                    if (exitElem && exitElem.element) {
                         element.data.node.label = computeScopeLabel(element);
                         exitElem.element.data.node.label =
                             element.data.node.label;
@@ -291,7 +291,7 @@ export function elementUpdateLabel(
                         element.parent_id + '/' +
                         element.data.node.scope_entry + '/-1'
                     );
-                    if (entryElem) {
+                    if (entryElem && entryElem.element) {
                         element.data.node.label =
                             computeScopeLabel(entryElem.element);
                         entryElem.element.data.node.label =
@@ -485,6 +485,11 @@ class ContextMenu {
     private constructor() {
         $(document.body).on('click', () => {
             this.hide();
+        });
+
+        $(document.body).on('keydown', evt => {
+            if (evt.key === 'Escape')
+                this.hide();
         });
 
         this.container = $('<nav>', {

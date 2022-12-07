@@ -19,7 +19,7 @@ implements vscode.WebviewViewProvider {
 
     private static INSTANCE?: TransformationHistoryProvider;
 
-    public activeHistoryItemIndex?: number;
+    public activeHistoryItemIndex?: number | null;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         TransformationHistoryProvider.INSTANCE =
@@ -87,7 +87,7 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest()
-    public previewHistoryPoint(index: number): void {
+    public previewHistoryPoint(index?: number | null): void {
         DaCeInterface.getInstance().previewHistoryPoint(index);
     }
 
@@ -95,22 +95,22 @@ implements vscode.WebviewViewProvider {
         return this.invoke('clearHistory', [reason]);
     }
 
-    public async setHistory(history: any, activeIndex?: number): Promise<void> {
+    public async setHistory(
+        history: any, activeIndex?: number | null
+    ): Promise<void> {
         return this.invoke('setHistory', [history, activeIndex]);
     }
 
     @ICPCRequest()
     public async refresh(resetAcitve: boolean = false): Promise<void> {
-        return this.clearList(undefined).then(() => {
-            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
-                if (resetAcitve)
-                    this.activeHistoryItemIndex = undefined;
-                if (sdfg)
-                    this.setHistory(
-                        sdfg.attributes.transformation_hist,
-                        this.activeHistoryItemIndex
-                    );
-            });
+        return DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (resetAcitve)
+                this.activeHistoryItemIndex = undefined;
+            if (sdfg)
+                this.setHistory(
+                    sdfg.attributes.transformation_hist,
+                    this.activeHistoryItemIndex
+                );
         });
     }
 

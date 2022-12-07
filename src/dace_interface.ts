@@ -1,6 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+import { JsonSDFG } from '@spcl/sdfv/src';
 import { request } from 'http';
 import * as net from 'net';
 import * as os from 'os';
@@ -679,7 +680,7 @@ export class DaCeInterface {
     }
 
     @ICPCRequest()
-    public writeToActiveDocument(json: any): void {
+    public writeToActiveDocument(json: JsonSDFG | string): void {
         const activeEditor = DaCeVSCode.getInstance().getActiveWebview();
         if (activeEditor) {
             const sdfvInstance = SdfgViewerProvider.getInstance();
@@ -688,24 +689,31 @@ export class DaCeInterface {
             )?.document;
             if (document) {
                 const edit = new vscode.WorkspaceEdit();
-                edit.replace(
-                    document.uri,
-                    new vscode.Range(0, 0, document.lineCount, 0),
-                    JSON.stringify(JSON.parse(json), null, 2)
-                );
+                if (typeof json === 'string')
+                    edit.replace(
+                        document.uri,
+                        new vscode.Range(0, 0, document.lineCount, 0),
+                        JSON.stringify(JSON.parse(json), null, 2)
+                    );
+                else
+                    edit.replace(
+                        document.uri,
+                        new vscode.Range(0, 0, document.lineCount, 0),
+                        JSON.stringify(json, null, 2)
+                    );
                 vscode.workspace.applyEdit(edit);
             }
         }
     }
 
     private gotoHistoryPoint(
-        index: number | undefined, mode: InteractionMode
+        index: number | undefined | null, mode: InteractionMode
     ): void {
         const trafoHistProvider = TransformationHistoryProvider.getInstance();
         if (trafoHistProvider)
             trafoHistProvider.activeHistoryItemIndex = index;
 
-        if (index === undefined) {
+        if (index === undefined || index === null) {
             if (mode === InteractionMode.PREVIEW)
                 this.exitPreview(true);
             return;
@@ -774,7 +782,7 @@ export class DaCeInterface {
         this.gotoHistoryPoint(index, InteractionMode.APPLY);
     }
 
-    public previewHistoryPoint(index?: number) {
+    public previewHistoryPoint(index?: number | null) {
         this.gotoHistoryPoint(index, InteractionMode.PREVIEW);
     }
 

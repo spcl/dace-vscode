@@ -2,12 +2,14 @@
 // All rights reserved.
 
 import {
+    instrumentation_report_read_complete,
     LogicalGroupOverlay,
     MemoryLocationOverlay,
     MemoryVolumeOverlay,
     OperationalIntensityOverlay,
     RuntimeMicroSecondsOverlay,
     RuntimeReportOverlay,
+    SDFGRenderer,
     StaticFlopsOverlay
 } from '@spcl/sdfv/src';
 import {
@@ -65,11 +67,45 @@ export class AnalysisController {
     }
 
     /**
+     * Load new data for the active runtime overlays.
+     * @param report    New report to be loaded.
+     * @param criterium Selection criterium to use.
+     */
+    @ICPCRequest()
+    public loadInstrumentationReport(
+        report: { traceEvents: any[] }, criterium: string
+    ): void {
+        const sdfv = VSCodeSDFV.getInstance();
+        const renderer = sdfv.get_renderer() ?? undefined;
+        instrumentation_report_read_complete(sdfv, report, renderer);
+        this.setInstrumentationReportCriterium(criterium, renderer);
+    }
+
+    /**
+     * Update the selection criterium for active runtime overlays.
+     * @param criterium New criterium to use.
+     * @param renderer  Renderer on which to update overlays.
+     */
+    @ICPCRequest()
+    public setInstrumentationReportCriterium(
+        criterium: string, renderer?: SDFGRenderer
+    ): void {
+        const rend = renderer ?? VSCodeRenderer.getInstance();
+        const overlays = rend?.get_overlay_manager().get_overlays();
+        for (const ol of overlays ?? []) {
+            if (ol instanceof RuntimeReportOverlay) {
+                ol.set_criterium(criterium);
+                ol.refresh();
+            }
+        }
+    }
+
+    /**
      * Clear the runtime data for given runtime reports.
      * @param types Runtime report types to clear. If undefined, clear all.
      */
     @ICPCRequest()
-    public async clearRuntimeReport(types?: string[]): Promise<void> {
+    public clearRuntimeReport(types?: string[]): void {
         const olManager = VSCodeRenderer.getInstance()?.get_overlay_manager();
         if (types) {
             for (const clearType of types) {
@@ -159,39 +195,6 @@ export class AnalysisController {
                     additionalMethodVal,
                     availableOverlays
                 ]
-            );
-        }
-    }
-
-    /**
-     * Register all current SDFG's symbols in the analysis pane.
-     */
-    public async analysisPaneRegisterSymbols(): Promise<void> {
-        // TODO: Not called anywhere, check!!
-        const symbols =
-            VSCodeRenderer.getInstance()?.get_sdfg().attributes.symbols;
-        if (symbols)
-            return SDFVComponent.getInstance().invoke(
-                'analysisAddSymbols', [symbols]
-            );
-    }
-
-    /**
-     * Refresh the symbols and their values in the analysis pane.
-     */
-    public async analysisPaneRefreshSymbols(): Promise<void> {
-        // TODO: Not called anywhere, check!!
-        const renderer = VSCodeRenderer.getInstance();
-        if (renderer !== null && vscode !== undefined) {
-            const symbolResolver =
-                renderer.get_overlay_manager()?.get_symbol_resolver();
-            const map = symbolResolver?.get_symbol_value_map();
-            const symbols: { [sym: string]: number | undefined | string } = {};
-            Object.keys(map).forEach((symbol) => {
-                symbols[symbol] = map[symbol] ?? '';
-            });
-            return SDFVComponent.getInstance().invoke(
-                'analysisSetSymbols', [symbols]
             );
         }
     }

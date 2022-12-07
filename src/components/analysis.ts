@@ -104,13 +104,21 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest()
-    public onLoadInstrumentationReport(report: any, criterium: string) {
-        // TODO: Implement, call SDFV
+    public async onLoadInstrumentationReport(
+        report: { traceEvents: any[] }, criterium: string
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'loadInstrumentationReport', [report, criterium]
+        );
     }
 
     @ICPCRequest()
-    public instrumentationReportChangeCriterium(criterium: string): void {
-        // TODO: Implement, call SDFV
+    public async instrumentationReportChangeCriterium(
+        criterium: string
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'setInstrumentationReportCriterium', [criterium]
+        );
     }
 
     @ICPCRequest()

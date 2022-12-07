@@ -408,9 +408,9 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
         const nodeType = this.nodeOverlaySelect?.val();
         const edgeType = this.edgeOverlaySelect?.val();
         const clearTypes = [];
-        if (nodeType && typeof nodeType === 'string')
+        if (nodeType && typeof nodeType === 'string' && nodeType !== 'none')
             clearTypes.push(nodeType);
-        if (edgeType && typeof edgeType === 'string')
+        if (edgeType && typeof edgeType === 'string' && edgeType !== 'none')
             clearTypes.push(edgeType);
         this.invoke('clearRuntimeReport', [clearTypes]);
     }

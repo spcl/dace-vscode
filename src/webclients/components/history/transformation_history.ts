@@ -36,8 +36,6 @@ class TransformationHistoryItem extends CustomTreeViewItem {
         private disabled: boolean
     ) {
         super(label, tooltip, '', false, false);
-        console.log(index, label);
-
         this.list = list;
     }
 
@@ -47,7 +45,9 @@ class TransformationHistoryItem extends CustomTreeViewItem {
     public generateHtml(): JQuery<HTMLElement> {
         const item = super.generateHtml();
 
-        if (!this.disabled)
+        if (this.disabled)
+            item.addClass('disabled');
+        else
             item.on('click', () => {
                 if (this.list !== undefined) {
                     this.list.selectedItem = this;
@@ -57,8 +57,6 @@ class TransformationHistoryItem extends CustomTreeViewItem {
                     'previewHistoryPoint', [this.index]
                 );
             });
-        else
-            item.addClass('disabled');
 
         const labelContainer = item.find('.tree-view-item-label-container');
 
@@ -110,8 +108,8 @@ class TransformationHistoryList extends CustomTreeView {
             this.notifyDataChanged();
     }
 
-    public parseHistory(history: any, activeIndex?: number): void {
-        super.clear();
+    public parseHistory(history: any, activeIndex?: number | null): void {
+        this.clear('Parsing transformation history', true);
         let encounteredDummy = false;
         for (let i = 0; i < history.length; i++) {
             const item = history[i];
@@ -127,7 +125,7 @@ class TransformationHistoryList extends CustomTreeView {
                     this,
                     false
                 );
-                if (activeIndex === undefined)
+                if (activeIndex === undefined || activeIndex === null)
                     this.selectedItem = itemCurrentState;
                 this.items.unshift(itemCurrentState);
             } else {
@@ -169,6 +167,8 @@ class TransformationHistoryList extends CustomTreeView {
             if (activeIndex === -1)
                 this.selectedItem = itemOrigSDFG;
             this.items.push(itemOrigSDFG);
+        } else {
+            this.clear('Empty transformation history', true);
         }
 
         this.notifyDataChanged();

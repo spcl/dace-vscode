@@ -132,7 +132,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         editor.updateSdfg();
         if (DaCeVSCode.getInstance().getActiveEditor() === editor) {
             TransformationListProvider.getInstance()?.refresh();
-            TransformationHistoryProvider.getInstance()?.refresh();
+            TransformationHistoryProvider.getInstance()?.refresh(true);
             OutlineProvider.getInstance()?.refresh();
             AnalysisProvider.getInstance()?.refresh();
         }
@@ -400,18 +400,6 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         );
     }
 
-    public async analysisAddSymbols(symbols: any): Promise<void> {
-        return AnalysisProvider.getInstance()?.invoke(
-            'addSymbols', [symbols]
-        );
-    }
-
-    public async analysisSetSymbols(symbols: any): Promise<void> {
-        return AnalysisProvider.getInstance()?.invoke(
-            'setSymbols', [symbols]
-        );
-    }
-
     public async updateAnalysisPanel(
         activeOverlays: any[], symbols: any, scalingMethod?: string,
         scalingSubMethod?: string, availableOverlays?: any[]
@@ -503,8 +491,6 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
             editor.register(this.goToCPP, this);
             editor.register(this.setOutline, this);
             editor.register(this.processQueuedInvocations, this);
-            editor.register(this.analysisAddSymbols, this);
-            editor.register(this.analysisSetSymbols, this);
             editor.register(this.updateAnalysisPanel, this);
             editor.register(
                 this.refreshTransformationHistory, this

@@ -486,42 +486,6 @@ export class VSCodeRenderer extends SDFGRenderer {
         }
     }
 
-    public removeGraphNodes(nodes: SDFGElement[]): void {
-        let g = this.sdfg;
-        unGraphiphySdfg(g);
-
-        const uuids = [];
-        for (let i = 0; i < nodes.length; i++) {
-            const node = nodes[i];
-            const uuid = get_uuid_graph_element(node);
-            uuids.push(uuid);
-
-            // If we're deleting a scope node, we want to remove the
-            // corresponding entry/exit node as well.
-            let otherUUID = undefined;
-            if (node instanceof EntryNode)
-                otherUUID = node.sdfg.sdfg_list_id + '/' +
-                    node.parent_id + '/' +
-                    node.data.node.scope_exit + '/-1';
-            else if (node instanceof ExitNode)
-                otherUUID = node.sdfg.sdfg_list_id + '/' +
-                    node.parent_id + '/' +
-                    node.data.node.scope_entry + '/-1';
-
-            if (otherUUID)
-                uuids.push(otherUUID);
-        }
-
-        // TODO: this call seems to have been missing.
-        /*
-        vscode.postMessage({
-            type: 'dace.remove_nodes',
-            sdfg: JSON.stringify(g),
-            uuids: uuids,
-        });
-        */
-    }
-
     /**
      * Set the correct poisiton for newly added graph elements.
      * This is called as a callback after a new element has been added to the
@@ -539,7 +503,6 @@ export class VSCodeRenderer extends SDFGRenderer {
 
         let el = find_graph_element_by_uuid(this.graph, first).element;
 
-        // TODO: set in construction attribute
         this.canvas_manager?.translate_element(
             el, { x: el.x, y: el.y }, this.add_position, this.graph,
             this.sdfg_list, this.state_parent_list, null, true
