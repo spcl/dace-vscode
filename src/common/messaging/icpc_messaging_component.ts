@@ -1,3 +1,6 @@
+// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 import { v4 as uuidv4 } from 'uuid';
 
 export enum ICPCMessageType {

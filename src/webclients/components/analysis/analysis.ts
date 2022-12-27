@@ -118,9 +118,7 @@ class SymbolResolution {
                             event.target.value = 1;
                         }
                         this.symbols[symbol] = value;
-                        AnalysisPanel.getInstance().invoke(
-                            'symbolValueChanged', [symbol, value]
-                        );
+                        AnalysisPanel.symbolValueChanged(symbol, value);
                     }
                 });
                 $('<button>', {
@@ -129,9 +127,7 @@ class SymbolResolution {
                     'click': () => {
                         input.val('');
                         this.symbols[symbol] = undefined;
-                        AnalysisPanel.getInstance().invoke(
-                            'symbolValueChanged', [symbol, undefined]
-                        );
+                        AnalysisPanel.symbolValueChanged(symbol, undefined);
                     },
                 }).appendTo(definitionContainer);
                 let definition = this.symbols[symbol];
@@ -145,9 +141,7 @@ class SymbolResolution {
     }
 
     public specializeGraph(): void {
-        AnalysisPanel.getInstance().invoke(
-            'specialize', [this.symbols]
-        );
+        AnalysisPanel.specialize(this.symbols);
     }
 
 }
@@ -228,14 +222,14 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
                     aPanel.rtReportLabel?.prop(
                         'title', (that.files[0] as any).path
                     );
-                    if (fr.result && typeof fr.result === 'string')
-                        aPanel.invoke(
-                            'onLoadInstrumentationReport',
-                            [
-                                JSON.parse(fr.result),
-                                aPanel.rtTimeCriteriumSelect?.val(),
-                            ]
+                    if (fr.result && typeof fr.result === 'string') {
+                        const rtSelCrit = aPanel.rtTimeCriteriumSelect?.val();
+                        if (!rtSelCrit || typeof rtSelCrit !== 'string')
+                            return;
+                        AnalysisPanel.onLoadInstrumentationReport(
+                            JSON.parse(fr.result), rtSelCrit
                         );
+                    }
                 }
             };
             if (that.files)
@@ -246,10 +240,10 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
         this.runtimeTimeCriteriumSelect = $('#runtime-time-criterium-select');
         this.runtimeTimeCriteriumSelect?.on('change', () => {
-            this.invoke(
-                'instrumentationReportChangeCriterium',
-                [this.runtimeTimeCriteriumSelect?.val()]
-            );
+            const crit = this.runtimeTimeCriteriumSelect?.val();
+            if (!crit || typeof crit !== 'string')
+                return;
+            AnalysisPanel.instrumentationReportChangeCriterium(crit);
         });
 
         $('#specialize-btn').on('click', () => {
@@ -359,14 +353,16 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
             const updateHandler = () => {
                 const overlays = [];
-                if (this.nodeOverlaySelect?.val() !== 'none')
-                    overlays.push(this.nodeOverlaySelect?.val());
-                if (this.edgeOverlaySelect?.val() !== 'none')
-                    overlays.push(this.edgeOverlaySelect?.val());
+                const nodeOverlay = this.nodeOverlaySelect?.val();
+                if (nodeOverlay && nodeOverlay !== 'none' &&
+                    typeof nodeOverlay === 'string')
+                    overlays.push(nodeOverlay);
+                const edgeOverlay = this.nodeOverlaySelect?.val();
+                if (edgeOverlay && edgeOverlay !== 'none' &&
+                    typeof edgeOverlay === 'string')
+                    overlays.push(edgeOverlay);
 
-                if (this.nodeOverlaySelect?.val()?.toString().startsWith(
-                    'Runtime'
-                )) {
+                if (nodeOverlay?.toString().startsWith('Runtime')) {
                     $('#runtime-measurement-divider').show();
                     $('#runtime-measurement').show();
                 } else {
@@ -374,7 +370,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
                     $('#runtime-measurement').hide();
                 }
 
-                this.invoke('setOverlays', [overlays]);
+                AnalysisPanel.setOverlays(overlays);
             };
 
             this.nodeOverlaySelect?.on('change', updateHandler);
@@ -412,11 +408,14 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
             clearTypes.push(nodeType);
         if (edgeType && typeof edgeType === 'string' && edgeType !== 'none')
             clearTypes.push(edgeType);
-        this.invoke('clearRuntimeReport', [clearTypes]);
+        AnalysisPanel.clearRuntimeReport(clearTypes);
     }
 
     public onScalingUpdated(): void {
         const scalingMethod = this.scalingMethodInput?.val();
+        if (!scalingMethod || typeof scalingMethod !== 'string')
+            return;
+
         let additionalVal: number | undefined = undefined;
         let tmpVal: any = undefined;
         switch (scalingMethod) {
@@ -456,9 +455,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
                 break;
         }
 
-        this.invoke(
-            'updateScalingMethod', [scalingMethod, additionalVal]
-        );
+        AnalysisPanel.updateScalingMethod(scalingMethod, additionalVal);
     }
 
     @ICPCRequest()
@@ -469,6 +466,46 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
         if (crit && typeof crit === 'string')
             return crit;
         return 'med';
+    }
+
+    public static async symbolValueChanged(
+        symbol: string, value?: number
+    ): Promise<void> {
+        return this.INSTANCE.invoke('symbolValueChanged', [symbol, value]);
+    }
+
+    public static async specialize(valueMap: SymbolMap): Promise<void> {
+        return this.INSTANCE.invoke('specialize', [valueMap]);
+    }
+
+    public static async onLoadInstrumentationReport(
+        report: any, crit: string
+    ): Promise<void> {
+        return this.INSTANCE.invoke(
+            'onLoadInstrumentationReport', [report, crit]
+        );
+    }
+
+    public static async instrumentationReportChangeCriterium(
+        criterium: string
+    ): Promise<void> {
+        return this.INSTANCE.invoke(
+            'instrumentationReportChangeCriterium', [criterium]
+        );
+    }
+
+    public static async updateScalingMethod(
+        method: string, subMethod?: number
+    ): Promise<void> {
+        return this.INSTANCE.invoke('updateScalingMethod', [method, subMethod]);
+    }
+
+    public static async setOverlays(overlays: string[]): Promise<void> {
+        return this.INSTANCE.invoke('setOverlays', [overlays]);
+    }
+
+    public static async clearRuntimeReport(types?: string[]): Promise<void> {
+        return this.INSTANCE.invoke('clearRuntimeReport', [types]);
     }
 
 }

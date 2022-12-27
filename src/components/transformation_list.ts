@@ -86,8 +86,10 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest()
-    public selectTransformation(transformation: JsonTransformation): void {
-        DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+    public async selectTransformation(
+        transformation: JsonTransformation
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
             'selectTransformation', [transformation]
         );
     }

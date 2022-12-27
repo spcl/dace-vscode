@@ -149,9 +149,7 @@ export class Transformation extends TransformationListItem {
                 this.list.selectedItem = this;
                 this.list.generateHtml();
             }
-            TransofrmationListPanel.getInstance().invoke(
-                'selectTransformation', [this.json]
-            );
+            TransofrmationListPanel.selectTransformation(this.json);
         });
 
         const labelContainer = item.find('.tree-view-item-label-container');
@@ -163,17 +161,15 @@ export class Transformation extends TransformationListItem {
             'title': 'Apply transformation with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                TransofrmationListPanel.getInstance().invoke(
-                    'applyTransformations', [[this.json]]
-                );
+                TransofrmationListPanel.applyTransformations([this.json]);
                 return true;
             },
         }).appendTo(labelContainer);
 
         item.on('mouseover', () => {
             labelContainer.addClass('hover-direct');
-            TransofrmationListPanel.getInstance().invoke(
-                'highlightElements', [this.getAffectedElementsUUIDs()]
+            TransofrmationListPanel.highlightElements(
+                this.getAffectedElementsUUIDs()
             );
         });
 
@@ -216,9 +212,7 @@ export class PassPipeline extends TransformationListItem {
                 this.list.selectedItem = this;
                 this.list.generateHtml();
             }
-            TransofrmationListPanel.getInstance().invoke(
-                'selectTransformation', [this.json]
-            );
+            TransofrmationListPanel.selectTransformation(this.json);
         });
 
         const labelContainer = item.find('.tree-view-item-label-container');
@@ -230,9 +224,7 @@ export class PassPipeline extends TransformationListItem {
             'title': 'Run this pass with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                TransofrmationListPanel.getInstance().invoke(
-                    'applyTransformations', [[this.json]]
-                );
+                TransofrmationListPanel.applyTransformations([this.json]);
                 return true;
             },
         }).appendTo(labelContainer);
@@ -285,8 +277,8 @@ export class TransformationGroup extends TransformationListItem {
                 text: 'Apply All',
                 title: 'Apply all transformations with default parameters',
                 click: () => {
-                    TransofrmationListPanel.getInstance().invoke(
-                        'applyTransformations', [this.transformations]
+                    TransofrmationListPanel.applyTransformations(
+                        this.transformations
                     );
                 },
             }).appendTo(labelContainer);
@@ -297,9 +289,7 @@ export class TransformationGroup extends TransformationListItem {
             if (this.children)
                 for (const item of (this.children as Transformation[]))
                     affectedUUIDs.push(...item.getAffectedElementsUUIDs());
-            TransofrmationListPanel.getInstance().invoke(
-                'highlightElements', [affectedUUIDs]
-            );
+            TransofrmationListPanel.highlightElements(affectedUUIDs);
         });
 
         item.on('mouseout', () => {
@@ -344,8 +334,8 @@ export class PassPipelineGroup extends TransformationListItem {
                 text: 'Run All',
                 title: 'Run all passes with default parameters',
                 click: () => {
-                    TransofrmationListPanel.getInstance().invoke(
-                        'applyTransformations', [this.transformations]
+                    TransofrmationListPanel.applyTransformations(
+                        this.transformations
                     );
                 },
             }).appendTo(labelContainer);
@@ -539,6 +529,22 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
     @ICPCRequest()
     public hideLoading(): void {
         this.loadingIndicator?.hide();
+    }
+
+    public static async selectTransformation(
+        transformation: JsonTransformation
+    ): Promise<void> {
+        return this.INSTANCE.invoke('selectTransformation', [transformation]);
+    }
+
+    public static async applyTransformations(
+        transformations: JsonTransformation[]
+    ): Promise<void> {
+        return this.INSTANCE.invoke('applyTransformations', [transformations]);
+    }
+
+    public static async highlightElements(uuids: string[]): Promise<void> {
+        return this.INSTANCE.invoke('highlightElements', [uuids]);
     }
 
 }

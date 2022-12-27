@@ -3,6 +3,7 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeInterface } from '../dace_interface';
 
 import {
@@ -164,6 +165,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
     }
 
+    @ICPCRequest()
     public disableMinimap(): void {
         vscode.workspace.getConfiguration('dace.sdfv')?.update(
             'minimap', false
@@ -175,6 +177,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         });
     }
 
+    @ICPCRequest()
     public setSplitDirection(dir?: 'vertical' | 'horizontal'): void {
         vscode.workspace.getConfiguration('dace.sdfv')?.update('layout', dir);
     }
@@ -183,10 +186,12 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         return editor.document.getText();
     }
 
+    @ICPCRequest()
     public async setOutline(outlineList: any[]): Promise<void> {
         await OutlineProvider.getInstance()?.setOutline(outlineList);
     }
 
+    @ICPCRequest()
     public async goToSource(
         pFilePath: string, startRow: number, startChar: number, endRow: number,
         endChar: number
@@ -220,6 +225,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
             this.goToFileLocation(fPath, startRow, startChar, endRow, endChar);
     }
 
+    @ICPCRequest()
     public async goToCPP(
         sdfgName: string, sdfgId: number, stateId: number, nodeId: number,
         cachePath?: string,
@@ -313,6 +319,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         );
     }
 
+    @ICPCRequest()
     public async processQueuedInvocations(sdfgName: string): Promise<void> {
         const retainedInvocations = [];
         for (const call of this.queuedProcedureCalls) {
@@ -371,8 +378,8 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         }
 
         if (!editorIsLoaded) {
-            // The SDFG isn't yet loaded so we store the messages to execute
-            // after the SDFG is loaded (calls `process_queued_messages`).
+            // The SDFG isn't yet loaded so we store the ICPCs to execute
+            // after the SDFG is loaded (calls `processQueuedInvocations`).
             for (const call of procedureCalls)
                 this.queuedProcedureCalls.push(call);
             vscode.commands.executeCommand(
@@ -392,6 +399,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
     }
 
+    @ICPCRequest()
     public async refreshTransformationHistory(
         resetActive: boolean = false
     ): Promise<void> {
@@ -400,6 +408,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         );
     }
 
+    @ICPCRequest()
     public async updateAnalysisPanel(
         activeOverlays: any[], symbols: any, scalingMethod?: string,
         scalingSubMethod?: string, availableOverlays?: any[]
@@ -482,29 +491,14 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
             });
 
             // Handle received messages from the webview.
-            editor.register(this.disableMinimap, this);
-            editor.register(this.setSplitDirection, this);
+            editor.registerRequestHandler(this);
             editor.register(
                 this.getUpToDateContents, this, undefined, [editor]
             );
-            editor.register(this.goToSource, this);
-            editor.register(this.goToCPP, this);
-            editor.register(this.setOutline, this);
-            editor.register(this.processQueuedInvocations, this);
-            editor.register(this.updateAnalysisPanel, this);
-            editor.register(
-                this.refreshTransformationHistory, this
-            );
+            editor.registerRequestHandler(DaCeInterface.getInstance());
 
-            const dace = DaCeInterface.getInstance();
-            editor.register(dace.loadTransformations, dace);
-            editor.register(dace.expandLibraryNode, dace);
-            editor.register(dace.previewTransformation, dace);
-            editor.register(dace.applyTransformations, dace);
-            editor.register(dace.exportTransformation, dace);
-            editor.register(dace.writeToActiveDocument, dace);
-            editor.register(dace.getFlops, dace);
-
+            // Selectively only expose a few of the methods for the following
+            // handlers.
             const xfList = TransformationListProvider.getInstance()!;
             editor.register(xfList.clearTransformations, xfList);
             editor.register(xfList.setTransformations, xfList);
