@@ -357,7 +357,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
                 if (nodeOverlay && nodeOverlay !== 'none' &&
                     typeof nodeOverlay === 'string')
                     overlays.push(nodeOverlay);
-                const edgeOverlay = this.nodeOverlaySelect?.val();
+                const edgeOverlay = this.edgeOverlaySelect?.val();
                 if (edgeOverlay && edgeOverlay !== 'none' &&
                     typeof edgeOverlay === 'string')
                     overlays.push(edgeOverlay);
