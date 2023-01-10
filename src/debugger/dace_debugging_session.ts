@@ -1,10 +1,10 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { LoggingDebugSession, TerminatedEvent } from 'vscode-debugadapter';
+import { LoggingDebugSession, TerminatedEvent } from '@vscode/debugadapter';
+import { DebugProtocol } from '@vscode/debugprotocol';
 import * as vscode from 'vscode';
 import * as os from 'os';
-import { DebugProtocol } from 'vscode-debugprotocol';
 import { BreakpointHandler } from './breakpoint_handler';
 import { PORT } from './dace_listener';
 
