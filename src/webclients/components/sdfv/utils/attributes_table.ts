@@ -11,7 +11,7 @@ import {
     SDFGElement,
     sdfg_property_to_string,
     State
-} from '@spcl/sdfv/out';
+} from '@spcl/sdfv/src';
 import { editor as monaco_editor } from 'monaco-editor';
 import { Range } from '../../../../types';
 import {
@@ -28,7 +28,7 @@ import {
     ValueProperty
 } from '../properties/properties';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
-import { VSCodeSDFV } from '../vscode_sdfv';
+import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 import {
     createSingleUseModal,
     doForAllNodeTypes,
@@ -297,20 +297,17 @@ export function attrTablePutSelect(
             'class': 'btn btn-sm btn-primary sdfv-property-expand-libnode-btn',
             'text': 'Expand',
             'click': () => {
-                if (vscode)
-                    vscode.postMessage({
-                        type: 'dace.expand_library_node',
-                        nodeId: [
-                            elem.sdfg.sdfg_list_id,
-                            elem.parent_id,
-                            elem.id,
-                        ],
-                    });
+                const nodeId = [
+                    elem.sdfg.sdfg_list_id,
+                    elem.parent_id,
+                    elem.id,
+                ];
+                SDFVComponent.getInstance().invoke(
+                    'expandLibraryNode', [nodeId]
+                );
             },
         }).appendTo(cell);
-        const inPreviewMode = !document.getElementById(
-            'exit-preview-button'
-        )?.classList.contains('hidden');
+        const inPreviewMode = $('#exit-preview-button').is(':visible');
         if (inPreviewMode) {
             expandButton.prop('disabled', 'disabled');
             expandButton.addClass('btn-disabled');

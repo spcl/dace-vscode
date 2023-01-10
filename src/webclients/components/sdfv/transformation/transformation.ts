@@ -1,13 +1,15 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { JsonTransformation, JsonTransformationGroup, JsonTransformationList } from '../../transformations/transformations';
+import {
+    JsonTransformation,
+    JsonTransformationGroup,
+    JsonTransformationList
+} from '../../transformations/transformations';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { generateAttributesTable } from '../utils/attributes_table';
 import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
-import { VSCodeSDFV } from '../vscode_sdfv';
-
-declare const vscode: any;
+import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 
 /**
  * Get the set of element uuids affected by a given transformation.
@@ -62,15 +64,40 @@ export function getCleanedSelectedElements(): string {
 /**
  * Request a list of applicable transformations from DaCe.
  */
-export function getApplicableTransformations(): void {
-    const renderer = VSCodeRenderer.getInstance();
-    if (renderer !== null && vscode !== undefined) {
-        vscode.postMessage({
-            type: 'dace.load_transformations',
-            sdfg: VSCodeSDFV.getInstance().getSdfgString(),
-            selectedElements: getCleanedSelectedElements(),
-        });
-    }
+export async function getApplicableTransformations(): Promise<any[]> {
+    return SDFVComponent.getInstance().invoke(
+        'loadTransformations', [
+            VSCodeSDFV.getInstance().getSdfgString(),
+            getCleanedSelectedElements(),
+        ]
+    );
+}
+
+export async function refreshXform(sdfv: VSCodeSDFV): Promise<void> {
+    clearSelectedTransformation();
+    return getApplicableTransformations().then(transformations => {
+        sdfv.setDaemonConnected(true);
+        if (transformations !== undefined)
+            sdfv.setTransformations({
+                selection: [],
+                viewport: [],
+                passes: [],
+                uncategorized: [{
+                    title: 'Uncategorized',
+                    ordering: 0,
+                    xforms: transformations,
+                }],
+            });
+        else
+            sdfv.setTransformations({
+                selection: [],
+                viewport: [],
+                passes: [],
+                uncategorized: [],
+            });
+
+        sortTransformations(true, refreshTransformationList, true);
+    });
 }
 
 /**
@@ -292,21 +319,21 @@ export async function sortTransformations(
 /**
  * Refresh the list of transformations shown in VSCode's transformation pane.
  */
-export function refreshTransformationList(hideLoading: boolean = false): void {
+export async function refreshTransformationList(
+    hideLoading: boolean = false
+): Promise<void> {
     const transformations = VSCodeSDFV.getInstance().getTransformations();
-    if (vscode !== undefined && transformations !== undefined)
+    if (transformations !== undefined)
         if (VSCodeSDFV.getInstance().getViewingHistoryState())
-            vscode.postMessage({
-                type: 'transformation_list.clear_transformations',
-                reason:
+            await SDFVComponent.getInstance().invoke(
+                'clearTransformations', [
                     'Can\'t show transformations while viewing a history state',
-            });
+                ]
+            );
         else
-            vscode.postMessage({
-                type: 'transformation_list.set_transformations',
-                transformations: transformations,
-                hideLoading: hideLoading,
-            });
+            await SDFVComponent.getInstance().invoke(
+                'setTransformations', [transformations, hideLoading]
+            );
 }
 
 export function clearSelectedTransformation(): void {
@@ -346,6 +373,8 @@ export function showTransformationDetails(xform: JsonTransformation): void {
         text: xform.docstring,
     }).appendTo(xformInfoContainer);
 
+    // TODO: Silence error messages that are being printed if this doesn't
+    // exist.
     const xformImage = $('<object>', {
         class: 'transformation-image',
         type: 'image/gif',
@@ -379,11 +408,9 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     $('<div>', {
         class: 'button',
         click: () => {
-            if (vscode)
-                vscode.postMessage({
-                    type: 'dace.preview_transformation',
-                    transformation: xform,
-                });
+            SDFVComponent.getInstance().invoke(
+                'previewTransformation', [xform]
+            );
         },
         mouseenter: () => {
             highlightUUIDs(affectedIds);
@@ -414,10 +441,9 @@ export function showTransformationDetails(xform: JsonTransformation): void {
         $('<div>', {
             class: 'button',
             click: () => {
-                vscode.postMessage({
-                    type: 'dace.export_transformation_to_file',
-                    transformation: xform,
-                });
+                SDFVComponent.getInstance().invoke(
+                    'exportTransformation', [xform]
+                );
             },
         }).append($('<span>', {
             text: 'Export To File',
@@ -431,16 +457,13 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     VSCodeSDFV.getInstance().infoBoxShow(true);
 }
 
-export function applyTransformations(...xforms: JsonTransformation[]): void {
-    if (vscode) {
-        VSCodeRenderer.getInstance()?.clearSelectedItems();
-        VSCodeSDFV.getInstance().clearInfoBox(true);
-        const el = document.getElementById('exit-preview-button');
-        if (el)
-            el.className = 'button hidden';
-        vscode.postMessage({
-            type: 'dace.apply_transformations',
-            transformations: xforms,
-        });
-    }
+export async function applyTransformations(
+    ...xforms: JsonTransformation[]
+): Promise<void> {
+    VSCodeRenderer.getInstance()?.clearSelectedItems();
+    VSCodeSDFV.getInstance().clearInfoBox(true);
+    $('#exit-preview-button').hide();
+    return SDFVComponent.getInstance().invoke(
+        'applyTransformations', [xforms]
+    );
 }

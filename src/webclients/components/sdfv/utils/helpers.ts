@@ -16,9 +16,9 @@ import {
     SDFGElement,
     SDFGElementType,
     sdfg_range_elem_to_string,
-} from '@spcl/sdfv/out';
+} from '@spcl/sdfv/src';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
-import { VSCodeSDFV } from '../vscode_sdfv';
+import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 
 declare const vscode: any;
 
@@ -279,7 +279,7 @@ export function elementUpdateLabel(
                         element.parent_id + '/' +
                         element.data.node.scope_exit + '/-1'
                     );
-                    if (exitElem) {
+                    if (exitElem && exitElem.element) {
                         element.data.node.label = computeScopeLabel(element);
                         exitElem.element.data.node.label =
                             element.data.node.label;
@@ -291,7 +291,7 @@ export function elementUpdateLabel(
                         element.parent_id + '/' +
                         element.data.node.scope_entry + '/-1'
                     );
-                    if (entryElem) {
+                    if (entryElem && entryElem.element) {
                         element.data.node.label =
                             computeScopeLabel(entryElem.element);
                         entryElem.element.data.node.label =
@@ -373,15 +373,10 @@ export function vscodeWriteGraph(g: JsonSDFG): void {
     unGraphiphySdfg(g);
     // Stringify with a replacer that removes undefined and sets it to null,
     // so the values don't get dropped.
-    if (vscode)
-        vscode.postMessage({
-            type: 'dace.write_edit_to_sdfg',
-            sdfg: JSON.stringify(
-                g, (_k, v) => {
-                    return v === undefined ? null : v;
-                }
-            ),
-        });
+    const nv = JSON.stringify(g, (_k, v) => {
+        return v === undefined ? null : v;
+    });
+    SDFVComponent.getInstance().invoke('writeToActiveDocument', [nv]);
 }
 
 export function reselectRendererElement(elem: SDFGElement): void {
@@ -490,6 +485,11 @@ class ContextMenu {
     private constructor() {
         $(document.body).on('click', () => {
             this.hide();
+        });
+
+        $(document.body).on('keydown', evt => {
+            if (evt.key === 'Escape')
+                this.hide();
         });
 
         this.container = $('<nav>', {

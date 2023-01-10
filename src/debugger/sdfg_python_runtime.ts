@@ -160,7 +160,7 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
 
         let webview = undefined;
         if (program === undefined) {
-            webview = DaCeVSCode.getInstance().getActiveEditor();
+            webview = DaCeVSCode.getInstance().getActiveWebview();
             const fileName = DaCeVSCode.getInstance().getActiveSdfgFileName();
 
             if (webview === undefined || fileName === undefined) {
@@ -272,7 +272,7 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
                         env.DACE_profiling = '1';
 
                     console.log(pythonCommand, path);
-                    
+
                     const child = cp.spawn(pythonCommand, [path], {
                         cwd: workspaceRoot,
                         env: env,

@@ -12,8 +12,9 @@ import {
     SDFV,
     SimpleRect,
     State,
-} from '@spcl/sdfv/out';
+} from '@spcl/sdfv/src';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
+import { SDFVComponent } from '../vscode_sdfv';
 
 declare const vscode: any;
 
@@ -49,11 +50,11 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
     constructor(renderer: VSCodeRenderer) {
         super(renderer);
 
-        vscode.postMessage({
-            type: 'bp_handler.get_saved_nodes',
-            sdfgName: this.renderer.get_sdfg().attributes.name,
+        SDFVComponent.getInstance().invoke(
+            'getSavedNodes', [this.renderer.get_sdfg().attributes.name]
+        ).then(() => {
+            this.refresh();
         });
-        this.refresh();
     }
 
     public getSDFGElement(element: SDFGElement): NodeIdTuple {
@@ -117,22 +118,20 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
                     this.eraseBreakpoint(
                         foregroundElem, this.renderer.get_context()
                     );
-                    vscode.postMessage({
-                        type: 'bp_handler.remove_breakpoint',
-                        node: sdfgElem,
-                        sdfgName: this.renderer.get_sdfg().attributes.name
-                    });
+                    SDFVComponent.getInstance().invoke(
+                        'removeBreakpoint',
+                        [sdfgElem, this.renderer.get_sdfg().attributes.name]
+                    );
                 } else {
                     this.breakpoints.set(elemUUID, BreakpointType.BOUND);
                     this.drawBreakpoint(
                         foregroundElem, this.renderer.get_context(),
                         BreakpointType.BOUND
                     );
-                    vscode.postMessage({
-                        type: 'bp_handler.add_breakpoint',
-                        node: sdfgElem,
-                        sdfgName: this.renderer.get_sdfg().attributes.name
-                    });
+                    SDFVComponent.getInstance().invoke(
+                        'addBreakpoint',
+                        [sdfgElem, this.renderer.get_sdfg().attributes.name]
+                    );
                 }
 
                 this.renderer.draw_async();

@@ -3,10 +3,11 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeInterface } from '../dace_interface';
+import { DaCeVSCode } from '../extension';
 
 import { BaseComponent } from './base_component';
-import { ComponentMessageHandler } from './messaging/component_message_handler';
 
 export class OutlineProvider
 extends BaseComponent
@@ -16,7 +17,7 @@ implements vscode.WebviewViewProvider {
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: OutlineProvider | undefined = undefined;
+    private static INSTANCE?: OutlineProvider;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         OutlineProvider.INSTANCE = new OutlineProvider(ctx, this.viewType);
@@ -83,30 +84,33 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            webviewView.webview.onDidReceiveMessage(message => {
-                ComponentMessageHandler.getInstance().handleMessage(
-                    message,
-                    webviewView.webview
-                );
-            });
+            this.setTarget(webviewView.webview);
         });
     }
 
-    public handleMessage(message: any, origin: vscode.Webview): void {
-        switch (message.type) {
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
+    public async setOutline(outlineList: any[]): Promise<void> {
+        await this.invoke('setOutline', [outlineList]);
     }
 
-    public clearOutline(reason: string | undefined) {
-        this.view?.webview.postMessage({
-            type: 'clear_outline',
-            reason: reason,
-        });
+    public async clearOutline(reason?: string): Promise<void> {
+        await this.invoke('clearOutline', [reason]);
     }
 
+    @ICPCRequest()
+    public async highlightElement(elementUUID: string): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'highlightUUIDs', [elementUUID]
+        );
+    }
+
+    @ICPCRequest()
+    public async zoomToNode(elementUUID: string): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'zoomToUUIDs', [elementUUID]
+        );
+    }
+
+    @ICPCRequest()
     public refresh() {
         vscode.commands.executeCommand('sdfgOutline.sync');
     }

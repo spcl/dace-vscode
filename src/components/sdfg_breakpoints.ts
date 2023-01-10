@@ -3,9 +3,13 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { BreakpointHandler } from '../debugger/breakpoint_handler';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
+import {
+    BreakpointHandler,
+    ISDFGDebugNodeInfo
+} from '../debugger/breakpoint_handler';
 import { BaseComponent } from './base_component';
-import { ComponentMessageHandler } from './messaging/component_message_handler';
+import { SdfgViewerProvider } from './sdfg_viewer';
 
 export class SdfgBreakpointProvider
 extends BaseComponent
@@ -71,13 +75,37 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            webviewView.webview.onDidReceiveMessage(message => {
-                ComponentMessageHandler.getInstance().handleMessage(
-                    message,
-                    webviewView.webview
-                );
-            });
+            this.setTarget(webviewView.webview);
         });
+    }
+
+    @ICPCRequest()
+    public goToSDFG(node: ISDFGDebugNodeInfo) {
+        if (node.sdfgName && node.sdfgPath)
+            SdfgViewerProvider.getInstance()?.goToSDFG(
+                `${node.sdfgId}/${node.stateId}/-1/-1`, node.sdfgName,
+                node.sdfgPath, true
+            );
+    }
+
+    @ICPCRequest()
+    public goToCPP(node: ISDFGDebugNodeInfo) {
+        if (node.sdfgName && node.sdfgPath)
+            SdfgViewerProvider.getInstance()?.goToCPP(
+                node.sdfgName, node.sdfgId, node.stateId, node.nodeId,
+                node.cache
+            );
+    }
+
+    @ICPCRequest()
+    public removeBreakpoint(node: ISDFGDebugNodeInfo): void {
+        // TODO: Inform the BPHandler and SDFV
+    }
+
+    public async addBreakpoint(
+        node: ISDFGDebugNodeInfo, unbounded: boolean = false
+    ): Promise<void> {
+        return this.invoke('addSDFGBreakpoint', [node, unbounded]);
     }
 
     public show() {
@@ -90,26 +118,13 @@ implements vscode.WebviewViewProvider {
         return this.view.visible;
     }
 
-    public handleMessage(message: any, origin?: vscode.Webview): void {
-        switch (message.type) {
-            case 'refresh_sdfg_breakpoints':
-                message.nodes = BreakpointHandler.getInstance()?.getAllNodes();
-            // Fallthrough to send to the webview
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
+    public async clear(): Promise<void> {
+        return this.invoke('refresh', [undefined]);
     }
 
-    public clear(reason: string | undefined) {
-        this.view?.webview.postMessage({
-            type: 'clear',
-            reason: reason,
-        });
-    }
-
-    public refresh() {
-        vscode.commands.executeCommand('sdfgBreakpoints.sync');
+    public async refresh(): Promise<void> {
+        const nodes = BreakpointHandler.getInstance()?.getAllNodes();
+        return this.invoke('onRefresh', [nodes]);
     }
 
 }

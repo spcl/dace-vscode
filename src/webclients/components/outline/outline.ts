@@ -10,17 +10,22 @@ import '../../elements/treeview/treeview.css';
 
 import './outline.css';
 
-import * as $ from 'jquery';
+import $ = require('jquery');
+(window as any).jQuery = $;
 
 import {
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
+import {
     CustomTreeView,
-    CustomTreeViewItem,
+    CustomTreeViewItem
 } from '../../elements/treeview/treeview';
+import {
+    ICPCWebclientMessagingComponent
+} from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
 declare const media_src: string;
-
-let outlineList: OutlineList | null = null;
 
 class OutlineItem extends CustomTreeViewItem {
 
@@ -44,20 +49,16 @@ class OutlineItem extends CustomTreeViewItem {
         const item = super.generateHtml();
 
         item.on('click', (e) => {
-            if (vscode)
-                vscode.postMessage({
-                    type: 'sdfv.zoom_to_node',
-                    uuid: this.elementUUID,
-                });
+            OutlinePanel.getInstance().invoke(
+                'zoomToNode', [[this.elementUUID]]
+            );
             e.stopPropagation();
         });
 
         item.on('mouseover', () => {
-            if (vscode)
-                vscode.postMessage({
-                    type: 'sdfv.highlight_elements',
-                    elements: [this.elementUUID],
-                });
+            OutlinePanel.getInstance().invoke(
+                'highlightElement', [[this.elementUUID]]
+            );
         });
 
         return item;
@@ -97,60 +98,70 @@ class OutlineList extends CustomTreeView {
 
 }
 
-function setOutlineRecursive(
-    list: any[], parent: OutlineList | OutlineItem | null
-): void {
-    if (!outlineList || !parent)
-        return;
-    for (const item of list) {
-        const outlineItem = new OutlineItem(
-            item['icon'],
-            item['type'],
-            item['label'],
-            item['collapsed'],
-            item['uuid']
-        );
-        outlineItem.list = outlineList;
+class OutlinePanel extends ICPCWebclientMessagingComponent {
 
-        if (item['children'] !== undefined && item['children'].length)
-            setOutlineRecursive(item['children'], outlineItem);
+    private static readonly INSTANCE: OutlinePanel = new OutlinePanel();
 
-        parent.addItem(outlineItem);
+    private constructor() {
+        super();
     }
+
+    public static getInstance(): OutlinePanel {
+        return this.INSTANCE;
+    }
+
+    private outlineList?: OutlineList;
+
+    public init(): void {
+        super.init(vscode, window);
+
+        this.outlineList = new OutlineList($('#outline-list'));
+        this.outlineList.generateHtml();
+        this.outlineList.show();
+
+        this.invoke('refresh');
+    }
+
+    @ICPCRequest()
+    public setOutline(outlineList: any[]): void {
+        this.outlineList?.clear();
+        this.setOutlineRecursive(outlineList, this.outlineList);
+        this.outlineList?.notifyDataChanged();
+    }
+
+    private setOutlineRecursive(
+        list: any[], parent?: OutlineList | OutlineItem
+    ): void {
+        if (!parent)
+            return;
+
+        for (const item of list) {
+            const outlineItem = new OutlineItem(
+                item['icon'],
+                item['type'],
+                item['label'],
+                item['collapsed'],
+                item['uuid']
+            );
+            outlineItem.list = this.outlineList;
+
+            if (item['children'] !== undefined && item['children'].length)
+                this.setOutlineRecursive(item['children'], outlineItem);
+
+            parent.addItem(outlineItem);
+        }
+    }
+
+    @ICPCRequest()
+    public clearOutline(reason?: string): void {
+        if (reason !== undefined)
+            this.outlineList?.clear(reason);
+        else
+            this.outlineList?.clear();
+    }
+
 }
 
 $(() => {
-    outlineList = new OutlineList($('#outline-list'));
-    outlineList.generateHtml();
-    outlineList.show();
-
-    // Add a listener to receive messages from the extension.
-    window.addEventListener('message', e => {
-        const message = e.data;
-        switch (message.type) {
-            case 'set_outline':
-                if (message.outlineList !== undefined) {
-                    outlineList?.clear();
-                    setOutlineRecursive(
-                        message.outlineList,
-                        outlineList
-                    );
-                    outlineList?.notifyDataChanged();
-                }
-                break;
-            case 'clear_outline':
-                if (message.reason !== undefined)
-                    outlineList?.clear(message.reason);
-                else
-                    outlineList?.clear();
-                break;
-            default:
-                break;
-        }
-    });
-
-    if (vscode)
-        vscode.postMessage({
-            type: 'sdfv.refresh_outline',
-        });
+    OutlinePanel.getInstance().init();
 });

@@ -2,29 +2,33 @@
 // All rights reserved.
 
 import {
-    SDFGRenderer,
-    JsonSDFG,
-    ModeButtons,
     EntryNode,
-    ExitNode,
-    get_uuid_graph_element,
     find_graph_element_by_uuid,
-    SDFGElement,
-    set_positioning_info,
-    SDFGElementType,
+    JsonSDFG,
     JsonSDFGState,
     memlet_tree_complete,
-} from '@spcl/sdfv/out';
+    ModeButtons,
+    OperationalIntensityOverlay,
+    SDFGElementType,
+    SDFGRenderer,
+    set_positioning_info,
+    StaticFlopsOverlay
+} from '@spcl/sdfv/src';
+import { AnalysisController } from '../analysis/analysis_controller';
+import {
+    refreshTransformationList,
+    refreshXform,
+    sortTransformations
+} from '../transformation/transformation';
 import {
     createSingleUseModal,
     findJsonSDFGElementByUUID,
     findMaximumSdfgId,
-    unGraphiphySdfg,
-    vscodeWriteGraph,
+    vscodeWriteGraph
 } from '../utils/helpers';
 import {
-    vscodeHandleEvent,
-    VSCodeSDFV,
+    SDFVComponent,
+    VSCodeSDFV
 } from '../vscode_sdfv';
 
 declare const vscode: any;
@@ -54,7 +58,52 @@ export class VSCodeRenderer extends SDFGRenderer {
             userTransform, debugDraw, backgroundColor, modeButtons
         );
         VSCodeSDFV.getInstance().set_renderer(this.INSTANCE);
-        this.INSTANCE.register_ext_event_handler(vscodeHandleEvent);
+
+        this.INSTANCE.on('add_element', this.INSTANCE.addNodeToGraph);
+        this.INSTANCE.on(
+            'query_libnode', this.INSTANCE.showSelectLibraryNodeDialog
+        );
+        this.INSTANCE.on(
+            'active_overlays_changed',
+            AnalysisController.getInstance().refreshAnalysisPane
+        );
+        this.INSTANCE.on('exit_preview', () => {
+            SDFVComponent.getInstance().invoke(
+                'getUpToDateContents'
+            ).then(sdfg => {
+                VSCodeSDFV.getInstance().updateContents(sdfg, true);
+                SDFVComponent.getInstance().invoke(
+                    'refreshTransformationHistory', [true]
+                );
+            });
+        });
+        this.INSTANCE.on('graph_edited', this.INSTANCE.sendNewSdfgToVscode);
+        this.INSTANCE.on('selection_changed', multSelectionChanged => {
+            if (multSelectionChanged)
+                refreshXform(VSCodeSDFV.getInstance());
+            else
+                sortTransformations(false, refreshTransformationList, true);
+        });
+        this.INSTANCE.on('backend_data_requested', (type, overlay) => {
+            switch (type) {
+                case 'flops':
+                    SDFVComponent.getInstance().invoke('getFlops')
+                        .then((flopsMap) => {
+                            if (!flopsMap)
+                                return;
+                            const renderer = VSCodeRenderer.getInstance();
+                            const oMan = renderer?.get_overlay_manager();
+                            const oType = VSCodeSDFV.OVERLAYS[overlay];
+                            const ol = oMan?.get_overlay(oType);
+                            (ol as
+                                StaticFlopsOverlay |
+                                OperationalIntensityOverlay
+                            )?.update_flops_map(flopsMap);
+                        });
+                    break;
+            }
+        });
+
         return this.INSTANCE;
     }
 
@@ -134,9 +183,9 @@ export class VSCodeRenderer extends SDFGRenderer {
                     this.minimap_ctx = null;
                     this.minimap_canvas = null;
                     disableMinimapButton.remove();
-                    vscode.postMessage({
-                        type: 'sdfv.disable_minimap',
-                    });
+                    SDFVComponent.getInstance().invoke(
+                        'disableMinimap'
+                    );
                 },
             }).appendTo($(this.container));
         }
@@ -162,9 +211,8 @@ export class VSCodeRenderer extends SDFGRenderer {
     }
 
     public async addNodeToGraph(
-        addType: SDFGElementType, parentUUID: string, lib: string | null = null,
-        edgeStartUUID: string | null = null,
-        edgeStartConn: string | null = null, edgeDstConn: string | null = null
+        addType: SDFGElementType, parentUUID: string, lib?: string,
+        edgeStartUUID?: string, edgeStartConn?: string, edgeDstConn?: string
     ): Promise<void> {
         const metaDict = await VSCodeSDFV.getInstance().getMetaDict();
         const meta = metaDict[addType];
@@ -434,39 +482,6 @@ export class VSCodeRenderer extends SDFGRenderer {
         }
     }
 
-    public removeGraphNodes(nodes: SDFGElement[]): void {
-        let g = this.sdfg;
-        unGraphiphySdfg(g);
-
-        const uuids = [];
-        for (let i = 0; i < nodes.length; i++) {
-            const node = nodes[i];
-            const uuid = get_uuid_graph_element(node);
-            uuids.push(uuid);
-
-            // If we're deleting a scope node, we want to remove the
-            // corresponding entry/exit node as well.
-            let otherUUID = undefined;
-            if (node instanceof EntryNode)
-                otherUUID = node.sdfg.sdfg_list_id + '/' +
-                    node.parent_id + '/' +
-                    node.data.node.scope_exit + '/-1';
-            else if (node instanceof ExitNode)
-                otherUUID = node.sdfg.sdfg_list_id + '/' +
-                    node.parent_id + '/' +
-                    node.data.node.scope_entry + '/-1';
-
-            if (otherUUID)
-                uuids.push(otherUUID);
-        }
-
-        vscode.postMessage({
-            type: 'dace.remove_nodes',
-            sdfg: JSON.stringify(g),
-            uuids: uuids,
-        });
-    }
-
     /**
      * Set the correct poisiton for newly added graph elements.
      * This is called as a callback after a new element has been added to the
@@ -484,7 +499,6 @@ export class VSCodeRenderer extends SDFGRenderer {
 
         let el = find_graph_element_by_uuid(this.graph, first).element;
 
-        // TODO: set in construction attribute
         this.canvas_manager?.translate_element(
             el, { x: el.x, y: el.y }, this.add_position, this.graph,
             this.sdfg_list, this.state_parent_list, null, true

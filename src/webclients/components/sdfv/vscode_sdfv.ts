@@ -1,7 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as $ from 'jquery';
+import $ = require('jquery');
 (window as any).jQuery = $;
 
 // JQuery Plugin to allow for editable selects.
@@ -49,33 +49,46 @@ import {
     SDFV,
     State,
     StaticFlopsOverlay,
-    traverse_sdfg_scopes,
-} from '@spcl/sdfv/out';
-import { JsonTransformation, JsonTransformationList } from '../transformations/transformations';
-import { refreshAnalysisPane } from './analysis/analysis';
+    traverse_sdfg_scopes
+} from '@spcl/sdfv/src';
+import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
+import {
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
+import {
+    ICPCWebclientMessagingComponent
+} from '../../messaging/icpc_webclient_messaging_component';
+import {
+    JsonTransformation,
+    JsonTransformationList
+} from '../transformations/transformations';
+import { AnalysisController } from './analysis/analysis_controller';
 import {
     BreakpointIndicator,
-    refreshBreakpoints,
+    refreshBreakpoints
 } from './breakpoints/breakpoints';
-import { MessageHandler } from './messaging/message_handler';
 import { VSCodeRenderer } from './renderer/vscode_renderer';
 import {
-    getApplicableTransformations,
+    clearSelectedTransformation,
     refreshTransformationList,
-    sortTransformations,
+    refreshXform,
+    showTransformationDetails,
+    sortTransformations
 } from './transformation/transformation';
 import {
     appendDataDescriptorTable,
-    generateAttributesTable,
+    generateAttributesTable
 } from './utils/attributes_table';
 import {
+    highlightUUIDs,
     reselectRendererElement,
     showContextMenu,
     vscodeWriteGraph,
+    zoomToUUIDs
 } from './utils/helpers';
-import { LViewRenderer } from '@spcl/sdfv/out/local_view/lview_renderer';
 
 declare const vscode: any;
+declare const MINIMAP_ENABLED: boolean | undefined;
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
 
 export class VSCodeSDFV extends SDFV {
@@ -101,7 +114,21 @@ export class VSCodeSDFV extends SDFV {
             'BreakpointIndicator': BreakpointIndicator,
             'MemoryLocationOverlay': MemoryLocationOverlay,
             'OperationalIntensityOverlay': OperationalIntensityOverlay,
+            'LogicalGroupOverlay': LogicalGroupOverlay,
         };
+
+    private processingOverlay?: JQuery<HTMLElement>;
+    private processingOverlayMsg?: JQuery<HTMLElement>;
+    private infoContainer?: JQuery<HTMLElement>;
+    private layoutToggleBtn?: JQuery<HTMLElement>;
+    private expandInfoBtn?: JQuery<HTMLElement>;
+    private infoCloseBtn?: JQuery<HTMLElement>;
+    private topBar?: JQuery<HTMLElement>;
+
+    private infoDragBar?: JQuery<HTMLElement>;
+    private draggingInfoBar: boolean = false;
+    private infoBarLastVertWidth: string = '250px';
+    private infoBarLastHorHeight: string = '200px';
 
     private monaco: any | null = null;
     private sdfgString: string | null = null;
@@ -119,6 +146,156 @@ export class VSCodeSDFV extends SDFV {
     private selectedTransformation: JsonTransformation | null = null;
 
     public infoTrayExplicitlyHidden: boolean = false;
+
+    public async initialize(): Promise<void> {
+        this.initDOM();
+        this.initInfoBox();
+        this.initSearch();
+
+        await this.refreshSdfg();
+        this.processingOverlay?.hide();
+    }
+
+    private initDOM(): void {
+        this.processingOverlay = $('#processing-overlay');
+        this.processingOverlayMsg = $('#processing-overlay-msg');
+
+        this.infoContainer = $('#info-container');
+        this.layoutToggleBtn = $('#layout-toggle-btn');
+        this.infoDragBar = $('#info-drag-bar');
+        this.expandInfoBtn = $('#expand-info-btn');
+        this.infoCloseBtn = $('#info-close-btn');
+        this.topBar = $('#top-bar');
+    }
+
+    private initInfoBox(): void {
+        // Set up resizing of the info drawer.
+        this.draggingInfoBar = false;
+        const infoChangeHeightHandler = (e: any) => {
+            if (this.draggingInfoBar) {
+                const documentHeight = $('body').innerHeight();
+                if (documentHeight) {
+                    const newHeight = documentHeight - e.originalEvent.y;
+                    if (newHeight < documentHeight) {
+                        this.infoBarLastHorHeight = newHeight.toString() + 'px';
+                        this.infoContainer?.height(this.infoBarLastHorHeight);
+                    }
+                }
+            }
+        };
+        const infoChangeWidthHandler = (e: any) => {
+            if (this.draggingInfoBar) {
+                const documentWidth = $('body').innerWidth();
+                if (documentWidth) {
+                    const newWidth = documentWidth - e.originalEvent.x;
+                    if (newWidth < documentWidth) {
+                        this.infoBarLastVertWidth = newWidth.toString() + 'px';
+                        this.infoContainer?.width(this.infoBarLastVertWidth);
+
+                        if (MINIMAP_ENABLED)
+                            $('#minimap').css('right', (newWidth + 5).toString() + 'px');
+                    }
+                }
+            }
+        };
+        $(document).on('mouseup', () => {
+            this.draggingInfoBar = false;
+        });
+        this.infoDragBar?.on('mousedown', () => {
+            this.draggingInfoBar = true;
+        });
+        if (SPLIT_DIRECTION === 'vertical')
+            $(document).on('mousemove', infoChangeWidthHandler);
+        else
+            $(document).on('mousemove', infoChangeHeightHandler);
+
+        // Set up changing the info drawer layout.
+        this.layoutToggleBtn?.on('click', () => {
+            const oldDir = SPLIT_DIRECTION;
+            SPLIT_DIRECTION = SPLIT_DIRECTION === 'vertical' ?
+                'horizontal' : 'vertical';
+            this.layoutToggleBtn?.removeClass(oldDir);
+            this.layoutToggleBtn?.addClass(SPLIT_DIRECTION);
+            if (oldDir === 'vertical') {
+                this.infoContainer?.removeClass('offcanvas-end');
+                this.infoContainer?.addClass('offcanvas-bottom');
+                this.infoDragBar?.removeClass('gutter-vertical');
+                this.infoDragBar?.addClass('gutter-horizontal');
+                this.expandInfoBtn?.removeClass('expand-info-btn-top');
+                this.expandInfoBtn?.addClass('expand-info-btn-bottom');
+                $(document).off('mousemove', infoChangeWidthHandler);
+                $(document).on('mousemove', infoChangeHeightHandler);
+                this.infoContainer?.width('100%');
+                this.infoContainer?.height(this.infoBarLastHorHeight);
+            } else {
+                this.infoContainer?.removeClass('offcanvas-bottom');
+                this.infoContainer?.addClass('offcanvas-end');
+                this.infoDragBar?.removeClass('gutter-horizontal');
+                this.infoDragBar?.addClass('gutter-vertical');
+                this.expandInfoBtn?.removeClass('expand-info-btn-bottom');
+                this.expandInfoBtn?.addClass('expand-info-btn-top');
+                $(document).off('mousemove', infoChangeHeightHandler);
+                $(document).on('mousemove', infoChangeWidthHandler);
+                this.infoContainer?.height('100%');
+                this.infoContainer?.width(this.infoBarLastVertWidth);
+            }
+
+            infoBoxCheckStacking(this.infoContainer);
+            infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
+
+            SDFVComponent.getInstance().invoke(
+                'setSplitDirection', [SPLIT_DIRECTION]
+            );
+        });
+
+        if (this.infoContainer)
+            new ResizeObserver(() => {
+                infoBoxCheckStacking(this.infoContainer);
+            }).observe(this.infoContainer[0]);
+
+        // Set up toggling the info tray.
+        this.infoCloseBtn?.on('click', () => {
+            this.expandInfoBtn?.show();
+            this.infoContainer?.removeClass('show');
+            VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = true;
+        });
+        this.expandInfoBtn?.on('click', () => {
+            this.expandInfoBtn?.hide();
+            infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
+            this.infoContainer?.addClass('show');
+            VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = false;
+        });
+    }
+
+    public initSearch(): void {
+        const caseBtn = $('#search-case-sensitive-btn');
+        const searchInput = $('#search');
+        caseBtn.on('click', () => {
+            if (caseBtn) {
+                if (caseBtn)
+                    if (caseBtn.css('background-color') === 'transparent') {
+                        caseBtn.css('background-color', '#245779');
+                        caseBtn.prop('checked', true);
+                    } else {
+                        caseBtn.css('background-color', 'transparent');
+                        caseBtn.prop('checked', false);
+                    }
+            }
+
+            VSCodeSDFV.getInstance().startFindInGraph();
+        });
+
+        // Start search whenever text is entered in the search bar.
+        searchInput.on('input', () => {
+            VSCodeSDFV.getInstance().startFindInGraph();
+        });
+
+        // Start search on enter press in the search bar.
+        searchInput.on('keydown', (e) => {
+            if (e.key === 'Enter')
+                VSCodeSDFV.getInstance().startFindInGraph();
+        });
+    }
 
     public init_menu(): void {
         this.initInfoBox();
@@ -146,10 +323,6 @@ export class VSCodeSDFV extends SDFV {
 
     public start_find_in_graph(): void {
         this.startFindInGraph();
-    }
-
-    public initInfoBox(): void {
-        // Pass.
     }
 
     /**
@@ -326,8 +499,13 @@ export class VSCodeSDFV extends SDFV {
         return externalRet;
     }
 
-    public outline(renderer: SDFGRenderer, graph: DagreSDFG): void {
-        if (vscode === undefined)
+    @ICPCRequest()
+    public async outline(
+        pRenderer?: SDFGRenderer, pGraph?: DagreSDFG
+    ): Promise<void> {
+        const renderer = pRenderer || this.renderer;
+        const graph = pGraph || renderer?.get_graph();
+        if (!graph || !renderer)
             return;
 
         const outlineList = [];
@@ -415,10 +593,7 @@ export class VSCodeSDFV extends SDFV {
             }
         );
 
-        vscode.postMessage({
-            type: 'outline.set_outline',
-            outlineList: outlineList,
-        });
+        return SDFVComponent.getInstance().invoke('setOutline', [outlineList]);
     }
 
     /**
@@ -564,11 +739,12 @@ export class VSCodeSDFV extends SDFV {
             }, 1);
     }
 
-    public refreshSdfg(): void {
-        if (vscode)
-            vscode.postMessage({
-                type: 'sdfv.get_current_sdfg',
-            });
+    public async refreshSdfg(): Promise<void> {
+        return SDFVComponent.getInstance().invoke('getUpToDateContents').then(
+            sdfg => {
+                this.updateContents(sdfg);
+            }
+        );
     }
 
     public setRendererContent(
@@ -597,13 +773,13 @@ export class VSCodeSDFV extends SDFV {
         if (!previewing) {
             this.sdfgString = sdfgString;
             if (!preventRefreshes)
-                getApplicableTransformations();
+                refreshXform(this);
         }
 
         const graph = this.renderer.get_graph();
         if (graph)
             this.outline(this.renderer, graph);
-        refreshAnalysisPane();
+        AnalysisController.getInstance().refreshAnalysisPane();
         refreshBreakpoints();
 
         const selectedElements = this.renderer.get_selected_elements();
@@ -614,10 +790,10 @@ export class VSCodeSDFV extends SDFV {
                 new SDFG(this.renderer.get_sdfg())
             );
 
-        vscode.postMessage({
-            type: 'sdfv.process_queued_messages',
-            sdfgName: this.renderer.get_sdfg().attributes.name,
-        });
+        const sdfgName = this.renderer.get_sdfg().attributes.name;
+        SDFVComponent.getInstance().invoke(
+            'processQueuedInvocations', [sdfgName]
+        );
     }
 
     public resetRendererContent(): void {
@@ -648,7 +824,7 @@ export class VSCodeSDFV extends SDFV {
         const graph = renderer?.get_graph();
         if (renderer && graph) {
             this.outline(renderer, graph);
-            refreshAnalysisPane();
+            AnalysisController.getInstance().refreshAnalysisPane();
             refreshBreakpoints();
         }
     }
@@ -657,34 +833,25 @@ export class VSCodeSDFV extends SDFV {
      * Send a request to the extension to jump to a specific source code file
      * and location, if it exists.
      */
-    public gotoSource(
+    public async gotoSource(
         filePath: string, startRow: number, startChar: number, endRow: number,
         endChar: number
-    ): void {
-        vscode.postMessage({
-            type: 'sdfv.go_to_source',
-            filePath: filePath,
-            startRow: startRow,
-            startChar: startChar,
-            endRow: endRow,
-            endChar: endChar,
-        });
+    ): Promise<void> {
+        return SDFVComponent.getInstance().invoke(
+            'goToSource', [filePath, startRow, startChar, endRow, endChar]
+        );
     }
 
     /*
      * Send a request to the extension to jump to the generated code location of
      * the current Node.
      */
-    public gotoCpp(
+    public async gotoCpp(
         sdfgName: string, sdfgId: number, stateId: number, nodeId: number
-    ): void {
-        vscode.postMessage({
-            type: 'sdfv.go_to_cpp',
-            sdfgName: sdfgName,
-            sdfgId: sdfgId,
-            stateId: stateId,
-            nodeId: nodeId
-        });
+    ): Promise<void> {
+        return SDFVComponent.getInstance().invoke(
+            'goToCPP', [sdfgName, sdfgId, stateId, nodeId]
+        );
     }
 
     public toggleBreakpoints(): void {
@@ -753,6 +920,7 @@ export class VSCodeSDFV extends SDFV {
         this.sdfgString = sdfgString;
     }
 
+    @ICPCRequest()
     public setMetaDict(sdfgMetaDict: { [key: string]: any } | null): void {
         this.sdfgMetaDict = sdfgMetaDict;
     }
@@ -761,6 +929,7 @@ export class VSCodeSDFV extends SDFV {
         this.viewingHistoryState = viewingHistoryState;
     }
 
+    @ICPCRequest()
     public setShowingBreakpoints(showingBreakpoints: boolean): void {
         this.showingBreakpoints = showingBreakpoints;
         const alreadyActive =
@@ -780,7 +949,8 @@ export class VSCodeSDFV extends SDFV {
         }
     }
 
-    public setDaemonConnected(daemonConnected: boolean): void {
+    @ICPCRequest()
+    public setDaemonConnected(daemonConnected: boolean = true): void {
         this.daemonConnected = daemonConnected;
         VSCodeRenderer.getInstance()?.setDaemonConnected(daemonConnected);
     }
@@ -812,61 +982,139 @@ export class VSCodeSDFV extends SDFV {
         this.infoBoxShow(true);
     }
 
+    @ICPCRequest()
+    public updateContents(
+        newContent: string, preventRefreshes: boolean = false
+    ): void {
+        this.setViewingHistoryState(false);
+        $('#exit-preview-button')?.hide();
+        this.setRendererContent(newContent, false, preventRefreshes);
+    }
+
+    /**
+     * Preview a specific SDFG.
+     * If no SDFG is provided, this exits any active preview.
+     * If `histState` is provided, the preview is of an SDFG at a history state,
+     * making the application of transformations impossible.
+     * @param pSdfg     SDFG to preview
+     * @param histState Whether or not this is a history state
+     * @param refresh   Whether or not to refresh the transformation list
+     */
+    @ICPCRequest()
+    public previewSdfg(
+        pSdfg?: string, histState: boolean = false, refresh: boolean = false
+    ): void {
+        if (pSdfg) {
+            this.setRendererContent(pSdfg, true);
+            $('#exit-preview-button')?.show();
+            if (histState) {
+                this.clearInfoBox();
+                this.setViewingHistoryState(true);
+                refreshTransformationList();
+            }
+        } else {
+            // No SDFG provided, exit preview.
+            this.resetRendererContent();
+            this.setViewingHistoryState(false);
+            $('#exit-preview-button')?.hide();
+            if (refresh)
+                refreshTransformationList();
+        }
+    }
+
+    @ICPCRequest()
+    public setProcessingOverlay(show: boolean = false, text?: string): void {
+        if (show) {
+            this.processingOverlay?.show();
+            this.processingOverlayMsg?.text(text ?? '');
+        } else {
+            this.processingOverlay?.hide();
+            this.processingOverlayMsg?.text('');
+        }
+    }
+
+    @ICPCRequest()
+    public async resyncTransformations(hard: boolean = false): Promise<void> {
+        const xforms = this.getTransformations();
+        clearSelectedTransformation();
+        if (hard ||
+            (xforms.selection.length === 0 &&
+             xforms.viewport.length === 0 &&
+             xforms.passes.length === 0 &&
+             xforms.uncategorized.length === 0))
+            await refreshXform(this);
+        else
+            await refreshTransformationList();
+    }
+
+    @ICPCRequest()
+    public async selectTransformation(
+        transformation: JsonTransformation
+    ): Promise<void> {
+        showTransformationDetails(transformation);
+        this.setSelectedTransformation(transformation);
+    }
+
+    @ICPCRequest()
+    public async setOverlays(overlays: string[]): Promise<void> {
+        const overlayManager =
+            VSCodeRenderer.getInstance()?.get_overlay_manager();
+        const activeOverlays = overlayManager?.get_overlays();
+
+        const toActivate = [];
+        for (const ol of overlays)
+            toActivate.push(VSCodeSDFV.OVERLAYS[ol]);
+
+        // Deregister any previously active overlays.
+        overlayManager?.deregisterAll(toActivate);
+
+        // Register all the selected overlays.
+        for (const ol of toActivate) {
+            if (!overlayManager?.is_overlay_active(ol))
+                overlayManager?.register_overlay(ol);
+        }
+    }
+
 }
 
-export function vscodeHandleEvent(event: string, data: any): void {
-    switch (event) {
-        case 'remove_graph_nodes':
-            if (data && data.nodes)
-                VSCodeRenderer.getInstance()?.removeGraphNodes(data.nodes);
-            break;
-        case SDFGRendererEvent.ADD_ELEMENT:
-            if (data && data.type !== undefined && data.parent !== undefined &&
-                data.lib !== undefined && data.edgeA !== undefined)
-                VSCodeRenderer.getInstance()?.addNodeToGraph(
-                    data.type, data.parent, data.lib, data.edgeA,
-                    data.edgeAConn ? data.edgeAConn : null,
-                    data.conn ? data.conn : null
-                );
-            break;
-        case SDFGRendererEvent.QUERY_LIBNODE:
-            if (data && data.callback)
-                VSCodeRenderer.getInstance()?.showSelectLibraryNodeDialog(
-                    data.callback
-                );
-            break;
-        case 'warn_no_daemon':
-            VSCodeRenderer.getInstance()?.showNoDaemonDialog();
-            break;
-        case 'active_overlays_changed':
-            refreshAnalysisPane();
-            break;
-        case 'exit_preview':
-            VSCodeSDFV.getInstance().setViewingHistoryState(false);
-            break;
-        case 'collapse_state_changed':
-        case 'position_changed':
-            VSCodeRenderer.getInstance()?.sendNewSdfgToVscode();
-            break;
-        case 'renderer_selection_changed':
-            if (data && data.multi_selection_changed)
-                getApplicableTransformations();
-            else
-                sortTransformations(false, refreshTransformationList, true);
-            break;
+export class SDFVComponent extends ICPCWebclientMessagingComponent {
+
+    private static readonly INSTANCE = new SDFVComponent();
+
+    private constructor() {
+        super();
     }
+
+    public static getInstance(): SDFVComponent {
+        return SDFVComponent.INSTANCE;
+    }
+
+    public init(): void {
+        super.init(vscode, window);
+
+        this.register(zoomToUUIDs);
+        this.register(highlightUUIDs);
+        this.register(refreshTransformationList);
+
+        const sdfv = VSCodeSDFV.getInstance();
+        this.registerRequestHandler(sdfv);
+        sdfv.initialize();
+
+        this.registerRequestHandler(AnalysisController.getInstance());
+    }
+
 }
 
 function infoBoxCheckUncoverTopBar(
-    infoContainer: JQuery<HTMLElement>, topBar: JQuery<HTMLElement>
+    infoContainer?: JQuery<HTMLElement>, topBar?: JQuery<HTMLElement>
 ): void {
     // If the info container is to the side, ensure it doesn't cover up the
     // top bar when shown.
-    if (infoContainer.hasClass('offcanvas-end')) {
-        const topBarHeight = topBar.outerHeight(false);
-        infoContainer.css('top', topBarHeight + 'px');
+    if (infoContainer?.hasClass('offcanvas-end')) {
+        const topBarHeight = topBar?.outerHeight(false);
+        infoContainer?.css('top', topBarHeight + 'px');
     } else {
-        infoContainer.css('top', '');
+        infoContainer?.css('top', '');
     }
 }
 
@@ -875,154 +1123,19 @@ function infoBoxCheckUncoverTopBar(
  * If not, stack them one on top of the other.
  * @param infoContainer The info box container.
  */
-function infoBoxCheckStacking(infoContainer: JQuery<HTMLElement>): void {
-    const innerWidth = infoContainer.innerWidth();
+function infoBoxCheckStacking(infoContainer?: JQuery<HTMLElement>): void {
+    const innerWidth = infoContainer?.innerWidth();
     if (innerWidth && innerWidth <= 575)
-        infoContainer.addClass('stacked');
+        infoContainer?.addClass('stacked');
     else
-        infoContainer.removeClass('stacked');
+        infoContainer?.removeClass('stacked');
 }
 
 $(() => {
-    const infoContainer = $('#info-container');
-    const layoutToggleBtn = $('#layout-toggle-btn');
-    const infoDragBar = $('#info-drag-bar');
-    const expandInfoBtn = $('#expand-info-btn');
-    const infoCloseBtn = $('#info-close-btn');
-    const topBar = $('#top-bar');
-
-    // Set up resizing of the info drawer.
-    let draggingDragInfoBar = false;
-    let lastVertWidth = infoContainer.css('min-width');
-    let lastHorHeight = infoContainer.css('min-height');
-    const infoChangeHeightHandler = (e: any) => {
-        if (draggingDragInfoBar) {
-            const documentHeight = $('body').innerHeight();
-            if (documentHeight) {
-                const newHeight = documentHeight - e.originalEvent.y;
-                if (newHeight < documentHeight) {
-                    lastHorHeight = newHeight.toString() + 'px';
-                    infoContainer.height(lastHorHeight);
-                }
-            }
-        }
-    };
-    const infoChangeWidthHandler = (e: any) => {
-        if (draggingDragInfoBar) {
-            const documentWidth = $('body').innerWidth();
-            if (documentWidth) {
-                const newWidth = documentWidth - e.originalEvent.x;
-                if (newWidth < documentWidth) {
-                    lastVertWidth = newWidth.toString() + 'px';
-                    infoContainer.width(lastVertWidth);
-                }
-            }
-        }
-    };
-    $(document).on('mouseup', () => {
-        draggingDragInfoBar = false;
-    });
-    infoDragBar.on('mousedown', () => {
-        draggingDragInfoBar = true;
-    });
-    if (SPLIT_DIRECTION === 'vertical')
-        $(document).on('mousemove', infoChangeWidthHandler);
-    else
-        $(document).on('mousemove', infoChangeHeightHandler);
-
-    // Set up changing the info drawer layout.
-    layoutToggleBtn.on('click', () => {
-        const oldDir = SPLIT_DIRECTION;
-        SPLIT_DIRECTION = SPLIT_DIRECTION === 'vertical' ?
-            'horizontal' : 'vertical';
-        layoutToggleBtn.removeClass(oldDir);
-        layoutToggleBtn.addClass(SPLIT_DIRECTION);
-        if (oldDir === 'vertical') {
-            infoContainer.removeClass('offcanvas-end');
-            infoContainer.addClass('offcanvas-bottom');
-            infoDragBar.removeClass('gutter-vertical');
-            infoDragBar.addClass('gutter-horizontal');
-            expandInfoBtn.removeClass('expand-info-btn-top');
-            expandInfoBtn.addClass('expand-info-btn-bottom');
-            $(document).off('mousemove', infoChangeWidthHandler);
-            $(document).on('mousemove', infoChangeHeightHandler);
-            infoContainer.width('100%');
-            infoContainer.height(lastHorHeight);
-        } else {
-            infoContainer.removeClass('offcanvas-bottom');
-            infoContainer.addClass('offcanvas-end');
-            infoDragBar.removeClass('gutter-horizontal');
-            infoDragBar.addClass('gutter-vertical');
-            expandInfoBtn.removeClass('expand-info-btn-bottom');
-            expandInfoBtn.addClass('expand-info-btn-top');
-            $(document).off('mousemove', infoChangeHeightHandler);
-            $(document).on('mousemove', infoChangeWidthHandler);
-            infoContainer.height('100%');
-            infoContainer.width(lastVertWidth);
-        }
-        infoBoxCheckStacking(infoContainer);
-        infoBoxCheckUncoverTopBar(infoContainer, topBar);
-        vscode.postMessage({
-            type: 'sdfv.set_split_direction',
-            direction: SPLIT_DIRECTION,
-        });
-    });
-
-    new ResizeObserver(() => {
-        infoBoxCheckStacking(infoContainer);
-    }).observe(infoContainer[0]);
-
-    // Set up toggling the info tray.
-    infoCloseBtn.on('click', () => {
-        expandInfoBtn.show();
-        infoContainer.removeClass('show');
-        VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = true;
-    });
-    expandInfoBtn.on('click', () => {
-        expandInfoBtn.hide();
-        infoBoxCheckUncoverTopBar(infoContainer, topBar);
-        infoContainer.addClass('show');
-        VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = false;
-    });
-
-    $('#processing-overlay').hide();
-    vscode.postMessage({
-        type: 'sdfv.get_current_sdfg',
-    });
-
-    $('#search-case-sensitive-btn').on('click', function () {
-        const caseBtn = $('#search-case-sensitive-btn');
-        if (caseBtn) {
-            if (caseBtn)
-                if (caseBtn.css('background-color') === 'transparent') {
-                    caseBtn.css('background-color', '#245779');
-                    caseBtn.prop('checked', true);
-                } else {
-                    caseBtn.css('background-color', 'transparent');
-                    caseBtn.prop('checked', false);
-                }
-        }
-
-        VSCodeSDFV.getInstance().startFindInGraph();
-    });
-
-    // Start search whenever text is entered in the search bar.
-    $('#search').on('input', function (e) {
-        VSCodeSDFV.getInstance().startFindInGraph();
-    });
-
-    // Start search on enter press in the search bar.
-    $('#search').on('keydown', (e) => {
-        if (e.key === 'Enter')
-            VSCodeSDFV.getInstance().startFindInGraph();
-    });
+    SDFVComponent.getInstance().init();
 
     $('#breakpoint-btn').on('click', () => {
         VSCodeSDFV.getInstance().toggleBreakpoints();
-    });
-
-    window.addEventListener('message', (e) => {
-        MessageHandler.getInstance().handleMessage(e.data);
     });
 
     document.body.onresize = () => {

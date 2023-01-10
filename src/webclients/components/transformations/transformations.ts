@@ -1,7 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as $ from 'jquery';
+import $ = require('jquery');
 (window as any).jQuery = $;
 
 import 'bootstrap';
@@ -14,14 +14,17 @@ import '../../elements/treeview/treeview.css';
 import './transformations.css';
 
 import {
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
+import {
     CustomTreeView,
-    CustomTreeViewItem,
+    CustomTreeViewItem
 } from '../../elements/treeview/treeview';
+import {
+    ICPCWebclientMessagingComponent
+} from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
-
-let transformationList: TransformationList | null = null;
-let loadingIndicator: JQuery | null = null;
 
 class TransformationListItem extends CustomTreeViewItem {
 
@@ -142,16 +145,11 @@ export class Transformation extends TransformationListItem {
         item.addClass('transformation');
 
         item.on('click', () => {
-            if (vscode) {
-                if (this.list !== undefined) {
-                    this.list.selectedItem = this;
-                    this.list.generateHtml();
-                }
-                vscode.postMessage({
-                    type: 'sdfv.select_transformation',
-                    transformation: this.json,
-                });
+            if (this.list !== undefined) {
+                this.list.selectedItem = this;
+                this.list.generateHtml();
             }
+            TransofrmationListPanel.selectTransformation(this.json);
         });
 
         const labelContainer = item.find('.tree-view-item-label-container');
@@ -163,21 +161,16 @@ export class Transformation extends TransformationListItem {
             'title': 'Apply transformation with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                vscode.postMessage({
-                    type: 'sdfv.apply_transformations',
-                    transformations: [this.json],
-                });
+                TransofrmationListPanel.applyTransformations([this.json]);
                 return true;
             },
         }).appendTo(labelContainer);
 
         item.on('mouseover', () => {
             labelContainer.addClass('hover-direct');
-            if (vscode)
-                vscode.postMessage({
-                    type: 'sdfv.highlight_elements',
-                    elements: this.getAffectedElementsUUIDs(),
-                });
+            TransofrmationListPanel.highlightElements(
+                this.getAffectedElementsUUIDs()
+            );
         });
 
         item.on('mouseout', () => {
@@ -215,16 +208,11 @@ export class PassPipeline extends TransformationListItem {
         item.addClass('transformation');
 
         item.on('click', () => {
-            if (vscode) {
-                if (this.list !== undefined) {
-                    this.list.selectedItem = this;
-                    this.list.generateHtml();
-                }
-                vscode.postMessage({
-                    type: 'sdfv.select_transformation',
-                    transformation: this.json,
-                });
+            if (this.list !== undefined) {
+                this.list.selectedItem = this;
+                this.list.generateHtml();
             }
+            TransofrmationListPanel.selectTransformation(this.json);
         });
 
         const labelContainer = item.find('.tree-view-item-label-container');
@@ -236,10 +224,7 @@ export class PassPipeline extends TransformationListItem {
             'title': 'Run this pass with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                vscode.postMessage({
-                    type: 'sdfv.apply_transformations',
-                    transformations: [this.json],
-                });
+                TransofrmationListPanel.applyTransformations([this.json]);
                 return true;
             },
         }).appendTo(labelContainer);
@@ -292,10 +277,9 @@ export class TransformationGroup extends TransformationListItem {
                 text: 'Apply All',
                 title: 'Apply all transformations with default parameters',
                 click: () => {
-                    vscode.postMessage({
-                        type: 'sdfv.apply_transformations',
-                        transformations: this.transformations,
-                    });
+                    TransofrmationListPanel.applyTransformations(
+                        this.transformations
+                    );
                 },
             }).appendTo(labelContainer);
 
@@ -305,10 +289,7 @@ export class TransformationGroup extends TransformationListItem {
             if (this.children)
                 for (const item of (this.children as Transformation[]))
                     affectedUUIDs.push(...item.getAffectedElementsUUIDs());
-            vscode.postMessage({
-                type: 'sdfv.highlight_elements',
-                elements: affectedUUIDs,
-            });
+            TransofrmationListPanel.highlightElements(affectedUUIDs);
         });
 
         item.on('mouseout', () => {
@@ -353,10 +334,9 @@ export class PassPipelineGroup extends TransformationListItem {
                 text: 'Run All',
                 title: 'Run all passes with default parameters',
                 click: () => {
-                    vscode.postMessage({
-                        type: 'sdfv.apply_transformations',
-                        transformations: this.transformations,
-                    });
+                    TransofrmationListPanel.applyTransformations(
+                        this.transformations
+                    );
                 },
             }).appendTo(labelContainer);
 
@@ -488,53 +468,87 @@ class TransformationList extends CustomTreeView {
 
 }
 
+class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
+
+    private static readonly INSTANCE = new TransofrmationListPanel();
+
+    private constructor() {
+        super();
+    }
+
+    public static getInstance(): TransofrmationListPanel {
+        return this.INSTANCE;
+    }
+
+    private loadingIndicator?: JQuery;
+    private transformationList?: TransformationList;
+
+    public init(): void {
+        super.init(vscode, window);
+
+        this.loadingIndicator = $('#transformation-loading-indicator');
+        this.transformationList = new TransformationList(
+            $('#transformation-list')
+        );
+        this.transformationList.generateHtml();
+        this.transformationList.show();
+
+        this.invoke('refresh');
+    }
+
+    @ICPCRequest()
+    public deselect(): void {
+        if (this.transformationList)
+            this.transformationList.selectedItem = undefined;
+        this.transformationList?.generateHtml();
+    }
+
+    @ICPCRequest()
+    public setTransformations(
+        transformations: JsonTransformationList, hideLoading: boolean = true
+    ): void {
+        this.transformationList?.setTransformations(transformations);
+        if (hideLoading)
+            this.loadingIndicator?.hide();
+    }
+
+    @ICPCRequest()
+    public clearTransformations(reason?: string): void {
+        this.loadingIndicator?.hide();
+        if (reason !== undefined)
+            this.transformationList?.clear(reason);
+        else
+            this.transformationList?.clear();
+    }
+
+    @ICPCRequest()
+    public showLoading(): void {
+        this.loadingIndicator?.show();
+    }
+
+    @ICPCRequest()
+    public hideLoading(): void {
+        this.loadingIndicator?.hide();
+    }
+
+    public static async selectTransformation(
+        transformation: JsonTransformation
+    ): Promise<void> {
+        return this.INSTANCE.invoke('selectTransformation', [transformation]);
+    }
+
+    public static async applyTransformations(
+        transformations: JsonTransformation[]
+    ): Promise<void> {
+        return this.INSTANCE.invoke('applyTransformations', [transformations]);
+    }
+
+    public static async highlightElements(uuids: string[]): Promise<void> {
+        return this.INSTANCE.invoke('highlightElements', [uuids]);
+    }
+
+}
+
 $(() => {
-    loadingIndicator = $('#transformation-loading-indicator');
-
-    transformationList = new TransformationList(
-        $('#transformation-list')
-    );
-    transformationList.generateHtml();
-    transformationList.show();
-
-    // Add a listener to receive messages from the extension.
-    window.addEventListener('message', e => {
-        const message = e.data;
-        switch (message.type) {
-            case 'deselect':
-                if (transformationList)
-                    transformationList.selectedItem = undefined;
-                transformationList?.generateHtml();
-                break;
-            case 'set_transformations':
-                transformationList?.setTransformations(
-                    message.transformations
-                );
-                if (message.hideLoading)
-                    loadingIndicator?.hide();
-                break;
-            case 'clear_transformations':
-                loadingIndicator?.hide();
-                if (message.reason !== undefined)
-                    transformationList?.clear(
-                        message.reason
-                    );
-                else
-                    transformationList?.clear();
-                break;
-            case 'show_loading':
-                loadingIndicator?.show();
-                break;
-            case 'hide_loading':
-                loadingIndicator?.hide();
-                break;
-            default:
-                break;
-        }
-    });
-
-    if (vscode)
-        vscode.postMessage({
-            type: 'sdfv.refresh_transformation_list',
-        });
+    TransofrmationListPanel.getInstance().init();
 });

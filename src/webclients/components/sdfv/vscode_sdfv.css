@@ -53,6 +53,24 @@ button.close {
   text-shadow: none;
 }
 
+.btn-sdfv {
+  border-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  background-color: var(--vscode-button-background);
+}
+
+.btn-sdfv:hover {
+  color: var(--vscode-button-foreground);
+  border-color: var(--vscode-button-background);
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.btn-sdfv.show {
+  color: var(--vscode-button-foreground);
+  border-color: var(--vscode-button-background);
+  background-color: var(--vscode-button-hoverBackground);
+}
+
 .btn-primary {
   border-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);

@@ -3,9 +3,9 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DaCeVSCode } from '../extension';
-import { SdfgViewerProvider } from '../components/sdfg_viewer';
 import { SdfgBreakpointProvider } from '../components/sdfg_breakpoints';
+import { SdfgViewerProvider } from '../components/sdfg_viewer';
+import { DaCeVSCode } from '../extension';
 
 export type ISDFGDebugNodeInfo = {
     cache: string | undefined,
@@ -198,7 +198,7 @@ export class BreakpointHandler extends vscode.Disposable {
                         if (files && filePath && files[filePath].length !== 0) {
                             // Jump to the corresponding location in
                             // the C++ file
-                            // TODO: look through list for the right file as one 
+                            // TODO: look through list for the right file as one
                             //      src file might have multiple Dace programs
                             let file = files[filePath][0];
                             SdfgViewerProvider.getInstance()?.goToFileLocation(
@@ -284,7 +284,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 }
             ),
             vscode.workspace.onDidOpenTextDocument(async res => {
-                /* 
+                /*
                    When the User changes the file displayed,
                    check if there is a corresponding SDFG and
                    C++ file saved, if so, display the menus
@@ -447,44 +447,6 @@ export class BreakpointHandler extends vscode.Disposable {
         this.saveState();
     }
 
-    public handleMessage(message: any, _origin: any) {
-        let node: ISDFGDebugNodeInfo;
-        switch (message.type) {
-            case 'add_breakpoint':
-                node = message.node;
-                if (node)
-                    BreakpointHandler.getInstance()?.handleNodeAdded(
-                        new SDFGDebugNode(
-                            node.sdfgId, node.stateId, node.nodeId
-                        ),
-                        message.sdfgName
-                    );
-                break;
-            case 'remove_breakpoint':
-                node = message.node;
-                if (node)
-                    BreakpointHandler.getInstance()?.handleNodeRemoved(
-                        new SDFGDebugNode(
-                            node.sdfgId, node.stateId, node.nodeId
-                        ),
-                        message.sdfgName
-                    );
-                break;
-            case 'get_saved_nodes':
-                BreakpointHandler.getInstance()?.getSavedNodes(
-                    message.sdfgName
-                );
-                break;
-            case 'has_saved_nodes':
-                BreakpointHandler.getInstance()?.hasSavedNodes(
-                    message.sdfgName
-                );
-                break;
-            default:
-                break;
-        }
-    }
-
     public setAllBreakpoints() {
         // Map and set all Breakpoints set in the dace (python) code
         vscode.debug.breakpoints.filter(pyFilter).forEach(bp => {
@@ -577,7 +539,7 @@ export class BreakpointHandler extends vscode.Disposable {
 
         // If the path hasn't been added yet, then we'll handle the BP
         // later on when the path gets added after compilation of the
-        // DaCe program 
+        // DaCe program
         // If the path has been added, then we'll receive an array of
         // registered DaCe function names from that path
         const functions = this.files[filePath];
@@ -588,7 +550,7 @@ export class BreakpointHandler extends vscode.Disposable {
             const cachePath = currentFunc.cache;
             // Get the corresponding Node, if the line isn't in the map
             // then we expect it's not part of a DaCe program,
-            // hence we do nothing and return 
+            // hence we do nothing and return
             const pyMapPath = path.join(cachePath, 'map', 'map_py.json');
             const nodes = await this.getNode(
                 line + 1,
@@ -625,6 +587,14 @@ export class BreakpointHandler extends vscode.Disposable {
         return null;
     }
 
+    public async addBreakpoint(node: any, sdfgName: string): Promise<void> {
+        if (node)
+            return BreakpointHandler.getInstance()?.handleNodeAdded(
+                new SDFGDebugNode(node.sdfgId, node.stateId, node.nodeId),
+                sdfgName
+            );
+    }
+
     public async handleNodeAdded(
         node: SDFGDebugNode, sdfgName: string
     ): Promise<void> {
@@ -654,29 +624,33 @@ export class BreakpointHandler extends vscode.Disposable {
                 if (!this.savedNodes[sdfgName])
                     this.savedNodes[sdfgName] = [];
                 this.savedNodes[sdfgName].push(node);
-                SdfgBreakpointProvider.getInstance()?.handleMessage({
-                    type: 'add_sdfg_breakpoint',
-                    node: node.nodeInfo()
-                });
+                SdfgBreakpointProvider.getInstance()?.addBreakpoint(
+                    node.nodeInfo(), false
+                );
                 return;
             }
         }
 
         if (unbound) {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'unbound_breakpoint',
-                node: node.nodeInfo()
-            });
-            SdfgBreakpointProvider.getInstance()?.handleMessage({
-                type: 'unbound_sdfg_breakpoint',
-                node: node.nodeInfo()
-            });
+            SdfgBreakpointProvider.getInstance()?.addBreakpoint(
+                node.nodeInfo(), true
+            );
         }
 
         this.saveState();
     }
 
-    public handleNodeRemoved(node: SDFGDebugNode, sdfgName: string): void {
+    public async removeBreakpoint(node: any, sdfgName: string): Promise<void> {
+        if (node)
+            return BreakpointHandler.getInstance()?.handleNodeRemoved(
+                new SDFGDebugNode(node.sdfgId, node.stateId, node.nodeId),
+                sdfgName
+            );
+    }
+
+    public async handleNodeRemoved(
+        node: SDFGDebugNode, sdfgName: string
+    ): Promise<void> {
         if (this.savedNodes[sdfgName]) {
             this.savedNodes[sdfgName].forEach((n, i, _) => {
                 if (node.isEqual(n)) {
@@ -685,9 +659,7 @@ export class BreakpointHandler extends vscode.Disposable {
                 }
             });
             this.saveState();
-            SdfgBreakpointProvider.getInstance()?.handleMessage({
-                type: 'refresh_sdfg_breakpoints'
-            });
+            return SdfgBreakpointProvider.getInstance()?.refresh();
         }
     }
 
@@ -778,7 +750,7 @@ export class BreakpointHandler extends vscode.Disposable {
         // Sends the corresponding saved Nodes to the SDFG viewer
         const nodes = this.savedNodes[sdfgName];
         if (nodes !== undefined && nodes.length !== 0)
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+            DaCeVSCode.getInstance().getActiveWebview()?.postMessage({
                 type: 'saved_nodes',
                 nodes: nodes
             });
@@ -798,7 +770,7 @@ export class BreakpointHandler extends vscode.Disposable {
     public hasSavedNodes(sdfgName: string): void {
         const nodes = this.savedNodes[sdfgName];
         if (nodes !== undefined && nodes.length !== 0)
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
+            DaCeVSCode.getInstance().getActiveWebview()?.postMessage({
                 type: 'has_nodes'
             });
     }
@@ -859,7 +831,6 @@ export class BreakpointHandler extends vscode.Disposable {
 
     public disposeFunction(): void {
         this.removeAllBreakpoints();
-        //this.saveState();
     }
 
 }

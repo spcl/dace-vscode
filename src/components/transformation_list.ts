@@ -3,11 +3,15 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeInterface } from '../dace_interface';
 import { DaCeVSCode } from '../extension';
+import {
+    JsonTransformation,
+    JsonTransformationList
+} from '../webclients/components/transformations/transformations';
 
 import { BaseComponent } from './base_component';
-import { ComponentMessageHandler } from './messaging/component_message_handler';
 
 export class TransformationListProvider
 extends BaseComponent
@@ -17,7 +21,7 @@ implements vscode.WebviewViewProvider {
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: TransformationListProvider | undefined = undefined;
+    private static INSTANCE?: TransformationListProvider;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         TransformationListProvider.INSTANCE = new TransformationListProvider(
@@ -77,41 +81,70 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            webviewView.webview.onDidReceiveMessage(message => {
-                ComponentMessageHandler.getInstance().handleMessage(
-                    message,
-                    webviewView.webview
-                );
-            });
+            this.setTarget(webviewView.webview);
         });
     }
 
-    public handleMessage(
-        message: any,
-        _origin: vscode.Webview | undefined = undefined
-    ): void {
-        switch (message.type) {
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
+    @ICPCRequest()
+    public async selectTransformation(
+        transformation: JsonTransformation
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'selectTransformation', [transformation]
+        );
     }
 
-    public clearList(reason: string | undefined) {
-        this.handleMessage({
-            type: 'clear_transformations',
-            reason: reason,
-        });
+    @ICPCRequest()
+    public async highlightElements(uuids: string[]): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'highlightUUIDs', [uuids]
+        );
     }
 
+    @ICPCRequest()
+    public async applyTransformations(
+        transformations: JsonTransformation[]
+    ): Promise<void> {
+        return DaCeInterface.getInstance().applyTransformations(
+            transformations
+        );
+    }
+
+    public async setTransformations(
+        transformations: JsonTransformationList, hideLoading: boolean = true
+    ): Promise<void> {
+        return this.invoke('setTransformations', [
+            transformations, hideLoading
+        ]);
+    }
+
+    public async showLoading(): Promise<void> {
+        return this.invoke('showLoading');
+    }
+
+    public async hideLoading(): Promise<void> {
+        return this.invoke('hideLoading');
+    }
+
+    public async deselect(): Promise<void> {
+        return this.invoke('deselect');
+    }
+
+    public async clearTransformations(
+        reason: string | undefined
+    ): Promise<void> {
+        return this.invoke('clearTransformations', [reason]);
+    }
+
+    @ICPCRequest()
     public refresh(hard: boolean = false) {
-        this.clearList(undefined);
+        this.clearTransformations(undefined);
         if (hard)
             vscode.commands.executeCommand('transformationList.sync');
         else
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'resync_transformation_list',
-            });
+            DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+                'resyncTransformations'
+            );
     }
 
     public show() {

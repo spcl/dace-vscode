@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import { homedir } from 'os';
 import { join } from 'path';
 
-import { SdfgViewerProvider } from './components/sdfg_viewer';
+import { SdfgViewer, SdfgViewerProvider } from './components/sdfg_viewer';
 import { DaCeInterface } from './dace_interface';
 import {
     TransformationHistoryProvider,
@@ -28,17 +28,18 @@ export class DaCeVSCode {
         return this.INSTANCE;
     }
 
-    private context?: vscode.ExtensionContext = undefined;
+    private context?: vscode.ExtensionContext;
 
-    private outputChannel?: vscode.OutputChannel = undefined;
+    private outputChannel?: vscode.OutputChannel;
 
-    private activeEditor?: vscode.Webview = undefined;
-    private activeSdfgFileName?: string = undefined;
+    private activeEditor?: SdfgViewer;
+    private activeWebview?: vscode.Webview;
+    private activeSdfgFileName?: string;
 
-    private trafoProvider?: TransformationListProvider = undefined;
-    private trafoHistProvider?: TransformationHistoryProvider = undefined;
-    private outlineProvider?: OutlineProvider = undefined;
-    private analysisProvider?: AnalysisProvider = undefined;
+    private trafoProvider?: TransformationListProvider;
+    private trafoHistProvider?: TransformationHistoryProvider;
+    private outlineProvider?: OutlineProvider;
+    private analysisProvider?: AnalysisProvider;
 
     public registerCommand(command: string, handler: (...args: any[]) => any) {
         this.context?.subscriptions.push(vscode.commands.registerCommand(
@@ -57,11 +58,13 @@ export class DaCeVSCode {
                 'sdfgAnalysis.focus'
             );
 
-        this.analysisProvider.handleMessage({
-            type: 'autoload_report',
-            path: url.fsPath,
-            json: report,
-        }, undefined);
+        this.analysisProvider.invoke(
+            'onAutoloadReport', [url.fsPath]
+        ).then((criterium: string) => {
+            this.analysisProvider?.onLoadInstrumentationReport(
+                report, criterium
+            );
+        });
     }
 
     private openGeneratedSdfg(
@@ -197,7 +200,9 @@ export class DaCeVSCode {
         this.context = context;
 
         // Register the SDFG custom editor.
-        context.subscriptions.push(SdfgViewerProvider.register(context));
+        context.subscriptions.push(
+            SdfgViewerProvider.getInstance().register(context)
+        );
 
         // Register all webview view components.
         context.subscriptions.push(
@@ -268,33 +273,29 @@ export class DaCeVSCode {
             }, false , 'Loading custom transformations');
         });
         this.registerCommand('transformationList.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'get_applicable_transformations',
-            });
+            DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+                'resyncTransformations'
+            );
         });
         this.registerCommand('transformationHistory.sync', () => {
-            if (DaCeVSCode.getInstance().getActiveEditor() !== undefined)
+            if (DaCeVSCode.getInstance().getActiveWebview() !== undefined)
                 TransformationHistoryProvider.getInstance()?.refresh();
         });
         this.registerCommand('sdfgAnalysis.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'refresh_analysis_pane',
-            });
+            DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+                'refreshAnalysisPane'
+            );
         });
         this.registerCommand('sdfgBreakpoints.sync', () => {
-            SdfgBreakpointProvider.getInstance()?.handleMessage({
-                type: 'refresh_sdfg_breakpoints',
-            });
+            SdfgBreakpointProvider.getInstance()?.refresh();
         });
         this.registerCommand('sdfgOutline.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'refresh_outline',
-            });
+            DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+                'outline'
+            );
         });
         this.registerCommand('sdfg.sync', () => {
-            DaCeVSCode.getInstance().getActiveEditor()?.postMessage({
-                type: 'refresh_sdfg',
-            });
+            DaCeVSCode.getInstance().getActiveEditor()?.updateSdfg();
         });
         this.registerCommand('sdfg.applyTransformations',
             (t) => DaCeInterface.getInstance().applyTransformations(t));
@@ -402,7 +403,11 @@ export class DaCeVSCode {
         return this.outputChannel;
     }
 
-    public getActiveEditor(): vscode.Webview | undefined {
+    public getActiveWebview(): vscode.Webview | undefined {
+        return this.activeWebview;
+    }
+
+    public getActiveEditor(): SdfgViewer | undefined {
         return this.activeEditor;
     }
 
@@ -412,19 +417,23 @@ export class DaCeVSCode {
 
     public clearActiveSdfg() {
         this.activeSdfgFileName = undefined;
+        this.activeWebview = undefined;
         this.activeEditor = undefined;
 
         const clearReason = 'No SDFG selected';
         this.outlineProvider?.clearOutline(clearReason);
         this.analysisProvider?.clear(clearReason);
         this.trafoHistProvider?.clearList(clearReason);
-        this.trafoProvider?.clearList(clearReason);
+        this.trafoProvider?.clearTransformations(clearReason);
     }
 
-    public updateActiveSdfg(activeSdfgFileName: string,
-        activeEditor: vscode.Webview) {
+    public updateActiveSdfg(
+        activeEditorEditor: SdfgViewer, activeSdfgFileName: string,
+        activeEditor: vscode.Webview
+    ) {
         this.activeSdfgFileName = activeSdfgFileName;
-        this.activeEditor = activeEditor;
+        this.activeWebview = activeEditor;
+        this.activeEditor = activeEditorEditor;
 
         this.trafoProvider?.refresh();
         this.trafoHistProvider?.refresh();
@@ -440,9 +449,9 @@ export class DaCeVSCode {
                     vscode.Uri.file(this.activeSdfgFileName)
                 )).toString();
         } else {
-            if (this.activeEditor) {
+            if (this.activeWebview) {
                 const document = SdfgViewerProvider.getInstance()
-                    ?.findEditorForWebview(this.activeEditor)?.document;
+                    ?.findEditorForWebview(this.activeWebview)?.document;
                 if (document)
                     sdfgJson = document.getText();
             }

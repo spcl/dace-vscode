@@ -1,7 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { string_to_sdfg_typeclass } from '@spcl/sdfv/out';
+import { string_to_sdfg_typeclass } from '@spcl/sdfv/src';
 import { editor } from 'monaco-editor';
 import { Range } from '../../../../types';
 import { showTransformationDetails } from '../transformation/transformation';

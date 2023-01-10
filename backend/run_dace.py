@@ -6,10 +6,12 @@
 import os
 import re
 import sys
+
 try:
-    import dotenv
     import re
     import sys
+
+    import dotenv
 
     # First, load the environment
     dotenv.load_dotenv()
@@ -39,23 +41,20 @@ if 'PYTHONPATH' in vals:
     sys.path.extend(paths)
 #####################################################################
 
+import inspect
+import sys
+from argparse import ArgumentParser
+from os import path
+
 # Then, load the rest of the modules
 import aenum
-from argparse import ArgumentParser
 import dace
-import inspect
-from os import path
-import sys
 
 sys.path.append(path.abspath(path.dirname(__file__)))
 
-from dace_vscode.utils import (
-    load_sdfg_from_file,
-    disable_save_metadata,
-    restore_save_metadata,
-    get_exception_message,
-)
-from dace_vscode import transformations, arith_ops
+from dace_vscode import arith_ops, transformations
+from dace_vscode.utils import (disable_save_metadata, get_exception_message,
+                               load_sdfg_from_file, restore_save_metadata)
 
 meta_dict = {}
 
@@ -73,9 +72,8 @@ def get_property_metadata(force_regenerate=False):
         }
 
     # Lazy import to cut down on module load time.
-    from dace.sdfg.nodes import full_class_path
     from dace.properties import TypeClassProperty
-
+    from dace.sdfg.nodes import full_class_path
     # In order to get all transformation metadata the @make.properties
     # annotation for each transformation needs to have run, so the
     # transformations are registered in `dace.serialize._DACE_SERIALIZE_TYPES`.
@@ -338,6 +336,7 @@ def specialize_sdfg(path, symbol_map, remove_undef=True):
 
 def run_daemon(port):
     from logging.config import dictConfig
+
     from flask import Flask, request
 
     # Move Flask's logging over to stdout, because stderr is used for error

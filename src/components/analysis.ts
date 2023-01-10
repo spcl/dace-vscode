@@ -3,10 +3,11 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeInterface } from '../dace_interface';
+import { DaCeVSCode } from '../extension';
 
 import { BaseComponent } from './base_component';
-import { ComponentMessageHandler } from './messaging/component_message_handler';
 
 export class AnalysisProvider
 extends BaseComponent
@@ -73,13 +74,67 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            webviewView.webview.onDidReceiveMessage(message => {
-                ComponentMessageHandler.getInstance().handleMessage(
-                    message,
-                    webviewView.webview
-                );
-            });
+            this.setTarget(webviewView.webview);
         });
+    }
+
+    @ICPCRequest()
+    public async symbolValueChanged(
+        symbol: string, value?: number
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'onSymbolValueChanged', [symbol, value]
+        );
+    }
+
+    @ICPCRequest()
+    public async updateScalingMethod(
+        method: string, subMethod?: number
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'onHeatmapScalingChanged', [method, subMethod]
+        );
+    }
+
+    @ICPCRequest()
+    public async setOverlays(overlays: string[]): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'setOverlays', [overlays]
+        );
+    }
+
+    @ICPCRequest()
+    public async onLoadInstrumentationReport(
+        report: { traceEvents: any[] }, criterium: string
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'loadInstrumentationReport', [report, criterium]
+        );
+    }
+
+    @ICPCRequest()
+    public async instrumentationReportChangeCriterium(
+        criterium: string
+    ): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'setInstrumentationReportCriterium', [criterium]
+        );
+    }
+
+    @ICPCRequest()
+    public async clearRuntimeReport(types?: string[]): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            'clearRuntimeReport', [types]
+        );
+    }
+
+    @ICPCRequest()
+    public specialize(symbols: { [key: string]: any }): void {
+        const sdfgFile = DaCeVSCode.getInstance().getActiveSdfgFileName();
+        if (sdfgFile) {
+            const uri = vscode.Uri.file(sdfgFile);
+            DaCeInterface.getInstance().specializeGraph(uri, symbols);
+        }
     }
 
     public show() {
@@ -92,21 +147,11 @@ implements vscode.WebviewViewProvider {
         return this.view.visible;
     }
 
-    public handleMessage(message: any, origin?: vscode.Webview): void {
-        switch (message.type) {
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
+    public async clear(reason?: string): Promise<void>{
+        return this.invoke('clear', [reason]);
     }
 
-    public clear(reason: string | undefined) {
-        this.view?.webview.postMessage({
-            type: 'clear',
-            reason: reason,
-        });
-    }
-
+    @ICPCRequest()
     public refresh() {
         vscode.commands.executeCommand('sdfgAnalysis.sync');
     }

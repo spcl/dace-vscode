@@ -3,11 +3,11 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeInterface } from '../dace_interface';
 import { DaCeVSCode } from '../extension';
 
 import { BaseComponent } from './base_component';
-import { ComponentMessageHandler } from './messaging/component_message_handler';
 
 export class TransformationHistoryProvider
 extends BaseComponent
@@ -17,9 +17,9 @@ implements vscode.WebviewViewProvider {
 
     private view?: vscode.WebviewView;
 
-    private static INSTANCE: TransformationHistoryProvider | undefined = undefined;
+    private static INSTANCE?: TransformationHistoryProvider;
 
-    public activeHistoryItemIndex: Number | undefined = undefined;
+    public activeHistoryItemIndex?: number | null;
 
     public static register(ctx: vscode.ExtensionContext): vscode.Disposable {
         TransformationHistoryProvider.INSTANCE =
@@ -77,47 +77,41 @@ implements vscode.WebviewViewProvider {
             );
             webviewView.webview.html = baseHtml;
 
-            webviewView.webview.onDidReceiveMessage(message => {
-                ComponentMessageHandler.getInstance().handleMessage(
-                    message,
-                    webviewView.webview
+            this.setTarget(webviewView.webview);
+        });
+    }
+
+    @ICPCRequest()
+    public applyHistoryPoint(index: number): void {
+        DaCeInterface.getInstance().applyHistoryPoint(index);
+    }
+
+    @ICPCRequest()
+    public previewHistoryPoint(index?: number | null): void {
+        DaCeInterface.getInstance().previewHistoryPoint(index);
+    }
+
+    public async clearList(reason: string | undefined): Promise<void> {
+        return this.invoke('clearHistory', [reason]);
+    }
+
+    public async setHistory(
+        history: any, activeIndex?: number | null
+    ): Promise<void> {
+        return this.invoke('setHistory', [history, activeIndex]);
+    }
+
+    @ICPCRequest()
+    public async refresh(resetAcitve: boolean = false): Promise<void> {
+        return DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            if (resetAcitve)
+                this.activeHistoryItemIndex = undefined;
+            if (sdfg)
+                this.setHistory(
+                    sdfg.attributes.transformation_hist,
+                    this.activeHistoryItemIndex
                 );
-            });
         });
-    }
-
-    public handleMessage(message: any,
-                         origin: vscode.Webview | undefined = undefined): void {
-        switch (message.type) {
-            case 'refresh':
-                if (message.resetActive)
-                    this.activeHistoryItemIndex = undefined;
-                this.refresh();
-                break;
-            default:
-                this.view?.webview.postMessage(message);
-                break;
-        }
-    }
-
-    public clearList(reason: string | undefined) {
-        this.view?.webview.postMessage({
-            type: 'clear_history',
-            reason: reason,
-        });
-    }
-
-    public async refresh() {
-        this.clearList(undefined);
-        const sdfg = await DaCeVSCode.getInstance().getActiveSdfg();
-        if (sdfg !== undefined) {
-            const history = sdfg.attributes.transformation_hist;
-            this.view?.webview.postMessage({
-                type: 'set_history',
-                history: history,
-                activeIndex: this.activeHistoryItemIndex,
-            });
-        }
     }
 
     public show() {

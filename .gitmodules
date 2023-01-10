@@ -1,0 +1,3 @@
+[submodule "packages/sdfv"]
+	path = packages/sdfv
+	url = git@github.com:spcl/dace-webclient.git

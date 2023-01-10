@@ -1,7 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as $ from 'jquery';
+import $ = require('jquery');
 (window as any).jQuery = $;
 
 import 'bootstrap';
@@ -13,113 +13,113 @@ import '@spcl/sdfv/sdfv.css';
 
 import './breakpoints.css';
 
+import {
+    ICPCRequest
+} from '../../../common/messaging/icpc_messaging_component';
 import { ISDFGDebugNodeInfo } from '../../../debugger/breakpoint_handler';
+import {
+    ICPCWebclientMessagingComponent
+} from '../../messaging/icpc_webclient_messaging_component';
 
 declare const vscode: any;
 
-export function createBreakpoint(
-    root: JQuery<HTMLElement>, node: ISDFGDebugNodeInfo, color: string
-): void {
-    const listElement = $('<div>', {
-        'class': 'list-element',
-        'label': node.sdfgPath,
-        'title': node.sdfgPath,
-    }).on('click', _ => {
-        vscode.postMessage({
-            type: 'sdfv.go_to_sdfg',
-            sdfgName: node.sdfgName,
-            path: node.sdfgPath,
-            zoomTo: `${node.sdfgId}/${node.stateId}/-1/-1`,
-            displayBps: true,
+class BreakpointPanel extends ICPCWebclientMessagingComponent {
+
+    private static readonly INSTANCE: BreakpointPanel = new BreakpointPanel();
+
+    private constructor() {
+        super();
+    }
+
+    public static getInstance(): BreakpointPanel {
+        return this.INSTANCE;
+    }
+
+    private rootList?: JQuery<HTMLElement>;
+
+    public createBreakpoint(
+        root: JQuery<HTMLElement>, node: ISDFGDebugNodeInfo, color: string
+    ): void {
+        const listElement = $('<div>', {
+            'class': 'list-element',
+            'label': node.sdfgPath,
+            'title': node.sdfgPath,
+        }).on('click', _ => {
+            this.invoke('goToSDFG', [node]);
+        }).on('contextmenu', _ => {
+            this.invoke('goToCPP', [node]);
         });
-    }).on('contextmenu', _ => {
-        vscode.postMessage({
-            type: 'sdfv.go_to_cpp',
-            cachePath: node.cache,
-            sdfgName: node.sdfgName,
-            sdfgId: node.sdfgId,
-            stateId: node.stateId,
-            nodeId: node.nodeId,
+
+        const breakpoint = $('<div>', {
+            'class': 'breakpoint',
         });
-    });
 
-    const breakpoint = $('<div>', {
-        'class': 'breakpoint',
-    });
-
-    const circleContainer = $('<div>', {
-        'class': 'bp-circle-container',
-    });
-    $('<div>', {
-        'class': 'bp-circle',
-    }).css({
-        'background-color': color,
-    }).appendTo(circleContainer);
-
-    const sdfgNameContainer = $('<div>', {
-        'class': 'sdfg-name-container',
-    });
-    $('<div>', {
-        'class': 'sdfg-name',
-    }).text(node.sdfgName ? node.sdfgName : '').appendTo(sdfgNameContainer);
-
-    const removeBp = $('<div>', {
-        'class': 'remove-bp',
-    }).text('X');
-    removeBp.on('click', () => {
-        vscode.postMessage({
-            type: 'bp_handler.remove_breakpoint',
-            node: node,
-            sdfgName: node.sdfgName,
+        const circleContainer = $('<div>', {
+            'class': 'bp-circle-container',
         });
-        vscode.postMessage({
-            type: 'sdfv.remove_breakpoint',
-            node: node,
-            sdfgName: node.sdfgName,
+        $('<div>', {
+            'class': 'bp-circle',
+        }).css({
+            'background-color': color,
+        }).appendTo(circleContainer);
+
+        const sdfgNameContainer = $('<div>', {
+            'class': 'sdfg-name-container',
         });
-        // Stops propagating the click 
-        return false;
-    });
+        $('<div>', {
+            'class': 'sdfg-name',
+        }).text(node.sdfgName ? node.sdfgName : '').appendTo(sdfgNameContainer);
 
-    const sdfgIdentifier = $('<div>', {
-        'class': 'sdfg-identifier'
-    }).text(`${node.sdfgId} : ${node.stateId} : ${node.nodeId}`);
+        const removeBp = $('<div>', {
+            'class': 'remove-bp',
+        }).text('X');
+        removeBp.on('click', () => {
+            this.invoke('removeBreakpoint', [node]);
+            return false;
+        });
 
-    breakpoint.append(circleContainer);
-    breakpoint.append(sdfgNameContainer);
-    breakpoint.append(removeBp);
-    breakpoint.append(sdfgIdentifier);
-    listElement.append(breakpoint);
-    root.append(listElement);
+        const sdfgIdentifier = $('<div>', {
+            'class': 'sdfg-identifier'
+        }).text(`${node.sdfgId} : ${node.stateId} : ${node.nodeId}`);
+
+        breakpoint.append(circleContainer);
+        breakpoint.append(sdfgNameContainer);
+        breakpoint.append(removeBp);
+        breakpoint.append(sdfgIdentifier);
+        listElement.append(breakpoint);
+        root.append(listElement);
+    }
+
+    public init(): void {
+        super.init(vscode, window);
+
+        this.rootList = $('#sdfg-debug-list');
+
+        this.invoke('refresh');
+    }
+
+    @ICPCRequest()
+    public onRefresh(nodes?: ISDFGDebugNodeInfo[]): void {
+        this.rootList?.html('');
+        if (nodes && this.rootList) {
+            for (const node of nodes)
+                this.createBreakpoint(this.rootList, node, '#dd0000');
+        }
+        this.rootList?.show();
+    }
+
+    @ICPCRequest()
+    public addSDFGBreakpoint(
+        node: ISDFGDebugNodeInfo, unbounded: boolean = false
+    ): void {
+        if (this.rootList)
+            this.createBreakpoint(
+                this.rootList, node, unbounded ? '#a3a3a3' : '#dd0000'
+            );
+    }
+
 }
 
 $(() => {
-    // Add a listener to receive messages from the extension.
-    window.addEventListener('message', e => {
-        const message = e.data;
-        const rootList = $('#sdfg-debug-list');
-        switch (message.type) {
-            case 'refresh_sdfg_breakpoints':
-                rootList.html('');
-                if (message.nodes) {
-                    for (const node of message.nodes)
-                        createBreakpoint(rootList, node, '#dd0000');
-                }
-                rootList.show();
-                break;
-            case 'add_sdfg_breakpoint':
-                createBreakpoint(rootList, message.node, '#dd0000');
-                break;
-            case 'unbound_sdfg_breakpoint':
-                createBreakpoint(rootList, message.node, '#a3a3a3');
-                break;
-            default:
-                break;
-        }
-    });
-
-    if (vscode)
-        vscode.postMessage({
-            type: 'sdfgBreakpoints.refresh_sdfg_breakpoints',
-        });
+    BreakpointPanel.getInstance().init();
 });
