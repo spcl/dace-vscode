@@ -1,12 +1,12 @@
 # DaCe SDFG Editor for Visual Studio Code
 
-[![](https://vsmarketplacebadges.dev/version-short/phschaad.sdfv.svg
+[![](https://vsmarketplacebadges.dev/version-short/phschaad.sdfv.png
 )](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
-[![](https://vsmarketplacebadges.dev/installs-short/phschaad.sdfv.svg
+[![](https://vsmarketplacebadges.dev/installs-short/phschaad.sdfv.png
 )](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
-[![](https://vsmarketplacebadges.dev/downloads-short/phschaad.sdfv.svg
+[![](https://vsmarketplacebadges.dev/downloads-short/phschaad.sdfv.png
 )](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
-[![](https://vsmarketplacebadges.dev/rating-short/phschaad.sdfv.svg
+[![](https://vsmarketplacebadges.dev/rating-short/phschaad.sdfv.png
 )](https://marketplace.visualstudio.com/items?itemName=phschaad.sdfv)
 
 This Visual Studio Code extension provides a rich editor for
