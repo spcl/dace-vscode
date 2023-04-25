@@ -634,7 +634,7 @@
         "file-loader": "^6.2.0",
         "glob": "^8.0.3",
         "mocha": "^10.2.0",
-        "postcss-loader": "^7.0.2",
+        "postcss-loader": "^7.2.4",
         "rimraf": "^3.0.2",
         "sass": "^1.57.1",
         "sass-loader": "^13.2.0",
