@@ -351,6 +351,8 @@ export function clearSelectedTransformation(): void {
 export function showTransformationDetails(xform: JsonTransformation): void {
     $('#goto-source-btn').hide();
     $('#goto-cpp-btn').hide();
+    $('#goto-edge-start').hide();
+    $('#goto-edge-end').hide();
 
     VSCodeSDFV.getInstance().infoBoxSetTitle(xform.transformation);
 

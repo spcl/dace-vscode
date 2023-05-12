@@ -358,6 +358,8 @@ export class VSCodeSDFV extends SDFV {
         $('#info-title').text('');
         $('#goto-source-btn').hide();
         $('#goto-cpp-btn').hide();
+        $('#goto-edge-start').hide();
+        $('#goto-edge-end').hide();
         this.selectedTransformation = null;
         if (hide)
             $('#info-container').removeClass('show');
@@ -604,7 +606,9 @@ export class VSCodeSDFV extends SDFV {
     public fillInfo(elem: SDFGElement): void {
         const buttons = [
             $('#goto-source-btn'),
-            $('#goto-cpp-btn')
+            $('#goto-cpp-btn'),
+            $('#goto-edge-start'),
+            $('#goto-edge-end'),
         ];
 
         // Clear and hide these buttons.

@@ -277,7 +277,8 @@ pre.code {
   color: var(--vscode-button-foreground);
 }
 
-#title-btns-container {
+#title-btns-container,
+#edge-btns-container {
   margin-top: .2rem;
   display: flex;
   flex-direction: row;
@@ -292,8 +293,8 @@ pre.code {
   flex-grow: 1;
 }
 
-#goto-source-btn,
-#goto-cpp-btn {
+#title-btns-container > .button,
+#edge-btns-container > .button {
   font-size: .9rem;
   margin-right: .2rem;
 }

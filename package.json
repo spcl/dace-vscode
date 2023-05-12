@@ -4,7 +4,7 @@
     "description": "Transform and optimize data-centric programs with a click of a button",
     "version": "1.5.3",
     "engines": {
-        "vscode": "^1.68.0"
+        "vscode": "^1.75.0"
     },
     "categories": [
         "Visualization",
@@ -12,18 +12,9 @@
         "Other"
     ],
     "activationEvents": [
-        "onCustomEditor:sdfgCustom.sdfv",
         "onDebug",
         "onDebugResolve:dace-debug",
-        "onLanguage:python",
-        "onLanguage:sdfg",
-        "onCommand:sdfg.debug.run",
-        "onCommand:sdfg.debug.profile",
-        "onView:transformationList",
-        "onView:transformationHistory",
-        "onView:sdfgAnalysis",
-        "onView:sdfgBreakpoints",
-        "onView:sdfgOutline"
+        "onLanguage:python"
     ],
     "main": "./dist/extension.js",
     "publisher": "phschaad",
