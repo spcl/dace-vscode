@@ -604,9 +604,10 @@ export class DaCeInterface {
                             nodeid: nodeid,
                         },
                         (data: any) => {
-                            this.hideSpinner();
-                            this.writeToActiveDocument(data.sdfg);
-                            resolve();
+                            this.writeToActiveDocument(data.sdfg).then(() => {
+                                this.hideSpinner();
+                                resolve();
+                            });
                         },
                         async (error: any): Promise<void> => {
                             this.genericErrorHandler(
@@ -625,8 +626,9 @@ export class DaCeInterface {
     @ICPCRequest()
     public applyTransformations(transformations: JsonTransformation[]): void {
         this.sendApplyTransformationRequest(transformations, (data: any) => {
-            this.hideSpinner();
-            this.writeToActiveDocument(data.sdfg);
+            this.writeToActiveDocument(data.sdfg).then(() => {
+                this.hideSpinner();
+            });
         });
     }
 
@@ -680,20 +682,21 @@ export class DaCeInterface {
     }
 
     @ICPCRequest()
-    public writeToActiveDocument(json: JsonSDFG | string): void {
+    public async writeToActiveDocument(json: JsonSDFG | string): Promise<void> {
+        const t1 = performance.now();
         const activeEditor = DaCeVSCode.getInstance().getActiveWebview();
         if (activeEditor) {
             const sdfvInstance = SdfgViewerProvider.getInstance();
             const document = sdfvInstance?.findEditorForWebview(
                 activeEditor
             )?.document;
+            const t2 = performance.now();
             if (document) {
                 const edit = new vscode.WorkspaceEdit();
                 if (typeof json === 'string')
                     edit.replace(
                         document.uri,
-                        new vscode.Range(0, 0, document.lineCount, 0),
-                        JSON.stringify(JSON.parse(json), null, 2)
+                        new vscode.Range(0, 0, document.lineCount, 0), json
                     );
                 else
                     edit.replace(
@@ -701,7 +704,13 @@ export class DaCeInterface {
                         new vscode.Range(0, 0, document.lineCount, 0),
                         JSON.stringify(json, null, 2)
                     );
-                vscode.workspace.applyEdit(edit);
+                console.log('Applying edit');
+                const t3 = performance.now();
+                await vscode.workspace.applyEdit(edit);
+                const t4 = performance.now();
+                console.debug('Time to get active editor: ' + (t2 - t1) + 'ms');
+                console.debug('Time to construct edit: ' + (t3 - t2) + 'ms');
+                console.debug('Time to apply edit: ' + (t4 - t3) + 'ms');
             }
         }
     }
@@ -752,8 +761,9 @@ export class DaCeInterface {
                     case InteractionMode.APPLY:
                         callback = function (data: any) {
                             const daceInterface = DaCeInterface.getInstance();
-                            daceInterface.writeToActiveDocument(data.sdfg);
-                            daceInterface.hideSpinner();
+                            daceInterface.writeToActiveDocument(data.sdfg).then(
+                                () => daceInterface.hideSpinner()
+                            );
                         };
                         break;
                     case InteractionMode.PREVIEW:
@@ -854,9 +864,10 @@ export class DaCeInterface {
                     'symbol_map': symbolMap,
                 },
                 (data: any) => {
-                    this.hideSpinner();
-                    this.writeToActiveDocument(data.sdfg);
-                    resolve();
+                    this.writeToActiveDocument(data.sdfg).then(() => {
+                        this.hideSpinner();
+                        resolve();
+                    });
                 },
                 (error: any) => {
                     this.genericErrorHandler(error.message, error.details);

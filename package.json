@@ -174,6 +174,41 @@
                         "default": true,
                         "description": "Show a minimap in the top right corner of the SDFG editor"
                     },
+                    "dace.sdfv.showAccessNodes": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show access nodes in the SDFG editor"
+                    },
+                    "dace.sdfv.showStateNames": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show the names of SDFG states in the SDFG editor"
+                    },
+                    "dace.sdfv.showMapSchedules": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show a label for map schedules in the SDFG editor"
+                    },
+                    "dace.sdfv.showDataDescriptorSizes": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Show the size of data descriptors on access nodes instead of their size"
+                    },
+                    "dace.sdfv.adaptiveContentHiding": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Adaptively hide content in the SDFG editor based on the zoom level"
+                    },
+                    "dace.sdfv.inclusiveRanges": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Use inclusive range labels in the SDFG editor"
+                    },
+                    "dace.sdfv.useVerticalStateMachineLayout": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Use a vertical layout for state machines in the SDFG editor"
+                    },
                     "dace.backend.interpreterPath": {
                         "type": "string",
                         "default": "",
@@ -227,7 +262,8 @@
             {
                 "id": "sdfg",
                 "extensions": [
-                    ".sdfg"
+                    ".sdfg",
+                    ".sdfgz"
                 ],
                 "aliases": [
                     "SDFG",
@@ -254,6 +290,16 @@
                 "selector": [
                     {
                         "filenamePattern": "*.sdfg"
+                    }
+                ],
+                "priority": "default"
+            },
+            {
+                "viewType": "compressedSdfgCustom.sdfv",
+                "displayName": "SDFG Viewer (compressed)",
+                "selector": [
+                    {
+                        "filenamePattern": "*.sdfgz"
                     }
                 ],
                 "priority": "default"

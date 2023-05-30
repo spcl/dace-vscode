@@ -137,12 +137,12 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest()
-    public refresh(hard: boolean = false) {
-        this.clearTransformations(undefined);
+    public async refresh(hard: boolean = false): Promise<void> {
+        await this.clearTransformations(undefined);
         if (hard)
-            vscode.commands.executeCommand('transformationList.sync');
+            return vscode.commands.executeCommand('transformationList.sync');
         else
-            DaCeVSCode.getInstance().getActiveEditor()?.invoke(
+            return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
                 'resyncTransformations'
             );
     }

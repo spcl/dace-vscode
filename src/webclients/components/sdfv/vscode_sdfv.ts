@@ -39,6 +39,7 @@ import {
     OperationalIntensityOverlay,
     parse_sdfg,
     Point2D,
+    read_or_decompress,
     RuntimeMicroSecondsOverlay,
     ScopeNode,
     SDFG,
@@ -86,9 +87,9 @@ import {
     vscodeWriteGraph,
     zoomToUUIDs
 } from './utils/helpers';
+import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
 
 declare const vscode: any;
-declare const MINIMAP_ENABLED: boolean | undefined;
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
 
 export class VSCodeSDFV extends SDFV {
@@ -147,13 +148,14 @@ export class VSCodeSDFV extends SDFV {
 
     public infoTrayExplicitlyHidden: boolean = false;
 
-    public async initialize(): Promise<void> {
+    public initialize(): void {
         this.initDOM();
         this.initInfoBox();
         this.initSearch();
 
-        await this.refreshSdfg();
-        this.processingOverlay?.hide();
+        this.refreshSdfg().then(() => {
+            this.processingOverlay?.hide();
+        });
     }
 
     private initDOM(): void {
@@ -192,8 +194,10 @@ export class VSCodeSDFV extends SDFV {
                         this.infoBarLastVertWidth = newWidth.toString() + 'px';
                         this.infoContainer?.width(this.infoBarLastVertWidth);
 
-                        if (MINIMAP_ENABLED)
-                            $('#minimap').css('right', (newWidth + 5).toString() + 'px');
+                        if (SDFVSettings.minimap)
+                            $('#minimap').css(
+                                'right', (newWidth + 5).toString() + 'px'
+                            );
                     }
                 }
             }
@@ -780,11 +784,13 @@ export class VSCodeSDFV extends SDFV {
                 refreshXform(this);
         }
 
-        const graph = this.renderer.get_graph();
-        if (graph)
-            this.outline(this.renderer, graph);
-        AnalysisController.getInstance().refreshAnalysisPane();
-        refreshBreakpoints();
+        if (!preventRefreshes) {
+            const graph = this.renderer.get_graph();
+            if (graph)
+                this.outline(this.renderer, graph);
+            AnalysisController.getInstance().refreshAnalysisPane();
+            refreshBreakpoints();
+        }
 
         const selectedElements = this.renderer.get_selected_elements();
         if (selectedElements && selectedElements.length === 1)
@@ -988,11 +994,17 @@ export class VSCodeSDFV extends SDFV {
 
     @ICPCRequest()
     public updateContents(
-        newContent: string, preventRefreshes: boolean = false
+        newContent: string | Uint8Array, preventRefreshes: boolean = false
     ): void {
+        const t1 = performance.now();
         this.setViewingHistoryState(false);
         $('#exit-preview-button')?.hide();
-        this.setRendererContent(newContent, false, preventRefreshes);
+        const content = read_or_decompress(newContent);
+        const t2 = performance.now();
+        this.setRendererContent(content, false, preventRefreshes);
+        const t3 = performance.now();
+        console.debug('parsing contents took ' + (t2 - t1) + 'ms');
+        console.debug('updating renderer took ' + (t3 - t2) + 'ms');
     }
 
     /**
@@ -1102,9 +1114,17 @@ export class SDFVComponent extends ICPCWebclientMessagingComponent {
 
         const sdfv = VSCodeSDFV.getInstance();
         this.registerRequestHandler(sdfv);
-        sdfv.initialize();
-
         this.registerRequestHandler(AnalysisController.getInstance());
+
+        // Load the default settings.
+        this.invoke('getSettings').then(
+            (settings: Record<string, string | boolean | number>) => {
+                for (const key of Object.keys(settings))
+                    SDFVSettings.setDefault(key, settings[key]);
+                sdfv.initialize();
+                sdfv.get_renderer()?.draw_async();
+            }
+        );
     }
 
 }

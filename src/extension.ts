@@ -17,6 +17,10 @@ import { SdfgBreakpointProvider } from './components/sdfg_breakpoints';
 import { activateSdfgPython } from './debugger/sdfg_python_debugger';
 import { activateDaceDebug } from './debugger/dace_debugger';
 import { executeTrusted } from './utils/utils';
+import {
+    CompressedSDFGViewerProvider,
+} from './components/compressed_sdfg_viewer';
+import { SDFGEditorBase } from './components/sdfg_editor/sdfg_editor_component';
 
 export class DaCeVSCode {
 
@@ -40,6 +44,8 @@ export class DaCeVSCode {
     private trafoHistProvider?: TransformationHistoryProvider;
     private outlineProvider?: OutlineProvider;
     private analysisProvider?: AnalysisProvider;
+
+    public readonly sdfgEditorMap: Map<vscode.Uri, SDFGEditorBase> = new Map();
 
     public registerCommand(command: string, handler: (...args: any[]) => any) {
         this.context?.subscriptions.push(vscode.commands.registerCommand(
@@ -202,6 +208,9 @@ export class DaCeVSCode {
         // Register the SDFG custom editor.
         context.subscriptions.push(
             SdfgViewerProvider.getInstance().register(context)
+        );
+        context.subscriptions.push(
+            CompressedSDFGViewerProvider.getInstance().register(context)
         );
 
         // Register all webview view components.

@@ -70,9 +70,6 @@ export class SdfgViewer extends ICPCExtensionMessagingComponent {
         );
     }
 
-    public async refreshTransformationList(): Promise<void> {
-    }
-
 }
 
 export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
@@ -130,12 +127,24 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
      * attached transformation panel.
      */
     private documentChanged(editor: SdfgViewer): void {
-        editor.updateSdfg();
+        console.debug('Document changed event received');
+        const t1 = performance.now();
+        editor.updateSdfg(true);
         if (DaCeVSCode.getInstance().getActiveEditor() === editor) {
+            const t2 = performance.now();
             TransformationListProvider.getInstance()?.refresh();
+            const t3 = performance.now();
             TransformationHistoryProvider.getInstance()?.refresh(true);
+            const t4 = performance.now();
             OutlineProvider.getInstance()?.refresh();
+            const t5 = performance.now();
             AnalysisProvider.getInstance()?.refresh();
+            const t6 = performance.now();
+            console.debug('UpdateSdfg took: ' + (t2 - t1) + 'ms');
+            console.debug('Refresh transformations took: ' + (t3 - t2) + 'ms');
+            console.debug('Refresh history took: ' + (t4 - t3) + 'ms');
+            console.debug('Refresh outline took: ' + (t5 - t4) + 'ms');
+            console.debug('Refresh analysis took: ' + (t6 - t5) + 'ms');
         }
     }
 
@@ -163,18 +172,6 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         const editor = this.findEditorForPath(document.uri);
         if (editor)
             this.openEditors.splice(this.openEditors.indexOf(editor), 1);
-    }
-
-    @ICPCRequest()
-    public disableMinimap(): void {
-        vscode.workspace.getConfiguration('dace.sdfv')?.update(
-            'minimap', false
-        ).then(() => {
-            vscode.window.showInformationMessage(
-                'Minimap disabled, you can re-enable the feature in ' +
-                'your settings.'
-            );
-        });
     }
 
     @ICPCRequest()
@@ -421,6 +418,37 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
         );
     }
 
+    @ICPCRequest()
+    public async getSettings(): Promise<Record<string, any>> {
+        const settings: Record<string, any> = {};
+
+        const settingKeys = [
+            'minimap', 'showAccessNodes', 'showStateNames', 'showMapSchedules',
+            'showDataDescriptorSizes', 'adaptiveContentHiding',
+            'inclusiveRanges', 'useVerticalStateMachineLayout',
+        ];
+        const sdfvConfig = vscode.workspace.getConfiguration('dace.sdfv');
+        for (const key of settingKeys)
+            settings[key] = sdfvConfig?.get(key);
+
+        return settings;
+    }
+
+    @ICPCRequest()
+    public async updateSettings(
+        settings: Record<string, string | boolean | number>
+    ): Promise<void> {
+        const sdfvConfig = vscode.workspace.getConfiguration('dace.sdfv');
+        const ignoredKeys = ['toolbar'];
+        for (const key in settings) {
+            if (ignoredKeys.includes(key))
+                continue;
+
+            if (settings[key] !== sdfvConfig?.get(key))
+                sdfvConfig?.update(key, settings[key]);
+        }
+    }
+
     public async onDaemonConnected(): Promise<void> {
         return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
             'setDaemonConnected', [true]
@@ -505,9 +533,7 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
 
             const bpHandler = BreakpointHandler.getInstance()!;
             editor.register(bpHandler.addBreakpoint, bpHandler);
-            editor.register(
-                bpHandler.removeBreakpoint, bpHandler
-            );
+            editor.register(bpHandler.removeBreakpoint, bpHandler);
             editor.register(bpHandler.getSavedNodes, bpHandler);
             editor.register(bpHandler.hasSavedNodes, bpHandler);
 
@@ -580,11 +606,6 @@ export class SdfgViewerProvider implements vscode.CustomTextEditorProvider {
                 'SPLIT_DIRECTION = \'horizontal\';'
             );
         }
-        if (sdfvConfig?.get<boolean>('minimap') === false)
-            baseHtml = baseHtml.replace(
-                'MINIMAP_ENABLED = true;',
-                'MINIMAP_ENABLED = false;'
-            );
 
         return baseHtml;
     }
