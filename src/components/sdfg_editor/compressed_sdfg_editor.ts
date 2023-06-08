@@ -20,6 +20,8 @@ import {
 } from 'vscode';
 import { SDFGEditorBase } from './common';
 import { CompressedSDFGDocument } from './sdfg_document';
+import { gzipSync } from 'zlib';
+import { DaCeVSCode } from '../../dace_vscode';
 
 
 export class CompressedSDFGEditor extends SDFGEditorBase {
@@ -47,9 +49,10 @@ export class CompressedSDFGEditor extends SDFGEditorBase {
 
     public async handleLocalEdit(sdfg: string): Promise<void> {
         return new Promise((resolve, reject) => {
+            const compressed = gzipSync(sdfg);
             Promise.all([
-                this.onSDFGEdited(sdfg),
-                this.invoke('updateContents', [sdfg, false])
+                this.onSDFGEdited(compressed),
+                this.invoke('updateContents', [compressed, false])
             ]).then(() => {
                 resolve();
             }).catch((reason) => {
@@ -58,8 +61,8 @@ export class CompressedSDFGEditor extends SDFGEditorBase {
         });
     }
 
-    protected async _onSDFGEdited(sdfg: Uint8Array): Promise<boolean> {
-        // TODO
+    protected async _onSDFGEdited(): Promise<boolean> {
+        this.document.makeEdit({});
         return false;
     }
 
@@ -100,36 +103,56 @@ export class CompressedSDFGEditorProvider implements CustomEditorProvider {
     public readonly onDidChangeCustomDocument =
         this._onDidChangeCustomDocument.event;
 
-    saveCustomDocument(document: CustomDocument, cancellation: CancellationToken): Thenable<void> {
-        throw new Error('Method not implemented.');
+    public async saveCustomDocument(
+        document: CompressedSDFGDocument, cancellation: CancellationToken
+    ): Promise<void> {
+        await document.save(cancellation);
     }
 
-    saveCustomDocumentAs(document: CustomDocument, destination: Uri, cancellation: CancellationToken): Thenable<void> {
-        throw new Error('Method not implemented.');
+    public async saveCustomDocumentAs(
+        document: CompressedSDFGDocument, destination: Uri,
+        cancellation: CancellationToken
+    ): Promise<void> {
+        await document.saveAs(destination, cancellation);
     }
 
-    revertCustomDocument(document: CustomDocument, cancellation: CancellationToken): Thenable<void> {
-        throw new Error('Method not implemented.');
+    public async revertCustomDocument(
+        document: CompressedSDFGDocument, cancellation: CancellationToken
+    ): Promise<void> {
+        return document.revert(cancellation);
     }
 
-    backupCustomDocument(document: CustomDocument, context: CustomDocumentBackupContext, cancellation: CancellationToken): Thenable<CustomDocumentBackup> {
-        throw new Error('Method not implemented.');
+    public async backupCustomDocument(
+        document: CompressedSDFGDocument, context: CustomDocumentBackupContext,
+        cancellation: CancellationToken
+    ): Promise<CustomDocumentBackup> {
+        return document.backup(context.destination, cancellation);
     }
 
     public async openCustomDocument(
         uri: Uri, openContext: CustomDocumentOpenContext,
-        token: CancellationToken
+        _token: CancellationToken
     ): Promise<CompressedSDFGDocument> {
         const document = await CompressedSDFGDocument.create(
             uri, openContext.backupId, {
                 getFileData: async () => {
-                    // TODO
+                    const editor = DaCeVSCode.getInstance().activeSDFGEditor;
+                    if (editor && editor instanceof CompressedSDFGEditor)
+                        return await editor.invoke('getCompressedSDFG');
                     return new Uint8Array();
                 },
             }
         );
 
         const disposables: Disposable[] = [];
+
+        disposables.push(document.onDidChange(e => {
+            // Notify VSCode about a change in the document.
+            this._onDidChangeCustomDocument.fire({
+                document,
+                ...e,
+            });
+        }));
 
         document.onDidDispose(() => {
             disposables.forEach((d) => d.dispose());

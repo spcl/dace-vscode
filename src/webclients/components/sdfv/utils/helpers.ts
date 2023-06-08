@@ -379,15 +379,10 @@ export async function vscodeWriteGraph(g: JsonSDFG): Promise<void> {
         return v === undefined ? null : v;
     }, 2);
     const t3 = performance.now();
-    /*
-    if (COMPRESSED_SDFG)
-        await SDFVComponent.getInstance().invoke('writeToCompressedSDFG', [
-            gzipSync(nv)
-        ]);
+    if (VSCodeSDFV.getInstance().getViewingCompressed())
+        await SDFVComponent.getInstance().invoke('onSDFGEdited', []);
     else
-        await SDFVComponent.getInstance().invoke('writeToActiveDocument', [nv]);
-    */
-    await SDFVComponent.getInstance().invoke('onSDFGEdited', [nv]);
+        await SDFVComponent.getInstance().invoke('onSDFGEdited', [nv]);
     const t4 = performance.now();
     console.debug('unGraphiphySdfg took ' + (t2 - t1) + 'ms');
     console.debug('JSON.stringify took ' + (t3 - t2) + 'ms');

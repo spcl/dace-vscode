@@ -75,6 +75,8 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
     }
 
     public makeEdit(edit: CompressedSDFGEdit): void {
+        console.log('Recorded edit', edit);
+        this._edits.push(edit);
         this._onDidChange.fire({
             label: 'Edit',
             undo: async () => {

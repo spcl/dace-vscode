@@ -84,10 +84,12 @@ import {
     highlightUUIDs,
     reselectRendererElement,
     showContextMenu,
+    unGraphiphySdfg,
     vscodeWriteGraph,
     zoomToUUIDs
 } from './utils/helpers';
 import { ComponentTarget } from '../../../components/components';
+import { gzipSync } from 'zlib';
 
 declare const vscode: any;
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
@@ -137,6 +139,7 @@ export class VSCodeSDFV extends SDFV {
     private queryMetaDictFunc: Promise<{ [key: string]: any }> | null= null;
     private viewingHistoryState: boolean = false;
     private viewingHistoryIndex: number | undefined = undefined;
+    private viewingCompressed: boolean = false;
     private showingBreakpoints: boolean = false;
     private daemonConnected: boolean = false;
     private transformations: JsonTransformationList = {
@@ -505,6 +508,21 @@ export class VSCodeSDFV extends SDFV {
         }
 
         return externalRet;
+    }
+
+    @ICPCRequest()
+    public async getCompressedSDFG(): Promise<Uint8Array | null> {
+        const sdfg = this.get_renderer()?.get_sdfg();
+        if (sdfg) {
+            unGraphiphySdfg(sdfg);
+            const sdfgString = JSON.stringify(sdfg, (_k, v) => {
+                return v === undefined ? null : v;
+            }, 2);
+            const compressed = gzipSync(sdfgString);
+            return compressed;
+        }
+
+        return null;
     }
 
     @ICPCRequest()
@@ -909,6 +927,10 @@ export class VSCodeSDFV extends SDFV {
         return this.viewingHistoryIndex;
     }
 
+    public getViewingCompressed(): boolean {
+        return this.viewingCompressed;
+    }
+
     public getShowingBreakpoints(): boolean {
         return this.showingBreakpoints;
     }
@@ -1009,6 +1031,7 @@ export class VSCodeSDFV extends SDFV {
         this.setViewingHistoryState(false);
         $('#exit-preview-button')?.hide();
         const [content, compressed] = read_or_decompress(newContent);
+        this.viewingCompressed = compressed;
         const t2 = performance.now();
         this.setRendererContent(content, false, preventRefreshes);
         const t3 = performance.now();
