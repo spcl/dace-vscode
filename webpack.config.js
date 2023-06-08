@@ -52,6 +52,7 @@ const webclientConfig = {
         breakpoints: webSrcDir + '/breakpoints/breakpoints.ts',
         history: webSrcDir + '/history/transformation_history.ts',
         outline: webSrcDir + '/outline/outline.ts',
+        dace: webSrcDir + '/dace/dace_panel.ts',
         sdfv: webSrcDir + '/sdfv/vscode_sdfv.ts',
         transformations: webSrcDir + '/transformations/transformations.ts',
     },

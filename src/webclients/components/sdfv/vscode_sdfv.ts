@@ -46,13 +46,13 @@ import {
     SDFGElement,
     SDFGNode,
     SDFGRenderer,
-    SDFGRendererEvent,
     SDFV,
     State,
     StaticFlopsOverlay,
     traverse_sdfg_scopes
 } from '@spcl/sdfv/src';
 import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
+import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
 import {
     ICPCRequest
 } from '../../../common/messaging/icpc_messaging_component';
@@ -73,21 +73,21 @@ import {
     clearSelectedTransformation,
     refreshTransformationList,
     refreshXform,
-    showTransformationDetails,
-    sortTransformations
+    showTransformationDetails
 } from './transformation/transformation';
 import {
     appendDataDescriptorTable,
     generateAttributesTable
 } from './utils/attributes_table';
 import {
+    findJsonSDFGElementByUUID,
     highlightUUIDs,
     reselectRendererElement,
     showContextMenu,
     vscodeWriteGraph,
     zoomToUUIDs
 } from './utils/helpers';
-import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
+import { ComponentTarget } from '../../../components/components';
 
 declare const vscode: any;
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
@@ -136,6 +136,7 @@ export class VSCodeSDFV extends SDFV {
     private sdfgMetaDict: { [key: string]: any } | null = null;
     private queryMetaDictFunc: Promise<{ [key: string]: any }> | null= null;
     private viewingHistoryState: boolean = false;
+    private viewingHistoryIndex: number | undefined = undefined;
     private showingBreakpoints: boolean = false;
     private daemonConnected: boolean = false;
     private transformations: JsonTransformationList = {
@@ -155,6 +156,7 @@ export class VSCodeSDFV extends SDFV {
 
         this.refreshSdfg().then(() => {
             this.processingOverlay?.hide();
+            SDFVComponent.getInstance().invoke('onReady');
         });
     }
 
@@ -599,7 +601,9 @@ export class VSCodeSDFV extends SDFV {
             }
         );
 
-        return SDFVComponent.getInstance().invoke('setOutline', [outlineList]);
+        return SDFVComponent.getInstance().invoke(
+            'setOutline', [outlineList], ComponentTarget.Outline
+        );
     }
 
     /**
@@ -799,11 +803,6 @@ export class VSCodeSDFV extends SDFV {
             this.fillInfo(
                 new SDFG(this.renderer.get_sdfg())
             );
-
-        const sdfgName = this.renderer.get_sdfg().attributes.name;
-        SDFVComponent.getInstance().invoke(
-            'processQueuedInvocations', [sdfgName]
-        );
     }
 
     public resetRendererContent(): void {
@@ -906,6 +905,10 @@ export class VSCodeSDFV extends SDFV {
         return this.viewingHistoryState;
     }
 
+    public getViewingHistoryIndex(): number | undefined {
+        return this.viewingHistoryIndex;
+    }
+
     public getShowingBreakpoints(): boolean {
         return this.showingBreakpoints;
     }
@@ -935,8 +938,14 @@ export class VSCodeSDFV extends SDFV {
         this.sdfgMetaDict = sdfgMetaDict;
     }
 
-    public setViewingHistoryState(viewingHistoryState: boolean): void {
+    public setViewingHistoryState(
+        viewingHistoryState: boolean, index?: number
+    ): void {
         this.viewingHistoryState = viewingHistoryState;
+        if (!viewingHistoryState)
+            this.viewingHistoryIndex = undefined;
+        else
+            this.viewingHistoryIndex = index;
     }
 
     @ICPCRequest()
@@ -999,7 +1008,7 @@ export class VSCodeSDFV extends SDFV {
         const t1 = performance.now();
         this.setViewingHistoryState(false);
         $('#exit-preview-button')?.hide();
-        const content = read_or_decompress(newContent);
+        const [content, compressed] = read_or_decompress(newContent);
         const t2 = performance.now();
         this.setRendererContent(content, false, preventRefreshes);
         const t3 = performance.now();
@@ -1018,14 +1027,15 @@ export class VSCodeSDFV extends SDFV {
      */
     @ICPCRequest()
     public previewSdfg(
-        pSdfg?: string, histState: boolean = false, refresh: boolean = false
+        pSdfg?: string, histIndex: number | undefined = undefined,
+        refresh: boolean = false
     ): void {
         if (pSdfg) {
             this.setRendererContent(pSdfg, true);
             $('#exit-preview-button')?.show();
-            if (histState) {
+            if (histIndex !== undefined) {
                 this.clearInfoBox();
-                this.setViewingHistoryState(true);
+                this.setViewingHistoryState(true, histIndex);
                 refreshTransformationList();
             }
         } else {
@@ -1072,6 +1082,34 @@ export class VSCodeSDFV extends SDFV {
     }
 
     @ICPCRequest()
+    public async resyncTransformationHistory(): Promise<void> {
+        SDFVComponent.getInstance().invoke(
+            'setHistory',
+            [
+                this.get_renderer()?.get_sdfg()?.attributes.transformation_hist,
+                this.viewingHistoryIndex
+            ],
+            ComponentTarget.History
+        );
+    }
+
+    @ICPCRequest()
+    public async toggleCollapseFor(uuid: string): Promise<void> {
+        const renderer = this.renderer;
+        const sdfg = renderer?.get_sdfg();
+        if (renderer && sdfg) {
+            const [elem, _] = findJsonSDFGElementByUUID(sdfg, uuid);
+            const attrs = elem?.attributes;
+            if (attrs && Object.hasOwn(attrs, 'is_collapsed')) {
+                attrs.is_collapsed = !attrs.is_collapsed;
+                renderer.emit('collapse_state_changed');
+                renderer.relayout();
+                renderer.draw_async();
+            }
+        }
+    }
+
+    @ICPCRequest()
     public async setOverlays(overlays: string[]): Promise<void> {
         const overlayManager =
             VSCodeRenderer.getInstance()?.get_overlay_manager();
@@ -1098,7 +1136,7 @@ export class SDFVComponent extends ICPCWebclientMessagingComponent {
     private static readonly INSTANCE = new SDFVComponent();
 
     private constructor() {
-        super();
+        super(ComponentTarget.Editor);
     }
 
     public static getInstance(): SDFVComponent {

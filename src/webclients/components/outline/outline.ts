@@ -23,6 +23,7 @@ import {
 import {
     ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
+import { ComponentTarget } from '../../../components/components';
 
 declare const vscode: any;
 declare const media_src: string;
@@ -43,21 +44,27 @@ class OutlineItem extends CustomTreeViewItem {
             'color: var(--vscode-gitDecoration-addedResourceForeground);',
             media_src
         );
+
+        this.on('toggle_collapse', () => {
+            OutlinePanel.getInstance().invokeEditorProcedure(
+                'toggleCollapseFor', [this.elementUUID]
+            );
+        });
     }
 
     public generateHtml(): JQuery {
         const item = super.generateHtml();
 
         item.on('click', (e) => {
-            OutlinePanel.getInstance().invoke(
-                'zoomToNode', [[this.elementUUID]]
+            OutlinePanel.getInstance().invokeEditorProcedure(
+                'zoomToUUIDs', [[this.elementUUID]]
             );
             e.stopPropagation();
         });
 
         item.on('mouseover', () => {
-            OutlinePanel.getInstance().invoke(
-                'highlightElement', [[this.elementUUID]]
+            OutlinePanel.getInstance().invokeEditorProcedure(
+                'highlightUUIDs', [[this.elementUUID]]
             );
         });
 
@@ -103,7 +110,7 @@ class OutlinePanel extends ICPCWebclientMessagingComponent {
     private static readonly INSTANCE: OutlinePanel = new OutlinePanel();
 
     private constructor() {
-        super();
+        super(ComponentTarget.Outline);
     }
 
     public static getInstance(): OutlinePanel {
@@ -119,7 +126,7 @@ class OutlinePanel extends ICPCWebclientMessagingComponent {
         this.outlineList.generateHtml();
         this.outlineList.show();
 
-        this.invoke('refresh');
+        this.invoke('onReady');
     }
 
     @ICPCRequest()

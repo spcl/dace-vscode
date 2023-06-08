@@ -1,9 +1,22 @@
 import * as vscode from 'vscode';
 
-class CompressedSDFGDocument implements vscode.CustomDocument {
+interface CompressedSDFGEdit {
+}
+
+interface CompressedSDFGDocumentDelegate {
+    getFileData(): Promise<Uint8Array>;
+}
+
+interface CompressedSDFGDocumentChangedEvent {
+    readonly content?: Uint8Array;
+    readonly edits: readonly CompressedSDFGEdit[];
+}
+
+export class CompressedSDFGDocument implements vscode.CustomDocument {
 
     private readonly _uri: vscode.Uri;
     private readonly _delegate: CompressedSDFGDocumentDelegate;
+    private _dirty: boolean = false;
 
     // Fired when the document is disposed of.
     private readonly _onDidDispose = new vscode.EventEmitter<void>();
@@ -77,6 +90,7 @@ class CompressedSDFGDocument implements vscode.CustomDocument {
                 });
             },
         });
+        this._dirty = true;
     }
 
     public get uri(): vscode.Uri {
@@ -87,18 +101,25 @@ class CompressedSDFGDocument implements vscode.CustomDocument {
         return this._documentData;
     }
 
-    public async save(cancellation: vscode.CancellationToken): Promise<void> {
-        await this.saveAs(this.uri, cancellation);
+    public async save(token?: vscode.CancellationToken): Promise<boolean> {
+        const retval = this.saveAs(this.uri, token);
         this._savedEdits = this._edits.slice();
+        return retval;
     }
 
     public async saveAs(
-        targetResource: vscode.Uri, cancellation: vscode.CancellationToken
-    ): Promise<void> {
+        targetResource: vscode.Uri, token?: vscode.CancellationToken
+    ): Promise<boolean> {
         const fileData = await this._delegate.getFileData();
-        if (cancellation.isCancellationRequested)
-            return;
-        await vscode.workspace.fs.writeFile(targetResource, fileData);
+        if (token && token.isCancellationRequested)
+            return false;
+        try {
+            await vscode.workspace.fs.writeFile(targetResource, fileData);
+            this._dirty = false;
+            return true;
+        } catch (_) {
+            return false;
+        }
     }
 
     public async revert(
@@ -111,6 +132,7 @@ class CompressedSDFGDocument implements vscode.CustomDocument {
             content: diskContent,
             edits: this._edits,
         });
+        this._dirty = false;
     }
 
     public async backup(
@@ -127,6 +149,10 @@ class CompressedSDFGDocument implements vscode.CustomDocument {
                 }
             }
         };
+    }
+
+    public get isDirty(): boolean {
+        return this._dirty;
     }
 
 }

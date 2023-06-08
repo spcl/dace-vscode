@@ -4,8 +4,9 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { SdfgBreakpointProvider } from '../components/sdfg_breakpoints';
-import { SdfgViewerProvider } from '../components/sdfg_viewer';
-import { DaCeVSCode } from '../extension';
+import { SDFGEditorBase } from '../components/sdfg_editor/common';
+import { DaCeVSCode } from '../dace_vscode';
+import { goToFileLocation } from '../utils/utils';
 
 export type ISDFGDebugNodeInfo = {
     cache: string | undefined,
@@ -157,7 +158,7 @@ export class BreakpointHandler extends vscode.Disposable {
                                     files[filePath][0].cache,
                                     'program.sdfg'
                                 );
-                                SdfgViewerProvider.getInstance()?.openViewer(
+                                SDFGEditorBase.openEditorFor(
                                     vscode.Uri.file(sdfgPath)
                                 );
                             }
@@ -168,7 +169,7 @@ export class BreakpointHandler extends vscode.Disposable {
                                     BPHinstance.currentFunc.cache,
                                     'program.sdfg'
                                 );
-                                SdfgViewerProvider.getInstance()?.openViewer(
+                                SDFGEditorBase.openEditorFor(
                                     vscode.Uri.file(sdfgPath)
                                 );
                             }
@@ -201,7 +202,7 @@ export class BreakpointHandler extends vscode.Disposable {
                             // TODO: look through list for the right file as one
                             //      src file might have multiple Dace programs
                             let file = files[filePath][0];
-                            SdfgViewerProvider.getInstance()?.goToFileLocation(
+                            goToFileLocation(
                                 vscode.Uri.file(
                                     path.join(
                                         file.cache,
@@ -225,7 +226,7 @@ export class BreakpointHandler extends vscode.Disposable {
                         const BPHinstance = BreakpointHandler.getInstance();
 
                         if (BPHinstance && BPHinstance.currentFunc) {
-                            SdfgViewerProvider.getInstance()?.goToFileLocation(
+                            goToFileLocation(
                                 BPHinstance.currentFunc.sourceFiles[0],
                                 0, 0, 0, 0
                             );
@@ -259,12 +260,8 @@ export class BreakpointHandler extends vscode.Disposable {
                                 await vscode.window.showQuickPick(items, {
                                     placeHolder: "Open sourcefile",
                                 });
-                            const viewer = SdfgViewerProvider.getInstance();
-                            if (selection && viewer)
-                                viewer.goToFileLocation(
-                                    selection.uri,
-                                    0, 0, 0, 0
-                                );
+                            if (selection)
+                                goToFileLocation(selection.uri, 0, 0, 0, 0);
                         }
                     }
                 }
@@ -750,10 +747,9 @@ export class BreakpointHandler extends vscode.Disposable {
         // Sends the corresponding saved Nodes to the SDFG viewer
         const nodes = this.savedNodes[sdfgName];
         if (nodes !== undefined && nodes.length !== 0)
-            DaCeVSCode.getInstance().getActiveWebview()?.postMessage({
-                type: 'saved_nodes',
-                nodes: nodes
-            });
+            DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
+                'saved_nodes', [nodes]
+            );
     }
 
     public getAllNodes(): ISDFGDebugNodeInfo[] {
@@ -770,9 +766,7 @@ export class BreakpointHandler extends vscode.Disposable {
     public hasSavedNodes(sdfgName: string): void {
         const nodes = this.savedNodes[sdfgName];
         if (nodes !== undefined && nodes.length !== 0)
-            DaCeVSCode.getInstance().getActiveWebview()?.postMessage({
-                type: 'has_nodes'
-            });
+            DaCeVSCode.getInstance().activeSDFGEditor?.invoke('has_nodes');
     }
 
     public showMenu(

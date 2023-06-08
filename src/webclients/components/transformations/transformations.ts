@@ -23,6 +23,7 @@ import {
 import {
     ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
+import { ComponentTarget } from '../../../components/components';
 
 declare const vscode: any;
 
@@ -473,7 +474,7 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
     private static readonly INSTANCE = new TransofrmationListPanel();
 
     private constructor() {
-        super();
+        super(ComponentTarget.Transformations);
     }
 
     public static getInstance(): TransofrmationListPanel {
@@ -493,7 +494,7 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
         this.transformationList.generateHtml();
         this.transformationList.show();
 
-        this.invoke('refresh');
+        this.invoke('onReady');
     }
 
     @ICPCRequest()
@@ -534,17 +535,21 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
     public static async selectTransformation(
         transformation: JsonTransformation
     ): Promise<void> {
-        return this.INSTANCE.invoke('selectTransformation', [transformation]);
+        return this.INSTANCE.invokeEditorProcedure(
+            'selectTransformation', [transformation]
+        );
     }
 
     public static async applyTransformations(
         transformations: JsonTransformation[]
     ): Promise<void> {
-        return this.INSTANCE.invoke('applyTransformations', [transformations]);
+        return this.INSTANCE.invoke(
+            'applyTransformations', [transformations], ComponentTarget.DaCe
+        );
     }
 
     public static async highlightElements(uuids: string[]): Promise<void> {
-        return this.INSTANCE.invoke('highlightElements', [uuids]);
+        return this.INSTANCE.invokeEditorProcedure('highlightUUIDs', [uuids]);
     }
 
 }

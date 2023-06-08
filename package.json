@@ -343,6 +343,13 @@
                     "name": "SDFG Outline",
                     "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Outline"
+                },
+                {
+                    "id": "daceInterface",
+                    "type": "webview",
+                    "name": "DaCe Backend",
+                    "icon": "media/resources/icons/dace-hollow.svg",
+                    "contextualTitle": "DaCe Python Backend"
                 }
             ],
             "debug": [

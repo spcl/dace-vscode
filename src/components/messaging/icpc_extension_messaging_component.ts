@@ -1,47 +1,52 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as vscode from 'vscode';
+import { Webview } from 'vscode';
 import {
     ICPCMessagingComponent, ICPCRequestMessage
 } from '../../common/messaging/icpc_messaging_component';
-import { DaCeVSCode } from '../../extension';
+import { ComponentTarget } from '../components';
+import { DaCeVSCode } from '../../dace_vscode';
 
 export class ICPCExtensionMessagingComponent extends ICPCMessagingComponent {
 
-    public constructor(
-        public readonly designation: string,
-        webview?: vscode.Webview
-    ) {
-        super(webview);
+    public constructor(designation: string, webview?: Webview) {
+        super(designation, webview);
 
         ICPCHost.getInstance().registerComponent(this);
 
-        ICPCMessagingComponent.registerAnnotatedProcedures(this, this);
+        ICPCMessagingComponent.registerAnnotatedProcedures(this, this, true);
 
         if (webview)
             this.setTarget(webview);
     }
 
-    public setTarget(webview: vscode.Webview): void {
+    public setTarget(webview: Webview): void {
         this.initializeTarget(webview);
         webview.onDidReceiveMessage(message => {
             this.handle(message);
         });
     }
 
+    protected dispose(): void {
+        ICPCHost.getInstance().deregister(this);
+    }
+
     public async handleRequest(
         message: ICPCRequestMessage, responseHandler?: ICPCMessagingComponent
     ): Promise<void> {
-        if (message.component && message.component !== this.designation) {
-            ICPCHost.getInstance().handleRequest(
-                message, responseHandler || this
-            );
-        } else {
+        if (!message.component ||
+            (message.component === this.designation) ||
+            (message.component === ComponentTarget.Editor &&
+                this.designation.startsWith('SDFV_'))) {
             if (this.localProcedures.has(message.procedure))
                 super.handleRequest(message, responseHandler);
             else
                 this.target?.postMessage(message);
+        } else {
+            ICPCHost.getInstance().handleRequest(
+                message, responseHandler || this
+            );
         }
     }
 
@@ -64,14 +69,18 @@ export class ICPCHost {
         this.cmap.set(component.designation, component);
     }
 
+    public deregister(component: ICPCExtensionMessagingComponent): void {
+        this.cmap.delete(component.designation);
+    }
+
     public async handleRequest(
         message: ICPCRequestMessage, responseHandler: ICPCMessagingComponent
     ): Promise<void> {
         if (!message.component)
             throw new Error('No component specified');
 
-        if (message.component === 'SDFV') {
-            return DaCeVSCode.getInstance().getActiveEditor()?.handleRequest(
+        if (message.component === ComponentTarget.Editor) {
+            return DaCeVSCode.getInstance().activeSDFGEditor?.handleRequest(
                 message, responseHandler
             );
         } else {

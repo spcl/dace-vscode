@@ -36,6 +36,7 @@ import {
     getTransformationMetadata,
     vscodeWriteGraph
 } from './helpers';
+import { ComponentTarget } from '../../../../components/components';
 
 declare const vscode: any;
 
@@ -303,7 +304,7 @@ export function attrTablePutSelect(
                     elem.id,
                 ];
                 SDFVComponent.getInstance().invoke(
-                    'expandLibraryNode', [nodeId]
+                    'expandLibraryNode', [nodeId], ComponentTarget.DaCe
                 );
             },
         }).appendTo(cell);

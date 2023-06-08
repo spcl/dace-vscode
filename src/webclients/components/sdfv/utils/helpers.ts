@@ -21,9 +21,6 @@ import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 import { gzipSync } from 'zlib';
 
-declare const vscode: any;
-declare const COMPRESSED_SDFG: boolean;
-
 export function findMaximumSdfgId(sdfg: JsonSDFG): number {
     let maxId = sdfg.sdfg_list_id;
     for (const node of sdfg.nodes) {
@@ -382,12 +379,15 @@ export async function vscodeWriteGraph(g: JsonSDFG): Promise<void> {
         return v === undefined ? null : v;
     }, 2);
     const t3 = performance.now();
+    /*
     if (COMPRESSED_SDFG)
         await SDFVComponent.getInstance().invoke('writeToCompressedSDFG', [
             gzipSync(nv)
         ]);
     else
         await SDFVComponent.getInstance().invoke('writeToActiveDocument', [nv]);
+    */
+    await SDFVComponent.getInstance().invoke('onSDFGEdited', [nv]);
     const t4 = performance.now();
     console.debug('unGraphiphySdfg took ' + (t2 - t1) + 'ms');
     console.debug('JSON.stringify took ' + (t3 - t2) + 'ms');

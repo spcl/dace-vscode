@@ -5,6 +5,10 @@ import * as vscode from 'vscode';
 import {
     ICPCExtensionMessagingComponent
 } from './messaging/icpc_extension_messaging_component';
+import {
+    ICPCRequest,
+    ICPCRequestMessage
+} from '../common/messaging/icpc_messaging_component';
 
 
 export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
@@ -13,17 +17,35 @@ export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
     protected readonly csrSrcIdentifier = /{{ CSP_SRC }}/g;
     protected readonly scriptSrcIdentifier = /{{ SCRIPT_SRC }}/g;
 
+    private isReady: boolean = false;
+    private readonly pcMap: Map<string, ICPCRequestMessage> = new Map();
+
     constructor(
         protected readonly context: vscode.ExtensionContext,
-        protected readonly type: string
+        protected readonly type: string,
+        webview?: vscode.Webview
     ) {
-        super(type);
+        super(type, webview);
     }
 
-    public async invoke(procedure: string, args?: any[]): Promise<any> {
-        if (!this.target)
-            return undefined;
-        return super.invoke(procedure, args);
+    protected _doSendRequest(message: ICPCRequestMessage): void {
+        if (!this.isReady || !this.target)
+            this.pcMap.set(message.procedure, message);
+        else
+            super._doSendRequest(message);
+    }
+
+    private processQueuedRequests(): void {
+        for (const request of this.pcMap.values()) {
+            console.log(`Processing queued request ${request.procedure}`);
+            super._doSendRequest(request);
+        }
+    }
+
+    @ICPCRequest(true)
+    public async onReady(): Promise<void> {
+        this.isReady = true;
+        this.processQueuedRequests();
     }
 
 }

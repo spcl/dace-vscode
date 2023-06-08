@@ -11,6 +11,7 @@ export enum ICPCMessageType {
 export interface ICPCMessage {
     type: ICPCMessageType;
     id: string;
+    source: string;
 }
 
 export interface ICPCRequestMessage extends ICPCMessage {
@@ -29,6 +30,7 @@ export interface ICPCProcedure {
     obj?: any;
     name?: string;
     staticArgs?: any[];
+    internal: boolean;
 }
 
 type ICPCCallback = {
@@ -41,6 +43,7 @@ type ICPCCallback = {
 export abstract class ICPCMessagingComponent {
 
     protected constructor(
+        public readonly designation: string,
         protected target?: any,
     ) {
     }
@@ -54,8 +57,22 @@ export abstract class ICPCMessagingComponent {
         new Map();
     protected requestHandlers: Set<any> = new Set();
 
+    protected _doSendRequest(message: ICPCRequestMessage): void {
+        try {
+            if (!this.target)
+                throw new Error('Component uninitialized');
+            this.target.postMessage(message);
+        } catch (e) {
+            console.error(
+                `Error while sending request for ${message.procedure}`, e
+            );
+            console.error('Message was', message);
+        }
+    }
+
     protected sendRequest(
-        id: string, procedure: string, args?: any[], component?: string
+        id: string, procedure: string, args?: any[], component?: string,
+        source?: string
     ): void {
         const message: ICPCRequestMessage = {
             type: ICPCMessageType.REQUEST,
@@ -63,27 +80,20 @@ export abstract class ICPCMessagingComponent {
             procedure: procedure,
             args: args,
             component: component,
+            source: source || this.designation,
         };
-        try {
-            if (!this.target)
-                throw new Error('Component uninitialized');
-            this.target.postMessage(message);
-        } catch (e) {
-            console.error(
-                `Error while sending request for procedure ${procedure}`, e
-            );
-            console.error('Message was', message);
-        }
+        this._doSendRequest(message);
     }
 
     protected sendResponse(
-        id: string, response?: any, success: boolean = true
+        id: string, response?: any, success: boolean = true, source?: string
     ): void {
         const message: ICPCResponseMessage = {
             type: ICPCMessageType.RESPONSE,
             id: id,
             response: response,
             success: success,
+            source: source || this.designation,
         };
         try {
             if (!this.target)
@@ -120,9 +130,10 @@ export abstract class ICPCMessagingComponent {
     }
 
     public register(
-        f: Function, obj?: any, name?: string, staticArgs?: any[]
+        f: Function, obj?: any, name?: string, staticArgs?: any[],
+        internal: boolean = false
     ): void {
-        this.registerProcedure({ f, name, obj, staticArgs });
+        this.registerProcedure({ f, name, obj, staticArgs, internal });
     }
 
     public deregister(fun: Function): void {
@@ -152,6 +163,13 @@ export abstract class ICPCMessagingComponent {
         const procedure = this.localProcedures.get(message.procedure);
         const _responseHandler = responseHandler || this;
         if (procedure) {
+            if (procedure.internal && message.source !== this.designation &&
+                (message.source !== 'sdfgEditor' &&
+                 !this.designation.startsWith('SDFV_')))
+                throw new Error(
+                    `Internal procedure ${message.procedure} called externally`
+                );
+
             try {
                 const args = procedure.staticArgs ?
                     procedure.staticArgs.concat(message.args) : message.args;
@@ -184,26 +202,59 @@ export abstract class ICPCMessagingComponent {
         }
     }
 
+    private static getAllFunctionDescriptors(obj: any): {
+        [name: string]: PropertyDescriptor,
+    } & {
+        [name: string]: TypedPropertyDescriptor<any>,
+    } {
+        const descs: {
+            [name: string]: PropertyDescriptor,
+        } & {
+            [name: string]: TypedPropertyDescriptor<any>,
+        }= {};
+
+        let toCheck = obj;
+        do {
+            const localDescs = Object.getOwnPropertyDescriptors(toCheck);
+            for (const name in localDescs) {
+                if (descs[name])
+                    continue;
+                const desc = localDescs[name];
+                if (typeof desc.value === 'function' && name !== 'constructor')
+                    descs[name] = desc;
+            }
+        } while (
+            toCheck = Object.getPrototypeOf(toCheck) && // Walk up inheritance.
+            Object.getPrototypeOf(toCheck) // Avoid including Object methods.
+        );
+
+        return descs;
+    }
+
     /**
      * Regsiter methods annotated with @ICPCRequest of an object to a component.
-     * @param obj       The object for which to register ICPC requests.
-     * @param component The component to register the requests to.
+     * @param obj            The object for which to register ICPC requests.
+     * @param component      The component to register the requests to.
+     * @param includeIntenal If true, internal methods will also be registered.
      */
     public static registerAnnotatedProcedures(
-        obj: any, component: ICPCMessagingComponent
+        obj: any, component: ICPCMessagingComponent,
+        includeIntenal: boolean = false
     ): void {
         // Loop over all methods the provided object has available. If they are
         // marked as ICPC methods, add them to the local procedures of the
         // provided component.
-        const descs = Object.getOwnPropertyDescriptors(
-            Object.getPrototypeOf(obj)
-        );
+        const descs = ICPCMessagingComponent.getAllFunctionDescriptors(obj);
         for (const name in descs) {
             const desc = descs[name];
             const fun = desc.value;
 
-            if (fun && fun.remoteInvokeable)
-                component.register(fun, obj, name, fun.staticArgs);
+            if (fun && fun.remoteInvokeable && (
+                !fun.internal || includeIntenal
+            ))
+                component.register(
+                    fun, obj, name, fun.staticArgs, fun.internal
+                );
         }
     }
 
@@ -215,7 +266,9 @@ export abstract class ICPCMessagingComponent {
      */
     public registerRequestHandler(handler: any): void {
         this.requestHandlers.add(handler);
-        ICPCMessagingComponent.registerAnnotatedProcedures(handler, this);
+        ICPCMessagingComponent.registerAnnotatedProcedures(
+            handler, this, false
+        );
     }
 
 }

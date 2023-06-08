@@ -30,6 +30,7 @@ import {
     SDFVComponent,
     VSCodeSDFV
 } from '../vscode_sdfv';
+import { ComponentTarget } from '../../../../components/components';
 
 
 export class VSCodeRenderer extends SDFGRenderer {
@@ -71,7 +72,13 @@ export class VSCodeRenderer extends SDFGRenderer {
             ).then(sdfg => {
                 VSCodeSDFV.getInstance().updateContents(sdfg, true);
                 SDFVComponent.getInstance().invoke(
-                    'refreshTransformationHistory', [true]
+                    'setHistory',
+                    [
+                        VSCodeRenderer.getInstance()?.get_sdfg()?.attributes
+                            .transformation_hist,
+                        VSCodeSDFV.getInstance().getViewingHistoryIndex()
+                    ],
+                    ComponentTarget.History
                 );
             });
         });
@@ -85,19 +92,20 @@ export class VSCodeRenderer extends SDFGRenderer {
         this.INSTANCE.on('backend_data_requested', (type, overlay) => {
             switch (type) {
                 case 'flops':
-                    SDFVComponent.getInstance().invoke('getFlops')
-                        .then((flopsMap) => {
-                            if (!flopsMap)
-                                return;
-                            const renderer = VSCodeRenderer.getInstance();
-                            const oMan = renderer?.get_overlay_manager();
-                            const oType = VSCodeSDFV.OVERLAYS[overlay];
-                            const ol = oMan?.get_overlay(oType);
-                            (ol as
-                                StaticFlopsOverlay |
-                                OperationalIntensityOverlay
-                            )?.update_flops_map(flopsMap);
-                        });
+                    SDFVComponent.getInstance().invoke(
+                        'getFlops', [], ComponentTarget.DaCe
+                    ).then((flopsMap) => {
+                        if (!flopsMap)
+                            return;
+                        const renderer = VSCodeRenderer.getInstance();
+                        const oMan = renderer?.get_overlay_manager();
+                        const oType = VSCodeSDFV.OVERLAYS[overlay];
+                        const ol = oMan?.get_overlay(oType);
+                        (ol as
+                            StaticFlopsOverlay |
+                            OperationalIntensityOverlay
+                        )?.update_flops_map(flopsMap);
+                    });
                     break;
             }
         });

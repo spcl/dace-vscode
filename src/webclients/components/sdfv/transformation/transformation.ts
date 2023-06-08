@@ -1,6 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+import { ComponentTarget } from '../../../../components/components';
 import {
     JsonTransformation,
     JsonTransformationGroup,
@@ -69,7 +70,7 @@ export async function getApplicableTransformations(): Promise<any[]> {
         'loadTransformations', [
             VSCodeSDFV.getInstance().getSdfgString(),
             getCleanedSelectedElements(),
-        ]
+        ], ComponentTarget.DaCe
     );
 }
 
@@ -328,11 +329,12 @@ export async function refreshTransformationList(
             await SDFVComponent.getInstance().invoke(
                 'clearTransformations', [
                     'Can\'t show transformations while viewing a history state',
-                ]
+                ], ComponentTarget.Transformations
             );
         else
             await SDFVComponent.getInstance().invoke(
-                'setTransformations', [transformations, hideLoading]
+                'setTransformations', [transformations, hideLoading],
+                ComponentTarget.Transformations
             );
 }
 
@@ -411,7 +413,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
         class: 'button',
         click: () => {
             SDFVComponent.getInstance().invoke(
-                'previewTransformation', [xform]
+                'previewTransformation', [xform], ComponentTarget.DaCe
             );
         },
         mouseenter: () => {
@@ -444,7 +446,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
             class: 'button',
             click: () => {
                 SDFVComponent.getInstance().invoke(
-                    'exportTransformation', [xform]
+                    'exportTransformation', [xform], ComponentTarget.DaCe
                 );
             },
         }).append($('<span>', {
@@ -466,6 +468,6 @@ export async function applyTransformations(
     VSCodeSDFV.getInstance().clearInfoBox(true);
     $('#exit-preview-button').hide();
     return SDFVComponent.getInstance().invoke(
-        'applyTransformations', [xforms]
+        'applyTransformations', [xforms], ComponentTarget.DaCe
     );
 }

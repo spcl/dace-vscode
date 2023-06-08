@@ -23,6 +23,7 @@ import {
 import {
     ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
+import { ComponentTarget } from '../../../components/components';
 
 declare const vscode: any;
 
@@ -40,7 +41,7 @@ class TransformationHistoryItem extends CustomTreeViewItem {
     }
 
     // No nesting allowed.
-    public addItem(item: CustomTreeViewItem): void {}
+    public addItem(_: CustomTreeViewItem): void {}
 
     public generateHtml(): JQuery<HTMLElement> {
         const item = super.generateHtml();
@@ -54,7 +55,7 @@ class TransformationHistoryItem extends CustomTreeViewItem {
                     this.list.generateHtml();
                 }
                 TransformationHistoryPanel.getInstance().invoke(
-                    'previewHistoryPoint', [this.index]
+                    'previewHistoryPoint', [this.index], ComponentTarget.DaCe
                 );
             });
 
@@ -67,7 +68,7 @@ class TransformationHistoryItem extends CustomTreeViewItem {
                 'title': '',
                 'click': (e: MouseEvent) => {
                     TransformationHistoryPanel.getInstance().invoke(
-                        'applyHistoryPoint', [this.index]
+                        'applyHistoryPoint', [this.index], ComponentTarget.DaCe
                     );
                     e.stopPropagation();
                 },
@@ -194,7 +195,7 @@ class TransformationHistoryPanel extends ICPCWebclientMessagingComponent {
     private static readonly INSTANCE = new TransformationHistoryPanel();
 
     private constructor() {
-        super();
+        super(ComponentTarget.History);
     }
 
     public static getInstance(): TransformationHistoryPanel {
@@ -212,7 +213,7 @@ class TransformationHistoryPanel extends ICPCWebclientMessagingComponent {
         this.transformationHistList.generateHtml();
         this.transformationHistList.show();
 
-        this.invoke('refresh');
+        this.invoke('onReady');
     }
 
     @ICPCRequest()

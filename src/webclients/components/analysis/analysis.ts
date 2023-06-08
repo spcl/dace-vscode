@@ -18,6 +18,7 @@ import {
 import {
     ICPCRequest
 } from '../../../common/messaging/icpc_messaging_component';
+import { ComponentTarget } from '../../../components/components';
 
 declare const vscode: any;
 
@@ -151,7 +152,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
     private static readonly INSTANCE: AnalysisPanel = new AnalysisPanel();
 
     private constructor() {
-        super();
+        super(ComponentTarget.Analysis);
     }
 
     public static getInstance(): AnalysisPanel {
@@ -285,7 +286,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
             this.symbolResolution.removeSymbol, this.symbolResolution
         );
 
-        this.invoke('refresh');
+        this.invoke('onReady');
     }
 
     @ICPCRequest()
@@ -300,7 +301,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
     }
 
     @ICPCRequest()
-    public refresh(
+    public updateAnalysisPane(
         activeOverlays: any[], symbols: any, scalingMethod?: string,
         scalingSubMethod?: string, availableOverlays?: any[]
     ): void {
@@ -471,41 +472,47 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
     public static async symbolValueChanged(
         symbol: string, value?: number
     ): Promise<void> {
-        return this.INSTANCE.invoke('symbolValueChanged', [symbol, value]);
+        return this.INSTANCE.invokeEditorProcedure(
+            'onSymbolValueChanged', [symbol, value]
+        );
     }
 
     public static async specialize(valueMap: SymbolMap): Promise<void> {
-        return this.INSTANCE.invoke('specialize', [valueMap]);
+        return this.INSTANCE.invokeEditorProcedure('specialize', [valueMap]);
     }
 
     public static async onLoadInstrumentationReport(
         report: any, crit: string
     ): Promise<void> {
-        return this.INSTANCE.invoke(
-            'onLoadInstrumentationReport', [report, crit]
+        return this.INSTANCE.invokeEditorProcedure(
+            'loadInstrumentationReport', [report, crit]
         );
     }
 
     public static async instrumentationReportChangeCriterium(
         criterium: string
     ): Promise<void> {
-        return this.INSTANCE.invoke(
-            'instrumentationReportChangeCriterium', [criterium]
+        return this.INSTANCE.invokeEditorProcedure(
+            'setInstrumentationReportCriterium', [criterium]
         );
     }
 
     public static async updateScalingMethod(
         method: string, subMethod?: number
     ): Promise<void> {
-        return this.INSTANCE.invoke('updateScalingMethod', [method, subMethod]);
+        return this.INSTANCE.invokeEditorProcedure(
+            'onHeatmapScalingChanged', [method, subMethod]
+        );
     }
 
     public static async setOverlays(overlays: string[]): Promise<void> {
-        return this.INSTANCE.invoke('setOverlays', [overlays]);
+        return this.INSTANCE.invokeEditorProcedure('setOverlays', [overlays]);
     }
 
     public static async clearRuntimeReport(types?: string[]): Promise<void> {
-        return this.INSTANCE.invoke('clearRuntimeReport', [types]);
+        return this.INSTANCE.invokeEditorProcedure(
+            'clearRuntimeReport', [types]
+        );
     }
 
 }
