@@ -896,22 +896,21 @@ implements vscode.WebviewViewProvider {
         );
     }
 
+    @ICPCRequest()
     public async specializeGraph(
-        uri: vscode.Uri, symbolMap?: { [symbol: string]: any | undefined }
-    ): Promise<void> {
+        sdfg: string, symbolMap?: { [symbol: string]: any | undefined }
+    ): Promise<any> {
         return new Promise((resolve, reject) => {
             this.showSpinner('Specializing');
             this.sendPostRequest(
                 '/specialize_sdfg',
                 {
-                    'path': uri.fsPath,
+                    'sdfg': sdfg,
                     'symbol_map': symbolMap,
                 },
                 (data: any) => {
-                    this.writeToActiveDocument(data.sdfg).then(() => {
-                        this.hideSpinner();
-                        resolve();
-                    });
+                    this.hideSpinner();
+                    resolve(data.sdfg);
                 },
                 (error: any) => {
                     this.genericErrorHandler(error.message, error.details);

@@ -11,6 +11,9 @@ import {
 } from 'vscode';
 import { AnalysisProvider } from './components/analysis';
 import { SDFGEditorBase } from './components/sdfg_editor/common';
+import { CompressedSDFGDocument } from './components/sdfg_editor/sdfg_document';
+import { gunzipSync } from 'zlib';
+import { read_or_decompress } from '@spcl/sdfv/src';
 
 export class DaCeVSCode {
 
@@ -193,18 +196,23 @@ export class DaCeVSCode {
             return undefined;
 
         let sdfgJson = undefined;
-        /*
-        TODO
-        if (fromDisk === true)
-            sdfgJson = (await workspace.fs.readFile(
-                this.activeSDFGEditor.document.uri
-            )).toString();
-        else
-            sdfgJson = this.activeSDFGEditor.document.getText();
-            */
-        sdfgJson = (await workspace.fs.readFile(
-            this.activeSDFGEditor.document.uri
-        )).toString();
+        if (fromDisk === true) {
+            if (this.activeSDFGEditor.document instanceof CompressedSDFGDocument)
+                sdfgJson = gunzipSync(Buffer.from((await workspace.fs.readFile(
+                    this.activeSDFGEditor.document.uri
+                )))).toString();
+            else
+                sdfgJson = (await workspace.fs.readFile(
+                    this.activeSDFGEditor.document.uri
+                )).toString();
+        } else {
+            if (this.activeSDFGEditor.document instanceof CompressedSDFGDocument)
+                sdfgJson = gunzipSync(
+                    Buffer.from(this.activeSDFGEditor.document.documentData)
+                ).toString();
+            else
+                sdfgJson = this.activeSDFGEditor.document.getText();
+        }
 
         if (sdfgJson === '' || !sdfgJson)
             sdfgJson = undefined;

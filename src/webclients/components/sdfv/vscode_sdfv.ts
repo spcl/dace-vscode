@@ -49,6 +49,7 @@ import {
     SDFV,
     State,
     StaticFlopsOverlay,
+    SymbolMap,
     traverse_sdfg_scopes
 } from '@spcl/sdfv/src';
 import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
@@ -134,7 +135,7 @@ export class VSCodeSDFV extends SDFV {
     private infoBarLastHorHeight: string = '200px';
 
     private monaco: any | null = null;
-    private sdfgString: string | null = null;
+    private origSDFG: JsonSDFG | null = null;
     private sdfgMetaDict: { [key: string]: any } | null = null;
     private queryMetaDictFunc: Promise<{ [key: string]: any }> | null= null;
     private viewingHistoryState: boolean = false;
@@ -512,16 +513,9 @@ export class VSCodeSDFV extends SDFV {
 
     @ICPCRequest()
     public async getCompressedSDFG(): Promise<Uint8Array | null> {
-        const sdfg = this.get_renderer()?.get_sdfg();
-        if (sdfg) {
-            unGraphiphySdfg(sdfg);
-            const sdfgString = JSON.stringify(sdfg, (_k, v) => {
-                return v === undefined ? null : v;
-            }, 2);
-            const compressed = gzipSync(sdfgString);
-            return compressed;
-        }
-
+        const sdfgString = this.getSdfgString();
+        if (sdfgString)
+            return gzipSync(sdfgString);
         return null;
     }
 
@@ -778,10 +772,10 @@ export class VSCodeSDFV extends SDFV {
     }
 
     public setRendererContent(
-        sdfgString: string, previewing: boolean = false,
+        sdfg: string | JsonSDFG, previewing: boolean = false,
         preventRefreshes: boolean = false
     ): void {
-        const parsedSdfg = parse_sdfg(sdfgString);
+        const parsedSdfg = typeof sdfg === 'string' ? parse_sdfg(sdfg) : sdfg;
         if (this.renderer) {
             this.renderer.set_sdfg(parsedSdfg);
         } else {
@@ -801,7 +795,7 @@ export class VSCodeSDFV extends SDFV {
         }
 
         if (!previewing) {
-            this.sdfgString = sdfgString;
+            this.origSDFG = parsedSdfg;
             if (!preventRefreshes)
                 refreshXform(this);
         }
@@ -824,7 +818,7 @@ export class VSCodeSDFV extends SDFV {
     }
 
     public resetRendererContent(): void {
-        if (!this.sdfgString)
+        if (!this.origSDFG)
             return;
 
         let userTransform = null;
@@ -834,19 +828,16 @@ export class VSCodeSDFV extends SDFV {
             renderer.destroy();
         }
 
-        const parsedSdfg = parse_sdfg(this.sdfgString);
-        if (parsedSdfg !== null) {
-            const contentsElem = document.getElementById('contents');
-            if (contentsElem === null) {
-                console.error('Could not find element to attach renderer to');
-                return;
-            }
-
-            renderer = VSCodeRenderer.init(
-                parsedSdfg, contentsElem, this.onMouseEvent, userTransform,
-                VSCodeSDFV.DEBUG_DRAW, null, null
-            );
+        const contentsElem = document.getElementById('contents');
+        if (contentsElem === null) {
+            console.error('Could not find element to attach renderer to');
+            return;
         }
+
+        renderer = VSCodeRenderer.init(
+            this.origSDFG, contentsElem, this.onMouseEvent, userTransform,
+            VSCodeSDFV.DEBUG_DRAW, null, null
+        );
 
         const graph = renderer?.get_graph();
         if (renderer && graph) {
@@ -887,10 +878,6 @@ export class VSCodeSDFV extends SDFV {
 
     public getMonaco(): any | null {
         return this.monaco;
-    }
-
-    public getSdfgString(): string | null {
-        return this.sdfgString;
     }
 
     public async getMetaDict(): Promise<{ [key: string]: any }> {
@@ -951,8 +938,16 @@ export class VSCodeSDFV extends SDFV {
         this.monaco = monaco;
     }
 
-    public setSdfgString(sdfgString: string | null): void {
-        this.sdfgString = sdfgString;
+    public getSdfgString(): string | null {
+        const sdfg = this.get_renderer()?.get_sdfg();
+        if (sdfg) {
+            unGraphiphySdfg(sdfg);
+            const sdfgString = JSON.stringify(sdfg, (_k, v) => {
+                return v === undefined ? null : v;
+            }, 2);
+            return sdfgString;
+        }
+        return null;
     }
 
     @ICPCRequest()
@@ -1150,6 +1145,17 @@ export class VSCodeSDFV extends SDFV {
             if (!overlayManager?.is_overlay_active(ol))
                 overlayManager?.register_overlay(ol);
         }
+    }
+
+    @ICPCRequest()
+    public async specialize(valueMap: SymbolMap): Promise<void> {
+        this.setProcessingOverlay(true, 'Specializing');
+        const specialized = await SDFVComponent.getInstance().invoke(
+            'specializeGraph',
+            [this.getSdfgString(), valueMap], ComponentTarget.DaCe
+        );
+        this.setRendererContent(specialized, false, false);
+        this.setProcessingOverlay(false);
     }
 
 }

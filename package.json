@@ -209,6 +209,11 @@
                         "default": false,
                         "description": "Use a vertical layout for state machines in the SDFG editor"
                     },
+                    "dace.sdfv.useVerticalScrollNavigation": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Use a vertical scroll navigation in the SDFG editor"
+                    },
                     "dace.backend.interpreterPath": {
                         "type": "string",
                         "default": "",
