@@ -154,6 +154,13 @@ export class CompressedSDFGEditorProvider implements CustomEditorProvider {
             });
         }));
 
+        disposables.push(document.onDidChangeContent(e => {
+            const editor = DaCeVSCode.getInstance().sdfgEditorMap.get(
+                document.uri
+            );
+            editor?.updateContents();
+        }));
+
         document.onDidDispose(() => {
             disposables.forEach((d) => d.dispose());
         });
