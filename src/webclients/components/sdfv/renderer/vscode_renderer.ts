@@ -285,6 +285,9 @@ export class VSCodeRenderer extends SDFGRenderer {
                 (addRoot as any).edges.push(element);
                 this.add_position = null;
                 this.add_edge_start = null;
+
+                this.set_sdfg(rootSdfg);
+
                 vscodeWriteGraph(rootSdfg);
             }
         } else {
@@ -466,6 +469,8 @@ export class VSCodeRenderer extends SDFGRenderer {
 
                     set_positioning_info(element, this.add_position);
                     this.add_position = null;
+
+                    this.set_sdfg(rootSdfg);
 
                     vscodeWriteGraph(rootSdfg);
                 }

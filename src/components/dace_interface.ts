@@ -129,46 +129,47 @@ implements vscode.WebviewViewProvider {
         if (overridePath && overridePath !== '')
             return this.cleanCmd([overridePath], spaceSafe);
 
+        const fallbackCommand = 'python';
+
         try {
             let pyExt = vscode.extensions.getExtension('ms-python.python');
             if (!pyExt) {
-                // TODO: do we want to tell the user that using the python
-                // plugin might be advisable here?
-                return 'python';
+                vscode.window.showWarningMessage(
+                    `Could not find the Python extension to run the ` +
+                    `DaCe backend, falling back to the regular 'python' ` +
+                    `command. If you have DaCe installed in a virtual ` +
+                    `environment, installing the Python extension is highly ` +
+                    `recommended.`
+                );
+                return fallbackCommand;
             }
 
-            if (pyExt.packageJSON?.featureFlags?.usingNewInterpreterStorage) {
-                if (!pyExt.isActive)
-                    await pyExt.activate();
-                const pyCmd = pyExt.exports.settings.getExecutionDetails ?
-                    pyExt.exports.settings.getExecutionDetails(
-                        uri
-                    ).execCommand :
-                    pyExt.exports.settings.getExecutionCommand(uri);
-                // Ensure spaces in the python command don't trip up the
-                // terminal.
-                if (pyCmd)
-                    return this.cleanCmd(pyCmd, spaceSafe);
-                else
-                    return 'python';
-            } else {
-                let path = undefined;
-                if (uri)
-                    path = vscode.workspace.getConfiguration(
-                        'python',
-                        uri
-                    ).get<string>('pythonPath');
-                else
-                    path = vscode.workspace.getConfiguration(
-                        'python'
-                    ).get<string>('pythonPath');
-                if (!path)
-                    return 'python';
-            }
-        } catch (ignored) {
-            return 'python';
+            if (!pyExt.isActive)
+                await pyExt.activate();
+
+            const environmentsAPI = pyExt.exports.environments;
+            const envPath = environmentsAPI.getActiveEnvironmentPath();
+            const pyEnv = await environmentsAPI.resolveEnvironment(envPath);
+            // Conda environment activation can take long, which is why we want
+            // to instead use conda run if the active environment is a Conda
+            // environment.
+            if (pyEnv && pyEnv.environment.type === 'Conda')
+                return `conda run -n ${pyEnv.environment.name} ` +
+                    `--no-capture-output python`;
+
+            const pyCmd = pyExt.exports.settings.getExecutionDetails ?
+                pyExt.exports.settings.getExecutionDetails(
+                    uri
+                ).execCommand :
+                pyExt.exports.settings.getExecutionCommand(uri);
+            // Ensure spaces in the python command don't trip up the
+            // terminal.
+            if (pyCmd)
+                return this.cleanCmd(pyCmd, spaceSafe);
+        } catch (_) {
+            return fallbackCommand;
         }
-        return 'python';
+        return fallbackCommand;
     }
 
     public genericErrorHandler(message: string, details?: string) {
@@ -517,7 +518,62 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public start() {
+    private onPostInit(): void {
+        Promise.all([
+            DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
+                'setDaemonConnected', [true]
+            ),
+            DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
+                'resyncTransformations', [true]
+            ),
+            DaCeInterface.getInstance()?.querySdfgMetadata().then((meta) => {
+                DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
+                    'setMetaDict', [meta]
+                );
+            })
+        ]);
+    }
+
+    private async onDeamonConnected(): Promise<void> {
+        const customXformPaths = vscode.workspace.getConfiguration(
+            'dace.optimization'
+        )?.get<string[]>('customTransformationsPaths');
+        if (customXformPaths) {
+            const paths = [];
+            for (const path of customXformPaths) {
+                try {
+                    const u = vscode.Uri.file(path);
+                    const stat = await vscode.workspace.fs.stat(u);
+                    if (stat.type === vscode.FileType.Directory) {
+                        for await (const fileUri of walkDirectory(u, '.py'))
+                            paths.push(fileUri.fsPath);
+                    } else if (stat.type === vscode.FileType.File) {
+                        paths.push(u.fsPath);
+                    }
+                } catch {
+                    vscode.window.showErrorMessage(
+                        'Failed to load custom transformations from ' +
+                        'path "' + path + '" configured in your settings.'
+                    );
+                }
+            }
+
+            this.sendPostRequest(
+                '/add_transformations',
+                {
+                    paths: paths,
+                },
+                () => {
+                    this.onPostInit();
+                }
+            );
+        } else {
+            this.onPostInit();
+        }
+    }
+
+    @ICPCRequest(true)
+    public start(port?: number) {
         // The daemon shouldn't start if it's already booting due to being
         // started from some other source, or if the optimization panel isn't
         // visible.
@@ -525,61 +581,11 @@ implements vscode.WebviewViewProvider {
             !OptimizationPanel.getInstance().isVisible())
             return;
 
-        const handleDaemonConnected = () => {
-            // TODO
-            DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
-                'setDaemonConnected', [true]
-            );
-            //TransformationHistoryProvider.getInstance()?.refresh();
-            //TransformationListProvider.getInstance()?.refresh(true);
-            this.querySdfgMetadata().then((metaDict) => {
-                DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
-                    'setMetaDict', [metaDict]
-                );
-            });
-        };
-
-        const onBooted = async () => {
-            const customXformPaths = vscode.workspace.getConfiguration(
-                'dace.optimization'
-            )?.get<string[]>('customTransformationsPaths');
-            if (customXformPaths) {
-                const paths = [];
-                for (const path of customXformPaths) {
-                    try {
-                        const u = vscode.Uri.file(path);
-                        const stat = await vscode.workspace.fs.stat(u);
-                        if (stat.type === vscode.FileType.Directory) {
-                            for await (const fileUri of walkDirectory(u, '.py'))
-                                paths.push(fileUri.fsPath);
-                        } else if (stat.type === vscode.FileType.File) {
-                            paths.push(u.fsPath);
-                        }
-                    } catch {
-                        vscode.window.showErrorMessage(
-                            'Failed to load custom transformations from ' +
-                            'path "' + path + '" configured in your settings.'
-                        );
-                    }
-                }
-
-                this.sendPostRequest(
-                    '/add_transformations',
-                    {
-                        paths: paths,
-                    },
-                    handleDaemonConnected
-                );
-            } else {
-                handleDaemonConnected();
-            }
-        };
-
         const callBoot = () => {
             this.daemonBooting = true;
 
-            this.startDaemonInTerminal().then(() => {
-                onBooted();
+            this.startDaemonInTerminal(port).then(() => {
+                this.onDeamonConnected();
             });
         };
 
@@ -752,8 +758,8 @@ implements vscode.WebviewViewProvider {
     @ICPCRequest()
     public async writeToActiveDocument(json: JsonSDFG | string): Promise<void> {
         const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
-        // TODO: respect indent size.
         if (activeEditor) {
+            // TODO: respect indent size for JSON serialization?.
             if (typeof json === 'string')
                 activeEditor.handleLocalEdit(json);
             else
@@ -929,7 +935,8 @@ implements vscode.WebviewViewProvider {
                         resolve(data.metaDict);
                     }
                 );
-            reject();
+            else
+                reject();
         });
     }
 
@@ -953,7 +960,7 @@ implements vscode.WebviewViewProvider {
                 '/transformations',
                 {
                     sdfg: JSON.parse(sdfg),
-                    selected_elements: JSON.parse(selectedElements),
+                    selected_elements: selectedElements,
                     permissive: false,
                 },
                 (data: any) => {

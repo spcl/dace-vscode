@@ -67,6 +67,8 @@ export abstract class SDFGEditorBase extends BaseComponent {
     private toggleActiveEditor(): void {
         if (this.webviewPanel.active)
             DaCeVSCode.getInstance().activeSDFGEditor = this;
+        else if (DaCeVSCode.getInstance().activeSDFGEditor === this)
+            DaCeVSCode.getInstance().activeSDFGEditor = undefined;
     }
 
     private async generateHTML(webview: Webview): Promise<string> {

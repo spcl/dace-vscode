@@ -38,13 +38,15 @@ export function transformationGetAffectedUUIDs(
     return uuids;
 }
 
-export function getCleanedSelectedElements(): string {
-    const cleanedSelected: {
-        type: string,
-        stateId: number | null,
-        sdfgId: number,
-        id: number,
-    }[] = [];
+type SelectedElementT = {
+    readonly type: string;
+    readonly stateId: number | null;
+    readonly sdfgId: number;
+    readonly id: number;
+};
+
+export function getCleanedSelectedElements(): SelectedElementT[] {
+    const cleanedSelected: SelectedElementT[] = [];
     VSCodeRenderer.getInstance()?.get_selected_elements().forEach(element => {
         let type = 'other';
         if (element.data !== undefined && element.data.node !== undefined)
@@ -59,7 +61,7 @@ export function getCleanedSelectedElements(): string {
             id: element.id,
         });
     });
-    return JSON.stringify(cleanedSelected);
+    return cleanedSelected;
 }
 
 /**

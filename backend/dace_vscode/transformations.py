@@ -309,9 +309,16 @@ def get_transformations(sdfg_json, selected_elements, permissive):
                     # an older version of dace (<= 0.13.1) is being used - attempt
                     # to construct subgraph transformations using the old API.
                     xform_obj = xform(subgraph)
-                if xform_obj.can_be_applied(selected_sdfg, subgraph):
-                    transformations.append(xform_obj.to_json())
-                    docstrings[xform.__name__] = xform_obj.__doc__
+                try:
+                    if xform_obj.can_be_applied(selected_sdfg, subgraph):
+                        transformations.append(xform_obj.to_json())
+                        docstrings[xform.__name__] = xform_obj.__doc__
+                except Exception as can_be_applied_exception:
+                    # If something fails here, that is most likely due to a
+                    # transformation bug. Fail gracefully.
+                    print('Warning: ' + xform.__name__ + ' caused an exception')
+                    print(can_be_applied_exception)
+                    print('Most likely a transformation bug, ignoring...')
 
         utils.restore_save_metadata(old_meta)
         return {
@@ -319,6 +326,7 @@ def get_transformations(sdfg_json, selected_elements, permissive):
             'docstrings': docstrings,
         }
     except Exception as e:
+        traceback.print_exc()
         return {
             'error': {
                 'message': 'Failed to load transformations',

@@ -796,8 +796,10 @@ export class VSCodeSDFV extends SDFV {
 
         if (!previewing) {
             this.origSDFG = parsedSdfg;
-            if (!preventRefreshes)
+            if (!preventRefreshes) {
                 refreshXform(this);
+                this.resyncTransformationHistory();
+            }
         }
 
         if (!preventRefreshes) {

@@ -2,6 +2,7 @@
 // All rights reserved.
 
 import {
+    EventEmitter,
     ExtensionContext,
     OutputChannel,
     Uri,
@@ -9,11 +10,15 @@ import {
     window,
     workspace
 } from 'vscode';
+import { gunzipSync } from 'zlib';
 import { AnalysisProvider } from './components/analysis';
 import { SDFGEditorBase } from './components/sdfg_editor/common';
 import { CompressedSDFGDocument } from './components/sdfg_editor/sdfg_document';
-import { gunzipSync } from 'zlib';
-import { read_or_decompress } from '@spcl/sdfv/src';
+import { OptimizationPanel } from './components/optimization_panel';
+
+interface ChangeActiveSDFGEditorEvent {
+    readonly activeEditor?: SDFGEditorBase;
+}
 
 export class DaCeVSCode {
 
@@ -24,6 +29,11 @@ export class DaCeVSCode {
     public static getInstance(): DaCeVSCode {
         return this.INSTANCE;
     }
+
+    private readonly _onDidChangeActiveSDFGEditor =
+        new EventEmitter<ChangeActiveSDFGEditorEvent>();
+    public readonly onDidChangeActiveSDFGEditor =
+        this._onDidChangeActiveSDFGEditor.event;
 
     private context?: ExtensionContext;
     private _outputChannel?: OutputChannel;
@@ -173,6 +183,19 @@ export class DaCeVSCode {
 
     public init(ctx: ExtensionContext): void {
         this.context = ctx;
+
+        this.onDidChangeActiveSDFGEditor((e) => {
+            if (e.activeEditor) {
+                Promise.all([
+                    e.activeEditor.invoke('resyncTransformations', [false]),
+                    e.activeEditor.invoke('resyncTransformationHistory'),
+                    e.activeEditor.invoke('refreshAnalysisPane'),
+                    e.activeEditor.invoke('outline'),
+                ]);
+            } else {
+                OptimizationPanel.getInstance().clearAll();
+            }
+        });
     }
 
     public getExtensionContext() {
@@ -225,8 +248,18 @@ export class DaCeVSCode {
         return this._activeEditor;
     }
 
+    private _debounceActiveSDFGEditorChangeTimeoutId?: NodeJS.Timeout | number;
+
     public set activeSDFGEditor(editor: SDFGEditorBase | undefined) {
         this._activeEditor = editor;
+        clearTimeout(this._debounceActiveSDFGEditorChangeTimeoutId);
+        this._debounceActiveSDFGEditorChangeTimeoutId = setTimeout(
+            () => {
+                this._onDidChangeActiveSDFGEditor.fire({
+                    activeEditor: editor,
+                });
+            }, 100
+        );
     }
 
 }

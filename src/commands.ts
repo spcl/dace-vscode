@@ -74,7 +74,7 @@ export function registerCommands(context: ExtensionContext): void {
 
     registerCommand(context, 'transformationList.sync', () => {
         DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
-            'resyncTransformations'
+            'resyncTransformations', [true]
         );
     });
     registerCommand(context, 'transformationHistory.sync', () => {
@@ -90,6 +90,7 @@ export function registerCommands(context: ExtensionContext): void {
     registerCommand(context, 'sdfgOutline.sync', () => {
         DaCeVSCode.getInstance().activeSDFGEditor?.invoke('outline');
     });
+
     registerCommand(context, 'sdfg.sync', () => {
         DaCeVSCode.getInstance().activeSDFGEditor?.updateContents();
     });

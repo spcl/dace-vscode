@@ -57,6 +57,7 @@ export function activate(ctx: ExtensionContext): void {
             );
         });
     });
+    ctx.subscriptions.push(sdfgWatcher);
 
     const perfReportWatcher = workspace.createFileSystemWatcher(
         '**/.dacecache/**/perf/*.json'
@@ -103,6 +104,7 @@ export function activate(ctx: ExtensionContext): void {
             }
         });
     });
+    ctx.subscriptions.push(perfReportWatcher);
 
     registerCommands(ctx);
     activateSdfgPython(ctx);

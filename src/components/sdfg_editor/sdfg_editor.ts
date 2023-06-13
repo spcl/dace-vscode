@@ -8,6 +8,7 @@ import {
     ExtensionContext,
     Range,
     TextDocument,
+    TextDocumentChangeReason,
     WebviewOptions,
     WebviewPanel,
     WebviewPanelOptions,
@@ -27,6 +28,20 @@ export class SDFGEditor extends SDFGEditorBase {
         webviewPanel: WebviewPanel, document: TextDocument
     ) {
         super(context, _token, webviewPanel, document);
+
+        // Make sure we capture undo / redo events to update the webview
+        // accordingly. We do not want to capture arbitrary changes, as they
+        // can lead to event handler loops when the edit occurs from the
+        // extension or webview itself.
+		const changeSubs = workspace.onDidChangeTextDocument(e => {
+			if (e.document.uri.toString() === document.uri.toString() &&
+                (e.reason === TextDocumentChangeReason.Redo ||
+                 e.reason === TextDocumentChangeReason.Undo))
+                this._updateContents();
+		});
+		webviewPanel.onDidDispose(() => {
+			changeSubs.dispose();
+		});
     }
 
     protected async _updateContents(
