@@ -219,8 +219,8 @@ export class VSCodeRenderer extends SDFGRenderer {
             const [endElem, endElemSdfg] =
                 findJsonSDFGElementByUUID(rootSdfg, parentUUID);
             let element = undefined;
-            if (startElemSdfg === endElemSdfg && startElem &&
-                endElem && startElem.type === endElem.type) {
+            if (startElemSdfg.sdfg_list_id === endElemSdfg.sdfg_list_id &&
+                startElem && endElem) {
                 if (startElem.type === SDFGElementType.SDFGState) {
                     element = {
                         type: 'Edge',
