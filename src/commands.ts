@@ -11,6 +11,10 @@ import { DaCeInterface } from './components/dace_interface';
 import { SdfgBreakpointProvider } from './components/sdfg_breakpoints';
 import { DaCeVSCode } from './dace_vscode';
 import { executeTrusted } from './utils/utils';
+import { TransformationListProvider } from './components/transformation_list';
+import { TransformationHistoryProvider } from './components/transformation_history';
+import { AnalysisProvider } from './components/analysis';
+import { OutlineProvider } from './components/outline';
 
 
 export function registerCommand(
@@ -73,22 +77,40 @@ export function registerCommands(context: ExtensionContext): void {
     });
 
     registerCommand(context, 'transformationList.sync', () => {
-        DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
-            'resyncTransformations', [true]
-        );
+        const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
+        if (activeEditor)
+            activeEditor.invoke('resyncTransformations', [true]);
+        else
+            TransformationListProvider.getInstance()?.invoke(
+                'clearTransformations', ['No SDFG selected']
+            );
     });
     registerCommand(context, 'transformationHistory.sync', () => {
-        DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
-            'resyncTransformationHistory'
-        );
+        const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
+        if (activeEditor)
+            activeEditor.invoke('resyncTransformationHistory');
+        else
+            TransformationHistoryProvider.getInstance()?.invoke(
+                'clearHistory', ['No SDFG selected']
+            );
     });
     registerCommand(context, 'sdfgAnalysis.sync', () => {
-        DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
-            'refreshAnalysisPane'
-        );
+        const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
+        if (activeEditor)
+            activeEditor.invoke('refreshAnalysisPane');
+        else
+            AnalysisProvider.getInstance()?.invoke(
+                'clear', ['No SDFG selected']
+            );
     });
     registerCommand(context, 'sdfgOutline.sync', () => {
-        DaCeVSCode.getInstance().activeSDFGEditor?.invoke('outline');
+        const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
+        if (activeEditor)
+            activeEditor.invoke('outline');
+        else
+            OutlineProvider.getInstance()?.invoke(
+                'clearOutline', ['No SDFG selected']
+            );
     });
 
     registerCommand(context, 'sdfg.sync', () => {

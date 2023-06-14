@@ -40,6 +40,7 @@ export abstract class SDFGEditorBase extends BaseComponent {
         DaCeVSCode.getInstance().sdfgEditorMap.set(document.uri, this);
         this.webviewPanel.onDidDispose(() => {
             DaCeVSCode.getInstance().sdfgEditorMap.delete(document.uri);
+            DaCeVSCode.getInstance().activeSDFGEditor = undefined;
             super.dispose();
         });
 

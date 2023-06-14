@@ -36,10 +36,8 @@ export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
     }
 
     private processQueuedRequests(): void {
-        for (const request of this.pcMap.values()) {
-            console.log(`Processing queued request ${request.procedure}`);
+        for (const request of this.pcMap.values())
             super._doSendRequest(request);
-        }
     }
 
     @ICPCRequest(true)

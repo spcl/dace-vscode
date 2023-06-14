@@ -8,6 +8,7 @@ import { DaCeInterface } from './dace_interface';
 import { BaseComponent } from './base_component';
 import { ComponentTarget } from './components';
 import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
+import { DaCeVSCode } from '../dace_vscode';
 
 export class TransformationHistoryProvider
 extends BaseComponent
@@ -91,7 +92,11 @@ implements vscode.WebviewViewProvider {
 
     @ICPCRequest(true)
     public onReady(): Promise<void> {
-        vscode.commands.executeCommand('transformationHistory.sync');
+        const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
+        if (activeEditor)
+            activeEditor.invoke('resyncTransformationHistory');
+        else
+            this.invoke('clearHistory', ['No SDFG selected']);
         return super.onReady();
     }
 
