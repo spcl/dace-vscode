@@ -80,7 +80,7 @@ export class SDFGEditor extends SDFGEditorBase {
             edit.replace(
                 this.document.uri,
                 new Range(0, 0, this.document.lineCount, 0),
-                JSON.stringify(sdfg, null, 2)
+                JSON.stringify(sdfg, null, 1)
             );
         return workspace.applyEdit(edit);
     }
