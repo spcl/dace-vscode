@@ -374,10 +374,9 @@ export async function vscodeWriteGraph(g: JsonSDFG): Promise<void> {
     const t2 = performance.now();
     // Stringify with a replacer that removes undefined and sets it to null,
     // so the values don't get dropped.
-    // TODO: Use indent level set by editorconfig?
     const nv = JSON.stringify(g, (_k, v) => {
         return v === undefined ? null : v;
-    }, 2);
+    }, 1);
     const t3 = performance.now();
     if (VSCodeSDFV.getInstance().getViewingCompressed())
         await SDFVComponent.getInstance().invoke('onSDFGEdited', []);

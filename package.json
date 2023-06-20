@@ -219,6 +219,11 @@
                         "default": "",
                         "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter."
                     },
+                    "dace.backend.port": {
+                        "type": "number",
+                        "default": -1,
+                        "description": "Set a fixed port to use for the DaCe backend. Setting this to -1 randomly picks an unused port when launching the backend."
+                    },
                     "dace.optimization.customTransformationsPaths": {
                         "type": "array",
                         "default": [],

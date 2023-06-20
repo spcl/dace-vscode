@@ -211,6 +211,16 @@ implements vscode.WebviewViewProvider {
 
     @ICPCRequest()
     public async startDaemonInTerminal(port?: number): Promise<void> {
+        if (!port) {
+            // If no explicit port override was provided, try to see if a pre-
+            // configured port exists in the settings.
+            const overridePort = vscode.workspace.getConfiguration(
+                'dace.backend'
+            )?.port;
+            if (overridePort > 0)
+                port = overridePort;
+        }
+
         return new Promise((resolve, reject) => {
             if (this.daemonTerminal === undefined)
                 this.daemonTerminal = vscode.window.createTerminal({
@@ -251,58 +261,6 @@ implements vscode.WebviewViewProvider {
             }
         });
     }
-
-    /*
-    private runSdfgInTerminal(name: string, path?: string,
-                              origin?: vscode.Webview) {
-        if (!this.runTerminal)
-            this.runTerminal = vscode.window.createTerminal('Run SDFG');
-        this.runTerminal.show();
-
-        if (path === undefined) {
-            if (origin === undefined)
-                return;
-
-            path = SdfgViewerProvider.getInstance()?.findEditorForWebview(
-                origin
-            )?.wrapperFile;
-        }
-
-        this.runTerminal.sendText('python ' + path);
-
-        // Additionally create a launch configuration for VSCode.
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (workspaceFolders) {
-            const launchConfig = vscode.workspace.getConfiguration(
-                'launch', workspaceFolders[0].uri
-            );
-            const runSdfgConfig = {
-                'name': 'SDFG: ' + name,
-                'type': 'sdfg-python',
-                'request': 'launch',
-                'program': path,
-                'console': 'integratedTerminal',
-            };
-
-            let pathIncluded = false;
-            for (const cfg of launchConfig.configurations) {
-                if (cfg['program'] === path) {
-                    pathIncluded = true;
-                    break;
-                }
-            }
-
-            if (!pathIncluded) {
-                launchConfig.configurations.push(runSdfgConfig);
-                launchConfig.update(
-                    'configurations',
-                    launchConfig.configurations,
-                    false
-                );
-            }
-        }
-    }
-    */
 
     @ICPCRequest()
     private pollDaemon(
@@ -759,11 +717,10 @@ implements vscode.WebviewViewProvider {
     public async writeToActiveDocument(json: JsonSDFG | string): Promise<void> {
         const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
         if (activeEditor) {
-            // TODO: respect indent size for JSON serialization?.
             if (typeof json === 'string')
                 activeEditor.handleLocalEdit(json);
             else
-                activeEditor.handleLocalEdit(JSON.stringify(json, null, 2));
+                activeEditor.handleLocalEdit(JSON.stringify(json, null, 1));
         }
     }
 

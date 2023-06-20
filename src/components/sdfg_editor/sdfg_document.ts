@@ -1,3 +1,6 @@
+// Copyright 2020-2023 ETH Zurich and the DaCe-VSCode authors.
+// All rights reserved.
+
 import * as vscode from 'vscode';
 
 interface CompressedSDFGEdit {
@@ -75,7 +78,6 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
     }
 
     public makeEdit(edit: CompressedSDFGEdit): void {
-        console.log('Recorded edit', edit);
         this._edits.push(edit);
         this._onDidChange.fire({
             label: 'Edit',
