@@ -1,7 +1,9 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-export class CustomTreeViewItem {
+import EventEmitter from 'events';
+
+export class CustomTreeViewItem extends EventEmitter {
 
     public parentItem: CustomTreeViewItem | undefined = undefined;
     public children: CustomTreeViewItem[] | undefined = undefined;
@@ -19,6 +21,7 @@ export class CustomTreeViewItem {
         protected readonly MEDIA_DIR: string | undefined = undefined,
         public hidden: boolean = false
     ) {
+        super();
     }
 
     public addItem(child: CustomTreeViewItem): void {
@@ -67,6 +70,8 @@ export class CustomTreeViewItem {
 
             if (this.unfoldDoubleClick) {
                 nestedLabel.on('dblclick', (event) => {
+                    this.emit('toggle_collapse');
+
                     nestedList.toggle();
                     nestedLabel.toggleClass('tree-view-expanded');
                     this.collapsed = !this.collapsed;
@@ -78,6 +83,8 @@ export class CustomTreeViewItem {
                 });
             } else {
                 nestedLabel.on('click', (event) => {
+                    this.emit('click');
+
                     nestedList.toggle();
                     nestedLabel.toggleClass('tree-view-expanded');
                     this.collapsed = !this.collapsed;
@@ -147,14 +154,16 @@ export class CustomTreeViewItem {
 
 }
 
-export class CustomTreeView {
+export class CustomTreeView extends EventEmitter {
 
     protected items: CustomTreeViewItem[] = [];
     public selectedItem: CustomTreeViewItem | undefined = undefined;
 
     public constructor(
         protected rootElement: JQuery
-    ){}
+    ){
+        super();
+    }
 
     public addItem(item: CustomTreeViewItem): void {
         this.items.push(item);

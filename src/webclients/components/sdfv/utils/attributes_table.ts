@@ -36,6 +36,7 @@ import {
     getTransformationMetadata,
     vscodeWriteGraph
 } from './helpers';
+import { ComponentTarget } from '../../../../components/components';
 
 declare const vscode: any;
 
@@ -303,7 +304,7 @@ export function attrTablePutSelect(
                     elem.id,
                 ];
                 SDFVComponent.getInstance().invoke(
-                    'expandLibraryNode', [nodeId]
+                    'expandLibraryNode', [nodeId], ComponentTarget.DaCe
                 );
             },
         }).appendTo(cell);
@@ -1264,7 +1265,7 @@ export function generateAttributesTable(
         });
     });
 
-    // Dsiplay a button to jump to the generated C++ code.
+    // Display a button to jump to the generated C++ code.
     if (
         elem instanceof SDFGElement &&
         !(elem instanceof Edge) &&
@@ -1305,6 +1306,17 @@ export function generateAttributesTable(
                     (nodeId === undefinedVal) ? '' : (':' + nodeId))
         );
         gotoCppBtn.show();
+    } else if (elem instanceof Edge) {
+        const jumpToStartBtn = $('#goto-edge-start');
+        const jumpToEndBtn = $('#goto-edge-end');
+        jumpToStartBtn.on('click', () => {
+            elem.setViewToSource(VSCodeRenderer.getInstance()!);
+        });
+        jumpToEndBtn.on('click', () => {
+            elem.setViewToDestination(VSCodeRenderer.getInstance()!);
+        });
+        jumpToStartBtn.show();
+        jumpToEndBtn.show();
     }
 }
 

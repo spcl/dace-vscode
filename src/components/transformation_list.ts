@@ -3,21 +3,17 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
-import { DaCeInterface } from '../dace_interface';
-import { DaCeVSCode } from '../extension';
-import {
-    JsonTransformation,
-    JsonTransformationList
-} from '../webclients/components/transformations/transformations';
+import { DaCeInterface } from './dace_interface';
 
 import { BaseComponent } from './base_component';
+import { ComponentTarget } from './components';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 
 export class TransformationListProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'transformationList';
+    private static readonly viewType: string = ComponentTarget.Transformations;
 
     private view?: vscode.WebviewView;
 
@@ -50,7 +46,7 @@ implements vscode.WebviewViewProvider {
         _token: vscode.CancellationToken
     ): void | Thenable<void> {
         // If the DaCe interface has not been started yet, start it here.
-        DaCeInterface.getInstance().start();
+        DaCeInterface.getInstance()?.start();
 
         this.view = webviewView;
 
@@ -85,39 +81,6 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    @ICPCRequest()
-    public async selectTransformation(
-        transformation: JsonTransformation
-    ): Promise<void> {
-        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
-            'selectTransformation', [transformation]
-        );
-    }
-
-    @ICPCRequest()
-    public async highlightElements(uuids: string[]): Promise<void> {
-        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
-            'highlightUUIDs', [uuids]
-        );
-    }
-
-    @ICPCRequest()
-    public async applyTransformations(
-        transformations: JsonTransformation[]
-    ): Promise<void> {
-        return DaCeInterface.getInstance().applyTransformations(
-            transformations
-        );
-    }
-
-    public async setTransformations(
-        transformations: JsonTransformationList, hideLoading: boolean = true
-    ): Promise<void> {
-        return this.invoke('setTransformations', [
-            transformations, hideLoading
-        ]);
-    }
-
     public async showLoading(): Promise<void> {
         return this.invoke('showLoading');
     }
@@ -130,23 +93,6 @@ implements vscode.WebviewViewProvider {
         return this.invoke('deselect');
     }
 
-    public async clearTransformations(
-        reason: string | undefined
-    ): Promise<void> {
-        return this.invoke('clearTransformations', [reason]);
-    }
-
-    @ICPCRequest()
-    public refresh(hard: boolean = false) {
-        this.clearTransformations(undefined);
-        if (hard)
-            vscode.commands.executeCommand('transformationList.sync');
-        else
-            DaCeVSCode.getInstance().getActiveEditor()?.invoke(
-                'resyncTransformations'
-            );
-    }
-
     public show() {
         this.view?.show();
     }
@@ -155,6 +101,12 @@ implements vscode.WebviewViewProvider {
         if (this.view === undefined)
             return false;
         return this.view.visible;
+    }
+
+    @ICPCRequest(true)
+    public onReady(): Promise<void> {
+        vscode.commands.executeCommand('transformationList.sync');
+        return super.onReady();
     }
 
 }

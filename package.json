@@ -2,9 +2,9 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Editor",
     "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "1.5.3",
+    "version": "1.5.5",
     "engines": {
-        "vscode": "^1.68.0"
+        "vscode": "^1.75.0"
     },
     "categories": [
         "Visualization",
@@ -12,18 +12,9 @@
         "Other"
     ],
     "activationEvents": [
-        "onCustomEditor:sdfgCustom.sdfv",
         "onDebug",
         "onDebugResolve:dace-debug",
-        "onLanguage:python",
-        "onLanguage:sdfg",
-        "onCommand:sdfg.debug.run",
-        "onCommand:sdfg.debug.profile",
-        "onView:transformationList",
-        "onView:transformationHistory",
-        "onView:sdfgAnalysis",
-        "onView:sdfgBreakpoints",
-        "onView:sdfgOutline"
+        "onLanguage:python"
     ],
     "main": "./dist/extension.js",
     "publisher": "phschaad",
@@ -183,10 +174,55 @@
                         "default": true,
                         "description": "Show a minimap in the top right corner of the SDFG editor"
                     },
+                    "dace.sdfv.showAccessNodes": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show access nodes in the SDFG editor"
+                    },
+                    "dace.sdfv.showStateNames": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show the names of SDFG states in the SDFG editor"
+                    },
+                    "dace.sdfv.showMapSchedules": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Show a label for map schedules in the SDFG editor"
+                    },
+                    "dace.sdfv.showDataDescriptorSizes": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Show the size of data descriptors on access nodes instead of their size"
+                    },
+                    "dace.sdfv.adaptiveContentHiding": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Adaptively hide content in the SDFG editor based on the zoom level"
+                    },
+                    "dace.sdfv.inclusiveRanges": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Use inclusive range labels in the SDFG editor"
+                    },
+                    "dace.sdfv.useVerticalStateMachineLayout": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Use a vertical layout for state machines in the SDFG editor"
+                    },
+                    "dace.sdfv.useVerticalScrollNavigation": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Use a vertical scroll navigation in the SDFG editor"
+                    },
                     "dace.backend.interpreterPath": {
                         "type": "string",
                         "default": "",
                         "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter."
+                    },
+                    "dace.backend.port": {
+                        "type": "number",
+                        "default": -1,
+                        "description": "Set a fixed port to use for the DaCe backend. Setting this to -1 randomly picks an unused port when launching the backend."
                     },
                     "dace.optimization.customTransformationsPaths": {
                         "type": "array",
@@ -236,7 +272,8 @@
             {
                 "id": "sdfg",
                 "extensions": [
-                    ".sdfg"
+                    ".sdfg",
+                    ".sdfgz"
                 ],
                 "aliases": [
                     "SDFG",
@@ -263,6 +300,16 @@
                 "selector": [
                     {
                         "filenamePattern": "*.sdfg"
+                    }
+                ],
+                "priority": "default"
+            },
+            {
+                "viewType": "compressedSdfgCustom.sdfv",
+                "displayName": "SDFG Viewer (compressed)",
+                "selector": [
+                    {
+                        "filenamePattern": "*.sdfgz"
                     }
                 ],
                 "priority": "default"
@@ -306,6 +353,13 @@
                     "name": "SDFG Outline",
                     "icon": "media/resources/icons/dace-hollow.svg",
                     "contextualTitle": "SDFG Outline"
+                },
+                {
+                    "id": "daceInterface",
+                    "type": "webview",
+                    "name": "DaCe Backend",
+                    "icon": "media/resources/icons/dace-hollow.svg",
+                    "contextualTitle": "DaCe Python Backend"
                 }
             ],
             "debug": [
@@ -623,7 +677,7 @@
         "@types/mocha": "^10.0.1",
         "@types/node": "^12.20.55",
         "@types/uuid": "^8.3.4",
-        "@types/vscode": "^1.68.0",
+        "@types/vscode": "^1.75.0",
         "@typescript-eslint/eslint-plugin": "^5.48.1",
         "@typescript-eslint/parser": "^5.48.1",
         "@vscode/test-electron": "^2.2.2",
@@ -634,14 +688,14 @@
         "file-loader": "^6.2.0",
         "glob": "^8.0.3",
         "mocha": "^10.2.0",
-        "postcss-loader": "^7.0.2",
+        "postcss-loader": "^7.2.4",
         "rimraf": "^3.0.2",
         "sass": "^1.57.1",
         "sass-loader": "^13.2.0",
         "style-loader": "^3.3.1",
         "ts-loader": "^9.4.2",
         "typescript": "^4.9.4",
-        "webpack": "^5.75.0",
+        "webpack": "^5.76.0",
         "webpack-cli": "^4.10.0"
     },
     "dependencies": {

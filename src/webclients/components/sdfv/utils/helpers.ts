@@ -19,8 +19,7 @@ import {
 } from '@spcl/sdfv/src';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
-
-declare const vscode: any;
+import { gzipSync } from 'zlib';
 
 export function findMaximumSdfgId(sdfg: JsonSDFG): number {
     let maxId = sdfg.sdfg_list_id;
@@ -369,14 +368,24 @@ export function unGraphiphySdfg(g: JsonSDFG): void {
     });
 }
 
-export function vscodeWriteGraph(g: JsonSDFG): void {
+export async function vscodeWriteGraph(g: JsonSDFG): Promise<void> {
+    const t1 = performance.now();
     unGraphiphySdfg(g);
+    const t2 = performance.now();
     // Stringify with a replacer that removes undefined and sets it to null,
     // so the values don't get dropped.
     const nv = JSON.stringify(g, (_k, v) => {
         return v === undefined ? null : v;
-    });
-    SDFVComponent.getInstance().invoke('writeToActiveDocument', [nv]);
+    }, 1);
+    const t3 = performance.now();
+    if (VSCodeSDFV.getInstance().getViewingCompressed())
+        await SDFVComponent.getInstance().invoke('onSDFGEdited', []);
+    else
+        await SDFVComponent.getInstance().invoke('onSDFGEdited', [nv]);
+    const t4 = performance.now();
+    console.debug('unGraphiphySdfg took ' + (t2 - t1) + 'ms');
+    console.debug('JSON.stringify took ' + (t3 - t2) + 'ms');
+    console.debug('writeToActiveDocument took ' + (t4 - t3) + 'ms');
 }
 
 export function reselectRendererElement(elem: SDFGElement): void {

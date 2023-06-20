@@ -3,17 +3,17 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
-import { DaCeInterface } from '../dace_interface';
-import { DaCeVSCode } from '../extension';
+import { DaCeInterface } from './dace_interface';
 
 import { BaseComponent } from './base_component';
+import { ComponentTarget } from './components';
+import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 
 export class OutlineProvider
 extends BaseComponent
 implements vscode.WebviewViewProvider {
 
-    private static readonly viewType: string = 'sdfgOutline';
+    private static readonly viewType: string = ComponentTarget.Outline;
 
     private view?: vscode.WebviewView;
 
@@ -43,7 +43,7 @@ implements vscode.WebviewViewProvider {
         _token: vscode.CancellationToken
     ): void | Thenable<void> {
         // If the DaCe interface has not been started yet, start it here.
-        DaCeInterface.getInstance().start();
+        DaCeInterface.getInstance()?.start();
 
         this.view = webviewView;
 
@@ -88,33 +88,6 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public async setOutline(outlineList: any[]): Promise<void> {
-        await this.invoke('setOutline', [outlineList]);
-    }
-
-    public async clearOutline(reason?: string): Promise<void> {
-        await this.invoke('clearOutline', [reason]);
-    }
-
-    @ICPCRequest()
-    public async highlightElement(elementUUID: string): Promise<void> {
-        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
-            'highlightUUIDs', [elementUUID]
-        );
-    }
-
-    @ICPCRequest()
-    public async zoomToNode(elementUUID: string): Promise<void> {
-        return DaCeVSCode.getInstance().getActiveEditor()?.invoke(
-            'zoomToUUIDs', [elementUUID]
-        );
-    }
-
-    @ICPCRequest()
-    public refresh() {
-        vscode.commands.executeCommand('sdfgOutline.sync');
-    }
-
     public show() {
         this.view?.show();
     }
@@ -123,6 +96,12 @@ implements vscode.WebviewViewProvider {
         if (this.view === undefined)
             return false;
         return this.view.visible;
+    }
+
+    @ICPCRequest(true)
+    public onReady(): Promise<void> {
+        vscode.commands.executeCommand('sdfgOutline.sync');
+        return super.onReady();
     }
 
 }

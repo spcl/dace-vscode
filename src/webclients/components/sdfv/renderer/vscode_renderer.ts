@@ -30,9 +30,8 @@ import {
     SDFVComponent,
     VSCodeSDFV
 } from '../vscode_sdfv';
+import { ComponentTarget } from '../../../../components/components';
 
-declare const vscode: any;
-declare let MINIMAP_ENABLED: boolean;
 
 export class VSCodeRenderer extends SDFGRenderer {
 
@@ -73,7 +72,13 @@ export class VSCodeRenderer extends SDFGRenderer {
             ).then(sdfg => {
                 VSCodeSDFV.getInstance().updateContents(sdfg, true);
                 SDFVComponent.getInstance().invoke(
-                    'refreshTransformationHistory', [true]
+                    'setHistory',
+                    [
+                        VSCodeRenderer.getInstance()?.get_sdfg()?.attributes
+                            .transformation_hist,
+                        VSCodeSDFV.getInstance().getViewingHistoryIndex()
+                    ],
+                    ComponentTarget.History
                 );
             });
         });
@@ -87,21 +92,25 @@ export class VSCodeRenderer extends SDFGRenderer {
         this.INSTANCE.on('backend_data_requested', (type, overlay) => {
             switch (type) {
                 case 'flops':
-                    SDFVComponent.getInstance().invoke('getFlops')
-                        .then((flopsMap) => {
-                            if (!flopsMap)
-                                return;
-                            const renderer = VSCodeRenderer.getInstance();
-                            const oMan = renderer?.get_overlay_manager();
-                            const oType = VSCodeSDFV.OVERLAYS[overlay];
-                            const ol = oMan?.get_overlay(oType);
-                            (ol as
-                                StaticFlopsOverlay |
-                                OperationalIntensityOverlay
-                            )?.update_flops_map(flopsMap);
-                        });
+                    SDFVComponent.getInstance().invoke(
+                        'getFlops', [], ComponentTarget.DaCe
+                    ).then((flopsMap) => {
+                        if (!flopsMap)
+                            return;
+                        const renderer = VSCodeRenderer.getInstance();
+                        const oMan = renderer?.get_overlay_manager();
+                        const oType = VSCodeSDFV.OVERLAYS[overlay];
+                        const ol = oMan?.get_overlay(oType);
+                        (ol as
+                            StaticFlopsOverlay |
+                            OperationalIntensityOverlay
+                        )?.update_flops_map(flopsMap);
+                    });
                     break;
             }
+        });
+        this.INSTANCE.on('settings_changed', (settings) => {
+            SDFVComponent.getInstance().invoke('updateSettings', [settings]);
         });
 
         return this.INSTANCE;
@@ -171,24 +180,6 @@ export class VSCodeRenderer extends SDFGRenderer {
             sdfv, sdfg, container, onMouseEvent, userTransform, debugDraw,
             backgroundColor, modeButtons
         );
-
-        if (this.minimap_canvas) {
-            const disableMinimapButton = $('<div>', {
-                id: 'minimap-close-button',
-                title: 'Disable Minimap',
-                html: '<i class="material-icons">cancel</i>',
-                click: () => {
-                    MINIMAP_ENABLED = false;
-                    this.minimap_canvas?.remove();
-                    this.minimap_ctx = null;
-                    this.minimap_canvas = null;
-                    disableMinimapButton.remove();
-                    SDFVComponent.getInstance().invoke(
-                        'disableMinimap'
-                    );
-                },
-            }).appendTo($(this.container));
-        }
     }
 
     public cutout_selection(_suppressSave: boolean = false): void {
@@ -228,8 +219,8 @@ export class VSCodeRenderer extends SDFGRenderer {
             const [endElem, endElemSdfg] =
                 findJsonSDFGElementByUUID(rootSdfg, parentUUID);
             let element = undefined;
-            if (startElemSdfg === endElemSdfg && startElem &&
-                endElem && startElem.type === endElem.type) {
+            if (startElemSdfg.sdfg_list_id === endElemSdfg.sdfg_list_id &&
+                startElem && endElem) {
                 if (startElem.type === SDFGElementType.SDFGState) {
                     element = {
                         type: 'Edge',
@@ -294,6 +285,9 @@ export class VSCodeRenderer extends SDFGRenderer {
                 (addRoot as any).edges.push(element);
                 this.add_position = null;
                 this.add_edge_start = null;
+
+                this.set_sdfg(rootSdfg);
+
                 vscodeWriteGraph(rootSdfg);
             }
         } else {
@@ -475,6 +469,8 @@ export class VSCodeRenderer extends SDFGRenderer {
 
                     set_positioning_info(element, this.add_position);
                     this.add_position = null;
+
+                    this.set_sdfg(rootSdfg);
 
                     vscodeWriteGraph(rootSdfg);
                 }

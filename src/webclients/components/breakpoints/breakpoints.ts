@@ -20,6 +20,7 @@ import { ISDFGDebugNodeInfo } from '../../../debugger/breakpoint_handler';
 import {
     ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
+import { ComponentTarget } from '../../../components/components';
 
 declare const vscode: any;
 
@@ -28,7 +29,7 @@ class BreakpointPanel extends ICPCWebclientMessagingComponent {
     private static readonly INSTANCE: BreakpointPanel = new BreakpointPanel();
 
     private constructor() {
-        super();
+        super(ComponentTarget.Breakpoints);
     }
 
     public static getInstance(): BreakpointPanel {

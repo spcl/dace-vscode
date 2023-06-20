@@ -1,13 +1,13 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { EventEmitter } from 'events';
-import { DaCeVSCode } from '../extension';
-import { SdfgViewer, SdfgViewerProvider } from '../components/sdfg_viewer';
+import * as vscode from 'vscode';
+import { DaCeInterface } from '../components/dace_interface';
+import { SDFGEditorBase } from '../components/sdfg_editor/common';
 import { SdfgPythonLaunchRequestArguments } from './sdfg_python_debug_session';
-import { DaCeInterface } from '../dace_interface';
+import { DaCeVSCode } from '../dace_vscode';
 
 export class SdfgPythonDebuggerRuntime extends EventEmitter {
 
@@ -39,72 +39,8 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
         });
     }
 
-    private checkSdfgDirty(
-        document: vscode.TextDocument,
-        uri: vscode.Uri
-    ): Promise<void> {
-        return new Promise((resolve, reject) => {
-            // This is a failsafe - VSCode claims to save whenever a debug
-            // adapter is started, but in case that changes, this manually takes
-            // care of that issue.
-            if (document.isDirty) {
-                let autoSave =
-                    DaCeVSCode.getExtensionContext()?.workspaceState.get(
-                        'SDFV_autosave_before_running'
-                    );
-
-                if (autoSave === undefined) {
-                    vscode.window.showWarningMessage(
-                        'There are unsaved changes in your SDFG, ' +
-                        'do you want to save them before running?',
-                        'Always',
-                        'Yes',
-                        'No'
-                    ).then((opt) => {
-                        switch (opt) {
-                            case 'Always':
-                                DaCeVSCode.getExtensionContext()
-                                ?.workspaceState.update(
-                                    'SDFV_autosave_before_running',
-                                    true
-                                );
-                                // Fall through.
-                            case 'Yes':
-                                document.save().then((success) => {
-                                    if (success)
-                                        this.startDebugging(uri);
-                                    else
-                                        vscode.window.showErrorMessage(
-                                            'Failed to save your document!'
-                                        );
-                                });
-                                break;
-                            case 'No':
-                                this.startDebugging(uri);
-                                break;
-                        }
-                    });
-                    this.sendEvent(
-                        'output',
-                        'Unsaved changes in ' + uri.fsPath,
-                        'console'
-                    );
-                    reject();
-                } else {
-                    document.save().then((success) => {
-                        if (success)
-                            resolve();
-                        else
-                            reject();
-                    });
-                }
-            }
-            resolve();
-        });
-    }
-
     private async checkHasWrapper(
-        editor: SdfgViewer,
+        editor: SDFGEditorBase,
         uri: vscode.Uri
     ): Promise<void> {
         return new Promise((resolve, reject) => {
@@ -151,42 +87,35 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
     }
 
     public async start(args: SdfgPythonLaunchRequestArguments) {
-        let program = args.program;
+        let program = args.program ? vscode.Uri.file(args.program) : undefined;
 
         if (args.profile !== undefined)
             this.profile = args.profile;
         if (args.noDebug !== undefined)
             this.debug = !args.noDebug;
 
-        let webview = undefined;
         if (program === undefined) {
-            webview = DaCeVSCode.getInstance().getActiveWebview();
-            const fileName = DaCeVSCode.getInstance().getActiveSdfgFileName();
-
-            if (webview === undefined || fileName === undefined) {
-                vscode.window.showWarningMessage(
-                    'No currently active SDFG to run/profile!'
-                );
-                this.sendEvent('end');
-                return;
-            }
-
-            program = fileName;
+            const editor = DaCeVSCode.getInstance().activeSDFGEditor;
+            program = editor?.document?.uri;
         }
 
-        const uri = vscode.Uri.file(program);
-        const editor = SdfgViewerProvider.getInstance()?.findEditorForPath(uri);
+        if (!program) {
+            vscode.window.showWarningMessage(
+                `No currently active SDFG to run/profile`
+            );
+            this.sendEvent('end');
+            return;
+        }
+
+        const uri = program;
+        const editor = DaCeVSCode.getInstance().sdfgEditorMap.get(uri);
 
         if (!editor) {
-            vscode.commands.executeCommand(
-                'vscode.openWith',
-                uri,
-                'sdfgCustom.sdfv'
-            ).then(() => {
-                const editor =
-                    SdfgViewerProvider.getInstance()?.findEditorForPath(uri);
+            vscode.commands.executeCommand('vscode.open', uri).then(() => {
+                const editor = DaCeVSCode.getInstance().sdfgEditorMap.get(uri);
                 if (editor && program) {
-                    this.checkSdfgDirty(editor.document, uri);
+                    if (editor.document.isDirty)
+                        editor.document.save();
                     this.checkHasWrapper(editor, uri).then(() => {
                         this.run(editor.wrapperFile, uri);
                     });
@@ -201,12 +130,10 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
                 }
             });
         } else {
-            this.checkSdfgDirty(editor.document, uri).then(() => {
-                this.checkHasWrapper(editor, uri).then(() => {
-                    this.run(editor.wrapperFile, uri);
-                }, () => {
-                    this.sendEvent('end');
-                });
+            if (editor.document.isDirty)
+                editor.document.save();
+            this.checkHasWrapper(editor, uri).then(() => {
+                this.run(editor.wrapperFile, uri);
             }, () => {
                 this.sendEvent('end');
             });
@@ -222,10 +149,15 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
 
         this.sendEvent('output', 'Running wrapper: ' + path, 'console');
 
-        let pythonCommand =
-            await DaCeInterface.getInstance().getPythonExecCommand(
+        const pythonCommand =
+            await DaCeInterface.getInstance()?.getPythonExecCommand(
                 undefined, false
             );
+
+        if (!pythonCommand) {
+            vscode.window.showErrorMessage('Failed to find Python executable');
+            return;
+        }
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
         let workspaceRoot: string | undefined = undefined;
@@ -247,7 +179,7 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
             this.sendEvent('end');
         } else {
             const suppressInstrumentation = this.profile;
-            DaCeInterface.getInstance().compileSdfgFromFile(
+            DaCeInterface.getInstance()?.compileSdfgFromFile(
                 sdfgUri,
                 (data: any) => {
                     if (data.filename === undefined) {
@@ -270,8 +202,6 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
 
                     if (this.profile)
                         env.DACE_profiling = '1';
-
-                    console.log(pythonCommand, path);
 
                     const child = cp.spawn(pythonCommand, [path], {
                         cwd: workspaceRoot,

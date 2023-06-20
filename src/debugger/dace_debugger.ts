@@ -3,7 +3,7 @@
 
 import * as vscode from 'vscode';
 import { DaceDebuggingSession } from './dace_debugging_session';
-import { DaCeInterface } from '../dace_interface';
+import { DaCeInterface } from '../components/dace_interface';
 import { BreakpointHandler } from './breakpoint_handler';
 import { DaceListener } from './dace_listener';
 import * as os from 'os';
@@ -97,7 +97,7 @@ class DaceDebugConfigProvider implements vscode.DebugConfigurationProvider {
             name: "(gdb) Attach",
             type: "cppdbg",
             request: "attach",
-            program: await DaCeInterface.getInstance().getPythonExecCommand(
+            program: await DaCeInterface.getInstance()?.getPythonExecCommand(
                 undefined, true
             ),
             processId: "",

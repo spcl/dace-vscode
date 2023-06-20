@@ -45,6 +45,7 @@ import inspect
 import sys
 from argparse import ArgumentParser
 from os import path
+import json
 
 # Then, load the rest of the modules
 import aenum
@@ -54,7 +55,8 @@ sys.path.append(path.abspath(path.dirname(__file__)))
 
 from dace_vscode import arith_ops, transformations
 from dace_vscode.utils import (disable_save_metadata, get_exception_message,
-                               load_sdfg_from_file, restore_save_metadata)
+                               load_sdfg_from_file, restore_save_metadata,
+                               load_sdfg_from_json)
 
 meta_dict = {}
 
@@ -296,10 +298,10 @@ def compile_sdfg(path, suppress_instrumentation=False):
         }
 
 
-def specialize_sdfg(path, symbol_map, remove_undef=True):
+def specialize_sdfg(sdfg_string, symbol_map, remove_undef=True):
     old_meta = disable_save_metadata()
 
-    loaded = load_sdfg_from_file(path)
+    loaded = load_sdfg_from_json(json.loads(sdfg_string))
     if loaded['error'] is not None:
         return loaded['error']
     sdfg: dace.sdfg.SDFG = loaded['sdfg']
@@ -414,7 +416,7 @@ def run_daemon(port):
     @daemon.route('/specialize_sdfg', methods=['POST'])
     def _specialize_sdfg():
         request_json = request.get_json()
-        return specialize_sdfg(request_json['path'], request_json['symbol_map'])
+        return specialize_sdfg(request_json['sdfg'], request_json['symbol_map'])
 
     @daemon.route('/get_metadata', methods=['GET'])
     def _get_metadata():

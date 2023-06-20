@@ -1,0 +1,65 @@
+<!-- Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors. -->
+<!-- All rights reserved. -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Transformation List</title>
+
+    <script>
+        // Reference to the VSCode API.
+        let vscode = undefined;
+    </script>
+</head>
+
+<body>
+    <div id="contents" class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-12">
+                <span>
+                    Status:&nbsp;<span id="status-text" class="not-connected">
+                        Not connected
+                    </span>
+                </span>
+            </div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-12">
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-primary flex-fill"
+                            id="launch-btn">
+                        Launch
+                    </button>
+                    <button class="btn btn-sm btn-secondary flex-fill"
+                            id="connect-btn">
+                        Connect
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger flex-fill"
+                            id="quit-btn"
+                         disabled="disabled">
+                        Stop
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-2">
+            <div class="input-group input-group-sm col-12">
+                <label for="inputPort" class="input-group-text">
+                    Port
+                </label>
+                <input type="number" class="form-control" id="inputPort">
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ SCRIPT_SRC }}/dace.js"></script>
+    <script>
+        vscode = acquireVsCodeApi();
+    </script>
+</body>
+
+</html>
+

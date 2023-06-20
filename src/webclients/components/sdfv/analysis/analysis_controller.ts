@@ -17,6 +17,7 @@ import {
 } from '../../../../common/messaging/icpc_messaging_component';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
+import { ComponentTarget } from '../../../../components/components';
 
 declare const vscode: any;
 
@@ -188,13 +189,13 @@ export class AnalysisController {
                 },
             ];
             return SDFVComponent.getInstance().invoke(
-                'updateAnalysisPanel', [
+                'updateAnalysisPane', [
                     activeOverlays,
                     symbols,
                     overlayManager.get_heatmap_scaling_method(),
                     additionalMethodVal,
                     availableOverlays
-                ]
+                ], ComponentTarget.Analysis
             );
         }
     }

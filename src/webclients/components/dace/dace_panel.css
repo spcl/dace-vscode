@@ -1,0 +1,58 @@
+/* Copyright 2020-2023 ETH Zurich and the DaCe-VSCode authors.
+ * All rights reserved. */
+
+html {
+    height: 100%;
+    padding: 0;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    padding: .3rem .5rem;
+    font-family: "Segeo UI", Arial, sans-serif;
+    color: var(--vscode-foreground);
+    background-color: inherit;
+}
+
+.hidden {
+    display: none;
+}
+
+#contents {
+    padding-top: .3rem;
+}
+
+.btn-primary {
+    border-color: var(--vscode-button-background);
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+
+.btn-primary:hover {
+    border-color: var(--vscode-button-hoverBackground);
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.btn-secondary {
+    border-color: var(--vscode-button-secondaryBackground);
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+}
+
+.btn-secondary:hover {
+    border-color: var(--vscode-button-secondaryHoverBackground);
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+#status-text {
+    font-weight: bold;
+}
+
+#status-text.connected {
+    color: var(--vscode-testing-iconPassed);
+}
+
+#status-text.not-connected {
+    color: var(--vscode-inputValidation-errorForeground);
+}

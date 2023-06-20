@@ -9,7 +9,8 @@ import {
     ISDFGDebugNodeInfo
 } from '../debugger/breakpoint_handler';
 import { BaseComponent } from './base_component';
-import { SdfgViewerProvider } from './sdfg_viewer';
+import { goToGeneratedCode } from '../utils/utils';
+import { SDFGEditorBase } from './sdfg_editor/common';
 
 export class SdfgBreakpointProvider
 extends BaseComponent
@@ -82,16 +83,15 @@ implements vscode.WebviewViewProvider {
     @ICPCRequest()
     public goToSDFG(node: ISDFGDebugNodeInfo) {
         if (node.sdfgName && node.sdfgPath)
-            SdfgViewerProvider.getInstance()?.goToSDFG(
-                `${node.sdfgId}/${node.stateId}/-1/-1`, node.sdfgName,
-                node.sdfgPath, true
+            SDFGEditorBase.goToSDFG(
+                node.sdfgPath, [`${node.sdfgId}/${node.stateId}/-1/-1`], true
             );
     }
 
     @ICPCRequest()
     public goToCPP(node: ISDFGDebugNodeInfo) {
         if (node.sdfgName && node.sdfgPath)
-            SdfgViewerProvider.getInstance()?.goToCPP(
+            goToGeneratedCode(
                 node.sdfgName, node.sdfgId, node.stateId, node.nodeId,
                 node.cache
             );
@@ -125,6 +125,12 @@ implements vscode.WebviewViewProvider {
     public async refresh(): Promise<void> {
         const nodes = BreakpointHandler.getInstance()?.getAllNodes();
         return this.invoke('onRefresh', [nodes]);
+    }
+
+    @ICPCRequest(true)
+    public onReady(): Promise<void> {
+        vscode.commands.executeCommand('sdfgBreakpoints.sync');
+        return super.onReady();
     }
 
 }

@@ -1,6 +1,7 @@
 // Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+import { ComponentTarget } from '../../../../components/components';
 import {
     JsonTransformation,
     JsonTransformationGroup,
@@ -37,13 +38,15 @@ export function transformationGetAffectedUUIDs(
     return uuids;
 }
 
-export function getCleanedSelectedElements(): string {
-    const cleanedSelected: {
-        type: string,
-        stateId: number | null,
-        sdfgId: number,
-        id: number,
-    }[] = [];
+type SelectedElementT = {
+    readonly type: string;
+    readonly stateId: number | null;
+    readonly sdfgId: number;
+    readonly id: number;
+};
+
+export function getCleanedSelectedElements(): SelectedElementT[] {
+    const cleanedSelected: SelectedElementT[] = [];
     VSCodeRenderer.getInstance()?.get_selected_elements().forEach(element => {
         let type = 'other';
         if (element.data !== undefined && element.data.node !== undefined)
@@ -58,7 +61,7 @@ export function getCleanedSelectedElements(): string {
             id: element.id,
         });
     });
-    return JSON.stringify(cleanedSelected);
+    return cleanedSelected;
 }
 
 /**
@@ -69,7 +72,7 @@ export async function getApplicableTransformations(): Promise<any[]> {
         'loadTransformations', [
             VSCodeSDFV.getInstance().getSdfgString(),
             getCleanedSelectedElements(),
-        ]
+        ], ComponentTarget.DaCe
     );
 }
 
@@ -328,11 +331,12 @@ export async function refreshTransformationList(
             await SDFVComponent.getInstance().invoke(
                 'clearTransformations', [
                     'Can\'t show transformations while viewing a history state',
-                ]
+                ], ComponentTarget.Transformations
             );
         else
             await SDFVComponent.getInstance().invoke(
-                'setTransformations', [transformations, hideLoading]
+                'setTransformations', [transformations, hideLoading],
+                ComponentTarget.Transformations
             );
 }
 
@@ -351,6 +355,8 @@ export function clearSelectedTransformation(): void {
 export function showTransformationDetails(xform: JsonTransformation): void {
     $('#goto-source-btn').hide();
     $('#goto-cpp-btn').hide();
+    $('#goto-edge-start').hide();
+    $('#goto-edge-end').hide();
 
     VSCodeSDFV.getInstance().infoBoxSetTitle(xform.transformation);
 
@@ -409,7 +415,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
         class: 'button',
         click: () => {
             SDFVComponent.getInstance().invoke(
-                'previewTransformation', [xform]
+                'previewTransformation', [xform], ComponentTarget.DaCe
             );
         },
         mouseenter: () => {
@@ -442,7 +448,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
             class: 'button',
             click: () => {
                 SDFVComponent.getInstance().invoke(
-                    'exportTransformation', [xform]
+                    'exportTransformation', [xform], ComponentTarget.DaCe
                 );
             },
         }).append($('<span>', {
@@ -464,6 +470,6 @@ export async function applyTransformations(
     VSCodeSDFV.getInstance().clearInfoBox(true);
     $('#exit-preview-button').hide();
     return SDFVComponent.getInstance().invoke(
-        'applyTransformations', [xforms]
+        'applyTransformations', [xforms], ComponentTarget.DaCe
     );
 }
