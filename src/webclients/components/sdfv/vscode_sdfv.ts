@@ -131,8 +131,8 @@ export class VSCodeSDFV extends SDFV {
 
     private infoDragBar?: JQuery<HTMLElement>;
     private draggingInfoBar: boolean = false;
-    private infoBarLastVertWidth: string = '250px';
-    private infoBarLastHorHeight: string = '200px';
+    private infoBarLastVertWidth: number = 350;
+    private infoBarLastHorHeight: number = 200;
 
     private monaco: any | null = null;
     private origSDFG: JsonSDFG | null = null;
@@ -185,8 +185,10 @@ export class VSCodeSDFV extends SDFV {
                 if (documentHeight) {
                     const newHeight = documentHeight - e.originalEvent.y;
                     if (newHeight < documentHeight) {
-                        this.infoBarLastHorHeight = newHeight.toString() + 'px';
-                        this.infoContainer?.height(this.infoBarLastHorHeight);
+                        this.infoBarLastHorHeight = newHeight;
+                        this.infoContainer?.height(
+                            this.infoBarLastHorHeight.toString() + 'px'
+                        );
                     }
                 }
             }
@@ -197,8 +199,8 @@ export class VSCodeSDFV extends SDFV {
                 if (documentWidth) {
                     const newWidth = documentWidth - e.originalEvent.x;
                     if (newWidth < documentWidth) {
-                        this.infoBarLastVertWidth = newWidth.toString() + 'px';
-                        this.infoContainer?.width(this.infoBarLastVertWidth);
+                        this.infoBarLastVertWidth = newWidth;
+                        this.infoContainer?.width(newWidth.toString() + 'px');
 
                         if (SDFVSettings.minimap)
                             $('#minimap').css(
@@ -231,27 +233,36 @@ export class VSCodeSDFV extends SDFV {
                 this.infoContainer?.addClass('offcanvas-bottom');
                 this.infoDragBar?.removeClass('gutter-vertical');
                 this.infoDragBar?.addClass('gutter-horizontal');
-                this.expandInfoBtn?.removeClass('expand-info-btn-top');
-                this.expandInfoBtn?.addClass('expand-info-btn-bottom');
+                this.expandInfoBtn?.html(
+                    '<span><i class="material-symbols-outlined">' +
+                        'bottom_panel_open</i></span>'
+                );
                 $(document).off('mousemove', infoChangeWidthHandler);
                 $(document).on('mousemove', infoChangeHeightHandler);
                 this.infoContainer?.width('100%');
-                this.infoContainer?.height(this.infoBarLastHorHeight);
+                this.infoContainer?.height(
+                    this.infoBarLastHorHeight.toString() + 'px'
+                );
             } else {
                 this.infoContainer?.removeClass('offcanvas-bottom');
                 this.infoContainer?.addClass('offcanvas-end');
                 this.infoDragBar?.removeClass('gutter-horizontal');
                 this.infoDragBar?.addClass('gutter-vertical');
-                this.expandInfoBtn?.removeClass('expand-info-btn-bottom');
-                this.expandInfoBtn?.addClass('expand-info-btn-top');
+                this.expandInfoBtn?.html(
+                    '<span><i class="material-symbols-outlined">' +
+                        'right_panel_open</i></span>'
+                );
                 $(document).off('mousemove', infoChangeHeightHandler);
                 $(document).on('mousemove', infoChangeWidthHandler);
                 this.infoContainer?.height('100%');
-                this.infoContainer?.width(this.infoBarLastVertWidth);
+                this.infoContainer?.width(
+                    this.infoBarLastVertWidth.toString() + 'px'
+                );
             }
 
             infoBoxCheckStacking(this.infoContainer);
             infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
+            this.checkTrayCoversMinimap();
 
             SDFVComponent.getInstance().invoke(
                 'setSplitDirection', [SPLIT_DIRECTION]
@@ -268,13 +279,31 @@ export class VSCodeSDFV extends SDFV {
             this.expandInfoBtn?.show();
             this.infoContainer?.removeClass('show');
             VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = true;
+            this.checkTrayCoversMinimap();
         });
         this.expandInfoBtn?.on('click', () => {
             this.expandInfoBtn?.hide();
             infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
             this.infoContainer?.addClass('show');
             VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = false;
+            this.checkTrayCoversMinimap();
         });
+    }
+
+    private checkTrayCoversMinimap(): void {
+        if (SDFVSettings.minimap) {
+            if (SPLIT_DIRECTION === 'vertical' && this.infoBarLastVertWidth &&
+                !this.infoTrayExplicitlyHidden) {
+                try {
+                    const pixels = this.infoBarLastVertWidth + 5;
+                    $('#minimap').css('right', pixels.toString() + 'px');
+                } catch (e) {
+                    console.warn(e);
+                }
+            } else {
+                $('#minimap').css('right', '5px');
+            }
+        }
     }
 
     public initSearch(): void {
@@ -350,7 +379,17 @@ export class VSCodeSDFV extends SDFV {
             const infoBox = $('#info-container');
             infoBoxCheckUncoverTopBar(infoBox, $('#top-bar'));
             infoBox.addClass('show');
+            this.checkTrayCoversMinimap();
         }
+
+        if (SPLIT_DIRECTION === 'vertical')
+            this.infoContainer?.width(
+                this.infoBarLastVertWidth.toString() + 'px'
+            );
+        else
+            this.infoContainer?.height(
+                this.infoBarLastHorHeight.toString() + 'px'
+            );
     }
 
     /**

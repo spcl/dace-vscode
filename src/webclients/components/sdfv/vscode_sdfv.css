@@ -37,6 +37,7 @@ body {
   width: 100px;
   height: 200px;
   border: 1px solid black;
+  transition: right 0.3s ease-in-out;
 }
 
 .button {
@@ -331,14 +332,6 @@ pre.code {
   cursor: pointer;
   position: absolute;
   margin: .4rem;
-}
-
-#expand-info-btn.expand-info-btn-top {
-  top: 0;
-  right: 0;
-}
-
-#expand-info-btn.expand-info-btn-bottom {
   bottom: 0;
   right: 0;
 }
