@@ -956,14 +956,12 @@ export class VSCodeSDFV extends SDFV {
                     SDFVComponent.getInstance().invoke(
                         'querySdfgMetadata', undefined, ComponentTarget.DaCe
                     ).then((metaDict: Record<string, any>) => {
-                        console.debug('used dace dict');
                         resolve(metaDict);
                     }).catch(() => {
                         fetch(
                             'https://spcl.github.io/dace/metadata/' +
                                 'sdfg_meta_dict.json'
                         ).then((response) => {
-                            console.debug('used static web dict');
                             resolve(response.json());
                         });
                     });
