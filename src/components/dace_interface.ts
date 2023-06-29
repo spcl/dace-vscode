@@ -883,7 +883,8 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public async querySdfgMetadata(): Promise<any> {
+    @ICPCRequest()
+    public async querySdfgMetadata(): Promise<Record<string, any>> {
         return new Promise<any>((resolve, reject) => {
             if (this.daemonRunning)
                 this.sendGetRequest(

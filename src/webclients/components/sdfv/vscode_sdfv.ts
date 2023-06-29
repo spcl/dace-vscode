@@ -138,7 +138,7 @@ export class VSCodeSDFV extends SDFV {
     private monaco: any | null = null;
     private origSDFG: JsonSDFG | null = null;
     private sdfgMetaDict: { [key: string]: any } | null = null;
-    private queryMetaDictFunc: Promise<{ [key: string]: any }> | null= null;
+    private queryMetaDictFunc: Promise<Record<string, any>> | null= null;
     private viewingHistoryState: boolean = false;
     private viewingHistoryIndex: number | undefined = undefined;
     private viewingCompressed: boolean = false;
@@ -946,17 +946,29 @@ export class VSCodeSDFV extends SDFV {
         return this.monaco;
     }
 
-    public async getMetaDict(): Promise<{ [key: string]: any }> {
+    public async getMetaDict(): Promise<Record<string, any>> {
         if (!this.sdfgMetaDict) {
             // If SDFG property metadata isn't available, use the static one and
             // query an up-to-date one from the dace github page. If that
             // doesn't work, query the daemon (waking it up if it isn't up).
-            if (!this.queryMetaDictFunc)
-                this.queryMetaDictFunc = fetch(
-                    'https://spcl.github.io/dace/metadata/sdfg_meta_dict.json'
-                ).then(
-                    (response) => response.json()
-                );
+            if (!this.queryMetaDictFunc) {
+                this.queryMetaDictFunc = new Promise((resolve) => {
+                    SDFVComponent.getInstance().invoke(
+                        'querySdfgMetadata', undefined, ComponentTarget.DaCe
+                    ).then((metaDict: Record<string, any>) => {
+                        console.debug('used dace dict');
+                        resolve(metaDict);
+                    }).catch(() => {
+                        fetch(
+                            'https://spcl.github.io/dace/metadata/' +
+                                'sdfg_meta_dict.json'
+                        ).then((response) => {
+                            console.debug('used static web dict');
+                            resolve(response.json());
+                        });
+                    });
+                });
+            }
 
             return this.queryMetaDictFunc.then((data) => {
                 this.sdfgMetaDict = data;
