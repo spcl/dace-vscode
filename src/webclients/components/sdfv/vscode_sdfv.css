@@ -331,14 +331,6 @@ pre.code {
   cursor: pointer;
   position: absolute;
   margin: .4rem;
-}
-
-#expand-info-btn.expand-info-btn-top {
-  top: 0;
-  right: 0;
-}
-
-#expand-info-btn.expand-info-btn-bottom {
   bottom: 0;
   right: 0;
 }
@@ -376,6 +368,7 @@ pre.code {
 .attr-cat-toggle-btn>.attr-cat-toggle-btn-indicator {
   float: right;
   transition: all .5s;
+  transform: rotate(90deg);
 }
 
 .attr-cat-toggle-btn.active>.attr-cat-toggle-btn-indicator {

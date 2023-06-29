@@ -1130,6 +1130,25 @@ export async function attributeTablePutEntry(
     };
 }
 
+
+const ATTR_TABLE_HIDDEN_ATTRIBUTES = [
+    'layout',
+    'sdfg',
+    'sdfg_id',
+    'state_id',
+    'expr_index',
+    'type',
+    'transformation',
+    'docstring',
+    'CATEGORY',
+    'is_collapsed',
+    'orig_sdfg',
+    'position',
+    'transformation_hist',
+    'symbols',
+];
+
+
 export function generateAttributesTable(
     elem: any | undefined, xform: any | undefined, root: JQuery<HTMLElement>
 ): void {
@@ -1166,12 +1185,7 @@ export function generateAttributesTable(
         let sortedAttributes: { [key: string]: any } = {};
         Object.keys(attributes).forEach(k => {
             const val = attributes[k];
-            if (k === 'layout' || k === 'sdfg' || k === 'sdfg_id' ||
-                k === 'state_id' || k === 'expr_index' || k === 'type' ||
-                k === 'transformation' || k === 'docstring' ||
-                k === 'CATEGORY' || k === 'is_collapsed' || k === 'orig_sdfg' ||
-                k === 'position' || k === 'transformation_hist' ||
-                k.startsWith('_'))
+            if (ATTR_TABLE_HIDDEN_ATTRIBUTES.includes(k) || k.startsWith('_'))
                 return;
 
             if (metadata && metadata[k]) {
@@ -1320,6 +1334,133 @@ export function generateAttributesTable(
     }
 }
 
+export function appendSymbolsTable(
+    root: JQuery<HTMLElement>, symbols: Record<string, string>, sdfg: JsonSDFG
+): void {
+    const symbolsTableBaseContainer = $('<div>', {
+        'class': 'container-fluid attr-table-base-container',
+    }).appendTo(root);
+
+    const catRow = $('<div>', {
+        'class': 'row attr-table-cat-row',
+    }).appendTo(symbolsTableBaseContainer);
+    const catContainer = $('<div>', {
+        'class': 'col-12 attr-table-cat-container',
+    }).appendTo(catRow);
+    const catToggleBtn = $('<button>', {
+        'class': 'attr-cat-toggle-btn active',
+        'type': 'button',
+        'text': 'Symbols',
+        'data-bs-toggle': 'collapse',
+        'data-bs-target': '#info-table-symbols-containers',
+        'aria-expanded': 'false',
+        'aria-controls': 'info-table-symbols-containers',
+    }).appendTo(catContainer);
+    $('<i>', {
+        'class': 'attr-cat-toggle-btn-indicator material-icons',
+        'text': 'expand_less'
+    }).appendTo(catToggleBtn);
+
+    const attrTable = $('<div>', {
+        'class': 'container-fluid attr-table collapse show',
+        'id': 'info-table-symbols-containers',
+    }).appendTo(catContainer);
+    attrTable.on('hide.bs.collapse', () => {
+        catToggleBtn.removeClass('active');
+    });
+    attrTable.on('show.bs.collapse', () => {
+        catToggleBtn.addClass('active');
+    });
+
+    VSCodeSDFV.getInstance().getMetaDict().then(metaDict => {
+        const attrMeta = metaDict['__reverse_type_lookup__']['typeclass'];
+        for (const symbol in symbols) {
+            const symType = symbols[symbol];
+
+            const row = $('<div>', {
+                class: 'row attr-table-row',
+            }).appendTo(attrTable);
+            attributeTablePutEntry(
+                symbol, symType, attrMeta, symbols, undefined,
+                undefined, row, true, true, true, undefined, undefined, true
+            ).then(res => {
+                if (res.deleteBtn)
+                    res.deleteBtn.on('click', () => {
+                        delete symbols[symbol];
+                        row.remove();
+                        const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+                        if (sdfg)
+                            vscodeWriteGraph(sdfg);
+                    });
+            });
+        }
+
+        const addItemButtonRow = $('<div>', {
+            'class': 'row',
+        }).appendTo(attrTable);
+        $('<i>', {
+            'class': 'material-icons property-add-row-btn',
+            'text': 'playlist_add',
+            'title': 'Add symbol',
+            'click': () => {
+                const nContModalRet = createSingleUseModal(
+                    'New Symbol Name', true, ''
+                );
+
+                const nameInput = $('<input>', {
+                    type: 'text',
+                }).appendTo($('<div>', {
+                    class: 'container-fluid',
+                }).appendTo(nContModalRet.body));
+
+                nContModalRet.confirmBtn?.on('click', () => {
+                    const nameVal = nameInput.val();
+
+                    if (nameVal && nameVal !== '' &&
+                        typeof nameVal === 'string') {
+                        nContModalRet.modal.modal('hide');
+
+                        const defaultNewType = 'int32';
+                        const row = $('<div>', {
+                            class: 'row attr-table-row',
+                        });
+                        addItemButtonRow.before(row);
+                        attributeTablePutEntry(
+                            nameVal, defaultNewType, attrMeta, symbols,
+                            undefined, undefined, row, true, true, true,
+                            undefined, undefined, true
+                        ).then(newProp => {
+                            if (newProp) {
+                                if (newProp.deleteBtn)
+                                    newProp.deleteBtn.on('click', () => {
+                                        if (newProp.key) {
+                                            delete symbols[newProp.key];
+                                        row.remove();
+                                        const sdfg = VSCodeRenderer
+                                            .getInstance()?.get_sdfg();
+                                        if (sdfg)
+                                            vscodeWriteGraph(sdfg);
+                                    }
+                                });
+                            }
+                            const sdfg =
+                                VSCodeRenderer.getInstance()?.get_sdfg();
+                            if (sdfg)
+                                vscodeWriteGraph(sdfg);
+                        });
+
+                        symbols[nameVal] = defaultNewType;
+                    }
+                });
+
+                nContModalRet.modal.modal('show');
+            },
+        }).appendTo($('<div>', {
+            'class': 'col-2',
+        }).appendTo(addItemButtonRow));
+    });
+}
+
 export function appendDataDescriptorTable(
     root: JQuery<HTMLElement>,
     descriptors: { [key: string]: { type: string, attributes: any } },
@@ -1344,6 +1485,10 @@ export function appendDataDescriptorTable(
         'aria-expanded': 'false',
         'aria-controls': 'info-table-data-containers',
     }).appendTo(catContainer);
+    $('<i>', {
+        'class': 'attr-cat-toggle-btn-indicator material-icons',
+        'text': 'expand_less'
+    }).appendTo(catToggleBtn);
 
     const attrTable = $('<div>', {
         'class': 'container-fluid attr-table collapse show',
@@ -1406,7 +1551,7 @@ export function appendDataDescriptorTable(
                 if (res.deleteBtn)
                     res.deleteBtn.on('click', () => {
                         delete descriptors[descriptor];
-
+                        row.remove();
                         const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
                         if (sdfg)
                             vscodeWriteGraph(sdfg);
@@ -1414,12 +1559,9 @@ export function appendDataDescriptorTable(
             });
         }
 
-        const addItemRowContainer = $('<div>', {
-            'class': 'container-fluid attr-table',
-        }).appendTo(catContainer);
         const addItemButtonRow = $('<div>', {
             'class': 'row',
-        }).appendTo(addItemRowContainer);
+        }).appendTo(attrTable);
         $('<i>', {
             'class': 'material-icons property-add-row-btn',
             'text': 'playlist_add',
@@ -1465,7 +1607,8 @@ export function appendDataDescriptorTable(
 
                         const row = $('<div>', {
                             class: 'row attr-table-row',
-                        }).appendTo(attrTable);
+                        });
+                        addItemButtonRow.before(row);
                         attributeTablePutEntry(
                             nameVal, defaultValues, newMetaType, descriptors,
                             undefined, undefined, row, true, true, true,
@@ -1476,7 +1619,7 @@ export function appendDataDescriptorTable(
                                     newProp.deleteBtn.on('click', () => {
                                         if (newProp.key) {
                                             delete descriptors[newProp.key];
-
+                                        row.remove();
                                         const sdfg = VSCodeRenderer
                                             .getInstance()?.get_sdfg();
                                         if (sdfg)
@@ -1484,6 +1627,10 @@ export function appendDataDescriptorTable(
                                     }
                                 });
                             }
+                            const sdfg =
+                                VSCodeRenderer.getInstance()?.get_sdfg();
+                            if (sdfg)
+                                vscodeWriteGraph(sdfg);
                         });
 
                         descriptors[nameVal] = defaultValues;
