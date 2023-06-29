@@ -37,7 +37,6 @@ body {
   width: 100px;
   height: 200px;
   border: 1px solid black;
-  transition: right 0.3s ease-in-out;
 }
 
 .button {
@@ -369,6 +368,7 @@ pre.code {
 .attr-cat-toggle-btn>.attr-cat-toggle-btn-indicator {
   float: right;
   transition: all .5s;
+  transform: rotate(90deg);
 }
 
 .attr-cat-toggle-btn.active>.attr-cat-toggle-btn-indicator {

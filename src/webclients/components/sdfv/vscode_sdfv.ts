@@ -78,6 +78,7 @@ import {
 } from './transformation/transformation';
 import {
     appendDataDescriptorTable,
+    appendSymbolsTable,
     generateAttributesTable
 } from './utils/attributes_table';
 import {
@@ -202,10 +203,12 @@ export class VSCodeSDFV extends SDFV {
                         this.infoBarLastVertWidth = newWidth;
                         this.infoContainer?.width(newWidth.toString() + 'px');
 
-                        if (SDFVSettings.minimap)
+                        if (SDFVSettings.minimap) {
+                            $('#minimap').css('transition', '');
                             $('#minimap').css(
                                 'right', (newWidth + 5).toString() + 'px'
                             );
+                        }
                     }
                 }
             }
@@ -279,28 +282,40 @@ export class VSCodeSDFV extends SDFV {
             this.expandInfoBtn?.show();
             this.infoContainer?.removeClass('show');
             VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = true;
-            this.checkTrayCoversMinimap();
+            this.checkTrayCoversMinimap(true);
         });
         this.expandInfoBtn?.on('click', () => {
             this.expandInfoBtn?.hide();
             infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
             this.infoContainer?.addClass('show');
             VSCodeSDFV.getInstance().infoTrayExplicitlyHidden = false;
-            this.checkTrayCoversMinimap();
+            this.checkTrayCoversMinimap(true);
         });
     }
 
-    private checkTrayCoversMinimap(): void {
+    private checkTrayCoversMinimap(animate: boolean = false): void {
         if (SDFVSettings.minimap) {
             if (SPLIT_DIRECTION === 'vertical' && this.infoBarLastVertWidth &&
                 !this.infoTrayExplicitlyHidden) {
                 try {
                     const pixels = this.infoBarLastVertWidth + 5;
+                    if (animate)
+                        $('#minimap').css(
+                            'transition', 'right 0.3s ease-in-out'
+                        );
+                    else
+                        $('#minimap').css('transition', '');
                     $('#minimap').css('right', pixels.toString() + 'px');
                 } catch (e) {
                     console.warn(e);
                 }
             } else {
+                if (animate)
+                    $('#minimap').css(
+                        'transition', 'right 0.3s ease-in-out'
+                    );
+                else
+                    $('#minimap').css('transition', '');
                 $('#minimap').css('right', '5px');
             }
         }
@@ -379,7 +394,7 @@ export class VSCodeSDFV extends SDFV {
             const infoBox = $('#info-container');
             infoBoxCheckUncoverTopBar(infoBox, $('#top-bar'));
             infoBox.addClass('show');
-            this.checkTrayCoversMinimap();
+            this.checkTrayCoversMinimap(true);
         }
 
         if (SPLIT_DIRECTION === 'vertical')
@@ -768,17 +783,27 @@ export class VSCodeSDFV extends SDFV {
                     );
                 }
             } else if (elem instanceof SDFG) {
-                if (elem.data && elem.data.attributes)
+                if (elem.data?.attributes) {
                     appendDataDescriptorTable(
                         contents, elem.data.attributes._arrays, elem.data
                     );
+                    appendSymbolsTable(
+                        contents, elem.data.attributes.symbols, elem.data
+                    );
+                }
             } else if (elem instanceof NestedSDFG) {
-                if (elem.data && elem.data.node.attributes)
+                if (elem.data?.node?.attributes) {
                     appendDataDescriptorTable(
                         contents,
                         elem.data.node.attributes.sdfg.attributes._arrays,
                         elem.data.node.attributes.sdfg
                     );
+                    appendSymbolsTable(
+                        contents,
+                        elem.data.node.attributes.sdfg.attributes.symbols,
+                        elem.data.node.attributes.sdfg
+                    );
+                }
             }
 
             infoBoxCheckStacking($('#info-container'));
