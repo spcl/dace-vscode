@@ -1403,45 +1403,57 @@ export function appendSymbolsTable(
             'text': 'playlist_add',
             'title': 'Add symbol',
             'click': () => {
-                const newSymBaseName = 'newsymbol';
-                let newSymName = newSymBaseName;
-                if (newSymName in symbols) {
-                    let conflicts = 0;
-                    while (newSymName in symbols) {
-                        newSymName = newSymBaseName + '_' + conflicts.toString();
-                        conflicts++;
-                    }
-                }
+                const nContModalRet = createSingleUseModal(
+                    'New Symbol Name', true, ''
+                );
 
-                const defaultNewType = 'int32';
-                const row = $('<div>', {
-                    class: 'row attr-table-row',
-                });
-                addItemButtonRow.before(row);
-                attributeTablePutEntry(
-                    newSymName, defaultNewType, attrMeta, symbols,
-                    undefined, undefined, row, true, true, true,
-                    undefined, undefined, true
-                ).then(newProp => {
-                    if (newProp) {
-                        if (newProp.deleteBtn)
-                            newProp.deleteBtn.on('click', () => {
-                                if (newProp.key) {
-                                    delete symbols[newProp.key];
-                                row.remove();
-                                const sdfg = VSCodeRenderer
-                                    .getInstance()?.get_sdfg();
-                                if (sdfg)
-                                    vscodeWriteGraph(sdfg);
-                            }
+                const nameInput = $('<input>', {
+                    type: 'text',
+                }).appendTo($('<div>', {
+                    class: 'container-fluid',
+                }).appendTo(nContModalRet.body));
+
+                nContModalRet.confirmBtn?.on('click', () => {
+                    const nameVal = nameInput.val();
+
+                    if (nameVal && nameVal !== '' &&
+                        typeof nameVal === 'string') {
+                        nContModalRet.modal.modal('hide');
+
+                        const defaultNewType = 'int32';
+                        const row = $('<div>', {
+                            class: 'row attr-table-row',
                         });
+                        addItemButtonRow.before(row);
+                        attributeTablePutEntry(
+                            nameVal, defaultNewType, attrMeta, symbols,
+                            undefined, undefined, row, true, true, true,
+                            undefined, undefined, true
+                        ).then(newProp => {
+                            if (newProp) {
+                                if (newProp.deleteBtn)
+                                    newProp.deleteBtn.on('click', () => {
+                                        if (newProp.key) {
+                                            delete symbols[newProp.key];
+                                        row.remove();
+                                        const sdfg = VSCodeRenderer
+                                            .getInstance()?.get_sdfg();
+                                        if (sdfg)
+                                            vscodeWriteGraph(sdfg);
+                                    }
+                                });
+                            }
+                            const sdfg =
+                                VSCodeRenderer.getInstance()?.get_sdfg();
+                            if (sdfg)
+                                vscodeWriteGraph(sdfg);
+                        });
+
+                        symbols[nameVal] = defaultNewType;
                     }
-                    const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                    if (sdfg)
-                        vscodeWriteGraph(sdfg);
                 });
 
-                symbols[newSymName] = defaultNewType;
+                nContModalRet.modal.modal('show');
             },
         }).appendTo($('<div>', {
             'class': 'col-2',
