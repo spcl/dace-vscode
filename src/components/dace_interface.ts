@@ -301,17 +301,21 @@ implements vscode.WebviewViewProvider {
                 // We were unable to start and connect to a daemon, show a
                 // message hinting at a potentially missing DaCe instance.
                 vscode.window.showErrorMessage(
-                    'Unable to start and connect to DaCe. Do you have it ' +
-                    'installed?',
+                    'Unable to start and connect to DaCe. Do you want to ' +
+                    'retry or open the troubleshooting guide?',
                     'Retry',
-                    'Install DaCe'
+                    'Troubleshooting'
                 ).then(opt => {
                     switch (opt) {
                         case 'Retry':
                             this.startDaemonInTerminal();
                             break;
-                        case 'Install DaCe':
-                            vscode.commands.executeCommand('dace.installDace');
+                        case 'Troubleshooting':
+                            vscode.env.openExternal(vscode.Uri.parse(
+                                'https://spcldace.readthedocs.io/en/latest' +
+                                '/setup/installation.html#common-issues-with' +
+                                '-the-visual-studio-code-extension'
+                            ));
                             break;
                     }
                 });
