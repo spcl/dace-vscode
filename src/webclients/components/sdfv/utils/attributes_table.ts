@@ -39,7 +39,16 @@ import {
 } from './helpers';
 import { ComponentTarget } from '../../../../components/components';
 
-declare const vscode: any;
+function updateAttrTable(): void {
+    // TODO(later): this is an uggly workaround to how the system of filling the
+    // info bar currently works. It should instead update the information
+    // _without_ re-rendering everything, but at the moment it is difficult to
+    // upate all related property keys while making sure none are left over or
+    // forgotten. Re-rendering the panel takes care of this for now.
+    const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+    if (sdfg)
+        VSCodeSDFV.getInstance().fillInfo(new SDFG(sdfg));
+}
 
 function getMonacoThemeName() {
     switch ($('body').attr('data-vscode-theme-kind')) {
@@ -247,8 +256,10 @@ export function attrTablePutData(
         if (modal.confirmBtn)
             modal.confirmBtn.on('click', () => {
                 const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                if (prop.update() && !xform && sdfg)
+                if (prop.update() && !xform && sdfg) {
+                    updateAttrTable();
                     vscodeWriteGraph(sdfg);
+                }
                 modal.modal.modal('hide');
             });
 
@@ -486,8 +497,10 @@ export function attrTablePutDict(
         if (modal.confirmBtn)
             modal.confirmBtn.on('click', () => {
                 const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                if (prop.update() && !xform && sdfg)
+                if (prop.update() && !xform && sdfg) {
+                    updateAttrTable();
                     vscodeWriteGraph(sdfg);
+                }
                 modal.modal.modal('hide');
             });
 
@@ -612,8 +625,10 @@ export function attrTablePutList(
         if (modal.confirmBtn)
             modal.confirmBtn.on('click', () => {
                 const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                if (prop.update() && !xform && sdfg)
+                if (prop.update() && !xform && sdfg) {
+                    updateAttrTable();
                     vscodeWriteGraph(sdfg);
+                }
                 modal.modal.modal('hide');
             });
 
@@ -822,8 +837,10 @@ export function attrTablePutRange(
         if (modal.confirmBtn)
             modal.confirmBtn.on('click', () => {
                 const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-                if (prop.update() && !xform && sdfg)
+                if (prop.update() && !xform && sdfg) {
+                    updateAttrTable();
                     vscodeWriteGraph(sdfg);
+                }
                 modal.modal.modal('hide');
             });
 
@@ -1564,14 +1581,8 @@ export function appendDataDescriptorTable(
                         attrs[newKey] = nMeta[newKey].default;
                 }
 
-                // TODO(later): this is an uggly workaround to how the system
-                // of filling the info bar currently works. It should instead
-                // update the information _without_ re-rendering everything,
-                // but at the moment it is difficult to upate all related
-                // property keys while making sure none are left over or
-                // forgotten. Re-rendering the panel takes care of this for now.
                 if (prop.getValue().valueChanged)
-                    VSCodeSDFV.getInstance().fillInfo(new SDFG(sdfg));
+                    updateAttrTable();
             }
 
             if (prop.update())

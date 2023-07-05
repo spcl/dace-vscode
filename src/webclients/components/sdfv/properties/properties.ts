@@ -564,29 +564,29 @@ export class DictProperty extends Property {
         let valueChanged = false;
         this.properties.forEach(prop => {
             if ((prop.keyProp || prop.key) && prop.valProp) {
-                if (prop.keyProp && !prop.keyProp.deleted) {
-                    const keyRes = prop.keyProp.getValue();
-                    let keyVal = keyRes?.value;
-                    if (!keyVal || keyVal === '')
-                        keyVal = prop.key;
-                    if (keyVal !== undefined && keyVal !== '') {
-                        prop.valProp.forEach(vp => {
-                            const valRes = vp.getValue();
-                            const valSubkey = vp.getSubkey();
-                            if (vp.getDatatype() === 'CodeBlock' &&
-                                valSubkey !== undefined) {
-                                // For code properties, we need to write back
-                                // the entire code property structure, including
-                                // language info.
-                                let codeVal = vp.getTarget()[vp.getKey()];
-                                codeVal[valSubkey] = valRes.value;
-                                newDict[keyVal] = codeVal;
-                            } else {
-                                newDict[keyVal] = valRes.value;
-                            }
-                        });
-                        valueChanged = true;
-                    }
+                let keyRes = undefined;
+                if (prop.keyProp && !prop.keyProp.deleted)
+                    keyRes = prop.keyProp.getValue();
+                let keyVal = keyRes?.value;
+                if (!keyVal || keyVal === '')
+                    keyVal = prop.key;
+                if (keyVal !== undefined && keyVal !== '') {
+                    prop.valProp.forEach(vp => {
+                        const valRes = vp.getValue();
+                        const valSubkey = vp.getSubkey();
+                        if (vp.getDatatype() === 'CodeBlock' &&
+                            valSubkey !== undefined) {
+                            // For code properties, we need to write back
+                            // the entire code property structure, including
+                            // language info.
+                            let codeVal = vp.getTarget()[vp.getKey()];
+                            codeVal[valSubkey] = valRes.value;
+                            newDict[keyVal] = codeVal;
+                        } else {
+                            newDict[keyVal] = valRes.value;
+                        }
+                    });
+                    valueChanged = true;
                 }
             }
         });
