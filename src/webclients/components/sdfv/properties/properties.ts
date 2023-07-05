@@ -92,6 +92,10 @@ export abstract class Property {
         return this.target;
     }
 
+    public setKey(nKey: string): void {
+        this.key = nKey;
+    }
+
 }
 
 export class KeyProperty {
@@ -103,6 +107,7 @@ export class KeyProperty {
      */
 
     private _deleted: boolean = false;
+    private _connectedProps: Set<Property> = new Set();
 
     constructor(
         protected element: any | undefined,
@@ -143,6 +148,8 @@ export class KeyProperty {
                 );
             delete this.target[this.key];
             this.key = res.value;
+            for (const connectedProp of this.connectedProperties)
+                connectedProp.setKey(this.key);
         }
         return res.valueChanged;
     }
@@ -153,6 +160,10 @@ export class KeyProperty {
 
     public getKey(): string {
         return this.key;
+    }
+
+    public get connectedProperties(): Set<Property> {
+        return this._connectedProps;
     }
 
 }

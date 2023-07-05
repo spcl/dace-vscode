@@ -10,7 +10,8 @@ import {
     LogicalGroup,
     SDFGElement,
     sdfg_property_to_string,
-    State
+    State,
+    SDFG
 } from '@spcl/sdfv/src';
 import { editor as monaco_editor } from 'monaco-editor';
 import { Range } from '../../../../types';
@@ -1115,6 +1116,8 @@ export async function attributeTablePutEntry(
     }
 
     if (updateOnChange && keyProp && keyProp.getInput() !== undefined) {
+        for (const vProp of valProp ?? [])
+            keyProp.connectedProperties.add(vProp);
         keyProp.getInput().on('change', () => {
             if (keyProp)
                 keyPropUpdateHandler(keyProp);
@@ -1502,6 +1505,79 @@ export function appendDataDescriptorTable(
     });
 
     VSCodeSDFV.getInstance().getMetaDict().then(metaDict => {
+        const updateNameListener = (prop: KeyProperty) => {
+            // When a data container name is changed, update the data container
+            // and label for all access nodes referencing this data container.
+            const nVal = prop.getValue();
+            if (nVal.valueChanged) {
+                const oldDescriptor = prop.getKey();
+                const newDescriptor = nVal.value;
+
+                doForAllNodeTypes(
+                    sdfg, 'AccessNode', (accessNode: JsonSDFGNode) => {
+                        if (accessNode.attributes?.data ===
+                            oldDescriptor) {
+                            accessNode.attributes.data = newDescriptor;
+                            accessNode.label = newDescriptor;
+                        }
+                    }, false
+                );
+
+                prop.update();
+
+                // Write back the change - this is necessary since we're
+                // overwriting the default handler which writes changes back
+                // when update-on-value-change is enabled.
+                const wholeSdfg =
+                    VSCodeRenderer.getInstance()?.get_sdfg();
+                if (wholeSdfg)
+                    vscodeWriteGraph(wholeSdfg);
+            }
+        };
+
+        const updateContainerListener = (prop: Property) => {
+            // If this is the data container type property, ensure that the data
+            // container attributes are updated accordingly (i.e., remove
+            // obsolete ones, add default values for new ones).
+            const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
+            if (!sdfg)
+                return;
+
+            if (prop.getSubkey() === 'type') {
+                const attrs = descriptors[prop.getKey()]['attributes'];
+                const nType = prop.getValue().value;
+                const nMeta = metaDict[nType];
+                const nMetaKeys = Object.keys(nMeta);
+                const oldKeys = Object.keys(attrs);
+
+                // Remove obsolete ones.
+                for (const existing of oldKeys) {
+                    if (!nMetaKeys.includes(existing))
+                        delete attrs[existing];
+                }
+
+                // Add the default values for any new ones.
+                for (const newKey of nMetaKeys) {
+                    if (newKey === 'debuginfo' || newKey === 'metatype')
+                        continue;
+                    if (!oldKeys.includes(newKey))
+                        attrs[newKey] = nMeta[newKey].default;
+                }
+
+                // TODO(later): this is an uggly workaround to how the system
+                // of filling the info bar currently works. It should instead
+                // update the information _without_ re-rendering everything,
+                // but at the moment it is difficult to upate all related
+                // property keys while making sure none are left over or
+                // forgotten. Re-rendering the panel takes care of this for now.
+                if (prop.getValue().valueChanged)
+                    VSCodeSDFV.getInstance().fillInfo(new SDFG(sdfg));
+            }
+
+            if (prop.update())
+                vscodeWriteGraph(sdfg);
+        };
+
         for (const descriptor in descriptors) {
             const val = descriptors[descriptor];
 
@@ -1516,37 +1592,8 @@ export function appendDataDescriptorTable(
             }).appendTo(attrTable);
             attributeTablePutEntry(
                 descriptor, val, attrMeta, descriptors, undefined,
-                undefined, row, true, true, true,
-                (prop: KeyProperty) => {
-                    // When a data container name is changed, update the data
-                    // container and label for all access nodes referencing this
-                    // data container.
-                    const nVal = prop.getValue();
-                    if (nVal.valueChanged) {
-                        const oldDescriptor = prop.getKey();
-                        const newDescriptor = nVal.value;
-
-                        doForAllNodeTypes(
-                            sdfg, 'AccessNode', (accessNode: JsonSDFGNode) => {
-                                if (accessNode.attributes?.data ===
-                                    oldDescriptor) {
-                                    accessNode.attributes.data = newDescriptor;
-                                    accessNode.label = newDescriptor;
-                                }
-                            }, false
-                        );
-
-                        prop.update();
-
-                        // Write back the change - this is necessary since we're
-                        // overwriting the default handler which writes changes
-                        // back when update-on-value-change is enabled.
-                        const wholeSdfg =
-                            VSCodeRenderer.getInstance()?.get_sdfg();
-                        if (wholeSdfg)
-                            vscodeWriteGraph(wholeSdfg);
-                    }
-                }, undefined, true
+                undefined, row, true, true, true, updateNameListener,
+                updateContainerListener, true
             ).then(res => {
                 if (res.deleteBtn)
                     res.deleteBtn.on('click', () => {
@@ -1612,7 +1659,7 @@ export function appendDataDescriptorTable(
                         attributeTablePutEntry(
                             nameVal, defaultValues, newMetaType, descriptors,
                             undefined, undefined, row, true, true, true,
-                            undefined, undefined, true
+                            updateNameListener, updateContainerListener, true
                         ).then(newProp => {
                             if (newProp) {
                                 if (newProp.deleteBtn)
