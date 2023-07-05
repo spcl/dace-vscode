@@ -92,6 +92,10 @@ export abstract class Property {
         return this.target;
     }
 
+    public setKey(nKey: string): void {
+        this.key = nKey;
+    }
+
 }
 
 export class KeyProperty {
@@ -103,6 +107,7 @@ export class KeyProperty {
      */
 
     private _deleted: boolean = false;
+    private _connectedProps: Set<Property> = new Set();
 
     constructor(
         protected element: any | undefined,
@@ -143,6 +148,8 @@ export class KeyProperty {
                 );
             delete this.target[this.key];
             this.key = res.value;
+            for (const connectedProp of this.connectedProperties)
+                connectedProp.setKey(this.key);
         }
         return res.valueChanged;
     }
@@ -153,6 +160,10 @@ export class KeyProperty {
 
     public getKey(): string {
         return this.key;
+    }
+
+    public get connectedProperties(): Set<Property> {
+        return this._connectedProps;
     }
 
 }
@@ -553,29 +564,29 @@ export class DictProperty extends Property {
         let valueChanged = false;
         this.properties.forEach(prop => {
             if ((prop.keyProp || prop.key) && prop.valProp) {
-                if (prop.keyProp && !prop.keyProp.deleted) {
-                    const keyRes = prop.keyProp.getValue();
-                    let keyVal = keyRes?.value;
-                    if (!keyVal || keyVal === '')
-                        keyVal = prop.key;
-                    if (keyVal !== undefined && keyVal !== '') {
-                        prop.valProp.forEach(vp => {
-                            const valRes = vp.getValue();
-                            const valSubkey = vp.getSubkey();
-                            if (vp.getDatatype() === 'CodeBlock' &&
-                                valSubkey !== undefined) {
-                                // For code properties, we need to write back
-                                // the entire code property structure, including
-                                // language info.
-                                let codeVal = vp.getTarget()[vp.getKey()];
-                                codeVal[valSubkey] = valRes.value;
-                                newDict[keyVal] = codeVal;
-                            } else {
-                                newDict[keyVal] = valRes.value;
-                            }
-                        });
-                        valueChanged = true;
-                    }
+                let keyRes = undefined;
+                if (prop.keyProp && !prop.keyProp.deleted)
+                    keyRes = prop.keyProp.getValue();
+                let keyVal = keyRes?.value;
+                if (!keyVal || keyVal === '')
+                    keyVal = prop.key;
+                if (keyVal !== undefined && keyVal !== '') {
+                    prop.valProp.forEach(vp => {
+                        const valRes = vp.getValue();
+                        const valSubkey = vp.getSubkey();
+                        if (vp.getDatatype() === 'CodeBlock' &&
+                            valSubkey !== undefined) {
+                            // For code properties, we need to write back
+                            // the entire code property structure, including
+                            // language info.
+                            let codeVal = vp.getTarget()[vp.getKey()];
+                            codeVal[valSubkey] = valRes.value;
+                            newDict[keyVal] = codeVal;
+                        } else {
+                            newDict[keyVal] = valRes.value;
+                        }
+                    });
+                    valueChanged = true;
                 }
             }
         });
