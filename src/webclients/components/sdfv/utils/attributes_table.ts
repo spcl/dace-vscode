@@ -40,7 +40,7 @@ import {
 import { ComponentTarget } from '../../../../components/components';
 
 function updateAttrTable(): void {
-    // TODO(later): this is an uggly workaround to how the system of filling the
+    // TODO(later): this is an ugly workaround to how the system of filling the
     // info bar currently works. It should instead update the information
     // _without_ re-rendering everything, but at the moment it is difficult to
     // upate all related property keys while making sure none are left over or
