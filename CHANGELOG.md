@@ -1,8 +1,28 @@
 # Change Log
 
-## Pre-release (1.5.0)
+## Pre-release (1.5)
 
-Currently no new features in the pre-release.
+### 1.5.6
+
+- Various performance improvements, roughly 2x speedup in most editing and
+  SDFG navigation workflows
+- Vertical SDFG layout added
+- Add navigation buttons to jump to the start / end of SDFG edges
+- Improve display for unknown, unregistered map schedules
+- Improve SDFG settings UI
+- Store SDFG editor preferences in VSCode's user settings
+- Support for editing compressed SDFG files (.sdfgz)
+- Adds a panel to show the status of the DaCe backend and customize port
+  options
+- Allow symbols to be modified similar to data containers and list them
+  separately in the info tray
+- Update data container attributes when changing data container types (from
+  scalar to array etc.)
+- Provide a troubleshooting link if the DaCe backend does not start
+- Always first try to query the DaCe backend for up-to-date metadata when
+  editing an SDFG before loading static dictionaries (web and built-in)
+- Various smaller UI improvements and bugfixes related to the info tray and
+  the minimap
 
 ## 1.4
 
