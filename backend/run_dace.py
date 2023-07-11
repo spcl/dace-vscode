@@ -53,7 +53,7 @@ import dace
 
 sys.path.append(path.abspath(path.dirname(__file__)))
 
-from dace_vscode import arith_ops, transformations
+from dace_vscode import arith_ops, depth, transformations
 from dace_vscode.utils import (disable_save_metadata, get_exception_message,
                                load_sdfg_from_file, restore_save_metadata,
                                load_sdfg_from_json)
@@ -406,6 +406,11 @@ def run_daemon(port):
     def _get_arith_ops():
         request_json = request.get_json()
         return arith_ops.get_arith_ops(request_json['sdfg'])
+    
+    @daemon.route('/get_depth', methods=['POST'])
+    def _get_depth():
+        request_json = request.get_json()
+        return depth.get_depth(request_json['sdfg'])
 
     @daemon.route('/compile_sdfg_from_file', methods=['POST'])
     def _compile_sdfg_from_file():

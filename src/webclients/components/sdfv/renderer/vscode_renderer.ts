@@ -12,7 +12,8 @@ import {
     SDFGElementType,
     SDFGRenderer,
     set_positioning_info,
-    StaticFlopsOverlay
+    StaticFlopsOverlay,
+    DepthOverlay
 } from '@spcl/sdfv/src';
 import { AnalysisController } from '../analysis/analysis_controller';
 import {
@@ -105,6 +106,21 @@ export class VSCodeRenderer extends SDFGRenderer {
                             StaticFlopsOverlay |
                             OperationalIntensityOverlay
                         )?.update_flops_map(flopsMap);
+                    });
+                    break;
+                case 'depth':
+                    SDFVComponent.getInstance().invoke(
+                        'getDepth', [], ComponentTarget.DaCe
+                    ).then((depthMap) => {
+                        if (!depthMap)
+                            return;
+                        const renderer = VSCodeRenderer.getInstance();
+                        const oMan = renderer?.get_overlay_manager();
+                        const oType = VSCodeSDFV.OVERLAYS[overlay];
+                        const ol = oMan?.get_overlay(oType);
+                        (ol as
+                            DepthOverlay
+                        )?.update_flops_map(depthMap);
                     });
                     break;
             }
