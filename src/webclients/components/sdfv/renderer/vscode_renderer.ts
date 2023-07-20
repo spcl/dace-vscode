@@ -13,7 +13,8 @@ import {
     SDFGRenderer,
     set_positioning_info,
     StaticFlopsOverlay,
-    DepthOverlay
+    DepthOverlay,
+    AvgParallelismOverlay
 } from '@spcl/sdfv/src';
 import { AnalysisController } from '../analysis/analysis_controller';
 import {
@@ -120,7 +121,22 @@ export class VSCodeRenderer extends SDFGRenderer {
                         const ol = oMan?.get_overlay(oType);
                         (ol as
                             DepthOverlay
-                        )?.update_flops_map(depthMap);
+                        )?.update_depth_map(depthMap);
+                    });
+                    break;
+                case 'avg_parallelism':
+                    SDFVComponent.getInstance().invoke(
+                        'getAvgParallelism', [], ComponentTarget.DaCe
+                    ).then((avgParallelismMap) => {
+                        if (!avgParallelismMap)
+                            return;
+                        const renderer = VSCodeRenderer.getInstance();
+                        const oMan = renderer?.get_overlay_manager();
+                        const oType = VSCodeSDFV.OVERLAYS[overlay];
+                        const ol = oMan?.get_overlay(oType);
+                        (ol as
+                            AvgParallelismOverlay
+                        )?.update_avg_parallelism_map(avgParallelismMap);
                     });
                     break;
             }

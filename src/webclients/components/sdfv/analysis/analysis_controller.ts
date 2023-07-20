@@ -11,7 +11,8 @@ import {
     RuntimeReportOverlay,
     SDFGRenderer,
     StaticFlopsOverlay,
-    DepthOverlay
+    DepthOverlay,
+    AvgParallelismOverlay
 } from '@spcl/sdfv/src';
 import {
     ICPCRequest
@@ -172,6 +173,11 @@ export class AnalysisController {
                     class: 'DepthOverlay',
                     label: 'Depth',
                     type: DepthOverlay.type,
+                },
+                {
+                    class: 'AvgParallelismOverlay',
+                    label: 'Average Parallelism',
+                    type: AvgParallelismOverlay.type,
                 },
                 {
                     class: 'OperationalIntensityOverlay',
