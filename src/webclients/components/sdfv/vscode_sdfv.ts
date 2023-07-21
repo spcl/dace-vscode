@@ -49,6 +49,8 @@ import {
     SDFV,
     State,
     StaticFlopsOverlay,
+    DepthOverlay,
+    AvgParallelismOverlay,
     SymbolMap,
     traverse_sdfg_scopes
 } from '@spcl/sdfv/src';
@@ -115,6 +117,8 @@ export class VSCodeSDFV extends SDFV {
     } = {
             'MemoryVolumeOverlay': MemoryVolumeOverlay,
             'StaticFlopsOverlay': StaticFlopsOverlay,
+            'DepthOverlay': DepthOverlay,
+            'AvgParallelismOverlay': AvgParallelismOverlay,
             'RuntimeMicroSecondsOverlay': RuntimeMicroSecondsOverlay,
             'BreakpointIndicator': BreakpointIndicator,
             'MemoryLocationOverlay': MemoryLocationOverlay,

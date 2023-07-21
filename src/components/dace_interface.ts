@@ -847,6 +847,86 @@ implements vscode.WebviewViewProvider {
         });
     }
 
+    @ICPCRequest()
+    public async getDepth(): Promise<any> {
+        return new Promise(async (resolve, reject) => {
+            if (!this.daemonRunning) {
+                try {
+                    await this.promptStartDaemon();
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
+            }
+
+            this.showSpinner('Calculating Depth');
+
+            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+                if (!sdfg) {
+                    const msg = 'No active SDFG editor!';
+                    console.warn(msg);
+                    reject(msg);
+                    return;
+                }
+
+                this.sendPostRequest(
+                    '/get_depth',
+                    {
+                        'sdfg': sdfg,
+                    },
+                    (data: any) => {
+                        resolve(data.depthMap);
+                        DaCeInterface.getInstance()?.hideSpinner();
+                    },
+                    (error: any) => {
+                        this.genericErrorHandler(error.message, error.details);
+                        reject(error.message);
+                    }
+                );
+            });
+        });
+    }
+
+    @ICPCRequest()
+    public async getAvgParallelism(): Promise<any> {
+        return new Promise(async (resolve, reject) => {
+            if (!this.daemonRunning) {
+                try {
+                    await this.promptStartDaemon();
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
+            }
+
+            this.showSpinner('Calculating Average Parallelism');
+
+            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+                if (!sdfg) {
+                    const msg = 'No active SDFG editor!';
+                    console.warn(msg);
+                    reject(msg);
+                    return;
+                }
+
+                this.sendPostRequest(
+                    '/get_avg_parallelism',
+                    {
+                        'sdfg': sdfg,
+                    },
+                    (data: any) => {
+                        resolve(data.avgParallelismMap);
+                        DaCeInterface.getInstance()?.hideSpinner();
+                    },
+                    (error: any) => {
+                        this.genericErrorHandler(error.message, error.details);
+                        reject(error.message);
+                    }
+                );
+            });
+        });
+    }
+
     public compileSdfgFromFile(
         uri: vscode.Uri, callback: CallableFunction,
         suppressInstrumentation: boolean = false
