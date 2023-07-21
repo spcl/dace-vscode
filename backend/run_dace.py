@@ -60,7 +60,6 @@ from dace_vscode.utils import (disable_save_metadata, get_exception_message,
 
 meta_dict = {}
 
-
 def get_property_metadata(force_regenerate=False):
     """ Generate a dictionary of class properties and their metadata.
         This iterates over all classes registered as serializable in DaCe's
@@ -119,16 +118,15 @@ def get_property_metadata(force_regenerate=False):
                 if prop.choices is not None:
                     # If there are specific choices for this property (i.e. this
                     # property is an enum), list those as metadata as well.
-                    if (isinstance(prop, TypeClassProperty)
-                            and inspect.isclass(prop.choices)
-                            and issubclass(prop.choices, aenum.Enum)):
+                    if (isinstance(prop, TypeClassProperty) and
+                        inspect.isclass(prop.choices) and
+                        issubclass(prop.choices, aenum.Enum)):
                         base_types = []
                         for btype in prop.choices:
                             btype_short = str(btype).split('.')[-1]
                             if btype_short != 'Undefined':
                                 base_types.append(btype_short)
-                        meta_dict[meta_key][propname][
-                            'base_types'] = base_types
+                        meta_dict[meta_key][propname]['base_types'] = base_types
 
                         # TODO(later): This isn't really nice, it would be
                         # better if we can automatically get this information
@@ -191,7 +189,8 @@ def get_property_metadata(force_regenerate=False):
                             },
                         }
                         meta_dict[meta_key][propname][
-                            'compound_types'] = compound_types
+                            'compound_types'
+                        ] = compound_types
                     elif inspect.isclass(prop.choices):
                         if issubclass(prop.choices, aenum.Enum):
                             choices = []
@@ -278,9 +277,8 @@ def compile_sdfg(path, suppress_instrumentation=False):
         return {
             'error': {
                 'message': ('Failed to remove instrumentation from SDFG ' +
-                            'for compiling'),
-                'details':
-                get_exception_message(e),
+                    'for compiling'),
+                'details': get_exception_message(e),
             },
         }
 
@@ -309,7 +307,7 @@ def specialize_sdfg(sdfg_string, symbol_map, remove_undef=True):
     sdfg: dace.sdfg.SDFG = loaded['sdfg']
 
     try:
-        cleaned_map = {k: int(v) for k, v in symbol_map.items()}
+        cleaned_map = { k: int(v) for k, v in symbol_map.items() }
         sdfg.specialize(cleaned_map)
 
         # Remove any constants that are not defined anymore in the symbol map,
@@ -317,8 +315,8 @@ def specialize_sdfg(sdfg_string, symbol_map, remove_undef=True):
         if remove_undef:
             delkeys = set()
             for key in sdfg.constants_prop:
-                if (key not in symbol_map or symbol_map[key] is None
-                        or symbol_map[key] == 0):
+                if (key not in symbol_map or symbol_map[key] is None or
+                    symbol_map[key] == 0):
                     delkeys.add(key)
             for key in delkeys:
                 del sdfg.constants_prop[key]
@@ -384,14 +382,14 @@ def run_daemon(port):
     @daemon.route('/add_transformations', methods=['POST'])
     def _add_transformations():
         request_json = request.get_json()
-        return transformations.add_custom_transformations(
-            request_json['paths'])
+        return transformations.add_custom_transformations(request_json['paths'])
 
     @daemon.route('/apply_transformations', methods=['POST'])
     def _apply_transformations():
         request_json = request.get_json()
         return transformations.apply_transformations(
-            request_json['sdfg'], request_json['transformations'])
+            request_json['sdfg'], request_json['transformations']
+        )
 
     @daemon.route('/expand_library_node', methods=['POST'])
     def _expand_library_node():
@@ -428,8 +426,7 @@ def run_daemon(port):
     @daemon.route('/specialize_sdfg', methods=['POST'])
     def _specialize_sdfg():
         request_json = request.get_json()
-        return specialize_sdfg(request_json['sdfg'],
-                               request_json['symbol_map'])
+        return specialize_sdfg(request_json['sdfg'], request_json['symbol_map'])
 
     @daemon.route('/get_metadata', methods=['GET'])
     def _get_metadata():
