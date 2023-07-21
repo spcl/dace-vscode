@@ -27,7 +27,7 @@ def get_depth(sdfg_json):
     except Exception as e:
         return {
             'error': {
-                'message': 'Failed to analyze work depth',
+                'message': 'Failed to analyze depth',
                 'details': get_exception_message(e),
             },
         }
