@@ -173,7 +173,6 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
     private scalingMethodExpBaseContainer?: JQuery<HTMLElement>;
     private scalingMethodExpBaseInput?: JQuery<HTMLInputElement>;
 
-    private runtimeReportFileInput?: JQuery<HTMLInputElement>;
     private runtimeReportFilenameLabel?: JQuery<HTMLSpanElement>;
     private runtimeTimeCriteriumSelect?: JQuery<HTMLSelectElement>;
 
@@ -212,31 +211,6 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
             this.onScalingUpdated();
         });
 
-        this.runtimeReportFileInput = $('#runtime-report-file-input');
-        this.runtimeReportFileInput?.on('change', function () {
-            const fr = new FileReader();
-            const that = this as HTMLInputElement;
-            fr.onload = () => {
-                if (fr && that.files) {
-                    const aPanel = AnalysisPanel.getInstance();
-                    aPanel.rtReportLabel?.val(that.files[0].name);
-                    aPanel.rtReportLabel?.prop(
-                        'title', (that.files[0] as any).path
-                    );
-                    if (fr.result && typeof fr.result === 'string') {
-                        const rtSelCrit = aPanel.rtTimeCriteriumSelect?.val();
-                        if (!rtSelCrit || typeof rtSelCrit !== 'string')
-                            return;
-                        AnalysisPanel.onLoadInstrumentationReport(
-                            JSON.parse(fr.result), rtSelCrit
-                        );
-                    }
-                }
-            };
-            if (that.files)
-                fr.readAsText(that.files[0]);
-        });
-
         this.runtimeReportFilenameLabel = $('#runtime-report-filename-label');
 
         this.runtimeTimeCriteriumSelect = $('#runtime-time-criterium-select');
@@ -255,7 +229,21 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
             this.clearRuntimeReport();
         });
         $('#runtime-report-browse-btn').on('click', () => {
-            this.runtimeReportFileInput?.trigger('click');
+            this.invoke('selectReportFile').then(retval => {
+                const aPanel = AnalysisPanel.getInstance();
+                if (retval.data && retval.path) {
+                    const splits = retval.path.path.split('/');
+                    const filename = splits[splits.length - 1];
+                    aPanel.rtReportLabel?.val(filename);
+                    aPanel.rtReportLabel?.prop('title', retval.path.fsPath);
+                    const rtSelCrit = aPanel.rtTimeCriteriumSelect?.val();
+                    if (!rtSelCrit || typeof rtSelCrit !== 'string')
+                        return;
+                    AnalysisPanel.onLoadInstrumentationReport(
+                        retval.data, rtSelCrit
+                    );
+                }
+            });
         });
     }
 
@@ -399,7 +387,6 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
     }
 
     public clearRuntimeReport(): void {
-        this.runtimeReportFileInput?.val('');
         this.runtimeReportFilenameLabel?.val('Load runtime report');
         this.runtimeReportFilenameLabel?.prop('title', '');
         const nodeType = this.nodeOverlaySelect?.val();
