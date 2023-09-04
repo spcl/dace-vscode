@@ -417,6 +417,16 @@ def run_daemon(port):
         request_json = request.get_json()
         return depth.get_avg_parallelism(request_json['sdfg'], request_json['assumptions'])
 
+    @daemon.route('/get_depth', methods=['POST'])
+    def _get_depth():
+        request_json = request.get_json()
+        return depth.get_depth(request_json['sdfg'])
+
+    @daemon.route('/get_avg_parallelism', methods=['POST'])
+    def _get_avg_parallelism():
+        request_json = request.get_json()
+        return depth.get_avg_parallelism(request_json['sdfg'])
+
     @daemon.route('/compile_sdfg_from_file', methods=['POST'])
     def _compile_sdfg_from_file():
         request_json = request.get_json()

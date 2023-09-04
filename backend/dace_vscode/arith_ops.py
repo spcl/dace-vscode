@@ -5,7 +5,11 @@ import ast
 import astunparse
 from dace.symbolic import pystr_to_symbolic
 from dace.sdfg import propagation
-from dace.libraries.blas import MatMul, Transpose
+from dace.libraries.blas import MatMul
+try:
+    from dace.libraries.standard import Transpose
+except:
+    from dace.libraries.blas import Transpose
 from dace.libraries.standard import Reduce
 from dace import nodes, dtypes
 import sympy

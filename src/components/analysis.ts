@@ -92,9 +92,36 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest(true)
-    public onReady(): Promise<void> {
+    public async onReady(): Promise<void> {
         vscode.commands.executeCommand('sdfgAnalysis.sync');
         return super.onReady();
+    }
+
+    @ICPCRequest(true)
+    public async selectReportFile(): Promise<{
+        path?: vscode.Uri,
+        data?: Record<string, unknown>,
+    }> {
+        return vscode.window.showOpenDialog({
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: false,
+            filters: {
+                'Profile': ['json'],
+            },
+            openLabel: 'Load',
+            title: 'Load instrumentation report',
+        }).then(uri => {
+            if (uri) {
+                return vscode.workspace.fs.readFile(uri[0]).then(val => {
+                    return {
+                        path: uri[0],
+                        data: JSON.parse(Buffer.from(val).toString('utf-8')),
+                    };
+                });
+            }
+            return {};
+        });
     }
 
 }
