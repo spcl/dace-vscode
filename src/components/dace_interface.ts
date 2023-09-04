@@ -829,20 +829,35 @@ implements vscode.WebviewViewProvider {
                     return;
                 }
 
-                this.sendPostRequest(
-                    '/get_arith_ops',
-                    {
-                        'sdfg': sdfg,
-                    },
-                    (data: any) => {
-                        resolve(data.arithOpsMap);
-                        DaCeInterface.getInstance()?.hideSpinner();
-                    },
-                    (error: any) => {
-                        this.genericErrorHandler(error.message, error.details);
-                        reject(error.message);
+                vscode.window.showInputBox({
+                    placeHolder: 'e.g. N>5 N<M M==STEPS STEPS==100',
+                    prompt: 'State assumptions for symbols separated by space.',
+                    title: 'Assumptions for symbols'
+                }).then((value) => {
+                    if (value === undefined){
+                        value = "";
                     }
-                );
+                    if (!(/^(([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+ )*([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+))?$/.test(value))){
+                        vscode.window.showErrorMessage(`Wrong formatting when entering assumptions. Individual assumptions
+                            are separated by spaces. An assumption consists of <LHS><operator><RHS>, where <LHS> is a
+                            symbol name, <operator> is in {==, <, >} and <RHS> is another symbol name or a number.`);
+                    }
+                    this.sendPostRequest(
+                        '/get_arith_ops',
+                        {
+                            'sdfg': sdfg,
+                            'assumptions': value,
+                        },
+                        (data: any) => {
+                            resolve(data.arithOpsMap);
+                            DaCeInterface.getInstance()?.hideSpinner();
+                        },
+                        (error: any) => {
+                            this.genericErrorHandler(error.message, error.details);
+                            reject(error.message);
+                        }
+                    );
+                });
             });
         });
     }
@@ -869,20 +884,35 @@ implements vscode.WebviewViewProvider {
                     return;
                 }
 
-                this.sendPostRequest(
-                    '/get_depth',
-                    {
-                        'sdfg': sdfg,
-                    },
-                    (data: any) => {
-                        resolve(data.depthMap);
-                        DaCeInterface.getInstance()?.hideSpinner();
-                    },
-                    (error: any) => {
-                        this.genericErrorHandler(error.message, error.details);
-                        reject(error.message);
+                vscode.window.showInputBox({
+                    placeHolder: 'e.g. N>5 N<M M==STEPS STEPS==100',
+                    prompt: 'State assumptions for symbols separated by space.',
+                    title: 'Assumptions for symbols'
+                }).then((value) => {
+                    if (value === undefined){
+                        value = "";
                     }
-                );
+                    if (!(/^(([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+ )*([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+))?$/.test(value))){
+                        vscode.window.showErrorMessage(`Wrong formatting when entering assumptions. Individual assumptions
+                            are separated by spaces. An assumption consists of <LHS><operator><RHS>, where <LHS> is a
+                            symbol name, <operator> is in {==, <, >} and <RHS> is another symbol name or a number.`);
+                    }
+                    this.sendPostRequest(
+                        '/get_depth',
+                        {
+                            'sdfg': sdfg,
+                            'assumptions': value,
+                        },
+                        (data: any) => {
+                            resolve(data.depthMap);
+                            DaCeInterface.getInstance()?.hideSpinner();
+                        },
+                        (error: any) => {
+                            this.genericErrorHandler(error.message, error.details);
+                            reject(error.message);
+                        }
+                    );
+                });
             });
         });
     }
@@ -909,20 +939,36 @@ implements vscode.WebviewViewProvider {
                     return;
                 }
 
-                this.sendPostRequest(
-                    '/get_avg_parallelism',
-                    {
-                        'sdfg': sdfg,
-                    },
-                    (data: any) => {
-                        resolve(data.avgParallelismMap);
-                        DaCeInterface.getInstance()?.hideSpinner();
-                    },
-                    (error: any) => {
-                        this.genericErrorHandler(error.message, error.details);
-                        reject(error.message);
+
+                vscode.window.showInputBox({
+                    placeHolder: 'e.g. N>5 N<M M==STEPS STEPS==100',
+                    prompt: 'State assumptions for symbols separated by space.',
+                    title: 'Assumptions for symbols'
+                }).then((value) => {
+                    if (value === undefined){
+                        value = "";
                     }
-                );
+                    if (!(/^(([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+ )*([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+))?$/.test(value))){
+                        vscode.window.showErrorMessage(`Wrong formatting when entering assumptions. Individual assumptions
+                            are separated by spaces. An assumption consists of <LHS><operator><RHS>, where <LHS> is a
+                            symbol name, <operator> is in {==, <, >} and <RHS> is another symbol name or a number.`);
+                    }
+                    this.sendPostRequest(
+                        '/get_avg_parallelism',
+                        {
+                            'sdfg': sdfg,
+                            'assumptions': value,
+                        },
+                        (data: any) => {
+                            resolve(data.avgParallelismMap);
+                            DaCeInterface.getInstance()?.hideSpinner();
+                        },
+                        (error: any) => {
+                            this.genericErrorHandler(error.message, error.details);
+                            reject(error.message);
+                        }
+                    );
+                });
             });
         });
     }
