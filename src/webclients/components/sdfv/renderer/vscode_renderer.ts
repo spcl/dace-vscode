@@ -11,7 +11,7 @@ import {
     OperationalIntensityOverlay,
     SDFGElementType,
     SDFGRenderer,
-    set_positioning_info,
+    setPositioningInfo,
     StaticFlopsOverlay,
     DepthOverlay,
     AvgParallelismOverlay
@@ -499,7 +499,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                     if (exitElem)
                         parent.nodes.push(exitElem);
 
-                    set_positioning_info(element, this.add_position);
+                    setPositioningInfo(element, this.add_position);
                     this.add_position = null;
 
                     this.set_sdfg(rootSdfg);
