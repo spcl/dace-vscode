@@ -807,6 +807,28 @@ implements vscode.WebviewViewProvider {
         this.gotoHistoryPoint(index, InteractionMode.PREVIEW);
     }
 
+    private showAssumptionsInputBox(): Thenable<string | undefined> {
+        return vscode.window.showInputBox({
+            placeHolder: 'e.g. N>5 N<M M==STEPS STEPS==100',
+            prompt: 'State assumptions for symbols separated by space.',
+            title: 'Assumptions for symbols'
+        });
+    }
+
+    private checkAssumptionsInput(input: string | undefined): readonly [string,boolean] {
+        if (input === undefined){
+            input = "";
+        }
+        if (!(/^(([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+ )*([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+))?$/.test(input))){
+            vscode.window.showErrorMessage(`Wrong formatting when entering assumptions. Individual assumptions
+                are separated by spaces. An assumption consists of <LHS><operator><RHS>, where <LHS> is a
+                symbol name, <operator> is in {==, <, >} and <RHS> is another symbol name or a number.`);
+            return [input, false] as const;
+        }
+        return [input, true] as const;
+    }
+
+
     @ICPCRequest()
     public async getFlops(): Promise<any> {
         return new Promise(async (resolve, reject) => {
@@ -829,20 +851,28 @@ implements vscode.WebviewViewProvider {
                     return;
                 }
 
-                this.sendPostRequest(
-                    '/get_arith_ops',
-                    {
-                        'sdfg': sdfg,
-                    },
-                    (data: any) => {
-                        resolve(data.arithOpsMap);
+                this.showAssumptionsInputBox().then((value) => {
+                    const [assumptions, valid] = this.checkAssumptionsInput(value);
+                    if(valid){
+                        this.sendPostRequest(
+                            '/get_arith_ops',
+                            {
+                                'sdfg': sdfg,
+                                'assumptions': assumptions,
+                            },
+                            (data: any) => {
+                                resolve(data.arithOpsMap);
+                                DaCeInterface.getInstance()?.hideSpinner();
+                            },
+                            (error: any) => {
+                                this.genericErrorHandler(error.message, error.details);
+                                reject(error.message);
+                            }
+                        );
+                    } else {
                         DaCeInterface.getInstance()?.hideSpinner();
-                    },
-                    (error: any) => {
-                        this.genericErrorHandler(error.message, error.details);
-                        reject(error.message);
                     }
-                );
+                });
             });
         });
     }
@@ -869,20 +899,28 @@ implements vscode.WebviewViewProvider {
                     return;
                 }
 
-                this.sendPostRequest(
-                    '/get_depth',
-                    {
-                        'sdfg': sdfg,
-                    },
-                    (data: any) => {
-                        resolve(data.depthMap);
+                this.showAssumptionsInputBox().then((value) => {
+                    const [assumptions, valid] = this.checkAssumptionsInput(value);
+                    if(valid){
+                        this.sendPostRequest(
+                            '/get_depth',
+                            {
+                                'sdfg': sdfg,
+                                'assumptions': assumptions,
+                            },
+                            (data: any) => {
+                                resolve(data.depthMap);
+                                DaCeInterface.getInstance()?.hideSpinner();
+                            },
+                            (error: any) => {
+                                this.genericErrorHandler(error.message, error.details);
+                                reject(error.message);
+                            }
+                        );
+                    } else {
                         DaCeInterface.getInstance()?.hideSpinner();
-                    },
-                    (error: any) => {
-                        this.genericErrorHandler(error.message, error.details);
-                        reject(error.message);
                     }
-                );
+                });
             });
         });
     }
@@ -909,20 +947,29 @@ implements vscode.WebviewViewProvider {
                     return;
                 }
 
-                this.sendPostRequest(
-                    '/get_avg_parallelism',
-                    {
-                        'sdfg': sdfg,
-                    },
-                    (data: any) => {
-                        resolve(data.avgParallelismMap);
+
+                this.showAssumptionsInputBox().then((value) => {
+                    const [assumptions, valid] = this.checkAssumptionsInput(value);
+                    if(valid){
+                        this.sendPostRequest(
+                            '/get_avg_parallelism',
+                            {
+                                'sdfg': sdfg,
+                                'assumptions': assumptions,
+                            },
+                            (data: any) => {
+                                resolve(data.avgParallelismMap);
+                                DaCeInterface.getInstance()?.hideSpinner();
+                            },
+                            (error: any) => {
+                                this.genericErrorHandler(error.message, error.details);
+                                reject(error.message);
+                            }
+                        );
+                    } else {
                         DaCeInterface.getInstance()?.hideSpinner();
-                    },
-                    (error: any) => {
-                        this.genericErrorHandler(error.message, error.details);
-                        reject(error.message);
                     }
-                );
+                });
             });
         });
     }
