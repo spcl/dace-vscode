@@ -432,7 +432,7 @@ def run_daemon(port):
     def _get_metadata():
         return get_property_metadata()
 
-    daemon.run(port=port)
+    daemon.run(host='::1', port=port)
 
 
 if __name__ == '__main__':
