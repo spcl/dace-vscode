@@ -58,7 +58,7 @@ class DaCePanel extends ICPCWebclientMessagingComponent {
     }
 
     private getPort(): number | undefined {
-        let port = this.portInput?.val();
+        let port: string | number | undefined = this.portInput?.val();
         if (port && typeof port === 'string')
             port = parseInt(port);
 
