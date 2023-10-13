@@ -270,7 +270,7 @@ implements vscode.WebviewViewProvider {
         const connectionIntervalId = setInterval(() => {
             console.log('Checking for daemon');
             const req = request({
-                host: 'localhost',
+                host: '::1',
                 port: this.port,
                 path: '/',
                 method: 'GET',
@@ -338,7 +338,7 @@ implements vscode.WebviewViewProvider {
                 method = 'POST';
 
             let parameters = {
-                host: 'localhost',
+                host: '::1',
                 port: this.port,
                 path: url,
                 method: method,
