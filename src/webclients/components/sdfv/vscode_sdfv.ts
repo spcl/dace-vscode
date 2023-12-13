@@ -37,6 +37,7 @@ import {
     mouse_event,
     NestedSDFG,
     OperationalIntensityOverlay,
+    SimulatedOperationalIntensityOverlay,
     parse_sdfg,
     Point2D,
     read_or_decompress,
@@ -123,6 +124,7 @@ export class VSCodeSDFV extends SDFV {
             'BreakpointIndicator': BreakpointIndicator,
             'MemoryLocationOverlay': MemoryLocationOverlay,
             'OperationalIntensityOverlay': OperationalIntensityOverlay,
+            'SimulatedOperationalIntensityOverlay': SimulatedOperationalIntensityOverlay,
             'LogicalGroupOverlay': LogicalGroupOverlay,
         };
 

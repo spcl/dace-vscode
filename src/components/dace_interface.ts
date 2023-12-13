@@ -815,6 +815,14 @@ implements vscode.WebviewViewProvider {
         });
     }
 
+    private showCacheParamsInputBox(): Thenable<string | undefined> {
+        return vscode.window.showInputBox({
+            placeHolder: 'e.g. 1024 64',
+            prompt: 'State cache size C and cache line size L in bytes separated by a space.',
+            title: 'Cache Parameters'
+        });
+    }
+
     private checkAssumptionsInput(input: string | undefined): readonly [string,boolean] {
         if (input === undefined){
             input = "";
@@ -966,6 +974,59 @@ implements vscode.WebviewViewProvider {
                                 reject(error.message);
                             }
                         );
+                    } else {
+                        DaCeInterface.getInstance()?.hideSpinner();
+                    }
+                });
+            });
+        });
+    }
+
+    @ICPCRequest()
+    public async getOperationalIntensity(): Promise<any> {
+        return new Promise(async (resolve, reject) => {
+            if (!this.daemonRunning) {
+                try {
+                    await this.promptStartDaemon();
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
+            }
+
+            this.showSpinner('Calculating Operational Intensity');
+
+            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+                if (!sdfg) {
+                    const msg = 'No active SDFG editor!';
+                    console.warn(msg);
+                    reject(msg);
+                    return;
+                }
+
+                this.showAssumptionsInputBox().then((value) => {
+                    const [assumptions, valid] = this.checkAssumptionsInput(value);
+                    if(valid){
+                        this.showCacheParamsInputBox().then((cacheParams) => {
+                            if(cacheParams === '' || cacheParams === undefined)
+                                cacheParams = '1024 64';
+                            this.sendPostRequest(
+                                '/get_operational_intensity',
+                                {
+                                    'sdfg': sdfg,
+                                    'cacheParams': cacheParams,
+                                    'assumptions': assumptions,
+                                },
+                                (data: any) => {
+                                    resolve(data.opInMap);
+                                    DaCeInterface.getInstance()?.hideSpinner();
+                                },
+                                (error: any) => {
+                                    this.genericErrorHandler(error.message, error.details);
+                                    reject(error.message);
+                                }
+                            );
+                        });
                     } else {
                         DaCeInterface.getInstance()?.hideSpinner();
                     }
