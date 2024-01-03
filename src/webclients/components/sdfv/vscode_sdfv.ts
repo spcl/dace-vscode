@@ -53,7 +53,7 @@ import {
     DepthOverlay,
     AvgParallelismOverlay,
     SymbolMap,
-    traverse_sdfg_scopes
+    traverseSDFGScopes,
 } from '@spcl/sdfv/src';
 import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
 import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
@@ -602,7 +602,7 @@ export class VSCodeSDFV extends SDFV {
 
         const stack: any[] = [topLevelSDFG];
 
-        traverse_sdfg_scopes(
+        traverseSDFGScopes(
             graph, (node: SDFGNode, _parent: SDFGElement): boolean => {
                 // Skip exit nodes when scopes are known.
                 if (node.type().endsWith('Exit') &&
