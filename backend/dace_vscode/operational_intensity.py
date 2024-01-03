@@ -2,7 +2,7 @@
 # All rights reserved.
 
 import sympy as sp
-from dace.sdfg.work_depth_analysis.operational_intensity import analyze_sdfg_op_in
+from dace.sdfg.performance_evaluation.operational_intensity import analyze_sdfg_op_in
 
 from dace_vscode.utils import (
     load_sdfg_from_json,
@@ -21,7 +21,7 @@ def get_operational_intensity(sdfg_json, cache_params, assumptions):
         print(cache_params)
         C = int(cache_params.split()[0])
         L = int(cache_params.split()[1])
-        analyze_sdfg_op_in(sdfg, op_in_map, C, L, assumptions_dict)
+        analyze_sdfg_op_in(sdfg, op_in_map, C, L, assumptions_dict, stringify=True)
         return {
             'opInMap': op_in_map,
         }

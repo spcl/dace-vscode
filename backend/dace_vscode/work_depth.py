@@ -2,7 +2,7 @@
 # All rights reserved.
 
 import sympy as sp
-from dace.sdfg.work_depth_analysis.work_depth import analyze_sdfg, get_tasklet_work, get_tasklet_work_depth, get_tasklet_avg_par
+from dace.sdfg.performance_evaluation.work_depth import analyze_sdfg, get_tasklet_work, get_tasklet_work_depth, get_tasklet_avg_par
 
 from dace_vscode.utils import (
     load_sdfg_from_json,
