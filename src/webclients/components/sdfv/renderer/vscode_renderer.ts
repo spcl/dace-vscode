@@ -9,6 +9,7 @@ import {
     memlet_tree_complete,
     ModeButtons,
     OperationalIntensityOverlay,
+    SimulatedOperationalIntensityOverlay,
     SDFGElementType,
     SDFGRenderer,
     setPositioningInfo,
@@ -137,6 +138,21 @@ export class VSCodeRenderer extends SDFGRenderer {
                         (ol as
                             AvgParallelismOverlay
                         )?.update_avg_parallelism_map(avgParallelismMap);
+                    });
+                    break;
+                case 'op_in':
+                    SDFVComponent.getInstance().invoke(
+                        'getOperationalIntensity', [], ComponentTarget.DaCe
+                    ).then((opInMap) => {
+                        if (!opInMap)
+                            return;
+                        const renderer = VSCodeRenderer.getInstance();
+                        const oMan = renderer?.get_overlay_manager();
+                        const oType = VSCodeSDFV.OVERLAYS[overlay];
+                        const ol = oMan?.get_overlay(oType);
+                        (ol as
+                            SimulatedOperationalIntensityOverlay
+                        )?.update_op_in_map(opInMap);
                     });
                     break;
             }

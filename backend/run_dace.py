@@ -53,7 +53,7 @@ import dace
 
 sys.path.append(path.abspath(path.dirname(__file__)))
 
-from dace_vscode import work_depth, transformations
+from dace_vscode import work_depth, operational_intensity, transformations
 from dace_vscode.utils import (disable_save_metadata, get_exception_message,
                                load_sdfg_from_file, restore_save_metadata,
                                load_sdfg_from_json)
@@ -416,6 +416,13 @@ def run_daemon(port):
     def _get_avg_parallelism():
         request_json = request.get_json()
         return work_depth.get_avg_parallelism(request_json['sdfg'], request_json['assumptions'])
+    
+    @daemon.route('/get_operational_intensity', methods=['POST'])
+    def _get_operational_intensity():
+        request_json = request.get_json()
+        return operational_intensity.get_operational_intensity(request_json['sdfg'],
+                                                               request_json['cacheParams'],
+                                                               request_json['assumptions'])
 
     @daemon.route('/compile_sdfg_from_file', methods=['POST'])
     def _compile_sdfg_from_file():

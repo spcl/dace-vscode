@@ -7,6 +7,7 @@ import {
     MemoryLocationOverlay,
     MemoryVolumeOverlay,
     OperationalIntensityOverlay,
+    SimulatedOperationalIntensityOverlay,
     RuntimeMicroSecondsOverlay,
     RuntimeReportOverlay,
     SDFGRenderer,
@@ -183,6 +184,11 @@ export class AnalysisController {
                     class: 'OperationalIntensityOverlay',
                     label: 'Operational Intensity',
                     type: OperationalIntensityOverlay.type,
+                },
+                {
+                    class: 'SimulatedOperationalIntensityOverlay',
+                    label: 'Simulated Operational Intensity',
+                    type: SimulatedOperationalIntensityOverlay.type,
                 },
                 {
                     class: 'MemoryLocationOverlay',

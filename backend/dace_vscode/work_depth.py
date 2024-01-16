@@ -5,7 +5,7 @@ from typing import Any
 
 import sympy as sp
 try:
-    from dace.sdfg.work_depth_analysis import work_depth
+    from dace.sdfg.performance_evaluation import work_depth
 except ImportError:
     work_depth = None
 
