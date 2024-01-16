@@ -9,13 +9,10 @@ import 'jquery-editable-select';
 import 'jquery-editable-select/dist/jquery-editable-select.min.css';
 
 import 'bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
 
-import 'material-icons/iconfont/material-icons.css';
+import '@spcl/sdfv/scss/sdfv.scss';
 
-import '@spcl/sdfv/sdfv.css';
-
-import './vscode_sdfv.css';
+import './vscode_sdfv.scss';
 
 import * as staticSdfgMetaDict from '../../../utils/sdfg_meta_dict.json';
 
