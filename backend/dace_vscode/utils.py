@@ -105,7 +105,7 @@ def find_graph_element_by_uuid(sdfg, uuid):
 
 
 def sdfg_find_state_from_element(sdfg, element):
-    graph = sdfg.sdfg_list[element['sdfgId']]
+    graph = sdfg.cfg_list[element['sdfgId']]
     if element['id'] >= 0:
         return graph.nodes()[element['id']]
     else:
@@ -113,7 +113,7 @@ def sdfg_find_state_from_element(sdfg, element):
 
 
 def sdfg_find_node_from_element(sdfg, element):
-    graph = sdfg.sdfg_list[element['sdfgId']]
+    graph = sdfg.cfg_list[element['sdfgId']]
     if element['stateId'] >= 0:
         state = graph.nodes()[element['stateId']]
         node = state.nodes()[element['id']]

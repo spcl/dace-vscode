@@ -443,7 +443,7 @@ export class VSCodeSDFV extends SDFV {
         selectedElements.forEach(elem => {
             if (target === null) {
                 target = elem.sdfg;
-            } else if (target.sdfg_list_id !== elem.sdfg.sdfg_list_id) {
+            } else if (target.cfg_list_id !== elem.sdfg.cfg_list_id) {
                 target = null;
                 return;
             }
@@ -642,6 +642,9 @@ export class VSCodeSDFV extends SDFV {
                     case 'NestedSDFG':
                         icon = 'res:icons/sdfg.svg';
                         break;
+                    case 'LoopRegion':
+                        icon = 'restart_alt';
+                        break;
                     default:
                         icon = '';
                         break;
@@ -754,11 +757,11 @@ export class VSCodeSDFV extends SDFV {
 
                 let other_uuid = undefined;
                 if (elem instanceof EntryNode)
-                    other_uuid = elem.sdfg.sdfg_list_id + '/' +
+                    other_uuid = elem.sdfg.cfg_list_id + '/' +
                         elem.parent_id + '/' +
                         elem.data.node.scope_exit + '/-1';
                 else if (elem instanceof ExitNode)
-                    other_uuid = elem.sdfg.sdfg_list_id + '/' +
+                    other_uuid = elem.sdfg.cfg_list_id + '/' +
                         elem.parent_id + '/' +
                         elem.data.node.scope_entry + '/-1';
 

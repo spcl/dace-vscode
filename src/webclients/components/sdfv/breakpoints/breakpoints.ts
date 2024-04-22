@@ -64,12 +64,12 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
         let nodeId = undefinedVal;
 
         if (element instanceof NestedSDFG) {
-            sdfgId = element.data.node.attributes.sdfg.sdfg_list_id;
+            sdfgId = element.data.node.attributes.sdfg.cfg_list_id;
         } else if (element instanceof State) {
-            sdfgId = element.sdfg.sdfg_list_id;
+            sdfgId = element.sdfg.cfg_list_id;
             stateId = element.id;
         } else if (element instanceof SDFGNode) {
-            sdfgId = element.sdfg.sdfg_list_id;
+            sdfgId = element.sdfg.cfg_list_id;
             if (element.parent_id === null)
                 stateId = undefinedVal;
             else

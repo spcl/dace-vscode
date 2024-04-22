@@ -22,7 +22,7 @@ import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 import { gzipSync } from 'zlib';
 
 export function findMaximumSdfgId(sdfg: JsonSDFG): number {
-    let maxId = sdfg.sdfg_list_id;
+    let maxId = sdfg.cfg_list_id;
     for (const node of sdfg.nodes) {
         if (node.type === SDFGElementType.SDFGState)
             for (const n of node.nodes) {
@@ -36,7 +36,7 @@ export function findMaximumSdfgId(sdfg: JsonSDFG): number {
 }
 
 export function findSdfgById(sdfg: JsonSDFG, id: number): JsonSDFG | undefined {
-    if (sdfg.sdfg_list_id === id)
+    if (sdfg.cfg_list_id === id)
         return sdfg;
 
     for (const node of sdfg.nodes) {
@@ -274,7 +274,7 @@ export function elementUpdateLabel(
                 if (element instanceof EntryNode) {
                     let exitElem = find_graph_element_by_uuid(
                         VSCodeRenderer.getInstance()?.get_graph(),
-                        element.sdfg.sdfg_list_id + '/' +
+                        element.sdfg.cfg_list_id + '/' +
                         element.parent_id + '/' +
                         element.data.node.scope_exit + '/-1'
                     );
@@ -286,7 +286,7 @@ export function elementUpdateLabel(
                 } else if (element instanceof ExitNode) {
                     let entryElem = find_graph_element_by_uuid(
                         VSCodeRenderer.getInstance()?.get_graph(),
-                        element.sdfg.sdfg_list_id + '/' +
+                        element.sdfg.cfg_list_id + '/' +
                         element.parent_id + '/' +
                         element.data.node.scope_entry + '/-1'
                     );
@@ -343,29 +343,25 @@ export function elementUpdateLabel(
  * classical one, removing layout information along with it.
  * NOTE: This operates in-place on the renderer's graph representation.
  */
-export function unGraphiphySdfg(g: JsonSDFG): void {
-    g.edges.forEach((e: any) => {
-        if (e.attributes.data.edge)
-            delete e.attributes.data.edge;
-    });
-
-    g.nodes.forEach((s: any) => {
-        if (s.attributes.layout)
-            delete s.attributes.layout;
-
-        s.edges.forEach((e: any) => {
+export function unGraphiphySdfg(sdfg: JsonSDFG): void {
+    const unGraphiphyGraph = (g: any) => {
+        g.edges?.forEach((e: any) => {
             if (e.attributes.data.edge)
                 delete e.attributes.data.edge;
         });
 
-        s.nodes.forEach((v: any) => {
-            if (v.attributes.layout)
-                delete v.attributes.layout;
+        g.nodes?.forEach((s: any) => {
+            if (s.attributes.layout)
+                delete s.attributes.layout;
 
-            if (v.type === SDFGElementType.NestedSDFG)
-                unGraphiphySdfg(v.attributes.sdfg);
+            if (s.type === SDFGElementType.NestedSDFG)
+                unGraphiphySdfg(s.attributes.sdfg);
+            else
+                unGraphiphyGraph(s);
         });
-    });
+    };
+    
+    unGraphiphyGraph(sdfg);
 }
 
 export async function vscodeWriteGraph(g: JsonSDFG): Promise<void> {

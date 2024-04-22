@@ -41,7 +41,7 @@ def expand_library_node(json_in):
         if sdfg_id is None:
             sdfg.expand_library_nodes()
         else:
-            context_sdfg = sdfg.sdfg_list[sdfg_id]
+            context_sdfg = sdfg.cfg_list[sdfg_id]
             state = context_sdfg.node(state_id)
             node = state.node(node_id)
             if isinstance(node, nodes.LibraryNode):
@@ -90,17 +90,17 @@ def reapply_history_until(sdfg_json, index):
     for i in range(index + 1):
         try:
             transformation = history[i]
-            transformation._sdfg = original_sdfg.sdfg_list[
+            transformation._sdfg = original_sdfg.cfg_list[
                 transformation.sdfg_id
             ]
             if isinstance(transformation, SubgraphTransformation):
                 transformation._sdfg.append_transformation(transformation)
                 transformation.apply(
-                    original_sdfg.sdfg_list[transformation.sdfg_id]
+                    original_sdfg.cfg_list[transformation.sdfg_id]
                 )
             else:
                 transformation.apply_pattern(
-                    original_sdfg.sdfg_list[transformation.sdfg_id]
+                    original_sdfg.cfg_list[transformation.sdfg_id]
                 )
         except Exception as e:
             print(traceback.format_exc(), file=sys.stderr)
@@ -152,7 +152,7 @@ def apply_transformations(sdfg_json, transformation_json_list):
             }
         try:
             if isinstance(transformation, TransformationBase):
-                target_sdfg = sdfg.sdfg_list[transformation.sdfg_id]
+                target_sdfg = sdfg.cfg_list[transformation.sdfg_id]
                 transformation._sdfg = target_sdfg
                 if isinstance(transformation, SubgraphTransformation):
                     sdfg.append_transformation(transformation)
@@ -272,7 +272,7 @@ def get_transformations(sdfg_json, selected_elements, permissive):
                 'warnings': 'More than one SDFG selected, ignoring subgraph',
             }
         elif len(selected_sdfg_ids) == 1:
-            selected_sdfg = sdfg.sdfg_list[selected_sdfg_ids[0]]
+            selected_sdfg = sdfg.cfg_list[selected_sdfg_ids[0]]
 
         subgraph = None
         if len(selected_states) > 0:

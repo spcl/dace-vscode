@@ -311,7 +311,7 @@ export function attrTablePutSelect(
             'text': 'Expand',
             'click': () => {
                 const nodeId = [
-                    elem.sdfg.sdfg_list_id,
+                    elem.sdfg.cfg_list_id,
                     elem.parent_id,
                     elem.id,
                 ];
@@ -1309,7 +1309,7 @@ export function generateAttributesTable(
         const undefinedVal = -1;
         let sdfgName =
             VSCodeRenderer.getInstance()?.get_sdfg()?.attributes.name;
-        let sdfgId = elem.sdfg.sdfg_list_id;
+        let sdfgId = elem.sdfg.cfg_list_id;
         let stateId = undefinedVal;
         let nodeId = undefinedVal;
 

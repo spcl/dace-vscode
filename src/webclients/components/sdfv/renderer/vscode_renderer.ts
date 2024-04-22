@@ -267,7 +267,7 @@ export class VSCodeRenderer extends SDFGRenderer {
             const [endElem, endElemSdfg] =
                 findJsonSDFGElementByUUID(rootSdfg, parentUUID);
             let element = undefined;
-            if (startElemSdfg.sdfg_list_id === endElemSdfg.sdfg_list_id &&
+            if (startElemSdfg.cfg_list_id === endElemSdfg.cfg_list_id &&
                 startElem && endElem) {
                 if (startElem.type === SDFGElementType.SDFGState) {
                     element = {
@@ -405,10 +405,10 @@ export class VSCodeRenderer extends SDFGRenderer {
                                 },
                                 nodes: [nSdfgState],
                                 edges: [],
-                                start_state: 0,
+                                start_block: 0,
                                 type: 'SDFG',
                                 error: undefined,
-                                sdfg_list_id: maxSdfgId + 1,
+                                cfg_list_id: maxSdfgId + 1,
                             };
                             const sdfgMeta = metaDict['SDFG'];
                             for (const key in sdfgMeta) {
@@ -545,7 +545,7 @@ export class VSCodeRenderer extends SDFGRenderer {
 
         this.canvas_manager?.translate_element(
             el, { x: el.x, y: el.y }, this.add_position, this.graph,
-            this.sdfg_list, this.state_parent_list, null, true
+            this.cfg_list, this.state_parent_list, null, true
         );
 
         if (el instanceof EntryNode && uuids.length >= 2) {
@@ -554,7 +554,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                 this.canvas_manager?.translate_element(
                     exit, { x: exit.x, y: exit.y },
                     { x: this.add_position.x, y: this.add_position.y + 100},
-                    this.graph, this.sdfg_list, this.state_parent_list, null,
+                    this.graph, this.cfg_list, this.state_parent_list, null,
                     true
                 );
             }

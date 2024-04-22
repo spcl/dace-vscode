@@ -34,9 +34,13 @@ export class SDFGEditor extends SDFGEditorBase {
         // can lead to event handler loops when the edit occurs from the
         // extension or webview itself.
 		const changeSubs = workspace.onDidChangeTextDocument(e => {
+            /*
 			if (e.document.uri.toString() === document.uri.toString() &&
                 (e.reason === TextDocumentChangeReason.Redo ||
                  e.reason === TextDocumentChangeReason.Undo))
+                this._updateContents();
+                */
+			if (e.document.uri.toString() === document.uri.toString())
                 this._updateContents();
 		});
 		webviewPanel.onDidDispose(() => {
