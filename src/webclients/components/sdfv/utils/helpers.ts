@@ -1,4 +1,4 @@
-// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
@@ -6,20 +6,23 @@ import {
     Edge,
     EntryNode,
     ExitNode,
-    find_graph_element_by_uuid,
-    get_uuid_graph_element,
+    findGraphElementByUUID,
+    getGraphElementUUID,
     JsonSDFG,
-    JsonSDFGEdge,
     JsonSDFGNode,
     JsonSDFGState,
     ScopeNode,
     SDFGElement,
     SDFGElementType,
     sdfg_range_elem_to_string,
+    SDFGNode,
+    CFGListType,
+    JsonSDFGElement,
+    JsonSDFGControlFlowRegion,
+    JsonSDFGBlock,
 } from '@spcl/sdfv/src';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
-import { gzipSync } from 'zlib';
 
 export function findMaximumSdfgId(sdfg: JsonSDFG): number {
     let maxId = sdfg.cfg_list_id;
@@ -35,86 +38,101 @@ export function findMaximumSdfgId(sdfg: JsonSDFG): number {
     return maxId;
 }
 
-export function findSdfgById(sdfg: JsonSDFG, id: number): JsonSDFG | undefined {
-    if (sdfg.cfg_list_id === id)
-        return sdfg;
-
-    for (const node of sdfg.nodes) {
-        if (node.type === SDFGElementType.SDFGState)
-            for (const n of node.nodes) {
-                if (n.type === SDFGElementType.NestedSDFG) {
-                    const ret = findSdfgById(n.attributes.sdfg, id);
-                    if (ret)
-                        return ret;
-        }
-    }
-    }
+export function jsonSDFGElemReadAttr(elem: JsonSDFGElement, attr: string): any {
+    if (Object.hasOwn(elem.attributes, attr))
+        return elem.attributes[attr];
+    const meta = VSCodeSDFV.getInstance().getCachedMetaDict();
+    if (!meta)
+        return undefined;
+    const attrMeta = meta[elem.type][attr];
+    if (attrMeta && Object.hasOwn(attrMeta, 'default'))
+        return attrMeta.default;
     return undefined;
 }
 
-export function findJsonSDFGElementByUUID(
-    rootSdfg: JsonSDFG, uuid: string
-): [
-    JsonSDFG | JsonSDFGState | JsonSDFGNode | JsonSDFGEdge | undefined,
-    JsonSDFG
+export function isCollapsible(elem: JsonSDFGElement): boolean {
+    if (Object.hasOwn(elem.attributes, 'is_collapsed'))
+        return true;
+    const meta = VSCodeSDFV.getInstance().getCachedMetaDict();
+    if (!meta)
+        return false;
+    return Object.hasOwn(meta[elem.type], 'is_collapsed');
+}
+
+export function findJsonSDFGElementByUUID(cfgList: CFGListType, uuid: string): [
+    JsonSDFGElement | undefined, JsonSDFGControlFlowRegion
 ] {
+    const rootSDFG = cfgList[0].jsonObj;
     const parts = uuid?.split('/');
     if (!parts || parts.length < 2 || parts.length > 4)
-        return [undefined, rootSdfg];
+        return [undefined, rootSDFG];
 
     const sdfgId = parseInt(parts[0]);
-    if (sdfgId >= 0 && rootSdfg) {
-        const sdfg = findSdfgById(rootSdfg, sdfgId);
+    if (sdfgId >= 0 && rootSDFG) {
+        const cfg = cfgList[sdfgId]?.jsonObj;
         const stateId = parseInt(parts[1]);
-        if (stateId >= 0 && sdfg?.nodes) {
-            const state = sdfg.nodes[stateId];
+        if (stateId >= 0 && cfg?.nodes) {
+            const state = cfg.nodes[stateId];
             if (state) {
                 if (parts.length > 2) {
                     const nodeId = parseInt(parts[2]);
                     if (nodeId >= 0) {
-                        return [state.nodes[nodeId], sdfg];
+                        return [state.nodes[nodeId], cfg];
                     } else if (parts.length === 4) {
                         const edgeId = parseInt(parts[3]);
                         if (edgeId >= 0)
-                            return [state.edges[edgeId], sdfg];
+                            return [state.edges[edgeId], cfg];
                     }
                 }
 
-                return [state, sdfg];
+                return [state, cfg];
             }
-        } else if (parts.length === 4 && sdfg?.edges) {
+        } else if (parts.length === 4 && cfg?.edges) {
             const edgeId = parseInt(parts[3]);
             if (edgeId > 0)
-                return [sdfg.edges[edgeId], sdfg];
+                return [cfg.edges[edgeId], cfg];
         }
-        return [sdfg, rootSdfg];
+        return [cfg, rootSDFG];
     }
-    return [undefined, rootSdfg];
+    return [undefined, rootSDFG];
 }
 
 /**
  * Perform an action for each element in an array given by their uuids.
  */
 export function doForAllUUIDs(
-    uuids: string[], action: CallableFunction
+    uuids: string[], action: CallableFunction,
+    applyToScopeChildren: boolean = false
 ): void {
+    const renderer = VSCodeRenderer.getInstance();
+    if (!renderer)
+        return;
     uuids.forEach((uuid) => {
-        const result = find_graph_element_by_uuid(
-            VSCodeRenderer.getInstance()?.get_graph(), uuid
+        const element = findGraphElementByUUID(
+            renderer.getCFGList(), renderer.getCFGTree(), uuid
         );
 
-        let element = undefined;
-        if (result !== undefined)
-            element = result.element;
-
-        if (element !== undefined) {
+        if (element) {
             action(element);
-            const parent = element.parent;
-            if (element.type().endsWith('Entry') && parent !== undefined) {
-                const state = element.sdfg.nodes[element.parent_id];
-                if (state.scope_dict[element.id] !== undefined) {
-                    for (const nId of state.scope_dict[element.id])
-                        action(parent.node(nId));
+
+            // For scope entry nodes (e.g., maps), apply the action to all scope
+            // children if the corresponding parameter is set. If the scope is
+            // collapsed, skip.
+            if (applyToScopeChildren && element instanceof SDFGNode) {
+                const stateId = element.parent_id;
+                if (element instanceof EntryNode && stateId !== null &&
+                    !element.attributes().is_collapsed) {
+                    const state = element.cfg?.nodes[stateId] as JsonSDFGState;
+                    if (state?.scope_dict[element.id] !== undefined) {
+                        const stateGraph = element.parentElem?.data.graph;
+                        if (!stateGraph) {
+                            throw Error(
+                                'State graph missing on node' + element.label()
+                            );
+                        }
+                        for (const nId of state.scope_dict[element.id])
+                            action(stateGraph.node(nId));
+                    }
                 }
             }
         }
@@ -129,7 +147,8 @@ export function zoomToUUIDs(uuids: string[]): void {
     if (renderer) {
         const elementsToDisplay: SDFGElement[] = [];
         doForAllUUIDs(
-            uuids, (element: SDFGElement) => elementsToDisplay.push(element)
+            uuids, (element: SDFGElement) => elementsToDisplay.push(element),
+            true
         );
         renderer.zoom_to_view(elementsToDisplay);
     }
@@ -139,7 +158,7 @@ export function zoomToUUIDs(uuids: string[]): void {
  * Shade all elements in an array of element uuids with a light highlight color.
  *
  * @param {*} uuids     Elements to shade.
- * @param {*} color     Color with which to highlight (defaults to wheat).
+ * @param {*} pColor    Color with which to highlight (defaults to wheat).
  */
 export function highlightUUIDs(
     uuids: string[], pColor?: string
@@ -166,7 +185,7 @@ export function highlightUUIDs(
         } else {
             doForAllUUIDs(uuids, (element: SDFGElement) => {
                 element.shade(renderer, context, color);
-            });
+            }, true);
         }
     }
 }
@@ -264,7 +283,8 @@ export function computeScopeLabel(scopeEntry: EntryNode): string {
 export function elementUpdateLabel(
     element: SDFGElement, attributes: any
 ): void {
-    if (element.data) {
+    const renderer = VSCodeRenderer.getInstance();
+    if (element.data && renderer) {
         if (element.data.node) {
             if (attributes.label)
                 element.data.node.label = attributes.label;
@@ -272,29 +292,28 @@ export function elementUpdateLabel(
             if (element instanceof ScopeNode) {
                 // In scope nodes the range is attached.
                 if (element instanceof EntryNode) {
-                    let exitElem = find_graph_element_by_uuid(
-                        VSCodeRenderer.getInstance()?.get_graph(),
+                    const exitElem = findGraphElementByUUID(
+                        renderer.getCFGList(),
+                        renderer.getCFGTree(),
                         element.sdfg.cfg_list_id + '/' +
                         element.parent_id + '/' +
                         element.data.node.scope_exit + '/-1'
                     );
-                    if (exitElem && exitElem.element) {
+                    if (exitElem && exitElem instanceof SDFGElement) {
                         element.data.node.label = computeScopeLabel(element);
-                        exitElem.element.data.node.label =
-                            element.data.node.label;
+                        exitElem.data.node.label = element.data.node.label;
                     }
                 } else if (element instanceof ExitNode) {
-                    let entryElem = find_graph_element_by_uuid(
-                        VSCodeRenderer.getInstance()?.get_graph(),
+                    const entryElem = findGraphElementByUUID(
+                        renderer.getCFGList(),
+                        renderer.getCFGTree(),
                         element.sdfg.cfg_list_id + '/' +
                         element.parent_id + '/' +
                         element.data.node.scope_entry + '/-1'
                     );
-                    if (entryElem && entryElem.element) {
-                        element.data.node.label =
-                            computeScopeLabel(entryElem.element);
-                        entryElem.element.data.node.label =
-                            element.data.node.label;
+                    if (entryElem && entryElem instanceof EntryNode) {
+                        element.data.node.label = computeScopeLabel(entryElem);
+                        entryElem.data.node.label = element.data.node.label;
                     }
                 }
                 element.clear_cached_labels();
@@ -385,14 +404,14 @@ export async function vscodeWriteGraph(g: JsonSDFG): Promise<void> {
 }
 
 export function reselectRendererElement(elem: SDFGElement): void {
-    const graph = VSCodeRenderer.getInstance()?.get_graph();
-    if (graph) {
-        const uuid = get_uuid_graph_element(elem);
-        const newElemRes = find_graph_element_by_uuid(graph, uuid);
-        if (newElemRes && newElemRes.element) {
-            const newElem = newElemRes.element;
+    const renderer = VSCodeRenderer.getInstance();
+    if (renderer) {
+        const uuid = getGraphElementUUID(elem);
+        const newElem = findGraphElementByUUID(
+            renderer.getCFGList(), renderer.getCFGTree(), uuid
+        );
+        if (newElem && newElem instanceof SDFGElement)
             VSCodeSDFV.getInstance().fillInfo(newElem);
-        }
     }
 }
 
@@ -459,20 +478,29 @@ export async function getElementMetadata(
 }
 
 export function doForAllNodeTypes(
-    sdfg: JsonSDFG, type: string, fun: CallableFunction, recurseNested: boolean
+    cfg: JsonSDFGControlFlowRegion, type: string,
+    fun: (node: JsonSDFGNode | JsonSDFGBlock) => void, recurseNested: boolean
 ): void {
-    sdfg.nodes.forEach(state => {
-        if (type === 'SDFGState')
-            fun(state);
+    cfg.nodes.forEach(block => {
+        if (block.type === type)
+            fun(block);
 
-        state.nodes.forEach((node: JsonSDFGNode) => {
-            if (node.type && node.type === type)
-                fun(node);
-            else if (node.type && node.type === 'NestedSDFG' && recurseNested)
-                doForAllNodeTypes(
-                    node.attributes.sdfg, type, fun, recurseNested
-                );
-        });
+        if (block.type === SDFGElementType.SDFGState) {
+            block.nodes.forEach(node => {
+                if (node.type === type)
+                    fun(node);
+
+                if (node.type === SDFGElementType.NestedSDFG && recurseNested) {
+                    doForAllNodeTypes(
+                        node.attributes.sdfg, type, fun, recurseNested
+                    );
+                }
+            });
+        } else {
+            doForAllNodeTypes(
+                block as JsonSDFGControlFlowRegion, type, fun, recurseNested
+            );
+        }
     });
 }
 

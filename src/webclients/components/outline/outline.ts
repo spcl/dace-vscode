@@ -1,4 +1,4 @@
-// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import 'bootstrap';
@@ -152,8 +152,12 @@ class OutlinePanel extends ICPCWebclientMessagingComponent {
             );
             outlineItem.list = this.outlineList;
 
-            if (item['children'] !== undefined && item['children'].length)
-                this.setOutlineRecursive(item['children'], outlineItem);
+            if (!item['collapsed']) {
+                if (item['children'] !== undefined && item['children'].length)
+                    this.setOutlineRecursive(item['children'], outlineItem);
+            } else {
+                outlineItem.children = [];
+            }
 
             parent.addItem(outlineItem);
         }

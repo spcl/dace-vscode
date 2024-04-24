@@ -11,7 +11,8 @@ import {
     SDFGElement,
     sdfg_property_to_string,
     State,
-    SDFG
+    SDFG,
+    SDFGElementType
 } from '@spcl/sdfv/src';
 import { editor as monaco_editor } from 'monaco-editor';
 import { Range } from '../../../../types';
@@ -874,9 +875,10 @@ export async function attributeTablePutEntry(
     key: string, val: any, meta: any, target: any, elem: any | undefined,
     xform: any | undefined, row: JQuery, editableKey: boolean,
     updateOnChange: boolean, addDeleteButton: boolean,
+    isNonDefault: boolean = false,
     keyChangeHandlerOverride?: (prop: KeyProperty) => void,
     valueChangeHandlerOverride?: (prop: Property) => void,
-    invertedSpacing: boolean = false
+    invertedSpacing: boolean = false,
 ): Promise<PropertyEntry> {
     let keyProp: KeyProperty | undefined = undefined;
     let valProp: Property[] | undefined = undefined;
@@ -956,6 +958,13 @@ export async function attributeTablePutEntry(
             'text': 'remove_circle',
             'title': 'Delete entry',
         }).appendTo(deleteWrapper);
+    }
+
+    if (isNonDefault) {
+        $('<div>', {
+            class: 'attr-changed-bar',
+            title: 'This value has been changed from its default',
+        }).appendTo(prefixCell);
     }
 
     const valueCell = $('<div>', {
@@ -1203,19 +1212,25 @@ export function generateAttributesTable(
 
     metadataPromise.then((metadata: any) => {
         let sortedAttributes: { [key: string]: any } = {};
-        Object.keys(attributes).forEach(k => {
-            const val = attributes[k];
+        let handledKeys = new Set<string>();
+        Object.keys(metadata).forEach(k => {
+            const val = metadata[k];
             if (ATTR_TABLE_HIDDEN_ATTRIBUTES.includes(k) || k.startsWith('_'))
                 return;
+            if (!sortedAttributes[metadata[k]['category']])
+                sortedAttributes[metadata[k]['category']] = {};
+            sortedAttributes[metadata[k]['category']][k] = val;
+            handledKeys.add(k);
+        });
 
-            if (metadata && metadata[k]) {
-                if (!sortedAttributes[metadata[k]['category']])
-                    sortedAttributes[metadata[k]['category']] = {};
-                sortedAttributes[metadata[k]['category']][k] = val;
-            } else {
+        Object.keys(attributes).forEach(k => {
+            if (ATTR_TABLE_HIDDEN_ATTRIBUTES.includes(k) || k.startsWith('_'))
+                return;
+            if (!handledKeys.has(k)) {
                 if (!sortedAttributes['Uncategorized'])
                     sortedAttributes['Uncategorized'] = {};
-                sortedAttributes['Uncategorized'][k] = val;
+                sortedAttributes['Uncategorized'][k] = attributes[k];
+                handledKeys.add(k);
             }
         });
 
@@ -1259,7 +1274,9 @@ export function generateAttributesTable(
             });
 
             Object.keys(sortedAttributes[category]).forEach(k => {
-                const val = attributes[k];
+                const isNonDefault = attributes[k] !== undefined;
+                const val = isNonDefault ?
+                    attributes[k] : sortedAttributes[category][k]?.default;
 
                 // Debug info isn't printed in the attributes table, but instead
                 // we show a button to jump to the referenced code location.
@@ -1293,7 +1310,7 @@ export function generateAttributesTable(
                 }).appendTo(attrTable);
                 attributeTablePutEntry(
                     k, val, attrMeta, attributes, elem, xform, row, false,
-                    true, false
+                    true, false, isNonDefault
                 );
             });
         });
@@ -1402,7 +1419,8 @@ export function appendSymbolsTable(
             }).appendTo(attrTable);
             attributeTablePutEntry(
                 symbol, symType, attrMeta, symbols, undefined,
-                undefined, row, true, true, true, undefined, undefined, true
+                undefined, row, true, true, true, false, undefined, undefined,
+                true
             ).then(res => {
                 if (res.deleteBtn)
                     res.deleteBtn.on('click', () => {
@@ -1448,7 +1466,7 @@ export function appendSymbolsTable(
                         attributeTablePutEntry(
                             nameVal, defaultNewType, attrMeta, symbols,
                             undefined, undefined, row, true, true, true,
-                            undefined, undefined, true
+                            false, undefined, undefined, true
                         ).then(newProp => {
                             if (newProp) {
                                 if (newProp.deleteBtn)
@@ -1531,9 +1549,8 @@ export function appendDataDescriptorTable(
                 const newDescriptor = nVal.value;
 
                 doForAllNodeTypes(
-                    sdfg, 'AccessNode', (accessNode: JsonSDFGNode) => {
-                        if (accessNode.attributes?.data ===
-                            oldDescriptor) {
+                    sdfg, SDFGElementType.AccessNode, accessNode => {
+                        if (accessNode.attributes?.data === oldDescriptor) {
                             accessNode.attributes.data = newDescriptor;
                             accessNode.label = newDescriptor;
                         }
@@ -1603,7 +1620,7 @@ export function appendDataDescriptorTable(
             }).appendTo(attrTable);
             attributeTablePutEntry(
                 descriptor, val, attrMeta, descriptors, undefined,
-                undefined, row, true, true, true, updateNameListener,
+                undefined, row, true, true, true, false, updateNameListener,
                 updateContainerListener, true
             ).then(res => {
                 if (res.deleteBtn)
@@ -1669,7 +1686,7 @@ export function appendDataDescriptorTable(
                         addItemButtonRow.before(row);
                         attributeTablePutEntry(
                             nameVal, defaultValues, newMetaType, descriptors,
-                            undefined, undefined, row, true, true, true,
+                            undefined, undefined, row, true, true, true, false,
                             updateNameListener, updateContainerListener, true
                         ).then(newProp => {
                             if (newProp) {

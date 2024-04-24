@@ -2,7 +2,7 @@
 // All rights reserved.
 
 import {
-    DagreSDFG,
+    DagreGraph,
     Edge,
     GenericSdfgOverlay,
     NestedSDFG,
@@ -233,7 +233,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
     }
 
     public recursivelyShadeSDFG(
-        graph: DagreSDFG,
+        graph: DagreGraph,
         ctx: CanvasRenderingContext2D | null,
         ppp: number | undefined,
         visibleRect: SimpleRect | null

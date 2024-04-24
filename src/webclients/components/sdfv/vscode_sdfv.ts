@@ -1,7 +1,7 @@
-// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import $ = require('jquery');
+import $ from 'jquery';
 (window as any).jQuery = $;
 
 // JQuery Plugin to allow for editable selects.
@@ -18,14 +18,14 @@ import * as staticSdfgMetaDict from '../../../utils/sdfg_meta_dict.json';
 
 import {
     AccessNode,
-    DagreSDFG,
+    DagreGraph,
     Edge,
     EntryNode,
     ExitNode,
-    find_graph_element_by_uuid,
+    findGraphElementByUUID,
     find_in_graph,
     GenericSdfgOverlay,
-    get_uuid_graph_element,
+    getGraphElementUUID,
     JsonSDFG,
     LogicalGroup,
     LogicalGroupOverlay,
@@ -42,7 +42,6 @@ import {
     ScopeNode,
     SDFG,
     SDFGElement,
-    SDFGNode,
     SDFGRenderer,
     SDFV,
     State,
@@ -51,6 +50,7 @@ import {
     AvgParallelismOverlay,
     SymbolMap,
     traverseSDFGScopes,
+    JsonSDFGState,
 } from '@spcl/sdfv/src';
 import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
 import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
@@ -84,6 +84,8 @@ import {
 import {
     findJsonSDFGElementByUUID,
     highlightUUIDs,
+    isCollapsible,
+    jsonSDFGElemReadAttr,
     reselectRendererElement,
     showContextMenu,
     unGraphiphySdfg,
@@ -578,7 +580,7 @@ export class VSCodeSDFV extends SDFV {
 
     @ICPCRequest()
     public async outline(
-        pRenderer?: SDFGRenderer, pGraph?: DagreSDFG
+        pRenderer?: SDFGRenderer, pGraph?: DagreGraph
     ): Promise<void> {
         const renderer = pRenderer || this.renderer;
         const graph = pGraph || renderer?.get_graph();
@@ -592,7 +594,7 @@ export class VSCodeSDFV extends SDFV {
             'type': 'SDFG',
             'label': `SDFG ${renderer.get_sdfg().attributes.name}`,
             'collapsed': false,
-            'uuid': get_uuid_graph_element(null),
+            'uuid': getGraphElementUUID(null),
             'children': [],
         };
         outlineList.push(topLevelSDFG);
@@ -600,7 +602,7 @@ export class VSCodeSDFV extends SDFV {
         const stack: any[] = [topLevelSDFG];
 
         traverseSDFGScopes(
-            graph, (node: SDFGNode, _parent: SDFGElement): boolean => {
+            graph, (node) => {
                 // Skip exit nodes when scopes are known.
                 if (node.type().endsWith('Exit') &&
                     node.data.node.scope_entry >= 0) {
@@ -609,19 +611,17 @@ export class VSCodeSDFV extends SDFV {
                 }
 
                 // Create an entry.
-                let isCollapsed = node.attributes().is_collapsed;
-                isCollapsed = (isCollapsed === undefined) ?
-                    false : isCollapsed;
-                let nodeLabel = node.label();
-                if (node.type() === 'NestedSDFG')
-                    nodeLabel = node.data.node.label;
+                const isCollapsed = node.attributes().is_collapsed ?? false;
+                const nodeLabel = node.type() === 'NestedSDFG' ?
+                    node.data.node.label : node.label();
 
                 // If scope has children, remove the name "Entry" from the type.
                 let nodeType = node.type();
                 if (nodeType.endsWith('Entry')) {
                     const state = node.parent_id !== null ?
-                        node.sdfg.nodes[node.parent_id] : null;
-                    if (state && state.scope_dict[node.id] !== undefined)
+                        (node.cfg?.nodes[node.parent_id] as JsonSDFGState) ??
+                            null : null;
+                    if (state?.scope_dict[node.id])
                         nodeType = nodeType.slice(0, -5);
                 }
 
@@ -645,6 +645,9 @@ export class VSCodeSDFV extends SDFV {
                     case 'LoopRegion':
                         icon = 'restart_alt';
                         break;
+                    case 'ControlFlowRegion':
+                        icon = 'turn_sharp_right';
+                        break;
                     default:
                         icon = '';
                         break;
@@ -655,7 +658,7 @@ export class VSCodeSDFV extends SDFV {
                     'type': nodeType,
                     'label': nodeLabel,
                     'collapsed': isCollapsed,
-                    'uuid': get_uuid_graph_element(node),
+                    'uuid': getGraphElementUUID(node),
                     'children': [],
                 });
 
@@ -663,7 +666,7 @@ export class VSCodeSDFV extends SDFV {
                 if (isCollapsed)
                     return false;
                 return true;
-            }, (_node: SDFGNode, _parent: SDFGElement) => {
+            }, () => {
                 // After scope ends, pop ourselves as the current element and
                 // add outselves to the parent.
                 const elem = stack.pop();
@@ -756,24 +759,26 @@ export class VSCodeSDFV extends SDFV {
                 let other_element = undefined;
 
                 let other_uuid = undefined;
-                if (elem instanceof EntryNode)
-                    other_uuid = elem.sdfg.cfg_list_id + '/' +
+                if (elem instanceof EntryNode &&
+                    !elem.attributes().is_collapsed) {
+                    other_uuid = elem.cfg!.cfg_list_id + '/' +
                         elem.parent_id + '/' +
                         elem.data.node.scope_exit + '/-1';
-                else if (elem instanceof ExitNode)
-                    other_uuid = elem.sdfg.cfg_list_id + '/' +
+                } else if (elem instanceof ExitNode) {
+                    other_uuid = elem.cfg!.cfg_list_id + '/' +
                         elem.parent_id + '/' +
                         elem.data.node.scope_entry + '/-1';
-
-                if (other_uuid) {
-                    const ret_other_elem = find_graph_element_by_uuid(
-                        VSCodeRenderer.getInstance()?.get_graph(),
-                        other_uuid
-                    );
-                    other_element = ret_other_elem.element;
                 }
 
-                if (other_element) {
+                if (other_uuid) {
+                    other_element = findGraphElementByUUID(
+                        VSCodeRenderer.getInstance()!.getCFGList(),
+                        VSCodeRenderer.getInstance()!.getCFGTree(),
+                        other_uuid
+                    );
+                }
+
+                if (other_element && other_element instanceof SDFGElement) {
                     $('<br>').appendTo(contents);
                     $('<p>', {
                         'class': 'info-subtitle',
@@ -847,7 +852,7 @@ export class VSCodeSDFV extends SDFV {
     ): void {
         const parsedSdfg = typeof sdfg === 'string' ? parse_sdfg(sdfg) : sdfg;
         if (this.renderer) {
-            this.renderer.set_sdfg(parsedSdfg);
+            this.renderer.setSDFG(parsedSdfg);
         } else {
             const contentsElem = document.getElementById('contents');
             if (contentsElem === null) {
@@ -985,6 +990,10 @@ export class VSCodeSDFV extends SDFV {
                 return this.sdfgMetaDict;
             });
         }
+        return this.sdfgMetaDict;
+    }
+
+    public getCachedMetaDict(): Record<string, any> | null {
         return this.sdfgMetaDict;
     }
 
@@ -1183,25 +1192,29 @@ export class VSCodeSDFV extends SDFV {
 
     @ICPCRequest()
     public async resyncTransformationHistory(): Promise<void> {
-        SDFVComponent.getInstance().invoke(
-            'setHistory',
-            [
-                this.get_renderer()?.get_sdfg()?.attributes.transformation_hist,
-                this.viewingHistoryIndex
-            ],
-            ComponentTarget.History
-        );
+        const sdfg = this.get_renderer()?.get_sdfg();
+        if (sdfg) {
+            const transformationHistory = jsonSDFGElemReadAttr(
+                sdfg, 'transformation_hist'
+            ) ?? [];
+            SDFVComponent.getInstance().invoke(
+                'setHistory',
+                [transformationHistory, this.viewingHistoryIndex],
+                ComponentTarget.History
+            );
+        }
     }
 
     @ICPCRequest()
     public async toggleCollapseFor(uuid: string): Promise<void> {
         const renderer = this.renderer;
-        const sdfg = renderer?.get_sdfg();
-        if (renderer && sdfg) {
-            const [elem, _] = findJsonSDFGElementByUUID(sdfg, uuid);
-            const attrs = elem?.attributes;
-            if (attrs && Object.hasOwn(attrs, 'is_collapsed')) {
-                attrs.is_collapsed = !attrs.is_collapsed;
+        const cfgList = renderer?.getCFGList();
+        if (renderer && cfgList) {
+            const [elem, _] = findJsonSDFGElementByUUID(cfgList, uuid);
+            if (elem && isCollapsible(elem)) {
+                elem.attributes.is_collapsed = !jsonSDFGElemReadAttr(
+                    elem, 'is_collapsed'
+                );
                 renderer.emit('collapse_state_changed');
                 renderer.relayout();
                 renderer.draw_async();
