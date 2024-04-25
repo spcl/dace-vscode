@@ -190,7 +190,7 @@ def apply_transformations(sdfg_json, transformation_json_list):
                         else target_cfg
                     )
                 else:
-                    target_cfg = sdfg.cfg_list[transformation.sdfg_id]
+                    target_cfg = sdfg.sdfg_list[transformation.sdfg_id]
                     transformation._sdfg = target_cfg
                 if isinstance(transformation, SubgraphTransformation):
                     sdfg.append_transformation(transformation)

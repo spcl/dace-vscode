@@ -272,6 +272,11 @@ body.sdfv {
     align-items: baseline;
     padding-bottom: .5rem;
     padding-left: 1rem;
+    width: 100%;
+  }
+
+  #info-title-container {
+    flex-grow: 1;
   }
 
   #info-header > .btn-close {

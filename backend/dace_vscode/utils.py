@@ -23,7 +23,7 @@ def sdfg_find_state_from_element(sdfg, element):
     if DACE_VERSION >= '0.16.0':
         graph = sdfg.cfg_list[element['cfgId']]
     else:
-        graph = sdfg.sdfg_list[element['sdfgId']]
+        graph = sdfg.sdfg_list[element['cfgId']]
 
     if element['id'] >= 0:
         return graph.nodes()[element['id']]
@@ -35,7 +35,7 @@ def sdfg_find_node_from_element(sdfg, element):
     if DACE_VERSION >= '0.16.0':
         graph = sdfg.cfg_list[element['cfgId']]
     else:
-        graph = sdfg.sdfg_list[element['sdfgId']]
+        graph = sdfg.sdfg_list[element['cfgId']]
 
     if element['stateId'] >= 0:
         state = graph.nodes()[element['stateId']]

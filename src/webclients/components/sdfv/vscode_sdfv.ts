@@ -51,6 +51,7 @@ import {
     SymbolMap,
     traverseSDFGScopes,
     JsonSDFGState,
+    checkCompatLoad,
 } from '@spcl/sdfv/src';
 import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
 import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
@@ -850,7 +851,8 @@ export class VSCodeSDFV extends SDFV {
         sdfg: string | JsonSDFG, previewing: boolean = false,
         preventRefreshes: boolean = false
     ): void {
-        const parsedSdfg = typeof sdfg === 'string' ? parse_sdfg(sdfg) : sdfg;
+        const parsedSdfg = typeof sdfg === 'string' ?
+            checkCompatLoad(parse_sdfg(sdfg)) : checkCompatLoad(sdfg);
         if (this.renderer) {
             this.renderer.setSDFG(parsedSdfg);
         } else {

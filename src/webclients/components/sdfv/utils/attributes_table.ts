@@ -1184,17 +1184,9 @@ export function generateAttributesTable(
     let attributes: any | undefined = undefined;
     let identifier = '';
     if (elem) {
-        if (elem.data) {
-            if (elem.data.attributes) {
-                attributes = elem.data.attributes;
-                identifier = elem.data.type;
-            } else if (elem.data.node) {
-                attributes = elem.data.node.attributes;
-                identifier = elem.data.node.type;
-            } else if (elem.data.state) {
-                attributes = elem.data.state.attributes;
-                identifier = elem.data.state.type;
-            }
+        if (elem instanceof SDFGElement) {
+            attributes = elem.attributes();
+            identifier = elem.type();
         } else {
             attributes = elem.attributes;
             identifier = elem.type;
