@@ -41,7 +41,7 @@ export function transformationGetAffectedUUIDs(
 type SelectedElementT = {
     readonly type: string;
     readonly stateId: number | null;
-    readonly sdfgId: number;
+    readonly cfgId: number;
     readonly id: number;
 };
 
@@ -57,7 +57,7 @@ export function getCleanedSelectedElements(): SelectedElementT[] {
         cleanedSelected.push({
             type: type,
             stateId: element.parent_id,
-            sdfgId: element.sdfg.cfg_list_id,
+            cfgId: element.cfg?.cfg_list_id ?? 0,
             id: element.id,
         });
     });

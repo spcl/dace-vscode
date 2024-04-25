@@ -709,7 +709,7 @@ export class VSCodeSDFV extends SDFV {
 
             if (elem instanceof Edge && elem.data.type === 'Memlet' &&
                 elem.parent_id !== null) {
-                let sdfg_edge = elem.sdfg.nodes[elem.parent_id].edges[elem.id];
+                let sdfg_edge = elem.cfg!.nodes[elem.parent_id].edges[elem.id];
                 $('<p>', {
                     'class': 'info-subtitle',
                     'html': 'Connectors: ' + sdfg_edge.src_connector +
