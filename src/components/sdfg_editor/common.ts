@@ -157,10 +157,11 @@ export abstract class SDFGEditorBase extends BaseComponent {
         const settings: Record<string, any> = {};
 
         const settingKeys = [
-            'minimap', 'showAccessNodes', 'showStateNames', 'showMapSchedules',
-            'showDataDescriptorSizes', 'adaptiveContentHiding',
+            'minimap', 'alwaysOnISEdgeLabels', 'showAccessNodes',
+            'showStateNames', 'showMapSchedules', 'showDataDescriptorSizes',
             'inclusiveRanges', 'useVerticalStateMachineLayout',
-            'useVerticalScrollNavigation', 'collapseStatesDefault'
+            'useVerticalScrollNavigation', 'collapseStatesDefault',
+            'curvedEdges', 'adaptiveContentHiding',
         ];
         const sdfvConfig = workspace.getConfiguration('dace.sdfv');
         for (const key of settingKeys)

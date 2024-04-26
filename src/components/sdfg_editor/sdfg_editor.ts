@@ -29,19 +29,23 @@ export class SDFGEditor extends SDFGEditorBase {
     ) {
         super(context, _token, webviewPanel, document);
 
+        const alwaysAutoUpdate =
+            workspace.getConfiguration('dace.general')?.get<boolean>(
+                'autoRefreshOnDocumentChange'
+            );
+
         // Make sure we capture undo / redo events to update the webview
         // accordingly. We do not want to capture arbitrary changes, as they
         // can lead to event handler loops when the edit occurs from the
         // extension or webview itself.
 		const changeSubs = workspace.onDidChangeTextDocument(e => {
-            /*
-			if (e.document.uri.toString() === document.uri.toString() &&
-                (e.reason === TextDocumentChangeReason.Redo ||
-                 e.reason === TextDocumentChangeReason.Undo))
-                this._updateContents();
-                */
-			if (e.document.uri.toString() === document.uri.toString())
-                this._updateContents();
+			if (e.document.uri.toString() === document.uri.toString()) {
+                console.log('change registered for', e.document.uri.toString());
+                if (alwaysAutoUpdate ||
+                    e.reason === TextDocumentChangeReason.Redo ||
+                    e.reason === TextDocumentChangeReason.Undo)
+                    this._updateContents();
+            }
 		});
 		webviewPanel.onDidDispose(() => {
 			changeSubs.dispose();

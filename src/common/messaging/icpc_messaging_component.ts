@@ -3,6 +3,9 @@
 
 import { v4 as uuidv4 } from 'uuid';
 
+
+const DEBUG_LOG_MESSAGES = false;
+
 export enum ICPCMessageType {
     REQUEST = 'icpc_request',
     RESPONSE = 'icpc_response',
@@ -82,6 +85,10 @@ export abstract class ICPCMessagingComponent {
             component: component,
             source: source || this.designation,
         };
+
+        if (DEBUG_LOG_MESSAGES)
+            console.log(this.designation, 'sendRequest', message);
+
         this._doSendRequest(message);
     }
 
@@ -95,6 +102,10 @@ export abstract class ICPCMessagingComponent {
             success: success,
             source: source || this.designation,
         };
+
+        if (DEBUG_LOG_MESSAGES)
+            console.log(this.designation, 'sendResponse', message);
+
         try {
             if (!this.target)
                 throw new Error('Component uninitialized');
@@ -160,6 +171,9 @@ export abstract class ICPCMessagingComponent {
     protected async handleRequest(
         message: ICPCRequestMessage, responseHandler?: ICPCMessagingComponent
     ): Promise<void> {
+        if (DEBUG_LOG_MESSAGES)
+            console.log(this.designation, 'handleRequest', message);
+
         const procedure = this.localProcedures.get(message.procedure);
         const _responseHandler = responseHandler || this;
         if (procedure) {
@@ -192,6 +206,9 @@ export abstract class ICPCMessagingComponent {
     }
 
     protected handleResponse(message: ICPCResponseMessage): void {
+        if (DEBUG_LOG_MESSAGES)
+            console.log(this.designation, 'handleResponse', message);
+
         const callback = this.callbacks.get(message.id);
         if (callback) {
             if (message.success)

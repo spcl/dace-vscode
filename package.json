@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Editor",
     "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "1.7.4",
+    "version": "1.7.5",
     "engines": {
         "vscode": "^1.75.0"
     },
@@ -194,11 +194,6 @@
                         "default": false,
                         "description": "Show the size of data descriptors on access nodes instead of their size"
                     },
-                    "dace.sdfv.adaptiveContentHiding": {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Adaptively hide content in the SDFG editor based on the zoom level"
-                    },
                     "dace.sdfv.inclusiveRanges": {
                         "type": "boolean",
                         "default": false,
@@ -214,6 +209,16 @@
                         "default": false,
                         "description": "Use a vertical scroll navigation in the SDFG editor"
                     },
+                    "dace.sdfv.adaptiveContentHiding": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Adaptively hide content in the SDFG editor based on the zoom level"
+                    },
+                    "dace.sdfv.curvedEdges": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Draw edges with curves (may impact rendering performance)"
+                    },
                     "dace.backend.interpreterPath": {
                         "type": "string",
                         "default": "",
@@ -228,6 +233,11 @@
                         "type": "array",
                         "default": [],
                         "description": "Paths to search for custom transformations"
+                    },
+                    "dace.general.autoRefreshOnDocumentChange": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Automatically update SDFG editor contents if file contents have changed"
                     },
                     "dace.general.autoOpenSdfgs": {
                         "type": "string",
