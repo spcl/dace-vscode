@@ -1,4 +1,4 @@
-// Copyright 2020-2023 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as path from 'path';
@@ -157,10 +157,19 @@ export abstract class SDFGEditorBase extends BaseComponent {
         const settings: Record<string, any> = {};
 
         const settingKeys = [
-            'minimap', 'showAccessNodes', 'showStateNames', 'showMapSchedules',
-            'showDataDescriptorSizes', 'adaptiveContentHiding',
-            'inclusiveRanges', 'useVerticalStateMachineLayout',
-            'useVerticalScrollNavigation', 'collapseStatesDefault'
+            'adaptiveContentHiding',
+            'alwaysOnISEdgeLabels',
+            'collapseStatesDefault',
+            'curvedEdges',
+            'inclusiveRanges',
+            'minimap',
+            'showAccessNodes',
+            'showDataDescriptorSizes',
+            'showMapSchedules',
+            'showStateNames',
+            'summarizeLargeNumbersOfEdges',
+            'useVerticalScrollNavigation',
+            'useVerticalStateMachineLayout',
         ];
         const sdfvConfig = workspace.getConfiguration('dace.sdfv');
         for (const key of settingKeys)

@@ -1,4 +1,4 @@
-// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import { ExtensionContext, window, workspace } from 'vscode';

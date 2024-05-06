@@ -1,12 +1,11 @@
-// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
     EntryNode,
-    find_graph_element_by_uuid,
+    findGraphElementByUUID,
     JsonSDFG,
     JsonSDFGState,
-    memlet_tree_complete,
     ModeButtons,
     OperationalIntensityOverlay,
     SimulatedOperationalIntensityOverlay,
@@ -15,7 +14,8 @@ import {
     setPositioningInfo,
     StaticFlopsOverlay,
     DepthOverlay,
-    AvgParallelismOverlay
+    AvgParallelismOverlay,
+    SDFGElement
 } from '@spcl/sdfv/src';
 import { AnalysisController } from '../analysis/analysis_controller';
 import {
@@ -34,6 +34,7 @@ import {
     VSCodeSDFV
 } from '../vscode_sdfv';
 import { ComponentTarget } from '../../../../components/components';
+import { memletTreeComplete } from '@spcl/sdfv/src/utils/sdfg/memlet_trees';
 
 
 export class VSCodeRenderer extends SDFGRenderer {
@@ -168,8 +169,8 @@ export class VSCodeRenderer extends SDFGRenderer {
         super.destroy();
     }
 
-    public set_sdfg(new_sdfg: JsonSDFG, layout?: boolean | undefined): void {
-        super.set_sdfg(new_sdfg, layout);
+    public setSDFG(new_sdfg: JsonSDFG, layout?: boolean | undefined): void {
+        super.setSDFG(new_sdfg, layout);
 
         // TODO(later): This is a fix for broken memlet trees when the graph
         // is changed / edited (including when the collapse state changes).
@@ -178,7 +179,7 @@ export class VSCodeRenderer extends SDFGRenderer {
         // same contents to ensure the two representations are kept in sync.
         // This needs to be handled better, i.e. _without_ requiring this
         // two-sided update, which causes slowdowns when the graph is edited.
-        this.all_memlet_trees_sdfg = memlet_tree_complete(this.sdfg);
+        this.all_memlet_trees_sdfg = memletTreeComplete(this.sdfg);
         this.update_fast_memlet_lookup();
     }
 
@@ -231,7 +232,7 @@ export class VSCodeRenderer extends SDFGRenderer {
     }
 
     public cutout_selection(_suppressSave: boolean = false): void {
-        super.cutout_selection();
+        super.cutoutSelection();
         // Ensure that cutouts are registered as graph edits.
         if (!_suppressSave)
             vscodeWriteGraph(this.sdfg);
@@ -263,11 +264,11 @@ export class VSCodeRenderer extends SDFGRenderer {
         let addRoot = undefined;
         if (addType === SDFGElementType.Edge && edgeStartUUID) {
             const [startElem, startElemSdfg] =
-                findJsonSDFGElementByUUID(rootSdfg, edgeStartUUID);
+                findJsonSDFGElementByUUID(this.cfgList, edgeStartUUID);
             const [endElem, endElemSdfg] =
-                findJsonSDFGElementByUUID(rootSdfg, parentUUID);
+                findJsonSDFGElementByUUID(this.cfgList, parentUUID);
             let element = undefined;
-            if (startElemSdfg.sdfg_list_id === endElemSdfg.sdfg_list_id &&
+            if (startElemSdfg.cfg_list_id === endElemSdfg.cfg_list_id &&
                 startElem && endElem) {
                 if (startElem.type === SDFGElementType.SDFGState) {
                     element = {
@@ -297,7 +298,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                     const parentStateId =
                         parentIdParts[0] + '/' + parentIdParts[1];
                     const [parentState, _] = findJsonSDFGElementByUUID(
-                        rootSdfg, parentStateId
+                        this.cfgList, parentStateId
                     );
                     if (parentState) {
                         element = {
@@ -334,13 +335,13 @@ export class VSCodeRenderer extends SDFGRenderer {
                 this.add_position = null;
                 this.add_edge_start = null;
 
-                this.set_sdfg(rootSdfg);
+                this.setSDFG(rootSdfg);
 
                 vscodeWriteGraph(rootSdfg);
             }
         } else {
             const [parentElem, parentSdfg] = findJsonSDFGElementByUUID(
-                rootSdfg, parentUUID
+                this.cfgList, parentUUID
             );
 
             let parent = parentElem as any;
@@ -399,16 +400,20 @@ export class VSCodeRenderer extends SDFGRenderer {
                                     nSdfgState.attributes[key] = val['default'];
                                 }
                             }
+                            const newSDFGId = maxSdfgId + 1;
                             const nSdfg: JsonSDFG = {
                                 attributes: {
                                     name: 'NewSDFG',
                                 },
+                                label: 'NewSDFG',
+                                collapsed: false,
                                 nodes: [nSdfgState],
                                 edges: [],
-                                start_state: 0,
+                                start_block: 0,
                                 type: 'SDFG',
                                 error: undefined,
-                                sdfg_list_id: maxSdfgId + 1,
+                                cfg_list_id: newSDFGId,
+                                id: newSDFGId,
                             };
                             const sdfgMeta = metaDict['SDFG'];
                             for (const key in sdfgMeta) {
@@ -518,7 +523,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                     setPositioningInfo(element, this.add_position);
                     this.add_position = null;
 
-                    this.set_sdfg(rootSdfg);
+                    this.setSDFG(rootSdfg);
 
                     vscodeWriteGraph(rootSdfg);
                 }
@@ -541,20 +546,26 @@ export class VSCodeRenderer extends SDFGRenderer {
         if (first === 'NONE')
             return;
 
-        let el = find_graph_element_by_uuid(this.graph, first).element;
+        const el = findGraphElementByUUID(
+            this.cfgList, this.cfgTree, first
+        ) as SDFGElement;
+        if (!el)
+            return;
 
         this.canvas_manager?.translate_element(
             el, { x: el.x, y: el.y }, this.add_position, this.graph,
-            this.sdfg_list, this.state_parent_list, null, true
+            this.cfgList, this.state_parent_list, null, true
         );
 
         if (el instanceof EntryNode && uuids.length >= 2) {
-            let exit = find_graph_element_by_uuid(this.graph, uuids[1]).element;
+            const exit = findGraphElementByUUID(
+                this.cfgList, this.cfgTree, uuids[1]
+            ) as SDFGElement;
             if (exit) {
                 this.canvas_manager?.translate_element(
                     exit, { x: exit.x, y: exit.y },
                     { x: this.add_position.x, y: this.add_position.y + 100},
-                    this.graph, this.sdfg_list, this.state_parent_list, null,
+                    this.graph, this.cfgList, this.state_parent_list, null,
                     true
                 );
             }

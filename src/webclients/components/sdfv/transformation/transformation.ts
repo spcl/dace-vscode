@@ -1,4 +1,4 @@
-// Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import { ComponentTarget } from '../../../../components/components';
@@ -41,7 +41,7 @@ export function transformationGetAffectedUUIDs(
 type SelectedElementT = {
     readonly type: string;
     readonly stateId: number | null;
-    readonly sdfgId: number;
+    readonly cfgId: number;
     readonly id: number;
 };
 
@@ -57,7 +57,7 @@ export function getCleanedSelectedElements(): SelectedElementT[] {
         cleanedSelected.push({
             type: type,
             stateId: element.parent_id,
-            sdfgId: element.sdfg.sdfg_list_id,
+            cfgId: element.cfg?.cfg_list_id ?? 0,
             id: element.id,
         });
     });
@@ -153,7 +153,7 @@ export async function sortTransformations(
         }
 
         // Sort each transformation into the respective category.
-        const visibleElements = renderer.visible_elements();
+        const visibleElements = renderer.getVisibleElements();
         const buckets: {
             [key: string]: JsonTransformation[],
         } = {
@@ -180,7 +180,7 @@ export async function sortTransformations(
                     for (const nid of Object.values(xform._subgraph)) {
                         if (selectedElements.filter((e) => {
                                 return (e.data.node !== undefined) &&
-                                    e.sdfg.sdfg_list_id === xform.sdfg_id &&
+                                    e.sdfg.cfg_list_id === xform.sdfg_id &&
                                     e.parent_id === xform.state_id &&
                                     e.id === Number(nid);
                             }).length > 0) {
@@ -194,8 +194,8 @@ export async function sortTransformations(
                         for (const nid of Object.values(xform._subgraph)) {
                             if (visibleElements.filter((e) => {
                                     return e.type === 'node' &&
-                                        e.sdfg_id === xform.sdfg_id &&
-                                        e.state_id === xform.state_id &&
+                                        e.cfgId === xform.sdfg_id &&
+                                        e.stateId === xform.state_id &&
                                         e.id === Number(nid);
                                 }).length > 0) {
                                 buckets['viewport'].push(xform);
@@ -210,7 +210,7 @@ export async function sortTransformations(
                     for (const nid of Object.values(xform._subgraph)) {
                         if (selectedElements.filter((e) => {
                                 return (e.data.state !== undefined) &&
-                                    e.sdfg.sdfg_list_id === xform.sdfg_id &&
+                                    e.sdfg.cfg_list_id === xform.sdfg_id &&
                                     e.id === Number(nid);
                             }).length > 0) {
                             buckets['selection'].push(xform);
@@ -223,7 +223,7 @@ export async function sortTransformations(
                         for (const nid of Object.values(xform._subgraph)) {
                             if (visibleElements.filter((e) => {
                                     return e.type === 'state' &&
-                                        e.sdfg_id === xform.sdfg_id &&
+                                        e.cfgId === xform.sdfg_id &&
                                         e.id === Number(nid);
                                 }).length > 0) {
                                 buckets['viewport'].push(xform);

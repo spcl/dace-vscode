@@ -1,10 +1,11 @@
-# Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
+# Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
 from dace import nodes, serialize
 from dace.transformation.transformation import (SubgraphTransformation,
-                                                TransformationBase)
+                                                PatternTransformation)
 from dace.transformation.pass_pipeline import Pass, Pipeline
+from dace.version import __version__ as DACE_VERSION
 from dace_vscode import utils
 import sys
 import traceback
@@ -33,15 +34,18 @@ def expand_library_node(json_in):
         }
 
     try:
-        sdfg_id, state_id, node_id = json_in['nodeid']
+        cfg_id, state_id, node_id = json_in['nodeid']
     except KeyError:
-        sdfg_id, state_id, node_id = None, None, None
+        cfg_id, state_id, node_id = None, None, None
 
     try:
-        if sdfg_id is None:
+        if cfg_id is None:
             sdfg.expand_library_nodes()
         else:
-            context_sdfg = sdfg.sdfg_list[sdfg_id]
+            if DACE_VERSION >= '0.16.0':
+                context_sdfg = sdfg.cfg_list[cfg_id]
+            else:
+                context_sdfg = sdfg.sdfg_list[cfg_id]
             state = context_sdfg.node(state_id)
             node = state.node(node_id)
             if isinstance(node, nodes.LibraryNode):
@@ -70,6 +74,10 @@ def expand_library_node(json_in):
 
 
 def reapply_history_until(sdfg_json, index):
+    # We lazy import DaCe, not to break cyclic imports, but to avoid any large
+    # delays when booting in daemon mode.
+    from dace import SDFG
+
     """
     Rewind a given SDFG back to a specific point in its history by reapplying
     all transformations until a given index in its history to its original
@@ -90,18 +98,36 @@ def reapply_history_until(sdfg_json, index):
     for i in range(index + 1):
         try:
             transformation = history[i]
-            transformation._sdfg = original_sdfg.sdfg_list[
-                transformation.sdfg_id
-            ]
-            if isinstance(transformation, SubgraphTransformation):
-                transformation._sdfg.append_transformation(transformation)
-                transformation.apply(
-                    original_sdfg.sdfg_list[transformation.sdfg_id]
+
+            if DACE_VERSION >= '0.16.0':
+                target_cfg = original_sdfg.cfg_list[transformation.cfg_id]
+                transformation._sdfg = (
+                    target_cfg
+                    if isinstance(target_cfg, SDFG)
+                    else target_cfg.sdfg
                 )
+                if isinstance(transformation, SubgraphTransformation):
+                    transformation._sdfg.append_transformation(transformation)
+                    transformation.apply(
+                        original_sdfg.cfg_list[transformation.cfg_id]
+                    )
+                else:
+                    transformation.apply_pattern(
+                        original_sdfg.cfg_list[transformation.cfg_id]
+                    )
             else:
-                transformation.apply_pattern(
-                    original_sdfg.sdfg_list[transformation.sdfg_id]
-                )
+                transformation._sdfg = original_sdfg.sdfg_list[
+                    transformation.sdfg_id
+                ]
+                if isinstance(transformation, SubgraphTransformation):
+                    transformation._sdfg.append_transformation(transformation)
+                    transformation.apply(
+                        original_sdfg.sdfg_list[transformation.sdfg_id]
+                    )
+                else:
+                    transformation.apply_pattern(
+                        original_sdfg.sdfg_list[transformation.sdfg_id]
+                    )
         except Exception as e:
             print(traceback.format_exc(), file=sys.stderr)
             sys.stderr.flush()
@@ -131,6 +157,10 @@ def reapply_history_until(sdfg_json, index):
 
 
 def apply_transformations(sdfg_json, transformation_json_list):
+    # We lazy import DaCe, not to break cyclic imports, but to avoid any large
+    # delays when booting in daemon mode.
+    from dace import SDFG
+
     old_meta = utils.disable_save_metadata()
 
     loaded = utils.load_sdfg_from_json(sdfg_json)
@@ -151,14 +181,22 @@ def apply_transformations(sdfg_json, transformation_json_list):
                 },
             }
         try:
-            if isinstance(transformation, TransformationBase):
-                target_sdfg = sdfg.sdfg_list[transformation.sdfg_id]
-                transformation._sdfg = target_sdfg
+            if isinstance(transformation, PatternTransformation):
+                if DACE_VERSION >= '0.16.0':
+                    target_cfg = sdfg.cfg_list[transformation.cfg_id]
+                    transformation._sdfg = (
+                        target_cfg.sdfg
+                        if not isinstance(target_cfg, SDFG)
+                        else target_cfg
+                    )
+                else:
+                    target_cfg = sdfg.sdfg_list[transformation.sdfg_id]
+                    transformation._sdfg = target_cfg
                 if isinstance(transformation, SubgraphTransformation):
                     sdfg.append_transformation(transformation)
-                    transformation.apply(target_sdfg)
+                    transformation.apply(target_cfg)
                 else:
-                    transformation.apply_pattern(target_sdfg)
+                    transformation.apply_pattern(target_cfg)
             elif isinstance(transformation, Pipeline):
                 pipeline_results = dict()
                 transformation.apply_pass(sdfg, pipeline_results)
@@ -261,18 +299,21 @@ def get_transformations(sdfg_json, selected_elements, permissive):
             for n in selected_elements
             if n['type'] == 'node'
         ]
-        selected_sdfg_ids = list(
-            set(elem['sdfgId'] for elem in selected_elements)
+        selected_cfg_ids = list(
+            set(elem['cfgId'] for elem in selected_elements)
         )
         selected_sdfg = sdfg
-        if len(selected_sdfg_ids) > 1:
+        if len(selected_cfg_ids) > 1:
             return {
                 'transformations': transformations,
                 'docstrings': docstrings,
-                'warnings': 'More than one SDFG selected, ignoring subgraph',
+                'warnings': 'More than one CFG selected, ignoring subgraph',
             }
-        elif len(selected_sdfg_ids) == 1:
-            selected_sdfg = sdfg.sdfg_list[selected_sdfg_ids[0]]
+        elif len(selected_cfg_ids) == 1:
+            if DACE_VERSION >= '0.16.0':
+                selected_sdfg = sdfg.cfg_list[selected_cfg_ids[0]]
+            else:
+                selected_sdfg = sdfg.sdfg_list[selected_cfg_ids[0]]
 
         subgraph = None
         if len(selected_states) > 0:

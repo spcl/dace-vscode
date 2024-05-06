@@ -1,4 +1,4 @@
-/* Copyright 2020-2022 ETH Zurich and the DaCe-VSCode authors.
+/* Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
  * All rights reserved. */
 
 body.sdfv {
@@ -272,6 +272,11 @@ body.sdfv {
     align-items: baseline;
     padding-bottom: .5rem;
     padding-left: 1rem;
+    width: 100%;
+  }
+
+  #info-title-container {
+    flex-grow: 1;
   }
 
   #info-header > .btn-close {
@@ -403,7 +408,8 @@ body.sdfv {
   }
 
   .attr-row-prefix-cell {
-    padding-left: .5rem;
+    height: 100%;
+    padding: .5rem;
   }
 
   .attr-table-cell.col-12 {
@@ -416,6 +422,12 @@ body.sdfv {
 
   .attr-cell-l {
     width: 75%;
+  }
+
+  .attr-changed-bar {
+    width: 2px;
+    height: 100%;
+    background-color: var(--vscode-settings-modifiedItemIndicator);
   }
 
   #info-container.stacked .attr-cell-s {
@@ -564,7 +576,6 @@ body.sdfv {
 
   .sdfv-property-delete-btn {
     color: var(--vscode-inputValidation-errorBorder);
-    margin-right: .5rem;
     user-select: none;
   }
 
