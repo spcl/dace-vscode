@@ -40,7 +40,6 @@ export class SDFGEditor extends SDFGEditorBase {
         // extension or webview itself.
 		const changeSubs = workspace.onDidChangeTextDocument(e => {
 			if (e.document.uri.toString() === document.uri.toString()) {
-                console.log('change registered for', e.document.uri.toString());
                 if (alwaysAutoUpdate ||
                     e.reason === TextDocumentChangeReason.Redo ||
                     e.reason === TextDocumentChangeReason.Undo)

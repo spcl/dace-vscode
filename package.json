@@ -194,6 +194,11 @@
                         "default": false,
                         "description": "Show the size of data descriptors on access nodes instead of their size"
                     },
+                    "dace.sdfv.summarizeLargeNumbersOfEdges": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Hide / summarize edges for nodes where a large number of edges are connected"
+                    },
                     "dace.sdfv.inclusiveRanges": {
                         "type": "boolean",
                         "default": false,
