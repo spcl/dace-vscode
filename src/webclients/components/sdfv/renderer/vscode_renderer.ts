@@ -159,7 +159,10 @@ export class VSCodeRenderer extends SDFGRenderer {
             }
         });
         this.INSTANCE.on('settings_changed', (settings) => {
-            SDFVComponent.getInstance().invoke('updateSettings', [settings]);
+            const nSettings: Record<string, any> = {};
+            for (const [k, v] of settings.entries())
+                nSettings[k] = v;
+            SDFVComponent.getInstance().invoke('updateSettings', [nSettings]);
         });
 
         return this.INSTANCE;

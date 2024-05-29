@@ -5,9 +5,11 @@ import {
     DagreGraph,
     Edge,
     GenericSdfgOverlay,
+    GraphElementInfo,
     NestedSDFG,
     Point2D,
     SDFGElement,
+    SDFGElementGroup,
     SDFGNode,
     SDFV,
     SimpleRect,
@@ -97,7 +99,8 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
 
     public on_mouse_event(
         type: string, ev: MouseEvent, mousepos: Point2D,
-        elements: SDFGElement[], foregroundElem: SDFGElement | undefined,
+        elements: Record<SDFGElementGroup, GraphElementInfo[]>,
+        foregroundElem: SDFGElement | null,
         endsDrag: boolean
     ): boolean {
         if (type === 'contextmenu') {
@@ -247,14 +250,14 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
         graph.nodes().forEach((v: string) => {
             let state = graph.node(v);
             // If the node's invisible, we skip it.
-            if ((ctx as any).lod && !state.intersect(
+            if (this.renderer.viewportOnly && !state.intersect(
                 visibleRect.x, visibleRect.y,
                 visibleRect.w, visibleRect.h
             ))
                 return;
 
             if (
-                ((ctx as any).lod &&
+                (this.renderer.adaptiveHiding &&
                  (ppp >= SDFV.STATE_LOD ||
                   state.width / ppp <= SDFV.STATE_LOD)) ||
                 state.data.state.attributes.is_collapsed
@@ -268,7 +271,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
                         const node = stateGraph.node(v);
 
                         // Skip the node if it's not visible.
-                        if ((ctx as any).lod && !node.intersect(
+                        if (this.renderer.viewportOnly && !node.intersect(
                             visibleRect.x, visibleRect.y,
                             visibleRect.w, visibleRect.h
                         ))
@@ -277,7 +280,8 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
                         // Check if the node is a NestedSDFG and if
                         // it should be visited
                         if (!(node.data.node.attributes.is_collapsed ||
-                              ((ctx as any).lod && ppp >= SDFV.NODE_LOD)) &&
+                              (this.renderer.adaptiveHiding &&
+                               ppp >= SDFV.NODE_LOD)) &&
                             node instanceof NestedSDFG
                         ) {
                             this.recursivelyShadeSDFG(

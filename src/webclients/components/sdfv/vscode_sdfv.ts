@@ -54,7 +54,11 @@ import {
     checkCompatLoad,
 } from '@spcl/sdfv/src';
 import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
-import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
+import {
+    SDFVSettingKey,
+    SDFVSettingValT,
+    SDFVSettings,
+} from '@spcl/sdfv/src/utils/sdfv_settings';
 import {
     ICPCRequest
 } from '../../../common/messaging/icpc_messaging_component';
@@ -209,7 +213,7 @@ export class VSCodeSDFV extends SDFV {
                         this.infoBarLastVertWidth = newWidth;
                         this.infoContainer?.width(newWidth.toString() + 'px');
 
-                        if (SDFVSettings.minimap) {
+                        if (SDFVSettings.get<boolean>('minimap')) {
                             $('#minimap').css('transition', '');
                             $('#minimap').css(
                                 'right', (newWidth + 5).toString() + 'px'
@@ -300,7 +304,7 @@ export class VSCodeSDFV extends SDFV {
     }
 
     private checkTrayCoversMinimap(animate: boolean = false): void {
-        if (SDFVSettings.minimap) {
+        if (SDFVSettings.get<boolean>('minimap')) {
             if (SPLIT_DIRECTION === 'vertical' && this.infoBarLastVertWidth &&
                 !this.infoTrayExplicitlyHidden) {
                 try {
@@ -1069,12 +1073,12 @@ export class VSCodeSDFV extends SDFV {
             vscode.postMessage({
                 type: 'sdfv.register_breakpointindicator',
             });
-            $('#display-bps').html('Hide Breakpoints');
+            $('#breakpoint-btn').text('Hide Breakpoints');
         } else if (!this.showingBreakpoints) {
             vscode.postMessage({
                 type: 'sdfv.deregister_breakpointindicator',
             });
-            $('#display-bps').html('Display Breakpoints');
+            $('#breakpoint-btn').text('Display Breakpoints');
         }
     }
 
@@ -1281,10 +1285,10 @@ export class SDFVComponent extends ICPCWebclientMessagingComponent {
         this.registerRequestHandler(AnalysisController.getInstance());
 
         // Load the default settings.
-        this.invoke('getSettings').then(
-            (settings: Record<string, string | boolean | number>) => {
-                for (const key of Object.keys(settings))
-                    SDFVSettings.setDefault(key, settings[key]);
+        this.invoke('getSettings', [SDFVSettings.settingsKeys]).then(
+            (settings: Record<SDFVSettingKey, SDFVSettingValT>) => {
+                for (const [k, v] of Object.entries(settings))
+                    SDFVSettings.set(k as SDFVSettingKey, v);
                 sdfv.initialize();
                 sdfv.get_renderer()?.draw_async();
             }
