@@ -52,6 +52,7 @@ import {
     traverseSDFGScopes,
     JsonSDFGState,
     checkCompatLoad,
+    find_in_graph_predicate,
 } from '@spcl/sdfv/src';
 import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
 import {
@@ -332,32 +333,58 @@ export class VSCodeSDFV extends SDFV {
     }
 
     public initSearch(): void {
-        const caseBtn = $('#search-case-sensitive-btn');
+        const caseBtn = $('#search-case');
+        const whileTypingBtn = $('#search-while-typing');
         const searchInput = $('#search');
-        caseBtn.on('click', () => {
-            if (caseBtn) {
-                if (caseBtn)
-                    if (caseBtn.css('background-color') === 'transparent') {
-                        caseBtn.css('background-color', '#245779');
-                        caseBtn.prop('checked', true);
-                    } else {
-                        caseBtn.css('background-color', 'transparent');
-                        caseBtn.prop('checked', false);
-                    }
-            }
 
+        caseBtn.on('change', () => {
+            VSCodeSDFV.getInstance().startFindInGraph();
+        });
+
+        searchInput.on('input', () => {
             VSCodeSDFV.getInstance().startFindInGraph();
         });
 
         // Start search whenever text is entered in the search bar.
-        searchInput.on('input', () => {
-            VSCodeSDFV.getInstance().startFindInGraph();
+        whileTypingBtn.on('change', () => {
+            searchInput.off('input');
+            if (whileTypingBtn.is(':checked')) {
+                searchInput.on('input', () => {
+                    VSCodeSDFV.getInstance().startFindInGraph();
+                });
+            }
         });
 
         // Start search on enter press in the search bar.
         searchInput.on('keydown', (e) => {
             if (e.key === 'Enter')
                 VSCodeSDFV.getInstance().startFindInGraph();
+        });
+
+        const searchBtn = $('#search-btn');
+        searchBtn.off('click');
+        searchBtn.on('click', () => {
+            VSCodeSDFV.getInstance().startFindInGraph();
+        });
+
+        const advSearchBtn = $('#advsearch-btn');
+        advSearchBtn.off('click');
+        advSearchBtn.on('click', (e) => {
+            e.preventDefault();
+            const renderer = VSCodeRenderer.getInstance();
+            if (renderer) {
+                setTimeout(() => {
+                    const graph = renderer.get_graph();
+                    const code = $('#advsearch').val();
+                    if (graph && code) {
+                        const predicate = eval(code.toString());
+                        find_in_graph_predicate(
+                            this, renderer, graph, predicate
+                        );
+                    }
+                }, 1);
+            }
+            return false;
         });
     }
 
@@ -838,7 +865,7 @@ export class VSCodeSDFV extends SDFV {
                     typeof searchVal === 'string' && searchVal.length > 0)
                     find_in_graph(
                         this, renderer, graph, searchVal,
-                        $('#search-case-sensitive-btn').is(':checked')
+                        $('#search-case').is(':checked')
                     );
             }, 1);
     }
