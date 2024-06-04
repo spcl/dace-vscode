@@ -29,7 +29,7 @@
 }
 
 .tree-view-item-label-nested::before {
-    font-family: 'Material Icons';
+    font-family: 'Material Symbols Outlined';
     content: 'keyboard_arrow_right';
     display: inline-block;
     transform: rotate(0deg);

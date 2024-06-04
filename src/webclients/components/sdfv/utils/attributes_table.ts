@@ -163,7 +163,7 @@ export function attrTablePutData(
         'class': 'popup-editable-property-container',
     }).appendTo(cell);
     const dataEditBtn = $('<i>', {
-        'class': 'material-icons property-edit-btn',
+        'class': 'material-symbols-outlined property-edit-btn',
         'text': 'edit',
         'title': 'Click to edit',
     }).appendTo(dataCellContainer);
@@ -228,7 +228,7 @@ export function attrTablePutData(
                 'class': 'row',
             }).appendTo(addItemContainer);
             $('<i>', {
-                'class': 'material-icons property-add-row-btn',
+                'class': 'material-symbols-outlined property-add-row-btn',
                 'text': 'playlist_add',
                 'title': 'Add item',
                 'click': async () => {
@@ -375,7 +375,7 @@ export function attrTablePutTypeclass(
     });
 
     const editCompoundButton = $('<i>', {
-        'class': 'material-icons property-edit-btn',
+        'class': 'material-symbols-outlined property-edit-btn',
         'text': 'edit',
         'title': 'Click to edit',
     }).appendTo(cell);
@@ -403,7 +403,7 @@ export function attrTablePutDict(
         ),
     }).appendTo(dictCellContainer);
     const dictEditBtn = $('<i>', {
-        'class': 'material-icons property-edit-btn',
+        'class': 'material-symbols-outlined property-edit-btn',
         'text': 'edit',
         'title': 'Click to edit',
     }).appendTo(dictCellContainer);
@@ -461,7 +461,7 @@ export function attrTablePutDict(
             'class': 'row',
         }).appendTo(addItemContainer);
         $('<i>', {
-            'class': 'material-icons property-add-row-btn',
+            'class': 'material-symbols-outlined property-add-row-btn',
             'text': 'playlist_add',
             'title': 'Add item',
             'click': () => {
@@ -532,7 +532,7 @@ export function attrTablePutList(
         ),
     }).appendTo(listCellContainer);
     const listCellEditBtn = $('<i>', {
-        'class': 'material-icons property-edit-btn',
+        'class': 'material-symbols-outlined property-edit-btn',
         'text': 'edit',
         'title': 'Click to edit',
     }).appendTo(listCellContainer);
@@ -593,7 +593,7 @@ export function attrTablePutList(
             'class': 'row',
         }).appendTo(addItemContainer);
         $('<i>', {
-            'class': 'material-icons property-add-row-btn',
+            'class': 'material-symbols-outlined property-add-row-btn',
             'text': 'playlist_add',
             'title': 'Add item',
             'click': () => {
@@ -652,7 +652,7 @@ export function attrTablePutRange(
         ),
     }).appendTo(rangeCellContainer);
     const rangeEditBtn = $('<i>', {
-        'class': 'material-icons property-edit-btn',
+        'class': 'material-symbols-outlined property-edit-btn',
         'text': 'edit',
         'title': 'Click to edit',
     }).appendTo(rangeCellContainer);
@@ -686,7 +686,8 @@ export function attrTablePutRange(
                     'class': 'col-3 sdfv-property-range-delete-cell',
                 }).appendTo(valRow);
                 const deleteBtn = $('<span>', {
-                    'class': 'material-icons-outlined sdfv-property-delete-btn',
+                    'class': 'material-symbols-outlined ' +
+                        'sdfv-property-delete-btn',
                     'text': 'remove_circle',
                     'title': 'Delete entry',
                 }).appendTo(rangeStartContainer);
@@ -754,7 +755,7 @@ export function attrTablePutRange(
             'class': 'row',
         }).appendTo(addItemContainer);
         $('<i>', {
-            'class': 'material-icons property-add-row-btn',
+            'class': 'material-symbols-outlined property-add-row-btn',
             'text': 'playlist_add',
             'title': 'Add item',
             'click': () => {
@@ -771,7 +772,8 @@ export function attrTablePutRange(
                     'class': 'col-3 sdfv-property-range-delete-cell',
                 }).appendTo(valRow);
                 const deleteBtn = $('<span>', {
-                    'class': 'material-icons-outlined sdfv-property-delete-btn',
+                    'class': 'material-symbols-outlined ' +
+                        'sdfv-property-delete-btn',
                     'text': 'remove_circle',
                     'title': 'Delete entry',
                 }).appendTo(rangeStartContainer);
@@ -954,7 +956,7 @@ export async function attributeTablePutEntry(
             style: 'height: 100%; display: flex; align-items: center;',
         }).appendTo(prefixCell);
         deleteBtn = $('<span>', {
-            'class': 'material-icons-outlined sdfv-property-delete-btn',
+            'class': 'material-symbols-outlined sdfv-property-delete-btn',
             'text': 'remove_circle',
             'title': 'Delete entry',
         }).appendTo(deleteWrapper);
@@ -1249,7 +1251,8 @@ export function generateAttributesTable(
                 'aria-controls': 'info-table-' + category + '-' + identifier,
             }).appendTo(catContainer);
             $('<i>', {
-                'class': 'attr-cat-toggle-btn-indicator material-icons',
+                'class': 'attr-cat-toggle-btn-indicator ' +
+                    'material-symbols-outlined',
                 'text': 'expand_less'
             }).appendTo(catToggleBtn);
 
@@ -1386,7 +1389,7 @@ export function appendSymbolsTable(
         'aria-controls': 'info-table-symbols-containers',
     }).appendTo(catContainer);
     $('<i>', {
-        'class': 'attr-cat-toggle-btn-indicator material-icons',
+        'class': 'attr-cat-toggle-btn-indicator material-symbols-outlined',
         'text': 'expand_less'
     }).appendTo(catToggleBtn);
 
@@ -1429,7 +1432,7 @@ export function appendSymbolsTable(
             'class': 'row',
         }).appendTo(attrTable);
         $('<i>', {
-            'class': 'material-icons property-add-row-btn',
+            'class': 'material-symbols-outlined property-add-row-btn',
             'text': 'playlist_add',
             'title': 'Add symbol',
             'click': () => {
@@ -1516,7 +1519,7 @@ export function appendDataDescriptorTable(
         'aria-controls': 'info-table-data-containers',
     }).appendTo(catContainer);
     $('<i>', {
-        'class': 'attr-cat-toggle-btn-indicator material-icons',
+        'class': 'attr-cat-toggle-btn-indicator material-symbols-outlined',
         'text': 'expand_less'
     }).appendTo(catToggleBtn);
 
@@ -1630,7 +1633,7 @@ export function appendDataDescriptorTable(
             'class': 'row',
         }).appendTo(attrTable);
         $('<i>', {
-            'class': 'material-icons property-add-row-btn',
+            'class': 'material-symbols-outlined property-add-row-btn',
             'text': 'playlist_add',
             'title': 'Add data container',
             'click': () => {

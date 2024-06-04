@@ -745,8 +745,8 @@ export class VSCodeSDFV extends SDFV {
                 $('<p>', {
                     'class': 'info-subtitle',
                     'html': 'Connectors: ' + sdfg_edge.src_connector +
-                        ' <i class="material-icons">arrow_forward</i> ' +
-                        sdfg_edge.dst_connector,
+                        ' <i class="material-symbols-outlined">' +
+                        'arrow_forward</i> ' + sdfg_edge.dst_connector,
                 }).appendTo(contents);
                 $('<hr>').appendTo(contents);
             }

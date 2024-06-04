@@ -127,7 +127,7 @@ export class CustomTreeViewItem extends EventEmitter {
                 }).appendTo(label);
             else
                 iconElement = $('<i>', {
-                    'class': 'material-icons tree-view-item-icon',
+                    'class': 'material-symbols-outlined tree-view-item-icon',
                     'style': 'font-size: inherit;',
                     'text': this.icon,
                 }).appendTo(label);

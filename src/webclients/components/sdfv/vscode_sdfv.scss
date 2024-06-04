@@ -61,11 +61,6 @@ body.sdfv {
     float: left;
   }
 
-  .btn span .material-icons,
-  .button span .material-icons {
-    font-size: 1rem;
-  }
-
   /* View splitter */
 
   .gutter {
@@ -236,8 +231,8 @@ body.sdfv {
     height: 100%;
   }
 
-  #layout-toggle-btn .material-icons,
-  #info-close-btn .material-icons {
+  #layout-toggle-btn .material-symbols-outlined,
+  #info-close-btn .material-symbols-outlined {
     display: inline-flex;
     vertical-align: middle;
   }
@@ -247,7 +242,7 @@ body.sdfv {
     flex-direction: row;
   }
 
-  #layout-toggle-btn.vertical span .material-icons {
+  #layout-toggle-btn.vertical span .material-symbols-outlined {
     transform: rotate(90deg);
   }
 
@@ -269,7 +264,7 @@ body.sdfv {
     font-size: 1rem;
   }
 
-  #info-contents .material-icons {
+  #info-contents .material-symbols-outlined {
     display: inline-flex;
     vertical-align: middle;
   }
@@ -409,10 +404,6 @@ body.sdfv {
   /* End info container/box */
 
   /* Context menu */
-
-  #contextmenu {
-    background-color: var(--vscode-editor-background);
-  }
 
   .context_menu_option {
     margin: .2rem 0 -.2rem;
