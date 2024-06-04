@@ -43,20 +43,6 @@ body.sdfv {
     border: 1px solid black;
   }
 
-  .button {
-    color: var(--vscode-button-foreground);
-    background-color: var(--vscode-button-background);
-  }
-
-  .button:hover {
-    background-color: var(--vscode-button-hoverBackground);
-  }
-
-  button.close {
-    color: var(--vscode-foreground);
-    text-shadow: none;
-  }
-
   pre.code {
     float: left;
   }

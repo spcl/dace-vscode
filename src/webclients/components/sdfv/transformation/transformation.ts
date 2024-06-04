@@ -237,7 +237,8 @@ export async function sortTransformations(
 
             // Sort in global transformations.
             if (!matched && xform.state_id === -1 &&
-                Object.keys(xform._subgraph).length === 0) {
+                (!xform._subgraph ||
+                 Object.keys(xform._subgraph).length === 0)) {
                 xform.CATEGORY = 'Global';
                 buckets['viewport'].push(xform);
                 matched = true;
@@ -364,7 +365,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     infoContents.html('');
 
     const xformButtonContainer = $('<div>', {
-        class: 'transformation-button-container',
+        class: 'transformation-button-container button-bar text-nowrap',
     }).appendTo(infoContents);
 
     const xformInfoContainer = $('<div>', {
@@ -397,7 +398,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
 
     if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
         $('<div>', {
-            class: 'button',
+            class: 'btn btn-sm btn-primary',
             click: () => {
                 zoomToUUIDs(affectedIds);
             },
@@ -412,7 +413,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
         })).appendTo(xformButtonContainer);
 
     $('<div>', {
-        class: 'button',
+        class: 'btn btn-sm btn-primary',
         click: () => {
             SDFVComponent.getInstance().invoke(
                 'previewTransformation', [xform], ComponentTarget.DaCe
@@ -429,7 +430,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     })).appendTo(xformButtonContainer);
 
     $('<div>', {
-        class: 'button',
+        class: 'btn btn-sm btn-primary',
         click: () => {
             applyTransformations(xform);
         },
@@ -445,7 +446,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
 
     if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
         $('<div>', {
-            class: 'button',
+            class: 'btn btn-sm btn-primary',
             click: () => {
                 SDFVComponent.getInstance().invoke(
                     'exportTransformation', [xform], ComponentTarget.DaCe
