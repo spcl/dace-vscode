@@ -50,6 +50,7 @@ import json
 # Then, load the rest of the modules
 import aenum
 import dace
+from dace.version import __version__ as DACE_VERSION
 
 sys.path.append(path.abspath(path.dirname(__file__)))
 
@@ -371,6 +372,10 @@ def run_daemon(port):
     @daemon.route('/', methods=['GET'])
     def _root():
         return 'success!'
+
+    @daemon.route('/version', methods=['GET'])
+    def _version():
+        return str(DACE_VERSION)
 
     @daemon.route('/transformations', methods=['POST'])
     def _get_transformations():

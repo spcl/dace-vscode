@@ -20,7 +20,7 @@ def ids_to_string(cfg_id, state_id=-1, node_id=-1, edge_id=-1):
 
 
 def sdfg_find_state_from_element(sdfg, element):
-    if DACE_VERSION >= '0.16.0':
+    if DACE_VERSION >= '0.16.0' or not hasattr(sdfg, 'sdfg_list'):
         graph = sdfg.cfg_list[element['cfgId']]
     else:
         graph = sdfg.sdfg_list[element['cfgId']]
@@ -32,7 +32,7 @@ def sdfg_find_state_from_element(sdfg, element):
 
 
 def sdfg_find_node_from_element(sdfg, element):
-    if DACE_VERSION >= '0.16.0':
+    if DACE_VERSION >= '0.16.0' or not hasattr(sdfg, 'sdfg_list'):
         graph = sdfg.cfg_list[element['cfgId']]
     else:
         graph = sdfg.sdfg_list[element['cfgId']]

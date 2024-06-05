@@ -69,7 +69,8 @@ export type JsonTransformation = {
     transformation: string,
     type?: string,
     exp_idx?: number,
-    sdfg_id?: number,
+    cfg_id?: number,
+    sdfg_id?: number, // Legacy, succeeded by cfg_id.
     state_id?: number,
     CATEGORY?: string,
     _subgraph?: any,
@@ -98,7 +99,7 @@ export class Transformation extends TransformationListItem {
     private name: string | undefined = undefined;
     private type: string | undefined = undefined;
     private expressionIndex: number | undefined = undefined;
-    private sdfgId: number = -1;
+    private cfgId: number = -1;
     private stateId: number = -1;
     private subgraph: any | undefined = undefined;
 
@@ -113,7 +114,7 @@ export class Transformation extends TransformationListItem {
         this.name = json.transformation;
         this.type = json.type;
         this.expressionIndex = json.exp_idx;
-        this.sdfgId = json.sdfg_id ?? 0;
+        this.cfgId = json.cfg_id ?? (json.sdfg_id ?? 0);
         this.stateId = json.state_id ?? 0;
         this.subgraph = json._subgraph;
     }
@@ -124,10 +125,10 @@ export class Transformation extends TransformationListItem {
             for (const key in this.subgraph) {
                 const id = this.subgraph[key];
                 if (this.stateId === -1)
-                    uuids.push(this.sdfgId + '/' + id + '/-1/-1');
+                    uuids.push(this.cfgId + '/' + id + '/-1/-1');
                 else
                     uuids.push(
-                        this.sdfgId + '/' + this.stateId + '/' + id + '/-1'
+                        this.cfgId + '/' + this.stateId + '/' + id + '/-1'
                     );
             }
         }
@@ -135,7 +136,7 @@ export class Transformation extends TransformationListItem {
         if (uuids.length)
             return uuids;
 
-        uuids.push(this.sdfgId + '/-1/-1/-1');
+        uuids.push(this.cfgId + '/-1/-1/-1');
 
         return uuids;
     }

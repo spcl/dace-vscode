@@ -9,7 +9,7 @@ import {
 } from '../../transformations/transformations';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { generateAttributesTable } from '../utils/attributes_table';
-import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
+import { getTransformationMetadata, highlightUUIDs, readDaCeProp, zoomToUUIDs } from '../utils/helpers';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 
 /**
@@ -23,12 +23,12 @@ export function transformationGetAffectedUUIDs(
         for (const id of Object.values(transformation._subgraph)) {
             if (transformation.state_id === -1)
                 uuids.push(
-                    transformation.sdfg_id + '/' +
+                    transformation.cfg_id + '/' +
                     id + '/-1/-1'
                 );
             else
                 uuids.push(
-                    transformation.sdfg_id + '/' +
+                    transformation.cfg_id + '/' +
                     transformation.state_id + '/' + id +
                     '/-1'
                 );
@@ -180,7 +180,7 @@ export async function sortTransformations(
                     for (const nid of Object.values(xform._subgraph)) {
                         if (selectedElements.filter((e) => {
                                 return (e.data.node !== undefined) &&
-                                    e.sdfg.cfg_list_id === xform.sdfg_id &&
+                                    e.sdfg.cfg_list_id === xform.cfg_id &&
                                     e.parent_id === xform.state_id &&
                                     e.id === Number(nid);
                             }).length > 0) {
@@ -194,7 +194,7 @@ export async function sortTransformations(
                         for (const nid of Object.values(xform._subgraph)) {
                             if (visibleElements.filter((e) => {
                                     return e.type === 'node' &&
-                                        e.cfgId === xform.sdfg_id &&
+                                        e.cfgId === xform.cfg_id &&
                                         e.stateId === xform.state_id &&
                                         e.id === Number(nid);
                                 }).length > 0) {
@@ -210,7 +210,7 @@ export async function sortTransformations(
                     for (const nid of Object.values(xform._subgraph)) {
                         if (selectedElements.filter((e) => {
                                 return (e.data.state !== undefined) &&
-                                    e.sdfg.cfg_list_id === xform.sdfg_id &&
+                                    e.sdfg.cfg_list_id === xform.cfg_id &&
                                     e.id === Number(nid);
                             }).length > 0) {
                             buckets['selection'].push(xform);
@@ -223,7 +223,7 @@ export async function sortTransformations(
                         for (const nid of Object.values(xform._subgraph)) {
                             if (visibleElements.filter((e) => {
                                     return e.type === 'state' &&
-                                        e.cfgId === xform.sdfg_id &&
+                                        e.cfgId === xform.cfg_id &&
                                         e.id === Number(nid);
                                 }).length > 0) {
                                 buckets['viewport'].push(xform);

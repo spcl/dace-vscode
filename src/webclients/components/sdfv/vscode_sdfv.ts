@@ -805,7 +805,6 @@ export class VSCodeSDFV extends SDFV {
                 if (other_uuid) {
                     other_element = findGraphElementByUUID(
                         VSCodeRenderer.getInstance()!.getCFGList(),
-                        VSCodeRenderer.getInstance()!.getCFGTree(),
                         other_uuid
                     );
                 }
@@ -1146,16 +1145,11 @@ export class VSCodeSDFV extends SDFV {
     public updateContents(
         newContent: string | Uint8Array, preventRefreshes: boolean = false
     ): void {
-        const t1 = performance.now();
         this.setViewingHistoryState(false);
         $('#exit-preview-button')?.hide();
         const [content, compressed] = read_or_decompress(newContent);
         this.viewingCompressed = compressed;
-        const t2 = performance.now();
         this.setRendererContent(content, false, preventRefreshes);
-        const t3 = performance.now();
-        console.debug('parsing contents took ' + (t2 - t1) + 'ms');
-        console.debug('updating renderer took ' + (t3 - t2) + 'ms');
     }
 
     /**
