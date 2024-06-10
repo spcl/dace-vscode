@@ -339,6 +339,12 @@
         "NumberOfTiles"
       ]
     },
+    "List": {
+      "metatype": "List",
+      "desc": "Describes how many times this array is split in each dimension, where the k-th number describes how many times dimension k is split. If the k-th number is 1 this means that the array is not split in the k-th dimension at all. If None, then the transform will split the first dimension exactly shape[0] times.",
+      "category": "General",
+      "default": null
+    },
     "type": {
       "metatype": "type",
       "desc": "Target to use for compilation",
@@ -428,13 +434,16 @@
   "__data_container_types__": {
     "Structure": "Structure",
     "Tensor": "Tensor",
-    "StructureView": "StructureView",
     "Scalar": "Scalar",
     "Array": "Array",
     "Stream": "Stream",
-    "StructArray": "StructArray",
-    "View": "View",
-    "Reference": "Reference"
+    "ContainerArray": "ContainerArray",
+    "ArrayView": "ArrayView",
+    "StructureView": "StructureView",
+    "ContainerView": "ContainerView",
+    "ArrayReference": "ArrayReference",
+    "StructureReference": "StructureReference",
+    "ContainerArrayReference": "ContainerArrayReference"
   },
   "Data": {
     "dtype": {
@@ -938,169 +947,6 @@
       "category": "General",
       "default": 0
     },
-    "members": {
-      "metatype": "OrderedDictProperty",
-      "desc": "Dictionary of structure members",
-      "category": "General",
-      "default": []
-    },
-    "name": {
-      "metatype": "str",
-      "desc": "Structure type name",
-      "category": "General",
-      "default": ""
-    },
-    "dtype": {
-      "metatype": "typeclass",
-      "desc": "",
-      "category": "General",
-      "default": "int32",
-      "base_types": [
-        "bool",
-        "bool_",
-        "int8",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-        "float16",
-        "float32",
-        "float64",
-        "complex64",
-        "complex128"
-      ],
-      "compound_types": {
-        "vector": {
-          "elements": {
-            "type": "str",
-            "default": "0"
-          },
-          "dtype": {
-            "type": "typeclass",
-            "default": "bool"
-          }
-        },
-        "pointer": {
-          "dtype": {
-            "type": "typeclass",
-            "default": "bool"
-          }
-        },
-        "opaque": {
-          "ctype": {
-            "type": "str",
-            "default": ""
-          }
-        },
-        "struct": {
-          "name": {
-            "type": "str",
-            "default": ""
-          },
-          "data": {
-            "type": "dict",
-            "default": {},
-            "value_type": "typeclass"
-          },
-          "length": {
-            "type": "dict",
-            "default": {},
-            "value_type": "int"
-          },
-          "bytes": {
-            "type": "int",
-            "default": 0
-          }
-        },
-        "callback": {
-          "arguments": {
-            "type": "list",
-            "element_type": "typeclass",
-            "default": []
-          },
-          "returntypes": {
-            "type": "list",
-            "element_type": "typeclass",
-            "default": []
-          }
-        }
-      }
-    },
-    "shape": {
-      "metatype": "tuple",
-      "desc": "",
-      "category": "General",
-      "default": []
-    },
-    "transient": {
-      "metatype": "bool",
-      "desc": "",
-      "category": "General",
-      "default": false
-    },
-    "storage": {
-      "metatype": "StorageType",
-      "desc": "Storage location",
-      "category": "General",
-      "default": "Default",
-      "choices": [
-        "Default",
-        "Register",
-        "CPU_Pinned",
-        "CPU_Heap",
-        "CPU_ThreadLocal",
-        "GPU_Global",
-        "GPU_Shared",
-        "FPGA_Global",
-        "FPGA_Local",
-        "FPGA_Registers",
-        "FPGA_ShiftRegister",
-        "SVE_Register",
-        "Snitch_TCDM",
-        "Snitch_L2",
-        "Snitch_SSR"
-      ]
-    },
-    "lifetime": {
-      "metatype": "AllocationLifetime",
-      "desc": "Data allocation span",
-      "category": "General",
-      "default": "Scope",
-      "choices": [
-        "Scope",
-        "State",
-        "SDFG",
-        "Global",
-        "Persistent",
-        "External"
-      ]
-    },
-    "location": {
-      "metatype": "dict",
-      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "str"
-    },
-    "debuginfo": {
-      "metatype": "DebugInfo",
-      "desc": "",
-      "category": "General",
-      "default": {
-        "type": "DebugInfo",
-        "start_line": 0,
-        "end_line": 0,
-        "start_column": 0,
-        "end_column": 0,
-        "filename": null
-      }
-    }
-  },
-  "StructureView": {
     "members": {
       "metatype": "OrderedDictProperty",
       "desc": "Dictionary of structure members",
@@ -1789,7 +1635,7 @@
       }
     }
   },
-  "StructArray": {
+  "ContainerArray": {
     "stype": {
       "metatype": "Data",
       "desc": "",
@@ -2000,7 +1846,7 @@
       }
     }
   },
-  "View": {
+  "ArrayView": {
     "allow_conflicts": {
       "metatype": "bool",
       "desc": "If enabled, allows more than one memlet to write to the same memory location without conflict resolution.",
@@ -2205,7 +2051,755 @@
       }
     }
   },
-  "Reference": {
+  "StructureView": {
+    "members": {
+      "metatype": "OrderedDictProperty",
+      "desc": "Dictionary of structure members",
+      "category": "General",
+      "default": []
+    },
+    "name": {
+      "metatype": "str",
+      "desc": "Structure type name",
+      "category": "General",
+      "default": ""
+    },
+    "dtype": {
+      "metatype": "typeclass",
+      "desc": "",
+      "category": "General",
+      "default": "int32",
+      "base_types": [
+        "bool",
+        "bool_",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "float16",
+        "float32",
+        "float64",
+        "complex64",
+        "complex128"
+      ],
+      "compound_types": {
+        "vector": {
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
+        "struct": {
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
+        },
+        "callback": {
+          "arguments": {
+            "type": "list",
+            "element_type": "typeclass",
+            "default": []
+          },
+          "returntypes": {
+            "type": "list",
+            "element_type": "typeclass",
+            "default": []
+          }
+        }
+      }
+    },
+    "shape": {
+      "metatype": "tuple",
+      "desc": "",
+      "category": "General",
+      "default": []
+    },
+    "transient": {
+      "metatype": "bool",
+      "desc": "",
+      "category": "General",
+      "default": false
+    },
+    "storage": {
+      "metatype": "StorageType",
+      "desc": "Storage location",
+      "category": "General",
+      "default": "Default",
+      "choices": [
+        "Default",
+        "Register",
+        "CPU_Pinned",
+        "CPU_Heap",
+        "CPU_ThreadLocal",
+        "GPU_Global",
+        "GPU_Shared",
+        "FPGA_Global",
+        "FPGA_Local",
+        "FPGA_Registers",
+        "FPGA_ShiftRegister",
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
+      ]
+    },
+    "lifetime": {
+      "metatype": "AllocationLifetime",
+      "desc": "Data allocation span",
+      "category": "General",
+      "default": "Scope",
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent",
+        "External"
+      ]
+    },
+    "location": {
+      "metatype": "dict",
+      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "str"
+    },
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    }
+  },
+  "ContainerView": {
+    "stype": {
+      "metatype": "Data",
+      "desc": "",
+      "category": "General",
+      "default": null
+    },
+    "allow_conflicts": {
+      "metatype": "bool",
+      "desc": "If enabled, allows more than one memlet to write to the same memory location without conflict resolution.",
+      "category": "General",
+      "default": false
+    },
+    "strides": {
+      "metatype": "tuple",
+      "desc": "For each dimension, the number of elements to skip in order to obtain the next element in that dimension.",
+      "category": "General",
+      "default": []
+    },
+    "total_size": {
+      "metatype": "SymbolicProperty",
+      "desc": "The total allocated size of the array. Can be used for padding.",
+      "category": "General",
+      "default": 0
+    },
+    "offset": {
+      "metatype": "tuple",
+      "desc": "Initial offset to translate all indices by.",
+      "category": "General",
+      "default": []
+    },
+    "may_alias": {
+      "metatype": "bool",
+      "desc": "This pointer may alias with other pointers in the same function",
+      "category": "General",
+      "default": false
+    },
+    "alignment": {
+      "metatype": "int",
+      "desc": "Allocation alignment in bytes (0 uses compiler-default)",
+      "category": "General",
+      "default": 0
+    },
+    "start_offset": {
+      "metatype": "int",
+      "desc": "Allocation offset elements for manual alignment (pre-padding)",
+      "category": "General",
+      "default": 0
+    },
+    "optional": {
+      "metatype": "bool",
+      "desc": "Specifies whether this array may have a value of None. If False, the array must not be None. If option is not set, it is inferred by other properties and the OptionalArrayInference pass.",
+      "category": "General",
+      "default": null
+    },
+    "pool": {
+      "metatype": "bool",
+      "desc": "Hint to the allocator that using a memory pool is preferred",
+      "category": "General",
+      "default": false
+    },
+    "dtype": {
+      "metatype": "typeclass",
+      "desc": "",
+      "category": "General",
+      "default": "int32",
+      "base_types": [
+        "bool",
+        "bool_",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "float16",
+        "float32",
+        "float64",
+        "complex64",
+        "complex128"
+      ],
+      "compound_types": {
+        "vector": {
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
+        "struct": {
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
+        },
+        "callback": {
+          "arguments": {
+            "type": "list",
+            "element_type": "typeclass",
+            "default": []
+          },
+          "returntypes": {
+            "type": "list",
+            "element_type": "typeclass",
+            "default": []
+          }
+        }
+      }
+    },
+    "shape": {
+      "metatype": "tuple",
+      "desc": "",
+      "category": "General",
+      "default": []
+    },
+    "transient": {
+      "metatype": "bool",
+      "desc": "",
+      "category": "General",
+      "default": false
+    },
+    "storage": {
+      "metatype": "StorageType",
+      "desc": "Storage location",
+      "category": "General",
+      "default": "Default",
+      "choices": [
+        "Default",
+        "Register",
+        "CPU_Pinned",
+        "CPU_Heap",
+        "CPU_ThreadLocal",
+        "GPU_Global",
+        "GPU_Shared",
+        "FPGA_Global",
+        "FPGA_Local",
+        "FPGA_Registers",
+        "FPGA_ShiftRegister",
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
+      ]
+    },
+    "lifetime": {
+      "metatype": "AllocationLifetime",
+      "desc": "Data allocation span",
+      "category": "General",
+      "default": "Scope",
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent",
+        "External"
+      ]
+    },
+    "location": {
+      "metatype": "dict",
+      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "str"
+    },
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    }
+  },
+  "ArrayReference": {
+    "allow_conflicts": {
+      "metatype": "bool",
+      "desc": "If enabled, allows more than one memlet to write to the same memory location without conflict resolution.",
+      "category": "General",
+      "default": false
+    },
+    "strides": {
+      "metatype": "tuple",
+      "desc": "For each dimension, the number of elements to skip in order to obtain the next element in that dimension.",
+      "category": "General",
+      "default": []
+    },
+    "total_size": {
+      "metatype": "SymbolicProperty",
+      "desc": "The total allocated size of the array. Can be used for padding.",
+      "category": "General",
+      "default": 0
+    },
+    "offset": {
+      "metatype": "tuple",
+      "desc": "Initial offset to translate all indices by.",
+      "category": "General",
+      "default": []
+    },
+    "may_alias": {
+      "metatype": "bool",
+      "desc": "This pointer may alias with other pointers in the same function",
+      "category": "General",
+      "default": false
+    },
+    "alignment": {
+      "metatype": "int",
+      "desc": "Allocation alignment in bytes (0 uses compiler-default)",
+      "category": "General",
+      "default": 0
+    },
+    "start_offset": {
+      "metatype": "int",
+      "desc": "Allocation offset elements for manual alignment (pre-padding)",
+      "category": "General",
+      "default": 0
+    },
+    "optional": {
+      "metatype": "bool",
+      "desc": "Specifies whether this array may have a value of None. If False, the array must not be None. If option is not set, it is inferred by other properties and the OptionalArrayInference pass.",
+      "category": "General",
+      "default": null
+    },
+    "pool": {
+      "metatype": "bool",
+      "desc": "Hint to the allocator that using a memory pool is preferred",
+      "category": "General",
+      "default": false
+    },
+    "dtype": {
+      "metatype": "typeclass",
+      "desc": "",
+      "category": "General",
+      "default": "int32",
+      "base_types": [
+        "bool",
+        "bool_",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "float16",
+        "float32",
+        "float64",
+        "complex64",
+        "complex128"
+      ],
+      "compound_types": {
+        "vector": {
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
+        "struct": {
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
+        },
+        "callback": {
+          "arguments": {
+            "type": "list",
+            "element_type": "typeclass",
+            "default": []
+          },
+          "returntypes": {
+            "type": "list",
+            "element_type": "typeclass",
+            "default": []
+          }
+        }
+      }
+    },
+    "shape": {
+      "metatype": "tuple",
+      "desc": "",
+      "category": "General",
+      "default": []
+    },
+    "transient": {
+      "metatype": "bool",
+      "desc": "",
+      "category": "General",
+      "default": false
+    },
+    "storage": {
+      "metatype": "StorageType",
+      "desc": "Storage location",
+      "category": "General",
+      "default": "Default",
+      "choices": [
+        "Default",
+        "Register",
+        "CPU_Pinned",
+        "CPU_Heap",
+        "CPU_ThreadLocal",
+        "GPU_Global",
+        "GPU_Shared",
+        "FPGA_Global",
+        "FPGA_Local",
+        "FPGA_Registers",
+        "FPGA_ShiftRegister",
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
+      ]
+    },
+    "lifetime": {
+      "metatype": "AllocationLifetime",
+      "desc": "Data allocation span",
+      "category": "General",
+      "default": "Scope",
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent",
+        "External"
+      ]
+    },
+    "location": {
+      "metatype": "dict",
+      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "str"
+    },
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    }
+  },
+  "StructureReference": {
+    "members": {
+      "metatype": "OrderedDictProperty",
+      "desc": "Dictionary of structure members",
+      "category": "General",
+      "default": []
+    },
+    "name": {
+      "metatype": "str",
+      "desc": "Structure type name",
+      "category": "General",
+      "default": ""
+    },
+    "dtype": {
+      "metatype": "typeclass",
+      "desc": "",
+      "category": "General",
+      "default": "int32",
+      "base_types": [
+        "bool",
+        "bool_",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "float16",
+        "float32",
+        "float64",
+        "complex64",
+        "complex128"
+      ],
+      "compound_types": {
+        "vector": {
+          "elements": {
+            "type": "str",
+            "default": "0"
+          },
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "pointer": {
+          "dtype": {
+            "type": "typeclass",
+            "default": "bool"
+          }
+        },
+        "opaque": {
+          "ctype": {
+            "type": "str",
+            "default": ""
+          }
+        },
+        "struct": {
+          "name": {
+            "type": "str",
+            "default": ""
+          },
+          "data": {
+            "type": "dict",
+            "default": {},
+            "value_type": "typeclass"
+          },
+          "length": {
+            "type": "dict",
+            "default": {},
+            "value_type": "int"
+          },
+          "bytes": {
+            "type": "int",
+            "default": 0
+          }
+        },
+        "callback": {
+          "arguments": {
+            "type": "list",
+            "element_type": "typeclass",
+            "default": []
+          },
+          "returntypes": {
+            "type": "list",
+            "element_type": "typeclass",
+            "default": []
+          }
+        }
+      }
+    },
+    "shape": {
+      "metatype": "tuple",
+      "desc": "",
+      "category": "General",
+      "default": []
+    },
+    "transient": {
+      "metatype": "bool",
+      "desc": "",
+      "category": "General",
+      "default": false
+    },
+    "storage": {
+      "metatype": "StorageType",
+      "desc": "Storage location",
+      "category": "General",
+      "default": "Default",
+      "choices": [
+        "Default",
+        "Register",
+        "CPU_Pinned",
+        "CPU_Heap",
+        "CPU_ThreadLocal",
+        "GPU_Global",
+        "GPU_Shared",
+        "FPGA_Global",
+        "FPGA_Local",
+        "FPGA_Registers",
+        "FPGA_ShiftRegister",
+        "SVE_Register",
+        "Snitch_TCDM",
+        "Snitch_L2",
+        "Snitch_SSR"
+      ]
+    },
+    "lifetime": {
+      "metatype": "AllocationLifetime",
+      "desc": "Data allocation span",
+      "category": "General",
+      "default": "Scope",
+      "choices": [
+        "Scope",
+        "State",
+        "SDFG",
+        "Global",
+        "Persistent",
+        "External"
+      ]
+    },
+    "location": {
+      "metatype": "dict",
+      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "str"
+    },
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    }
+  },
+  "ContainerArrayReference": {
+    "stype": {
+      "metatype": "Data",
+      "desc": "",
+      "category": "General",
+      "default": null
+    },
     "allow_conflicts": {
       "metatype": "bool",
       "desc": "If enabled, allows more than one memlet to write to the same memory location without conflict resolution.",
@@ -3967,6 +4561,30 @@
       "desc": "Show this block as collapsed",
       "category": "General",
       "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
     }
   },
   "SDFGState": {
@@ -4044,6 +4662,30 @@
       "desc": "Show this block as collapsed",
       "category": "General",
       "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
     }
   },
   "ControlFlowRegion": {
@@ -4052,6 +4694,30 @@
       "desc": "Show this block as collapsed",
       "category": "General",
       "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
     }
   },
   "LoopRegion": {
@@ -4102,6 +4768,30 @@
       "desc": "Show this block as collapsed",
       "category": "General",
       "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
     }
   },
   "ProcessGrid": {
@@ -4474,6 +5164,30 @@
       "desc": "Show this block as collapsed",
       "category": "General",
       "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
     }
   },
   "Pass": {},
@@ -4499,7 +5213,7 @@
     }
   },
   "PatternTransformation": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -4524,10 +5238,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "SingleStateTransformation": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -4552,10 +5272,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "MultiStateTransformation": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -4580,10 +5306,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandTransformation": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -4608,12 +5340,18 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "SubgraphTransformation": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
-      "desc": "ID of SDFG to transform",
+      "desc": "ID of CFG to transform",
       "category": "General",
       "default": 0
     },
@@ -4628,6 +5366,12 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "StateReachability": {},
@@ -4637,8 +5381,18 @@
   "FindAccessNodes": {},
   "SymbolWriteScopes": {},
   "ScalarWriteShadowScopes": {},
+  "AccessRanges": {},
+  "FindReferenceSources": {},
+  "DeriveSDFGConstraints": {
+    "assume_max_data_size": {
+      "metatype": "int",
+      "desc": "Assume that all data containers have no dimension larger than this value. If None, no assumption is made.",
+      "category": "General",
+      "default": null
+    }
+  },
   "MapCollapse": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -4663,6 +5417,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.standard.nodes.code.CodeLibraryNode": {
@@ -4768,7 +5528,7 @@
     }
   },
   "Expansion": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -4793,10 +5553,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGearbox": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -4821,6 +5587,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.standard.nodes.gearbox.Gearbox": {
@@ -4922,7 +5694,7 @@
   "CUDA": {},
   "HPTT": {},
   "ExpandReducePure": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -4947,10 +5719,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandReducePureSequentialDim": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -4975,10 +5753,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandReduceOpenMP": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5003,10 +5787,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandReduceCUDADevice": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5031,10 +5821,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandReduceCUDABlock": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5059,10 +5855,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandReduceCUDABlockAll": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5087,10 +5889,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandReduceFPGAPartialReduction": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5115,10 +5923,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandReduceGPUAuto": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5143,6 +5957,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.standard.nodes.reduce.Reduce": {
@@ -5262,7 +6082,7 @@
     }
   },
   "SpecializeMatMul": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5287,6 +6107,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.blas.nodes.matmul.MatMul": {
@@ -5397,7 +6223,7 @@
   "cuBLAS": {},
   "rocBLAS": {},
   "ExpandDotPure": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5422,10 +6248,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandDotOpenBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5450,10 +6282,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandDotMKL": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5478,10 +6316,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandDotCuBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5506,10 +6350,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandDotFpgaPartialSums": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5534,10 +6384,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandDotFpgaAccumulate": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5562,6 +6418,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.blas.nodes.dot.Dot": {
@@ -5745,7 +6607,7 @@
     }
   },
   "ExpandGemvPure": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5770,10 +6632,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemvFpgaAccumulate": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5798,10 +6666,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemvFpgaTilesByColumn": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5826,10 +6700,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemvCuBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5854,10 +6734,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemvOpenBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5882,10 +6768,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemvMKL": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5910,10 +6802,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemvPBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -5938,6 +6836,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.blas.nodes.gemv.Gemv": {
@@ -6067,7 +6971,7 @@
     }
   },
   "ExpandGemmPure": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6092,10 +6996,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemmOpenBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6120,10 +7030,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemmMKL": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6148,10 +7064,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemmGPUBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6176,10 +7098,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemmCuBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6204,10 +7132,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemmRocBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6232,10 +7166,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGemmPBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6260,6 +7200,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.blas.nodes.gemm.Gemm": {
@@ -6480,7 +7426,7 @@
     }
   },
   "ExpandGerPure": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6505,10 +7451,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandGerFpga": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6533,6 +7485,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.blas.nodes.ger.Ger": {
@@ -6657,7 +7615,7 @@
     }
   },
   "ExpandBatchedMatMulPure": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6682,10 +7640,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandBatchedMatMulMKL": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6710,10 +7674,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandBatchedMatMulOpenBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6738,10 +7708,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandBatchedMatMulCuBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -6766,6 +7742,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.blas.nodes.batched_matmul.BatchedMatMul": {
@@ -6977,7 +7959,7 @@
     }
   },
   "ExpandAxpyVectorized": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7002,10 +7984,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandAxpyFpga": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7030,6 +8018,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.blas.nodes.axpy.Axpy": {
@@ -7244,7 +8238,7 @@
     }
   },
   "SpecializeEinsum": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7269,10 +8263,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandTransposePure": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7297,10 +8297,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandTransposeMKL": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7325,10 +8331,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandTransposeOpenBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7353,10 +8365,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandTransposeCuBLAS": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7381,6 +8399,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.standard.nodes.transpose.Transpose": {
@@ -7483,7 +8507,7 @@
     }
   },
   "ExpandPure": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7508,10 +8532,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ExpandHPTT": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7536,6 +8566,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "dace.libraries.standard.nodes.ttranspose.TensorTranspose": {
@@ -7655,7 +8691,7 @@
       "category": "General",
       "default": false
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7680,6 +8716,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "MapExpansion": {
@@ -7707,7 +8749,13 @@
         "FPGA_Multi_Pumped"
       ]
     },
-    "sdfg_id": {
+    "expansion_limit": {
+      "metatype": "int",
+      "desc": "How many unidimensional maps will be creaed, known as k. If None, the default no limit is in place.",
+      "category": "General",
+      "default": null
+    },
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7732,6 +8780,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "MapDimShuffle": {
@@ -7742,7 +8796,7 @@
       "default": [],
       "element_type": "str"
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7767,10 +8821,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "TrivialMapElimination": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7795,10 +8855,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "TrivialMapRangeElimination": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7823,6 +8889,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "StreamTransient": {
@@ -7832,7 +8904,7 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7857,6 +8929,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "AccumulateTransient": {
@@ -7872,7 +8950,7 @@
       "category": "General",
       "default": null
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7897,6 +8975,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "LocalStorage": {
@@ -7918,7 +9002,7 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7943,6 +9027,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "InLocalStorage": {
@@ -7964,7 +9054,7 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -7989,6 +9079,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "OutLocalStorage": {
@@ -8010,7 +9106,7 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8035,6 +9131,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "OTFMapFusion": {
@@ -8044,7 +9146,7 @@
       "category": "General",
       "default": null
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8069,6 +9171,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "StripMining": {
@@ -8131,7 +9239,7 @@
       "category": "General",
       "default": false
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8156,6 +9264,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "MapTiling": {
@@ -8199,7 +9313,7 @@
       "category": "General",
       "default": false
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8224,6 +9338,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "MapTilingWithOverlap": {
@@ -8279,7 +9399,7 @@
       "category": "General",
       "default": false
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8304,6 +9424,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "BufferTiling": {
@@ -8317,7 +9443,7 @@
         "128"
       ]
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8342,6 +9468,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "Vectorization": {
@@ -8375,7 +9507,7 @@
       "category": "General",
       "default": null
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8400,6 +9532,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "GPUGridStridedTiling": {
@@ -8421,7 +9559,7 @@
       "category": "General",
       "default": 128
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8446,6 +9584,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "StreamingMemory": {
@@ -8490,7 +9634,7 @@
       "category": "General",
       "default": 64
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8515,6 +9659,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "StreamingComposition": {
@@ -8547,7 +9697,7 @@
         "Snitch_SSR"
       ]
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8572,6 +9722,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ReduceExpansion": {
@@ -8599,7 +9755,7 @@
       "category": "General",
       "default": null
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8624,6 +9780,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "PruneConnectors": {
@@ -8633,7 +9795,7 @@
       "category": "General",
       "default": false
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8658,10 +9820,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "TrivialTaskletElimination": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8686,6 +9854,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "CopyToDevice": {
@@ -8712,7 +9886,7 @@
         "Snitch_SSR"
       ]
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8737,6 +9911,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "GPUTransformMap": {
@@ -8764,7 +9944,7 @@
       "category": "General",
       "default": false
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8789,6 +9969,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "GPUTransformLocalStorage": {
@@ -8804,7 +9990,7 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8829,10 +10015,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "MPITransformMap": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8857,6 +10049,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "WarpTiling": {
@@ -8872,7 +10070,7 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8897,11 +10095,17 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "BankSplit": {
     "split_array_info": {
-      "metatype": "Property",
+      "metatype": "List",
       "desc": "Describes how many times this array is split in each dimension, where the k-th number describes how many times dimension k is split. If the k-th number is 1 this means that the array is not split in the k-th dimension at all. If None, then the transform will split the first dimension exactly shape[0] times.",
       "category": "General",
       "default": null
@@ -8912,7 +10116,7 @@
       "category": "General",
       "default": "CPU_Heap"
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -8937,6 +10141,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "CodeObject": {
@@ -9016,7 +10226,7 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9041,10 +10251,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "MatrixProductTranspose": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9069,6 +10285,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "GPUPersistentKernel": {
@@ -9090,9 +10312,9 @@
       "category": "General",
       "default": ""
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
-      "desc": "ID of SDFG to transform",
+      "desc": "ID of CFG to transform",
       "category": "General",
       "default": 0
     },
@@ -9107,6 +10329,12 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "MultiExpansion": {
@@ -9140,9 +10368,9 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
-      "desc": "ID of SDFG to transform",
+      "desc": "ID of CFG to transform",
       "category": "General",
       "default": 0
     },
@@ -9157,6 +10385,12 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "SubgraphFusion": {
@@ -9220,9 +10454,9 @@
       "default": [],
       "element_type": "str"
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
-      "desc": "ID of SDFG to transform",
+      "desc": "ID of CFG to transform",
       "category": "General",
       "default": 0
     },
@@ -9237,6 +10471,12 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "FPGATransformSDFG": {
@@ -9246,7 +10486,7 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9271,6 +10511,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "GPUTransformSDFG": {
@@ -9322,7 +10568,7 @@
       "category": "General",
       "default": ""
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9347,10 +10593,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "InlineSDFG": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9375,10 +10627,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "InlineTransients": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9403,10 +10661,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "RefineNestedAccess": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9431,6 +10695,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "NestSDFG": {
@@ -9440,7 +10710,7 @@
       "category": "General",
       "default": false
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9465,6 +10735,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "LoopUnroll": {
@@ -9474,7 +10750,7 @@
       "category": "General",
       "default": 0
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9499,6 +10775,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "LoopPeeling": {
@@ -9514,7 +10796,7 @@
       "category": "General",
       "default": 0
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9539,6 +10821,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "LoopToMap": {
@@ -9548,7 +10836,7 @@
       "category": "General",
       "default": null
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9573,10 +10861,16 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "InlineMultistateSDFG": {
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
       "desc": "",
       "category": "(Debug)",
@@ -9601,6 +10895,12 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "StencilTiling": {
@@ -9636,9 +10936,9 @@
       "category": "General",
       "default": false
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
-      "desc": "ID of SDFG to transform",
+      "desc": "ID of CFG to transform",
       "category": "General",
       "default": 0
     },
@@ -9653,6 +10953,12 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "TemporalVectorization": {
@@ -9668,9 +10974,9 @@
       "category": "General",
       "default": 2
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
-      "desc": "ID of SDFG to transform",
+      "desc": "ID of CFG to transform",
       "category": "General",
       "default": 0
     },
@@ -9685,6 +10991,12 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "CompositeFusion": {
@@ -9755,9 +11067,9 @@
       "category": "General",
       "default": true
     },
-    "sdfg_id": {
+    "cfg_id": {
       "metatype": "int",
-      "desc": "ID of SDFG to transform",
+      "desc": "ID of CFG to transform",
       "category": "General",
       "default": 0
     },
@@ -9772,6 +11084,12 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
+    },
+    "_cba_failure_reason": {
+      "metatype": "str",
+      "desc": "Failure reason",
+      "category": "General",
+      "default": null
     }
   },
   "ArrayElimination": {},
@@ -10025,6 +11343,7 @@
       "default": true
     }
   },
+  "ReferenceToView": {},
   "SimplifyPass": {
     "validate": {
       "metatype": "bool",
