@@ -881,6 +881,7 @@ export async function attributeTablePutEntry(
     keyChangeHandlerOverride?: (prop: KeyProperty) => void,
     valueChangeHandlerOverride?: (prop: Property) => void,
     invertedSpacing: boolean = false,
+    readonly: boolean = false
 ): Promise<PropertyEntry> {
     let keyProp: KeyProperty | undefined = undefined;
     let valProp: Property[] | undefined = undefined;
@@ -983,7 +984,7 @@ export async function attributeTablePutEntry(
                 text: k + ': ' + v[1].toString(),
             }));
         }
-    } else if (dtype === undefined) {
+    } else if (dtype === undefined || readonly) {
         // Implementations that are set to null should still be visible. Other
         // null properties should be shown as an empty field.
         if (key === 'implementation' && val === null)
@@ -1181,7 +1182,8 @@ const ATTR_TABLE_HIDDEN_ATTRIBUTES = [
 
 
 export function generateAttributesTable(
-    elem: any | undefined, xform: any | undefined, root: JQuery<HTMLElement>
+    elem: any | undefined, xform: any | undefined, root: JQuery<HTMLElement>,
+    readonly: boolean = false
 ): void {
     let attributes: any | undefined = undefined;
     let identifier = '';
@@ -1305,7 +1307,8 @@ export function generateAttributesTable(
                 }).appendTo(attrTable);
                 attributeTablePutEntry(
                     k, val, attrMeta, attributes, elem, xform, row, false,
-                    true, false, isNonDefault
+                    readonly ? false : true, false, isNonDefault, undefined,
+                    undefined, false, readonly
                 );
             });
         });

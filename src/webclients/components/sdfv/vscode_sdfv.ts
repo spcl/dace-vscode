@@ -160,6 +160,7 @@ export class VSCodeSDFV extends SDFV {
         viewport: [],
         passes: [],
         uncategorized: [],
+        missed_opportunities: [],
     };
     private selectedTransformation: JsonTransformation | null = null;
 
@@ -1211,10 +1212,13 @@ export class VSCodeSDFV extends SDFV {
 
     @ICPCRequest()
     public async selectTransformation(
-        transformation: JsonTransformation
+        transformation: JsonTransformation, readonly: boolean = false
     ): Promise<void> {
-        showTransformationDetails(transformation);
-        this.setSelectedTransformation(transformation);
+        showTransformationDetails(transformation, readonly);
+        if (readonly)
+            this.setSelectedTransformation(null);
+        else
+            this.setSelectedTransformation(transformation);
     }
 
     @ICPCRequest()

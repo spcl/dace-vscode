@@ -75,6 +75,7 @@ export type JsonTransformation = {
     CATEGORY?: string,
     _subgraph?: any,
     docstring?: string,
+    _cba_failure_reason?: string,
 };
 
 export type JsonTransformationGroup = {
@@ -84,14 +85,16 @@ export type JsonTransformationGroup = {
 };
 
 export type JsonTransformationList = {
-    'selection': JsonTransformationGroup[],
-    'viewport': JsonTransformationGroup[],
-    'passes': JsonTransformationGroup[],
-    'uncategorized': JsonTransformationGroup[],
+    selection: JsonTransformationGroup[],
+    viewport: JsonTransformationGroup[],
+    passes: JsonTransformationGroup[],
+    uncategorized: JsonTransformationGroup[],
+    missed_opportunities: JsonTransformationGroup[],
 };
 
 export type JsonTransformationCategories = (
-    'selection' | 'viewport' | 'passes' | 'uncategorized'
+    'selection' | 'viewport' | 'passes' | 'uncategorized' |
+    'missed_opportunities'
 )[];
 
 export class Transformation extends TransformationListItem {
@@ -104,7 +107,9 @@ export class Transformation extends TransformationListItem {
     private subgraph: any | undefined = undefined;
 
     public constructor(
-        private json: JsonTransformation, list: TransformationList
+        private json: JsonTransformation,
+        list: TransformationList,
+        private readonly: boolean = false
     ) {
         super(
             json.transformation, json.docstring, undefined, false, true, '', ''
@@ -151,22 +156,26 @@ export class Transformation extends TransformationListItem {
                 this.list.selectedItem = this;
                 this.list.generateHtml();
             }
-            TransofrmationListPanel.selectTransformation(this.json);
+            TransofrmationListPanel.selectTransformation(
+                this.json, this.readonly
+            );
         });
 
         const labelContainer = item.find('.tree-view-item-label-container');
         labelContainer.addClass('transformation-list-item-label-container');
 
-        $('<div>', {
-            'class': 'transformation-list-quick-apply',
-            'text': 'Quick Apply',
-            'title': 'Apply transformation with default parameters',
-            'click': (event: Event) => {
-                event.stopPropagation();
-                TransofrmationListPanel.applyTransformations([this.json]);
-                return true;
-            },
-        }).appendTo(labelContainer);
+        if (!this.readonly) {
+            $('<div>', {
+                'class': 'transformation-list-quick-apply',
+                'text': 'Quick Apply',
+                'title': 'Apply transformation with default parameters',
+                'click': (event: Event) => {
+                    event.stopPropagation();
+                    TransofrmationListPanel.applyTransformations([this.json]);
+                    return true;
+                },
+            }).appendTo(labelContainer);
+        }
 
         item.on('mouseover', () => {
             labelContainer.addClass('hover-direct');
@@ -251,17 +260,19 @@ export class TransformationGroup extends TransformationListItem {
         public readonly transformations: JsonTransformation[],
         public readonly list: TransformationList,
         labelStyle: string,
-        private allowApplyAll: boolean = false
+        private allowApplyAll: boolean = false,
+        collapsed: boolean = false,
+        readonly: boolean = false
     ) {
         super(
             groupName, groupName === 'SubgraphTransformations' ?
                 undefined : transformations[0].docstring,
-            undefined, false, false,
+            undefined, collapsed, false,
             labelStyle, ''
         );
 
         for (const xf of transformations)
-            this.addItem(new Transformation(xf, list));
+            this.addItem(new Transformation(xf, list, readonly));
     }
 
     public generateHtml(): JQuery {
@@ -393,7 +404,16 @@ class TransformationList extends CustomTreeView {
         catUncat.list = this;
         catUncat.hidden = true;
 
-        this.items = [catSelection, catViewport, catPasses, catUncat];
+        const catMisses = new TransformationCategory(
+            'Missed Opportunities',
+            'Transformations that cannot be applied',
+            true
+        );
+        catMisses.list = this;
+
+        this.items = [
+            catSelection, catViewport, catPasses, catUncat, catMisses
+        ];
     }
 
     // We don't want to mutate the set of items, categories are supposed to
@@ -423,7 +443,8 @@ class TransformationList extends CustomTreeView {
         this.clear('', false);
 
         const allCats: JsonTransformationCategories = [
-            'selection', 'viewport', 'passes', 'uncategorized'
+            'selection', 'viewport', 'passes', 'uncategorized',
+            'missed_opportunities'
         ];
         let i = 0;
         for (const ct of allCats) {
@@ -438,6 +459,12 @@ class TransformationList extends CustomTreeView {
                     this.items[i].addItem(new PassPipelineGroup(
                         grp.title, grp.xforms, this,
                         'color: var(--vscode-textLink-foreground);', true
+                    ));
+                } else if (ct === 'missed_opportunities') {
+                    this.items[i].addItem(new TransformationGroup(
+                        grp.title, grp.xforms, this,
+                        'color: var(--vscode-textLink-foreground);', false,
+                        true, true
                     ));
                 } else {
                     this.items[i].addItem(new TransformationGroup(
@@ -534,10 +561,10 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
     }
 
     public static async selectTransformation(
-        transformation: JsonTransformation
+        transformation: JsonTransformation, readonly: boolean = false
     ): Promise<void> {
         return this.INSTANCE.invokeEditorProcedure(
-            'selectTransformation', [transformation]
+            'selectTransformation', [transformation, readonly]
         );
     }
 

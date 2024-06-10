@@ -1,6 +1,7 @@
 # Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
+from typing import Dict, List, Set
 from dace import nodes, serialize, config as dc_config
 from dace.transformation.transformation import (SubgraphTransformation,
                                                 PatternTransformation)
@@ -269,17 +270,26 @@ def get_transformations(sdfg_json, selected_elements, permissive):
         try:
             optimizer = SDFGOptimizer(sdfg)
             try:
-                matches = optimizer.get_pattern_matches(permissive=permissive)
+                matches = list(
+                    optimizer.get_pattern_matches(permissive=permissive)
+                )
             except TypeError:
                 # Compatibility with versions older than 0.12
-                matches = optimizer.get_pattern_matches(strict=not permissive)
+                matches = list(
+                    optimizer.get_pattern_matches(strict=not permissive)
+                )
 
-            transformations = []
-            docstrings = {}
+            transformations: List[dict] = []
+            misses: List[dict] = []
+            docstrings: Dict[str, str] = {}
             for transformation in matches:
                 transformations.append(transformation.to_json())
                 docstrings[type(transformation).__name__] = \
                     transformation.__doc__
+            for miss in optimizer.missed_opportunities:
+                misses.append(miss.to_json())
+                docstrings[type(miss).__name__] = \
+                    miss.__doc__
 
             # Obtain available passes.
             try:
@@ -361,6 +371,9 @@ def get_transformations(sdfg_json, selected_elements, permissive):
                         if xform_obj.can_be_applied(selected_sdfg, subgraph):
                             transformations.append(xform_obj.to_json())
                             docstrings[xform.__name__] = xform_obj.__doc__
+                        else:
+                            misses.append(xform_obj.to_json())
+                            docstrings[xform.__name__] = xform_obj.__doc__
                     except Exception as can_be_applied_exception:
                         # If something fails here, that is most likely due to a
                         # transformation bug. Fail gracefully.
@@ -372,6 +385,7 @@ def get_transformations(sdfg_json, selected_elements, permissive):
             utils.restore_save_metadata(old_meta)
             return {
                 'transformations': transformations,
+                'missed_opportunities': list(misses),
                 'docstrings': docstrings,
             }
         except Exception as e:

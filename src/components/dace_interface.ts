@@ -1143,10 +1143,10 @@ implements vscode.WebviewViewProvider {
     @ICPCRequest()
     public async loadTransformations(
         sdfg: any, selectedElements: any
-    ): Promise<any[]> {
+    ): Promise<[any[], any[]]> {
         await TransformationListProvider.getInstance()?.showLoading();
 
-        return new Promise<any[]>(async (resolve, reject) => {
+        return new Promise<[any[], any[]]>(async (resolve, reject) => {
             if (!this.daemonRunning) {
                 try {
                     await this.promptStartDaemon();
@@ -1173,7 +1173,7 @@ implements vscode.WebviewViewProvider {
                         elem.docstring = docstring;
                     }
 
-                    resolve(data.transformations);
+                    resolve([data.transformations, data.missed_opportunities]);
                 },
                 (error: any) => {
                     this.genericErrorHandler(error.message, error.details);

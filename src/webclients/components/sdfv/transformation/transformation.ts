@@ -67,7 +67,7 @@ export function getCleanedSelectedElements(): SelectedElementT[] {
 /**
  * Request a list of applicable transformations from DaCe.
  */
-export async function getApplicableTransformations(): Promise<any[]> {
+export async function getApplicableTransformations(): Promise<[any[], any[]]> {
     return SDFVComponent.getInstance().invoke(
         'loadTransformations', [
             VSCodeSDFV.getInstance().getSdfgString(),
@@ -78,9 +78,9 @@ export async function getApplicableTransformations(): Promise<any[]> {
 
 export async function refreshXform(sdfv: VSCodeSDFV): Promise<void> {
     clearSelectedTransformation();
-    return getApplicableTransformations().then(transformations => {
+    return getApplicableTransformations().then(rVal => {
         sdfv.setDaemonConnected(true);
-        if (transformations !== undefined)
+        if (rVal)
             sdfv.setTransformations({
                 selection: [],
                 viewport: [],
@@ -88,8 +88,9 @@ export async function refreshXform(sdfv: VSCodeSDFV): Promise<void> {
                 uncategorized: [{
                     title: 'Uncategorized',
                     ordering: 0,
-                    xforms: transformations,
+                    xforms: rVal[0],
                 }],
+                missed_opportunities: groupTransformations(rVal[1]),
             });
         else
             sdfv.setTransformations({
@@ -97,6 +98,7 @@ export async function refreshXform(sdfv: VSCodeSDFV): Promise<void> {
                 viewport: [],
                 passes: [],
                 uncategorized: [],
+                missed_opportunities: [],
             });
 
         sortTransformations(true, refreshTransformationList, true);
@@ -114,10 +116,11 @@ export async function sortTransformations(
     // Run this asynchronosuly to not block the UI thread.
     setTimeout(() => {
         const sortedTransformations: JsonTransformationList = {
-            'selection': [],
-            'viewport': [],
-            'passes': [],
-            'uncategorized': [],
+            selection: [],
+            viewport: [],
+            passes: [],
+            uncategorized: [],
+            missed_opportunities: [],
         };
 
         const renderer = VSCodeRenderer.getInstance();
@@ -137,6 +140,8 @@ export async function sortTransformations(
             ['selection', 'viewport', 'passes', 'uncategorized'] :
             ['selection', 'viewport', 'uncategorized'];
         const currentXformList = VSCodeSDFV.getInstance().getTransformations();
+        sortedTransformations.missed_opportunities =
+            currentXformList.missed_opportunities;
         for (const category of categoriesToSort) {
             for (const group of currentXformList[category]) {
                 for (const xform of group.xforms) {
@@ -251,65 +256,13 @@ export async function sortTransformations(
         // Perform grouping inside each category and sort the groups.
         // For each group, perform sorting inside the group where applicable.
         for (const ct of categoriesToSort) {
-            const groupDict: Map<string, JsonTransformationGroup> = new Map();
-            for (const xform of buckets[ct]) {
-                let groupName = xform.transformation;
-                let groupOrdering = 0;
-                if (xform.type === 'SubgraphTransformation') {
-                    groupName = 'Subgraph Transformations';
-                    groupOrdering = -1;
-                } else if (xform.type === 'Pass' || xform.type === 'Pipeline') {
-                    groupName = xform.CATEGORY ?? 'Others';
-                } else if (xform.CATEGORY === 'Global') {
-                    groupOrdering = 100;
-                }
-
-                if (groupDict.has(groupName))
-                    groupDict.get(groupName)?.xforms.push(xform);
-                else
-                    groupDict.set(groupName, {
-                        title: groupName,
-                        ordering: groupOrdering,
-                        xforms: [xform],
-                    });
+            if (ct === 'passes') {
+                sortedTransformations[ct] = groupTransformations(
+                    buckets[ct], true
+                );
+            } else {
+                sortedTransformations[ct] = groupTransformations(buckets[ct]);
             }
-
-            for (const [_, grp] of groupDict) {
-                sortedTransformations[ct].push(grp);
-
-                // Groups in the passes category are sorted pipelines first and
-                // then all passes. The remaining groups are sorted
-                // alphabetically.
-                if (ct === 'passes') {
-                    grp.xforms.sort((a, b) => {
-                        if (a.type === 'Pipeline' && b.type !== 'Pipeline')
-                            return -1;
-                        else if (a.type !== 'Pipeline' && b.type === 'Pipeline')
-                            return 1;
-
-                        if (a.transformation > b.transformation)
-                            return 1;
-                        if (a.transformation < b.transformation)
-                            return -1;
-                        return 0;
-                    });
-                } else {
-                    grp.xforms.sort();
-                }
-            }
-
-            sortedTransformations[ct].sort((catA, catB) => {
-                if (catA.ordering > catB.ordering)
-                    return 1;
-                if (catA.ordering < catB.ordering)
-                    return -1;
-
-                if (catA.title > catB.title)
-                    return 1;
-                if (catA.title < catB.title)
-                    return -1;
-                return 0;
-            });
         }
 
         VSCodeSDFV.getInstance().setTransformations(sortedTransformations);
@@ -318,6 +271,72 @@ export async function sortTransformations(
         if (callback !== undefined)
             callback(...args);
     }, 0);
+}
+
+function groupTransformations(
+    transformations: JsonTransformation[], pipelinesFirst: boolean = false
+): JsonTransformationGroup[] {
+    const groupedTransformations: JsonTransformationGroup[] = [];
+    const groupDict: Map<string, JsonTransformationGroup> = new Map();
+    for (const xform of transformations) {
+        let groupName = xform.transformation;
+        let groupOrdering = 0;
+        if (xform.type === 'SubgraphTransformation') {
+            groupName = 'Subgraph Transformations';
+            groupOrdering = -1;
+        } else if (xform.type === 'Pass' || xform.type === 'Pipeline') {
+            groupName = xform.CATEGORY ?? 'Others';
+        } else if (xform.CATEGORY === 'Global') {
+            groupOrdering = 100;
+        }
+
+        if (groupDict.has(groupName))
+            groupDict.get(groupName)?.xforms.push(xform);
+        else
+            groupDict.set(groupName, {
+                title: groupName,
+                ordering: groupOrdering,
+                xforms: [xform],
+            });
+    }
+
+    for (const [_, grp] of groupDict) {
+        groupedTransformations.push(grp);
+        // Groups in the passes category are sorted pipelines first and
+        // then all passes. The remaining groups are sorted
+        // alphabetically.
+        if (pipelinesFirst) {
+            grp.xforms.sort((a, b) => {
+                if (a.type === 'Pipeline' && b.type !== 'Pipeline')
+                    return -1;
+                else if (a.type !== 'Pipeline' && b.type === 'Pipeline')
+                    return 1;
+
+                if (a.transformation > b.transformation)
+                    return 1;
+                if (a.transformation < b.transformation)
+                    return -1;
+                return 0;
+            });
+        } else {
+            grp.xforms.sort();
+        }
+    }
+
+    groupedTransformations.sort((catA, catB) => {
+        if (catA.ordering > catB.ordering)
+            return 1;
+        if (catA.ordering < catB.ordering)
+            return -1;
+
+        if (catA.title > catB.title)
+            return 1;
+        if (catA.title < catB.title)
+            return -1;
+        return 0;
+    });
+
+    return groupedTransformations;
 }
 
 /**
@@ -353,7 +372,9 @@ export function clearSelectedTransformation(): void {
  *
  * @param {*} xform     The transformation to display.
  */
-export function showTransformationDetails(xform: JsonTransformation): void {
+export function showTransformationDetails(
+    xform: JsonTransformation, readonly: boolean = false
+): void {
     $('#goto-source-btn').hide();
     $('#goto-cpp-btn').hide();
     $('#goto-edge-start').hide();
@@ -412,54 +433,70 @@ export function showTransformationDetails(xform: JsonTransformation): void {
             'text': 'Zoom to area',
         })).appendTo(xformButtonContainer);
 
-    $('<div>', {
-        class: 'btn btn-sm btn-primary',
-        click: () => {
-            SDFVComponent.getInstance().invoke(
-                'previewTransformation', [xform], ComponentTarget.DaCe
-            );
-        },
-        mouseenter: () => {
-            highlightUUIDs(affectedIds);
-        },
-        mouseleave: () => {
-            VSCodeRenderer.getInstance()?.draw_async();
-        },
-    }).append($('<span>', {
-        'text': 'Preview',
-    })).appendTo(xformButtonContainer);
-
-    $('<div>', {
-        class: 'btn btn-sm btn-primary',
-        click: () => {
-            applyTransformations(xform);
-        },
-        mouseenter: () => {
-            highlightUUIDs(affectedIds);
-        },
-        mouseleave: () => {
-            VSCodeRenderer.getInstance()?.draw_async();
-        },
-    }).append($('<span>', {
-        'text': 'Apply',
-    })).appendTo(xformButtonContainer);
-
-    if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
+    if (!readonly) {
         $('<div>', {
             class: 'btn btn-sm btn-primary',
             click: () => {
                 SDFVComponent.getInstance().invoke(
-                    'exportTransformation', [xform], ComponentTarget.DaCe
+                    'previewTransformation', [xform], ComponentTarget.DaCe
                 );
             },
+            mouseenter: () => {
+                highlightUUIDs(affectedIds);
+            },
+            mouseleave: () => {
+                VSCodeRenderer.getInstance()?.draw_async();
+            },
         }).append($('<span>', {
-            text: 'Export To File',
+            'text': 'Preview',
         })).appendTo(xformButtonContainer);
+
+        $('<div>', {
+            class: 'btn btn-sm btn-primary',
+            click: () => {
+                applyTransformations(xform);
+            },
+            mouseenter: () => {
+                highlightUUIDs(affectedIds);
+            },
+            mouseleave: () => {
+                VSCodeRenderer.getInstance()?.draw_async();
+            },
+        }).append($('<span>', {
+            'text': 'Apply',
+        })).appendTo(xformButtonContainer);
+
+        if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
+            $('<div>', {
+                class: 'btn btn-sm btn-primary',
+                click: () => {
+                    SDFVComponent.getInstance().invoke(
+                        'exportTransformation', [xform], ComponentTarget.DaCe
+                    );
+                },
+            }).append($('<span>', {
+                text: 'Export To File',
+            })).appendTo(xformButtonContainer);
+    }
 
     const tableContainer = $('<div>', {
         'class': 'container-fluid attr-table-base-container',
     }).appendTo(infoContents);
-    generateAttributesTable(undefined, xform, tableContainer);
+    generateAttributesTable(undefined, xform, tableContainer, readonly);
+
+    if (xform._cba_failure_reason) {
+        const missedOptContainer = $('<div>', {
+            class: 'container-fluid attr-table-base-container mt-2',
+        }).appendTo(infoContents);
+
+        $('<p>', {
+            text: 'Failure Reason:',
+            class: 'fw-bold',
+        }).appendTo(missedOptContainer);
+        $('<p>', {
+            text: xform._cba_failure_reason,
+        }).appendTo(missedOptContainer);
+    }
 
     VSCodeSDFV.getInstance().infoBoxShow(true);
 }
