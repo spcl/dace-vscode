@@ -125,7 +125,7 @@ function recursiveDoForScopeChildren(
  */
 export function doForAllUUIDs(
     uuids: string[], action: CallableFunction,
-    applyToScopeChildren: boolean = false, applyToNone: boolean = false
+    applyToScopeChildren: boolean = false, applyToUndef: boolean = false
 ): void {
     const renderer = VSCodeRenderer.getInstance();
     if (!renderer)
@@ -133,7 +133,7 @@ export function doForAllUUIDs(
     uuids.forEach((uuid) => {
         const element = findGraphElementByUUID(renderer.getCFGList(), uuid);
 
-        if (element || applyToNone) {
+        if (element || applyToUndef) {
             action(element);
 
             // For scope entry nodes (e.g., maps), apply the action to all scope

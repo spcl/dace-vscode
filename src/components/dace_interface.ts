@@ -23,6 +23,7 @@ import { OptimizationPanel } from './optimization_panel';
 import {
     TransformationListProvider
 } from './transformation_list';
+import * as semver from 'semver';
 
 enum InteractionMode {
     PREVIEW,
@@ -299,19 +300,16 @@ implements vscode.WebviewViewProvider {
                         clearInterval(connectionIntervalId);
                         this.invoke('setStatus', [true]);
 
-                        this.versionOk = (
-                            this.version >= MIN_SAFE_VERSION &&
-                            this.version <= MAX_SAFE_VERSION
+                        this.versionOk = semver.satisfies(
+                            this.version,
+                            MIN_SAFE_VERSION + ' - ' + MAX_SAFE_VERSION
                         );
+                        const below = semver.lt(this.version, MIN_SAFE_VERSION);
                         const problemText = this.versionOk ? '' : (
-                            this.version < MIN_SAFE_VERSION ?
-                            'below the minimum' :
-                            'above the maximum'
+                            below ? 'below the minimum' : 'above the maximum'
                         );
                         const problemVersion = this.versionOk ? '' : (
-                            this.version < MIN_SAFE_VERSION ?
-                            MIN_SAFE_VERSION :
-                            MAX_SAFE_VERSION
+                            below ?  MIN_SAFE_VERSION : MAX_SAFE_VERSION
                         );
                         this.additionalVersionInfo = this.versionOk ? '' : (
                             'Your DaCe version (' + this.version + ') is ' +
