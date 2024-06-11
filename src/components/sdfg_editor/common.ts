@@ -153,24 +153,10 @@ export abstract class SDFGEditorBase extends BaseComponent {
     }
 
     @ICPCRequest()
-    public async getSettings(): Promise<Record<string, any>> {
+    public async getSettings(
+        settingKeys: string[]
+    ): Promise<Record<string, any>> {
         const settings: Record<string, any> = {};
-
-        const settingKeys = [
-            'adaptiveContentHiding',
-            'alwaysOnISEdgeLabels',
-            'collapseStatesDefault',
-            'curvedEdges',
-            'inclusiveRanges',
-            'minimap',
-            'showAccessNodes',
-            'showDataDescriptorSizes',
-            'showMapSchedules',
-            'showStateNames',
-            'summarizeLargeNumbersOfEdges',
-            'useVerticalScrollNavigation',
-            'useVerticalStateMachineLayout',
-        ];
         const sdfvConfig = workspace.getConfiguration('dace.sdfv');
         for (const key of settingKeys)
             settings[key] = sdfvConfig?.get(key);

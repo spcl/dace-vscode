@@ -97,44 +97,59 @@ export function findJsonSDFGElementByUUID(cfgList: CFGListType, uuid: string): [
     return [undefined, rootSDFG];
 }
 
+function recursiveDoForScopeChildren(
+    element: SDFGNode, action: CallableFunction
+): void {
+    const stateId = element.parent_id;
+    if (element instanceof EntryNode && stateId !== null &&
+        !element.attributes().is_collapsed) {
+        const state = element.cfg?.nodes[stateId] as JsonSDFGState;
+        if (state?.scope_dict[element.id] !== undefined) {
+            const stateGraph = element.parentElem?.data.graph;
+            if (!stateGraph) {
+                throw Error(
+                    'State graph missing on node' + element.label()
+                );
+            }
+            for (const nId of state.scope_dict[element.id]) {
+                const nd = stateGraph.node(nId);
+                action(nd);
+                recursiveDoForScopeChildren(nd, action);
+            }
+        }
+    }
+}
+
 /**
  * Perform an action for each element in an array given by their uuids.
+ * 
+ * @param uuids                 Element UUIDs to perform the action for.
+ * @param action                Action to perform for each element.
+ * @param applyToScopeChildren  Perform the action for all elements in a scope,
+ *                              when applying to a scope node (or state / nested
+ *                              SDFG etc.). Defaults to false.
+ * @param applyToUndef          Apply the action if no element was found for a
+ *                              given UUID, i.e., the element is undefined.
+ *                              Defaults to false.
  */
 export function doForAllUUIDs(
     uuids: string[], action: CallableFunction,
-    applyToScopeChildren: boolean = false
+    applyToScopeChildren: boolean = false, applyToUndef: boolean = false
 ): void {
     const renderer = VSCodeRenderer.getInstance();
     if (!renderer)
         return;
     uuids.forEach((uuid) => {
-        const element = findGraphElementByUUID(
-            renderer.getCFGList(), renderer.getCFGTree(), uuid
-        );
+        const element = findGraphElementByUUID(renderer.getCFGList(), uuid);
 
-        if (element) {
+        if (element || applyToUndef) {
             action(element);
 
             // For scope entry nodes (e.g., maps), apply the action to all scope
             // children if the corresponding parameter is set. If the scope is
             // collapsed, skip.
-            if (applyToScopeChildren && element instanceof SDFGNode) {
-                const stateId = element.parent_id;
-                if (element instanceof EntryNode && stateId !== null &&
-                    !element.attributes().is_collapsed) {
-                    const state = element.cfg?.nodes[stateId] as JsonSDFGState;
-                    if (state?.scope_dict[element.id] !== undefined) {
-                        const stateGraph = element.parentElem?.data.graph;
-                        if (!stateGraph) {
-                            throw Error(
-                                'State graph missing on node' + element.label()
-                            );
-                        }
-                        for (const nId of state.scope_dict[element.id])
-                            action(stateGraph.node(nId));
-                    }
-                }
-            }
+            if (applyToScopeChildren && element instanceof SDFGNode)
+                recursiveDoForScopeChildren(element, action);
         }
     });
 }
@@ -184,8 +199,16 @@ export function highlightUUIDs(
             });
         } else {
             doForAllUUIDs(uuids, (element: SDFGElement) => {
-                element.shade(renderer, context, color);
-            }, true);
+                if (element) {
+                    element.shade(renderer, context, color);
+                } else {
+                    renderer.get_graph()?.nodes().forEach(sId => {
+                        renderer.get_graph()?.node(sId).shade(
+                            renderer, context, color
+                        );
+                    });
+                }
+            }, true, true);
         }
     }
 }
@@ -294,7 +317,6 @@ export function elementUpdateLabel(
                 if (element instanceof EntryNode) {
                     const exitElem = findGraphElementByUUID(
                         renderer.getCFGList(),
-                        renderer.getCFGTree(),
                         element.sdfg.cfg_list_id + '/' +
                         element.parent_id + '/' +
                         element.data.node.scope_exit + '/-1'
@@ -306,7 +328,6 @@ export function elementUpdateLabel(
                 } else if (element instanceof ExitNode) {
                     const entryElem = findGraphElementByUUID(
                         renderer.getCFGList(),
-                        renderer.getCFGTree(),
                         element.sdfg.cfg_list_id + '/' +
                         element.parent_id + '/' +
                         element.data.node.scope_entry + '/-1'
@@ -407,9 +428,7 @@ export function reselectRendererElement(elem: SDFGElement): void {
     const renderer = VSCodeRenderer.getInstance();
     if (renderer) {
         const uuid = getGraphElementUUID(elem);
-        const newElem = findGraphElementByUUID(
-            renderer.getCFGList(), renderer.getCFGTree(), uuid
-        );
+        const newElem = findGraphElementByUUID(renderer.getCFGList(), uuid);
         if (newElem && newElem instanceof SDFGElement)
             VSCodeSDFV.getInstance().fillInfo(newElem);
     }
@@ -474,6 +493,31 @@ export async function getElementMetadata(
             return sdfgMetaDict[elem.type];
         }
         return {};
+    });
+}
+
+export function readDaCeProp(
+    obj: Record<string, unknown>, key: string,
+    meta: Record<string, { default: unknown }>
+): { val: unknown, isNonDefault: boolean } {
+    const isNonDefault = obj[key] !== undefined;
+    const val = isNonDefault ? obj[key] : meta[key]?.default;
+    return { val, isNonDefault };
+}
+
+export async function readElementProp(
+    elem: Record<string, unknown>, key: string
+): Promise<{ val: unknown, isNonDefault: boolean }> {
+    return getElementMetadata(elem).then(meta => {
+        return readDaCeProp(elem, key, meta);
+    });
+}
+
+export async function readTransformationProp(
+    xform: Record<string, unknown>, key: string
+): Promise<{ val: unknown, isNonDefault: boolean }> {
+    return getTransformationMetadata(xform).then(meta => {
+        return readDaCeProp(xform, key, meta);
     });
 }
 

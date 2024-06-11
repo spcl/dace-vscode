@@ -23,11 +23,15 @@ import { OptimizationPanel } from './optimization_panel';
 import {
     TransformationListProvider
 } from './transformation_list';
+import * as semver from 'semver';
 
 enum InteractionMode {
     PREVIEW,
     APPLY,
 }
+
+const MIN_SAFE_VERSION = '0.16.0';
+const MAX_SAFE_VERSION = '0.16.0';
 
 export class DaCeInterface
 extends BaseComponent
@@ -64,6 +68,10 @@ implements vscode.WebviewViewProvider {
     private daemonBooting = false;
 
     private port: number = -1;
+
+    private version: string = '';
+    private versionOk: boolean = false;
+    private additionalVersionInfo: string = '';
 
     private async getRandomPort(): Promise<number> {
         return new Promise(resolve => {
@@ -272,24 +280,64 @@ implements vscode.WebviewViewProvider {
             const req = request({
                 host: '::1',
                 port: this.port,
-                path: '/',
+                path: '/version',
                 method: 'GET',
                 timeout: 1000,
             }, response => {
-                if (response.statusCode === 200) {
-                    console.log('Daemon running');
-                    vscode.window.setStatusBarMessage(
-                        'Connected to a DaCe daemon', 10000
-                    );
-                    this.daemonRunning = true;
-                    this.daemonBooting = false;
-                    clearInterval(connectionIntervalId);
-                    this.invoke('setStatus', [true]);
+                response.setEncoding('utf8');
+                response.on('data', (data) => {
+                    if (response.statusCode === 200 && data) {
+                        this.version = data;
 
-                    // If a callback was provided, continue execution there.
-                    if (callback)
-                        callback();
-                }
+                        console.debug('Daemon running');
+                        console.debug(this.version);
+
+                        vscode.window.setStatusBarMessage(
+                            'Connected to a DaCe daemon', 10000
+                        );
+                        this.daemonRunning = true;
+                        this.daemonBooting = false;
+                        clearInterval(connectionIntervalId);
+                        this.invoke('setStatus', [true]);
+
+                        this.versionOk = semver.satisfies(
+                            this.version,
+                            MIN_SAFE_VERSION + ' - ' + MAX_SAFE_VERSION
+                        );
+                        const below = semver.lt(this.version, MIN_SAFE_VERSION);
+                        const problemText = this.versionOk ? '' : (
+                            below ? 'below the minimum' : 'above the maximum'
+                        );
+                        const problemVersion = this.versionOk ? '' : (
+                            below ?  MIN_SAFE_VERSION : MAX_SAFE_VERSION
+                        );
+                        this.additionalVersionInfo = this.versionOk ? '' : (
+                            'Your DaCe version (' + this.version + ') is ' +
+                            problemText + ' supported ' + 'version (' +
+                            problemVersion + ') for the current version of ' +
+                            'the extension.'
+                        ) + ' Compatibility is given on a best-effort basis.' +
+                        ' Certain features may not work as expected.';
+                        this.invoke(
+                            'setVersion',
+                            [
+                                this.version,
+                                this.versionOk,
+                                this.additionalVersionInfo
+                            ]
+                        );
+
+                        if (!this.versionOk) {
+                            vscode.window.showWarningMessage(
+                                this.additionalVersionInfo
+                            );
+                        }
+
+                        // If a callback was provided, continue execution there.
+                        if (callback)
+                            callback();
+                    }
+                });
             });
             req.end();
         }, 2000);
@@ -1262,6 +1310,16 @@ implements vscode.WebviewViewProvider {
             this.invoke('setPort', [this.port]);
         if (this.daemonRunning)
             this.invoke('setStatus', [this.daemonRunning]);
+        if (this.version) {
+            this.invoke(
+                'setVersion',
+                [
+                    this.version,
+                    this.versionOk,
+                    this.additionalVersionInfo
+                ]
+            );
+        }
         return super.onReady();
     }
 

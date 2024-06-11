@@ -4,7 +4,7 @@
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import 'material-icons/iconfont/material-icons.css';
+import 'material-symbols';
 
 import '../../elements/treeview/treeview.css';
 

@@ -159,7 +159,10 @@ export class VSCodeRenderer extends SDFGRenderer {
             }
         });
         this.INSTANCE.on('settings_changed', (settings) => {
-            SDFVComponent.getInstance().invoke('updateSettings', [settings]);
+            const nSettings: Record<string, any> = {};
+            for (const [k, v] of settings.entries())
+                nSettings[k] = v;
+            SDFVComponent.getInstance().invoke('updateSettings', [nSettings]);
         });
 
         return this.INSTANCE;
@@ -546,9 +549,7 @@ export class VSCodeRenderer extends SDFGRenderer {
         if (first === 'NONE')
             return;
 
-        const el = findGraphElementByUUID(
-            this.cfgList, this.cfgTree, first
-        ) as SDFGElement;
+        const el = findGraphElementByUUID(this.cfgList, first) as SDFGElement;
         if (!el)
             return;
 
@@ -559,7 +560,7 @@ export class VSCodeRenderer extends SDFGRenderer {
 
         if (el instanceof EntryNode && uuids.length >= 2) {
             const exit = findGraphElementByUUID(
-                this.cfgList, this.cfgTree, uuids[1]
+                this.cfgList, uuids[1]
             ) as SDFGElement;
             if (exit) {
                 this.canvas_manager?.translate_element(

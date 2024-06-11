@@ -1,11 +1,10 @@
 # Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
-from dace import nodes, serialize
+from dace import nodes, serialize, config as dc_config
 from dace.transformation.transformation import (SubgraphTransformation,
                                                 PatternTransformation)
 from dace.transformation.pass_pipeline import Pass, Pipeline
-from dace.version import __version__ as DACE_VERSION
 from dace_vscode import utils
 import sys
 import traceback
@@ -42,7 +41,7 @@ def expand_library_node(json_in):
         if cfg_id is None:
             sdfg.expand_library_nodes()
         else:
-            if DACE_VERSION >= '0.16.0':
+            if hasattr(sdfg, 'cfg_list'):
                 context_sdfg = sdfg.cfg_list[cfg_id]
             else:
                 context_sdfg = sdfg.sdfg_list[cfg_id]
@@ -99,7 +98,7 @@ def reapply_history_until(sdfg_json, index):
         try:
             transformation = history[i]
 
-            if DACE_VERSION >= '0.16.0':
+            if hasattr(transformation, 'cfg_id'):
                 target_cfg = original_sdfg.cfg_list[transformation.cfg_id]
                 transformation._sdfg = (
                     target_cfg
@@ -182,7 +181,7 @@ def apply_transformations(sdfg_json, transformation_json_list):
             }
         try:
             if isinstance(transformation, PatternTransformation):
-                if DACE_VERSION >= '0.16.0':
+                if hasattr(transformation, 'cfg_id'):
                     target_cfg = sdfg.cfg_list[transformation.cfg_id]
                     transformation._sdfg = (
                         target_cfg.sdfg
@@ -261,116 +260,122 @@ def get_transformations(sdfg_json, selected_elements, permissive):
         return loaded['error']
     sdfg = loaded['sdfg']
 
-    try:
-        optimizer = SDFGOptimizer(sdfg)
+    with dc_config.set_temporary('testing',
+                                 'serialize_all_fields',
+                                 value=True):
         try:
-            matches = optimizer.get_pattern_matches(permissive=permissive)
-        except TypeError:
-            # Compatibility with versions older than 0.12
-            matches = optimizer.get_pattern_matches(strict=not permissive)
+            optimizer = SDFGOptimizer(sdfg)
+            try:
+                matches = optimizer.get_pattern_matches(permissive=permissive)
+            except TypeError:
+                # Compatibility with versions older than 0.12
+                matches = optimizer.get_pattern_matches(strict=not permissive)
 
-        transformations = []
-        docstrings = {}
-        for transformation in matches:
-            transformations.append(transformation.to_json())
-            docstrings[type(transformation).__name__] = transformation.__doc__
+            transformations = []
+            docstrings = {}
+            for transformation in matches:
+                transformations.append(transformation.to_json())
+                docstrings[type(transformation).__name__] = \
+                    transformation.__doc__
 
-        # Obtain available passes.
-        try:
-            all_passes = passes.available_passes(False)
-            for ps in all_passes:
-                if ps.CATEGORY == 'Helper' or ps.CATEGORY == 'Analysis':
-                    continue
-                docstrings[ps.__name__] = ps.__doc__
-                pass_instance = ps()
-                transformations.append(pass_instance.to_json())
-        except (NameError, AttributeError):
-            # Compatibility with legacy versions where no method for getting
-            # available passes exists.
-            pass
+            # Obtain available passes.
+            try:
+                all_passes = passes.available_passes(False)
+                for ps in all_passes:
+                    if ps.CATEGORY == 'Helper' or ps.CATEGORY == 'Analysis':
+                        continue
+                    docstrings[ps.__name__] = ps.__doc__
+                    pass_instance = ps()
+                    transformations.append(pass_instance.to_json())
+            except (NameError, AttributeError):
+                # Compatibility with legacy versions where no method for getting
+                # available passes exists.
+                pass
 
-        selected_states = [
-            utils.sdfg_find_state_from_element(sdfg, n)
-            for n in selected_elements
-            if n['type'] == 'state'
-        ]
-        selected_nodes = [
-            utils.sdfg_find_node_from_element(sdfg, n)
-            for n in selected_elements
-            if n['type'] == 'node'
-        ]
-        selected_cfg_ids = list(
-            set(elem['cfgId'] for elem in selected_elements)
-        )
-        selected_sdfg = sdfg
-        if len(selected_cfg_ids) > 1:
+            selected_states = [
+                utils.sdfg_find_state_from_element(sdfg, n)
+                for n in selected_elements
+                if n['type'] == 'state'
+            ]
+            selected_nodes = [
+                utils.sdfg_find_node_from_element(sdfg, n)
+                for n in selected_elements
+                if n['type'] == 'node'
+            ]
+            selected_cfg_ids = list(
+                set(elem['cfgId'] for elem in selected_elements)
+            )
+            selected_sdfg = sdfg
+            if len(selected_cfg_ids) > 1:
+                return {
+                    'transformations': transformations,
+                    'docstrings': docstrings,
+                    'warnings': 'More than one CFG selected, ignoring subgraph',
+                }
+            elif len(selected_cfg_ids) == 1:
+                if hasattr(sdfg, 'cfg_list'):
+                    selected_sdfg = sdfg.cfg_list[selected_cfg_ids[0]]
+                else:
+                    selected_sdfg = sdfg.sdfg_list[selected_cfg_ids[0]]
+
+            subgraph = None
+            if len(selected_states) > 0:
+                subgraph = SubgraphView(selected_sdfg, selected_states)
+            else:
+                violated = False
+                state = None
+                for node in selected_nodes:
+                    if state is None:
+                        state = node.state
+                    elif state != node.state:
+                        violated = True
+                        break
+                if not violated and state is not None:
+                    subgraph = SubgraphView(state, selected_nodes)
+
+            if subgraph is not None:
+                if hasattr(SubgraphTransformation, 'extensions'):
+                    # Compatibility with versions older than 0.12
+                    extensions = SubgraphTransformation.extensions()
+                else:
+                    extensions = SubgraphTransformation.subclasses_recursive()
+
+                for xform in extensions:
+                    # Subgraph transformations are single-state.
+                    if len(selected_states) > 0:
+                        continue
+                    xform_obj = None
+                    try:
+                        xform_obj = xform()
+                        xform_obj.setup_match(subgraph)
+                    except:
+                        # If the above method throws an exception, it might be
+                        # because an older version of dace (<= 0.13.1) is being
+                        # used - attempt to construct subgraph transformations
+                        # using the old API.
+                        xform_obj = xform(subgraph)
+                    try:
+                        if xform_obj.can_be_applied(selected_sdfg, subgraph):
+                            transformations.append(xform_obj.to_json())
+                            docstrings[xform.__name__] = xform_obj.__doc__
+                    except Exception as can_be_applied_exception:
+                        # If something fails here, that is most likely due to a
+                        # transformation bug. Fail gracefully.
+                        print('Warning: ' + xform.__name__ +
+                              ' caused an exception')
+                        print(can_be_applied_exception)
+                        print('Most likely a transformation bug, ignoring...')
+
+            utils.restore_save_metadata(old_meta)
             return {
                 'transformations': transformations,
                 'docstrings': docstrings,
-                'warnings': 'More than one CFG selected, ignoring subgraph',
             }
-        elif len(selected_cfg_ids) == 1:
-            if DACE_VERSION >= '0.16.0':
-                selected_sdfg = sdfg.cfg_list[selected_cfg_ids[0]]
-            else:
-                selected_sdfg = sdfg.sdfg_list[selected_cfg_ids[0]]
-
-        subgraph = None
-        if len(selected_states) > 0:
-            subgraph = SubgraphView(selected_sdfg, selected_states)
-        else:
-            violated = False
-            state = None
-            for node in selected_nodes:
-                if state is None:
-                    state = node.state
-                elif state != node.state:
-                    violated = True
-                    break
-            if not violated and state is not None:
-                subgraph = SubgraphView(state, selected_nodes)
-
-        if subgraph is not None:
-            if hasattr(SubgraphTransformation, 'extensions'):
-                # Compatibility with versions older than 0.12
-                extensions = SubgraphTransformation.extensions()
-            else:
-                extensions = SubgraphTransformation.subclasses_recursive()
-
-            for xform in extensions:
-                # Subgraph transformations are single-state.
-                if len(selected_states) > 0:
-                    continue
-                xform_obj = None
-                try:
-                    xform_obj = xform()
-                    xform_obj.setup_match(subgraph)
-                except:
-                    # If the above method throws an exception, it might be because
-                    # an older version of dace (<= 0.13.1) is being used - attempt
-                    # to construct subgraph transformations using the old API.
-                    xform_obj = xform(subgraph)
-                try:
-                    if xform_obj.can_be_applied(selected_sdfg, subgraph):
-                        transformations.append(xform_obj.to_json())
-                        docstrings[xform.__name__] = xform_obj.__doc__
-                except Exception as can_be_applied_exception:
-                    # If something fails here, that is most likely due to a
-                    # transformation bug. Fail gracefully.
-                    print('Warning: ' + xform.__name__ + ' caused an exception')
-                    print(can_be_applied_exception)
-                    print('Most likely a transformation bug, ignoring...')
-
-        utils.restore_save_metadata(old_meta)
-        return {
-            'transformations': transformations,
-            'docstrings': docstrings,
-        }
-    except Exception as e:
-        traceback.print_exc()
-        return {
-            'error': {
-                'message': 'Failed to load transformations',
-                'details': utils.get_exception_message(e),
-            },
-        }
+        except Exception as e:
+            traceback.print_exc()
+            return {
+                'error': {
+                    'message': 'Failed to load transformations',
+                    'details': utils.get_exception_message(e),
+                },
+            }

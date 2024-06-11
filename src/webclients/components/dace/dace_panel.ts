@@ -1,10 +1,10 @@
 // Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import 'bootstrap';
+import * as bootstrap from 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import 'material-icons/iconfont/material-icons.css';
+import 'material-symbols';
 
 import './dace_panel.css';
 
@@ -108,6 +108,37 @@ class DaCePanel extends ICPCWebclientMessagingComponent {
 
             this.quitBtn?.prop('disabled', 'disabled');
         }
+    }
+
+    @ICPCRequest()
+    public setVersion(
+        version: string, versionOk: boolean, additionalInfo: string
+    ): void {
+        const versionText = $('#version-text');
+        versionText.html();
+        versionText.text(version);
+        if (additionalInfo !== '') {
+            const tooltip = $('<span>', {
+                class: 'material-symbols-rounded',
+                text: 'warning',
+                css: {
+                    'vertical-align': 'middle',
+                    'font-size': '1rem',
+                },
+                'data-bs-toggle': 'tooltip',
+                'data-bs-placement': 'bottom',
+                'data-bs-custom-class': 'version-warning-tooltip',
+                'data-bs-title': additionalInfo,
+            }).appendTo(versionText);
+            new bootstrap.Tooltip(tooltip[0], {
+                placement: 'bottom',
+                trigger: 'click hover focus',
+            });
+        }
+        if (versionOk)
+            versionText.addClass('version-ok');
+        else
+            versionText.addClass('version-problem');
     }
 
 }

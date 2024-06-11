@@ -1,11 +1,14 @@
 /* Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
  * All rights reserved. */
 
+@import "bootstrap_color_overrides";
+
 body.sdfv {
   display: flex;
   flex-direction: column;
   background-color: inherit;
   color: var(--vscode-foreground);
+  padding: 0;
 }
 
 .sdfv {
@@ -40,58 +43,8 @@ body.sdfv {
     border: 1px solid black;
   }
 
-  .button {
-    color: var(--vscode-button-foreground);
-    background-color: var(--vscode-button-background);
-  }
-
-  .button:hover {
-    background-color: var(--vscode-button-hoverBackground);
-  }
-
-  button.close {
-    color: var(--vscode-foreground);
-    text-shadow: none;
-  }
-
-  .btn-sdfv {
-    border-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-    background-color: var(--vscode-button-background);
-  }
-
-  .btn-sdfv:hover {
-    color: var(--vscode-button-foreground);
-    border-color: var(--vscode-button-background);
-    background-color: var(--vscode-button-hoverBackground);
-  }
-
-  .btn-sdfv.show {
-    color: var(--vscode-button-foreground);
-    border-color: var(--vscode-button-background);
-    background-color: var(--vscode-button-hoverBackground);
-  }
-
-  .btn-primary {
-    border-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-    background-color: var(--vscode-button-background);
-  }
-
-  .btn-primary:hover {
-    background-color: var(--vscode-button-hoverBackground);
-  }
-
   pre.code {
     float: left;
-  }
-
-  #top-bar {
-    border-bottom: 1px solid var(--vscode-scrollbarSlider-background);
-  }
-
-  .button span .material-icons {
-    font-size: 1rem;
   }
 
   /* View splitter */
@@ -123,82 +76,28 @@ body.sdfv {
 
   /* End view splitter */
 
-  /* Top bar */
+  .toolbar {
+    border-top: 1px solid var(--vscode-scrollbarSlider-background);
+    border-bottom: 1px solid var(--vscode-scrollbarSlider-background);
 
-  #top-bar {
-    display: flex;
-    flex-direction: row;
-    font-size: .9rem;
+    .toolbar-category {
+      padding-left: calc(var(--bs-gutter-x) * 0.5);
+      padding-right: calc(var(--bs-gutter-x) * 0.5);
+      padding-top: .4rem;
+      padding-bottom: .4rem;
+      border-right: 1px solid var(--vscode-scrollbarSlider-background);
+
+      div {
+        max-width: fit-content;
+      }
+
+    }
+
+    .toolbar-category:last-child {
+      border-right: none;
+    }
+
   }
-
-  #top-bar #search-bar-wrapper {
-    height: 100%;
-  }
-
-  #top-bar #search-bar-wrapper #search-bar {
-    height: 100%;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-  }
-
-  #top-bar #search-bar #search {
-    padding: .3rem .1rem;
-    margin-right: .2rem;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-placeholderForeground);
-  }
-
-  #top-bar #search-bar #search::placeholder {
-    color: var(--vscode-input-placeholderForeground);
-  }
-
-  #search-case-sensitive-btn {
-    height: 1.3rem;
-    width: 1.3rem;
-    margin-left: -1.6rem;
-    margin-top: 0.2rem;
-    padding: -0.3rem 1rem;
-    border-radius: 0;
-    user-select: none;
-    outline: 0 none;
-  }
-
-  #search-case-text {
-    margin-left: -0.2rem;
-    color: var(--vscode-input-placeholderForeground);
-  }
-
-  #top-bar #button-bar-wrapper {
-    flex-grow: 1;
-  }
-
-  #top-bar #button-bar {
-    margin: .5rem 0;
-    display: flex;
-    flex-direction: row;
-  }
-
-  #button-bar .button {
-    margin: 0 .1rem;
-    user-select: none;
-  }
-
-  #button-bar .spacer {
-    width: .6rem;
-    height: 100%;
-    display: block;
-    background-color: transparent;
-    color: transparent;
-    user-select: none;
-  }
-
-  #button-bar #breakpoint-btn {
-    margin-left: auto;
-  }
-
-  /* End top bar */
 
   /* Processing overlay */
 
@@ -318,8 +217,8 @@ body.sdfv {
     height: 100%;
   }
 
-  #layout-toggle-btn .material-icons,
-  #info-close-btn .material-icons {
+  #layout-toggle-btn .material-symbols-outlined,
+  #info-close-btn .material-symbols-outlined {
     display: inline-flex;
     vertical-align: middle;
   }
@@ -329,7 +228,7 @@ body.sdfv {
     flex-direction: row;
   }
 
-  #layout-toggle-btn.vertical span .material-icons {
+  #layout-toggle-btn.vertical span .material-symbols-outlined {
     transform: rotate(90deg);
   }
 
@@ -351,7 +250,7 @@ body.sdfv {
     font-size: 1rem;
   }
 
-  #info-contents .material-icons {
+  #info-contents .material-symbols-outlined {
     display: inline-flex;
     vertical-align: middle;
   }
@@ -492,10 +391,6 @@ body.sdfv {
 
   /* Context menu */
 
-  #contextmenu {
-    background-color: var(--vscode-editor-background);
-  }
-
   .context_menu_option {
     margin: .2rem 0 -.2rem;
     background-color: var(--vscode-editor-background);
@@ -506,25 +401,6 @@ body.sdfv {
   }
 
   /* End context menu */
-
-  /* SDFV Toolbar */
-
-  #sdfv-toolbar {
-    position: absolute;
-    top: .5rem;
-    left: .5rem;
-  }
-
-  #sdfv-toolbar .sdfv-toolbar-button {
-    padding-bottom: 0;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    cursor: pointer;
-  }
-
-  /* End SDFV Toolbar */
 
   #info-contents .transformation-button-container {
     display: flex;

@@ -7,7 +7,7 @@ import $ = require('jquery');
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import 'material-icons/iconfont/material-icons.css';
+import 'material-symbols';
 
 import '../../elements/treeview/treeview.css';
 
@@ -64,7 +64,7 @@ class TransformationHistoryItem extends CustomTreeViewItem {
         if (this.index !== undefined && !this.disabled) {
             $('<div>', {
                 'class': 'transformation-history-apply-button',
-                'html': '<i class="material-icons">restore</i>&nbsp;Revert To',
+                'html': '<i class="material-symbols-outlined">restore</i>&nbsp;Revert To',
                 'title': '',
                 'click': (e: MouseEvent) => {
                     TransformationHistoryPanel.getInstance().invoke(

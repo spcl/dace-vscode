@@ -1,0 +1,21 @@
+/* Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+ * All rights reserved. */
+
+.sdfv {
+
+  .btn-primary {
+    --bs-btn-color: var(--vscode-button-foreground);
+    --bs-btn-bg: var(--vscode-button-background);
+    --bs-btn-border-color: var(--vscode-button-border);
+    --bs-btn-hover-color: var(--vscode-button-foreground);
+    --bs-btn-hover-bg: var(--vscode-button-hoverBackground);
+    --bs-btn-hover-border-color: var(--vscode-button-border);
+    --bs-btn-active-color: var(--vscode-button-foreground);
+    --bs-btn-active-bg: var(--vscode-button-hoverBackground);
+    --bs-btn-active-border-color: var(--vscode-button-border);
+    --bs-btn-disabled-color: var(--vscode-button-foreground);
+    --bs-btn-disabled-bg: var(--vscode-button-background);
+    --bs-btn-disabled-border-color: var(--vscode-button-border);
+  }
+
+}

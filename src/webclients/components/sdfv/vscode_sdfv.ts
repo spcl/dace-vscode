@@ -52,9 +52,14 @@ import {
     traverseSDFGScopes,
     JsonSDFGState,
     checkCompatLoad,
+    find_in_graph_predicate,
 } from '@spcl/sdfv/src';
 import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
-import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
+import {
+    SDFVSettingKey,
+    SDFVSettingValT,
+    SDFVSettings,
+} from '@spcl/sdfv/src/utils/sdfv_settings';
 import {
     ICPCRequest
 } from '../../../common/messaging/icpc_messaging_component';
@@ -209,7 +214,7 @@ export class VSCodeSDFV extends SDFV {
                         this.infoBarLastVertWidth = newWidth;
                         this.infoContainer?.width(newWidth.toString() + 'px');
 
-                        if (SDFVSettings.minimap) {
+                        if (SDFVSettings.get<boolean>('minimap')) {
                             $('#minimap').css('transition', '');
                             $('#minimap').css(
                                 'right', (newWidth + 5).toString() + 'px'
@@ -300,7 +305,7 @@ export class VSCodeSDFV extends SDFV {
     }
 
     private checkTrayCoversMinimap(animate: boolean = false): void {
-        if (SDFVSettings.minimap) {
+        if (SDFVSettings.get<boolean>('minimap')) {
             if (SPLIT_DIRECTION === 'vertical' && this.infoBarLastVertWidth &&
                 !this.infoTrayExplicitlyHidden) {
                 try {
@@ -328,32 +333,58 @@ export class VSCodeSDFV extends SDFV {
     }
 
     public initSearch(): void {
-        const caseBtn = $('#search-case-sensitive-btn');
+        const caseBtn = $('#search-case');
+        const whileTypingBtn = $('#search-while-typing');
         const searchInput = $('#search');
-        caseBtn.on('click', () => {
-            if (caseBtn) {
-                if (caseBtn)
-                    if (caseBtn.css('background-color') === 'transparent') {
-                        caseBtn.css('background-color', '#245779');
-                        caseBtn.prop('checked', true);
-                    } else {
-                        caseBtn.css('background-color', 'transparent');
-                        caseBtn.prop('checked', false);
-                    }
-            }
 
+        caseBtn.on('change', () => {
+            VSCodeSDFV.getInstance().startFindInGraph();
+        });
+
+        searchInput.on('input', () => {
             VSCodeSDFV.getInstance().startFindInGraph();
         });
 
         // Start search whenever text is entered in the search bar.
-        searchInput.on('input', () => {
-            VSCodeSDFV.getInstance().startFindInGraph();
+        whileTypingBtn.on('change', () => {
+            searchInput.off('input');
+            if (whileTypingBtn.is(':checked')) {
+                searchInput.on('input', () => {
+                    VSCodeSDFV.getInstance().startFindInGraph();
+                });
+            }
         });
 
         // Start search on enter press in the search bar.
         searchInput.on('keydown', (e) => {
             if (e.key === 'Enter')
                 VSCodeSDFV.getInstance().startFindInGraph();
+        });
+
+        const searchBtn = $('#search-btn');
+        searchBtn.off('click');
+        searchBtn.on('click', () => {
+            VSCodeSDFV.getInstance().startFindInGraph();
+        });
+
+        const advSearchBtn = $('#advsearch-btn');
+        advSearchBtn.off('click');
+        advSearchBtn.on('click', (e) => {
+            e.preventDefault();
+            const renderer = VSCodeRenderer.getInstance();
+            if (renderer) {
+                setTimeout(() => {
+                    const graph = renderer.get_graph();
+                    const code = $('#advsearch').val();
+                    if (graph && code) {
+                        const predicate = eval(code.toString());
+                        find_in_graph_predicate(
+                            this, renderer, graph, predicate
+                        );
+                    }
+                }, 1);
+            }
+            return false;
         });
     }
 
@@ -714,8 +745,8 @@ export class VSCodeSDFV extends SDFV {
                 $('<p>', {
                     'class': 'info-subtitle',
                     'html': 'Connectors: ' + sdfg_edge.src_connector +
-                        ' <i class="material-icons">arrow_forward</i> ' +
-                        sdfg_edge.dst_connector,
+                        ' <i class="material-symbols-outlined">' +
+                        'arrow_forward</i> ' + sdfg_edge.dst_connector,
                 }).appendTo(contents);
                 $('<hr>').appendTo(contents);
             }
@@ -774,7 +805,6 @@ export class VSCodeSDFV extends SDFV {
                 if (other_uuid) {
                     other_element = findGraphElementByUUID(
                         VSCodeRenderer.getInstance()!.getCFGList(),
-                        VSCodeRenderer.getInstance()!.getCFGTree(),
                         other_uuid
                     );
                 }
@@ -834,7 +864,7 @@ export class VSCodeSDFV extends SDFV {
                     typeof searchVal === 'string' && searchVal.length > 0)
                     find_in_graph(
                         this, renderer, graph, searchVal,
-                        $('#search-case-sensitive-btn').is(':checked')
+                        $('#search-case').is(':checked')
                     );
             }, 1);
     }
@@ -1069,12 +1099,12 @@ export class VSCodeSDFV extends SDFV {
             vscode.postMessage({
                 type: 'sdfv.register_breakpointindicator',
             });
-            $('#display-bps').html('Hide Breakpoints');
+            $('#breakpoint-btn').text('Hide Breakpoints');
         } else if (!this.showingBreakpoints) {
             vscode.postMessage({
                 type: 'sdfv.deregister_breakpointindicator',
             });
-            $('#display-bps').html('Display Breakpoints');
+            $('#breakpoint-btn').text('Display Breakpoints');
         }
     }
 
@@ -1115,16 +1145,11 @@ export class VSCodeSDFV extends SDFV {
     public updateContents(
         newContent: string | Uint8Array, preventRefreshes: boolean = false
     ): void {
-        const t1 = performance.now();
         this.setViewingHistoryState(false);
         $('#exit-preview-button')?.hide();
         const [content, compressed] = read_or_decompress(newContent);
         this.viewingCompressed = compressed;
-        const t2 = performance.now();
         this.setRendererContent(content, false, preventRefreshes);
-        const t3 = performance.now();
-        console.debug('parsing contents took ' + (t2 - t1) + 'ms');
-        console.debug('updating renderer took ' + (t3 - t2) + 'ms');
     }
 
     /**
@@ -1281,10 +1306,10 @@ export class SDFVComponent extends ICPCWebclientMessagingComponent {
         this.registerRequestHandler(AnalysisController.getInstance());
 
         // Load the default settings.
-        this.invoke('getSettings').then(
-            (settings: Record<string, string | boolean | number>) => {
-                for (const key of Object.keys(settings))
-                    SDFVSettings.setDefault(key, settings[key]);
+        this.invoke('getSettings', [SDFVSettings.settingsKeys]).then(
+            (settings: Record<SDFVSettingKey, SDFVSettingValT>) => {
+                for (const [k, v] of Object.entries(settings))
+                    SDFVSettings.set(k as SDFVSettingKey, v);
                 sdfv.initialize();
                 sdfv.get_renderer()?.draw_async();
             }

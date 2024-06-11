@@ -45,6 +45,16 @@ body {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
+#status-text,
+#version-text {
+    user-select: none;
+
+    span[class*="material-"] {
+        cursor: pointer;
+    }
+
+}
+
 #status-text {
     font-weight: bold;
 }
@@ -54,5 +64,18 @@ body {
 }
 
 #status-text.not-connected {
-    color: var(--vscode-inputValidation-errorForeground);
+    color: var(--vscode-editorError-foreground);
+}
+
+#version-text.version-problem {
+    color: var(--vscode-editorWarning-foreground);
+}
+
+#version-text.version-ok {
+    color: var(--vscode-testing-iconPassed);
+}
+
+.version-warning-tooltip {
+    font-size: .7rem;
+    --bs-tooltip-color: var(--vscode-editorWarning-foreground);
 }
