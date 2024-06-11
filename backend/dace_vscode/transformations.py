@@ -6,7 +6,6 @@ from dace import nodes, serialize, config as dc_config
 from dace.transformation.transformation import (SubgraphTransformation,
                                                 PatternTransformation)
 from dace.transformation.pass_pipeline import Pass, Pipeline
-from dace.version import __version__ as DACE_VERSION
 from dace_vscode import utils
 import sys
 import traceback
@@ -43,7 +42,7 @@ def expand_library_node(json_in):
         if cfg_id is None:
             sdfg.expand_library_nodes()
         else:
-            if DACE_VERSION >= '0.16.0' or not hasattr(sdfg, 'sdfg_list'):
+            if hasattr(sdfg, 'cfg_list'):
                 context_sdfg = sdfg.cfg_list[cfg_id]
             else:
                 context_sdfg = sdfg.sdfg_list[cfg_id]
@@ -100,8 +99,7 @@ def reapply_history_until(sdfg_json, index):
         try:
             transformation = history[i]
 
-            if (DACE_VERSION >= '0.16.0' or
-                not hasattr(transformation, 'sdfg_id')):
+            if hasattr(transformation, 'cfg_id'):
                 target_cfg = original_sdfg.cfg_list[transformation.cfg_id]
                 transformation._sdfg = (
                     target_cfg
@@ -184,8 +182,7 @@ def apply_transformations(sdfg_json, transformation_json_list):
             }
         try:
             if isinstance(transformation, PatternTransformation):
-                if (DACE_VERSION >= '0.16.0' or
-                    not hasattr(transformation, 'sdfg_id')):
+                if hasattr(transformation, 'cfg_id'):
                     target_cfg = sdfg.cfg_list[transformation.cfg_id]
                     transformation._sdfg = (
                         target_cfg.sdfg
@@ -326,7 +323,7 @@ def get_transformations(sdfg_json, selected_elements, permissive):
                     'warnings': 'More than one CFG selected, ignoring subgraph',
                 }
             elif len(selected_cfg_ids) == 1:
-                if DACE_VERSION >= '0.16.0' or not hasattr(sdfg, 'sdfg_list'):
+                if hasattr(sdfg, 'cfg_list'):
                     selected_sdfg = sdfg.cfg_list[selected_cfg_ids[0]]
                 else:
                     selected_sdfg = sdfg.sdfg_list[selected_cfg_ids[0]]

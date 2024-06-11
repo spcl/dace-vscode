@@ -122,10 +122,19 @@ function recursiveDoForScopeChildren(
 
 /**
  * Perform an action for each element in an array given by their uuids.
+ * 
+ * @param uuids                 Element UUIDs to perform the action for.
+ * @param action                Action to perform for each element.
+ * @param applyToScopeChildren  Perform the action for all elements in a scope,
+ *                              when applying to a scope node (or state / nested
+ *                              SDFG etc.). Defaults to false.
+ * @param applyToUndef          Apply the action if no element was found for a
+ *                              given UUID, i.e., the element is undefined.
+ *                              Defaults to false.
  */
 export function doForAllUUIDs(
     uuids: string[], action: CallableFunction,
-    applyToScopeChildren: boolean = false, applyToNone: boolean = false
+    applyToScopeChildren: boolean = false, applyToUndef: boolean = false
 ): void {
     const renderer = VSCodeRenderer.getInstance();
     if (!renderer)
@@ -133,7 +142,7 @@ export function doForAllUUIDs(
     uuids.forEach((uuid) => {
         const element = findGraphElementByUUID(renderer.getCFGList(), uuid);
 
-        if (element || applyToNone) {
+        if (element || applyToUndef) {
             action(element);
 
             // For scope entry nodes (e.g., maps), apply the action to all scope
