@@ -4751,18 +4751,6 @@
       "category": "General",
       "default": ""
     },
-    "break_states": {
-      "metatype": "set",
-      "desc": "States that when reached break out of the loop",
-      "category": "General",
-      "default": []
-    },
-    "continue_states": {
-      "metatype": "set",
-      "desc": "States that when reached directly execute the next iteration",
-      "category": "General",
-      "default": []
-    },
     "is_collapsed": {
       "metatype": "bool",
       "desc": "Show this block as collapsed",
@@ -5159,6 +5147,12 @@
       "key_type": "str",
       "value_type": "str"
     },
+    "using_experimental_blocks": {
+      "metatype": "bool",
+      "desc": "Whether the SDFG contains experimental control flow blocks",
+      "category": "General",
+      "default": false
+    },
     "is_collapsed": {
       "metatype": "bool",
       "desc": "Show this block as collapsed",
@@ -5238,12 +5232,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "SingleStateTransformation": {
@@ -5272,12 +5260,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "MultiStateTransformation": {
@@ -5306,12 +5288,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandTransformation": {
@@ -5340,12 +5316,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "SubgraphTransformation": {
@@ -5366,12 +5336,6 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "StateReachability": {},
@@ -5417,12 +5381,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.standard.nodes.code.CodeLibraryNode": {
@@ -5553,12 +5511,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGearbox": {
@@ -5587,12 +5539,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.standard.nodes.gearbox.Gearbox": {
@@ -5719,12 +5665,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandReducePureSequentialDim": {
@@ -5753,12 +5693,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandReduceOpenMP": {
@@ -5787,12 +5721,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandReduceCUDADevice": {
@@ -5821,12 +5749,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandReduceCUDABlock": {
@@ -5855,12 +5777,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandReduceCUDABlockAll": {
@@ -5889,12 +5805,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandReduceFPGAPartialReduction": {
@@ -5923,12 +5833,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandReduceGPUAuto": {
@@ -5957,12 +5861,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.standard.nodes.reduce.Reduce": {
@@ -6107,12 +6005,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.blas.nodes.matmul.MatMul": {
@@ -6248,12 +6140,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandDotOpenBLAS": {
@@ -6282,12 +6168,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandDotMKL": {
@@ -6316,12 +6196,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandDotCuBLAS": {
@@ -6350,12 +6224,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandDotFpgaPartialSums": {
@@ -6384,12 +6252,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandDotFpgaAccumulate": {
@@ -6418,12 +6280,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.blas.nodes.dot.Dot": {
@@ -6632,12 +6488,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemvFpgaAccumulate": {
@@ -6666,12 +6516,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemvFpgaTilesByColumn": {
@@ -6700,12 +6544,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemvCuBLAS": {
@@ -6734,12 +6572,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemvOpenBLAS": {
@@ -6768,12 +6600,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemvMKL": {
@@ -6802,12 +6628,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemvPBLAS": {
@@ -6836,12 +6656,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.blas.nodes.gemv.Gemv": {
@@ -6996,12 +6810,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemmOpenBLAS": {
@@ -7030,12 +6838,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemmMKL": {
@@ -7064,12 +6866,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemmGPUBLAS": {
@@ -7098,12 +6894,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemmCuBLAS": {
@@ -7132,12 +6922,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemmRocBLAS": {
@@ -7166,12 +6950,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGemmPBLAS": {
@@ -7200,12 +6978,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.blas.nodes.gemm.Gemm": {
@@ -7451,12 +7223,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandGerFpga": {
@@ -7485,12 +7251,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.blas.nodes.ger.Ger": {
@@ -7640,12 +7400,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandBatchedMatMulMKL": {
@@ -7674,12 +7428,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandBatchedMatMulOpenBLAS": {
@@ -7708,12 +7456,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandBatchedMatMulCuBLAS": {
@@ -7742,12 +7484,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.blas.nodes.batched_matmul.BatchedMatMul": {
@@ -7984,12 +7720,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandAxpyFpga": {
@@ -8018,12 +7748,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.blas.nodes.axpy.Axpy": {
@@ -8263,12 +7987,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandTransposePure": {
@@ -8297,12 +8015,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandTransposeMKL": {
@@ -8331,12 +8043,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandTransposeOpenBLAS": {
@@ -8365,12 +8071,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandTransposeCuBLAS": {
@@ -8399,12 +8099,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.standard.nodes.transpose.Transpose": {
@@ -8532,12 +8226,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ExpandHPTT": {
@@ -8566,12 +8254,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "dace.libraries.standard.nodes.ttranspose.TensorTranspose": {
@@ -8716,12 +8398,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "MapExpansion": {
@@ -8780,12 +8456,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "MapDimShuffle": {
@@ -8821,12 +8491,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "TrivialMapElimination": {
@@ -8855,12 +8519,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "TrivialMapRangeElimination": {
@@ -8889,12 +8547,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "StreamTransient": {
@@ -8929,12 +8581,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "AccumulateTransient": {
@@ -8975,12 +8621,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "LocalStorage": {
@@ -9027,12 +8667,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "InLocalStorage": {
@@ -9079,12 +8713,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "OutLocalStorage": {
@@ -9131,12 +8759,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "OTFMapFusion": {
@@ -9171,12 +8793,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "StripMining": {
@@ -9264,12 +8880,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "MapTiling": {
@@ -9338,12 +8948,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "MapTilingWithOverlap": {
@@ -9424,12 +9028,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "BufferTiling": {
@@ -9468,12 +9066,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "Vectorization": {
@@ -9532,12 +9124,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "GPUGridStridedTiling": {
@@ -9584,12 +9170,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "StreamingMemory": {
@@ -9659,12 +9239,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "StreamingComposition": {
@@ -9722,12 +9296,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ReduceExpansion": {
@@ -9780,12 +9348,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "PruneConnectors": {
@@ -9820,12 +9382,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "TrivialTaskletElimination": {
@@ -9854,12 +9410,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "CopyToDevice": {
@@ -9911,12 +9461,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "GPUTransformMap": {
@@ -9969,12 +9513,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "GPUTransformLocalStorage": {
@@ -10015,12 +9553,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "MPITransformMap": {
@@ -10049,12 +9581,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "WarpTiling": {
@@ -10095,12 +9621,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "BankSplit": {
@@ -10141,12 +9661,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "CodeObject": {
@@ -10251,12 +9765,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "MatrixProductTranspose": {
@@ -10285,12 +9793,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "GPUPersistentKernel": {
@@ -10329,12 +9831,6 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "MultiExpansion": {
@@ -10385,12 +9881,6 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "SubgraphFusion": {
@@ -10471,12 +9961,6 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "FPGATransformSDFG": {
@@ -10511,12 +9995,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "GPUTransformSDFG": {
@@ -10593,12 +10071,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "InlineSDFG": {
@@ -10627,12 +10099,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "InlineTransients": {
@@ -10661,12 +10127,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "RefineNestedAccess": {
@@ -10695,12 +10155,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "NestSDFG": {
@@ -10735,12 +10189,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "LoopUnroll": {
@@ -10775,12 +10223,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "LoopPeeling": {
@@ -10821,12 +10263,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "LoopToMap": {
@@ -10861,12 +10297,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "InlineMultistateSDFG": {
@@ -10895,12 +10325,6 @@
       "desc": "",
       "category": "(Debug)",
       "default": 0
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "StencilTiling": {
@@ -10953,12 +10377,6 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "TemporalVectorization": {
@@ -10991,12 +10409,6 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "CompositeFusion": {
@@ -11084,12 +10496,6 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
-    },
-    "_cba_failure_reason": {
-      "metatype": "str",
-      "desc": "Failure reason",
-      "category": "General",
-      "default": null
     }
   },
   "ArrayElimination": {},
