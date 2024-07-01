@@ -28,7 +28,7 @@ export function findMaximumSdfgId(sdfg: JsonSDFG): number {
     let maxId = sdfg.cfg_list_id;
     for (const node of sdfg.nodes) {
         if (node.type === SDFGElementType.SDFGState)
-            for (const n of node.nodes) {
+            for (const n of node.nodes ?? []) {
                 if (n.type === SDFGElementType.NestedSDFG)
                     maxId = Math.max(
                         findMaximumSdfgId(n.attributes.sdfg), maxId
@@ -73,14 +73,14 @@ export function findJsonSDFGElementByUUID(cfgList: CFGListType, uuid: string): [
         const stateId = parseInt(parts[1]);
         if (stateId >= 0 && cfg?.nodes) {
             const state = cfg.nodes[stateId];
-            if (state) {
+            if (state && state.nodes) {
                 if (parts.length > 2) {
                     const nodeId = parseInt(parts[2]);
                     if (nodeId >= 0) {
                         return [state.nodes[nodeId], cfg];
                     } else if (parts.length === 4) {
                         const edgeId = parseInt(parts[3]);
-                        if (edgeId >= 0)
+                        if (edgeId >= 0 && state.edges)
                             return [state.edges[edgeId], cfg];
                     }
                 }
@@ -530,7 +530,7 @@ export function doForAllNodeTypes(
             fun(block);
 
         if (block.type === SDFGElementType.SDFGState) {
-            block.nodes.forEach(node => {
+            block.nodes?.forEach(node => {
                 if (node.type === type)
                     fun(node);
 

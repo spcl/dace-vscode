@@ -741,14 +741,17 @@ export class VSCodeSDFV extends SDFV {
 
             if (elem instanceof Edge && elem.data.type === 'Memlet' &&
                 elem.parent_id !== null) {
-                let sdfg_edge = elem.cfg!.nodes[elem.parent_id].edges[elem.id];
-                $('<p>', {
-                    'class': 'info-subtitle',
-                    'html': 'Connectors: ' + sdfg_edge.src_connector +
-                        ' <i class="material-symbols-outlined">' +
-                        'arrow_forward</i> ' + sdfg_edge.dst_connector,
-                }).appendTo(contents);
-                $('<hr>').appendTo(contents);
+                const ndEdges = elem.cfg?.nodes[elem.parent_id].edges;
+                if (ndEdges) {
+                    let sdfg_edge = ndEdges[elem.id];
+                    $('<p>', {
+                        'class': 'info-subtitle',
+                        'html': 'Connectors: ' + sdfg_edge.src_connector +
+                            ' <i class="material-symbols-outlined">' +
+                            'arrow_forward</i> ' + sdfg_edge.dst_connector,
+                    }).appendTo(contents);
+                    $('<hr>').appendTo(contents);
+                }
             }
 
             const tableContainer = $('<div>', {
