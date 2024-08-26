@@ -1078,40 +1078,36 @@ export async function attributeTablePutEntry(
                     target, valueCell, dtype
                 )];
                 break;
-            case 'Array':
-            case 'Data':
-            case 'Scalar':
-            case 'View':
-            case 'Reference':
-            case 'Stream':
-                const containerTypeChoices = Object.keys(
-                    sdfgMetaDict['__data_container_types__']
-                );
-                const dataTypeProp = attrTablePutSelect(
-                    key, 'type', val.type, elem, xform, target, valueCell,
-                    dtype, containerTypeChoices
-                );
-                const dataAttrProp = attrTablePutData(
-                    key, 'attributes', val, elem, xform, target,
-                    valueCell, dtype, meta
-                );
-                valProp = [dataTypeProp, dataAttrProp];
-                break;
             case 'LogicalGroup':
                 valProp = [attrTablePutLogicalGroup(
                     key, undefined, val, elem, xform, target, valueCell, dtype
                 )];
                 break;
             default:
-                if (choices !== undefined)
-                    valProp = [attrTablePutSelect(
-                        key, undefined, val, elem, xform, target, valueCell,
-                        dtype, choices
-                    )];
-                else
-                    valueCell.html(sdfg_property_to_string(
-                        val, VSCodeRenderer.getInstance()?.view_settings()
-                    ));
+                if (key in sdfgMetaDict['__data_container_types__']) {
+                    const containerTypeChoices = Object.keys(
+                        sdfgMetaDict['__data_container_types__']
+                    );
+                    const dataTypeProp = attrTablePutSelect(
+                        key, 'type', val.type, elem, xform, target, valueCell,
+                        dtype, containerTypeChoices
+                    );
+                    const dataAttrProp = attrTablePutData(
+                        key, 'attributes', val, elem, xform, target,
+                        valueCell, dtype, meta
+                    );
+                    valProp = [dataTypeProp, dataAttrProp];
+                } else {
+                    if (choices !== undefined)
+                        valProp = [attrTablePutSelect(
+                            key, undefined, val, elem, xform, target, valueCell,
+                            dtype, choices
+                        )];
+                    else
+                        valueCell.html(sdfg_property_to_string(
+                            val, VSCodeRenderer.getInstance()?.view_settings()
+                        ));
+                }
                 break;
         }
     }

@@ -12,6 +12,7 @@ import {
     SDFGElementGroup,
     SDFGNode,
     SDFV,
+    SDFVSettings,
     SimpleRect,
     State,
 } from '@spcl/sdfv/src';
@@ -258,8 +259,8 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
 
             if (
                 (this.renderer.adaptiveHiding &&
-                 (ppp >= SDFV.STATE_LOD ||
-                  state.width / ppp <= SDFV.STATE_LOD)) ||
+                 (ppp >= SDFVSettings.get<number>('nodeLOD') ||
+                  state.width / ppp <= SDFVSettings.get<number>('nestedLOD'))) ||
                 state.data.state.attributes.is_collapsed
             ) {
                 // Currently we don't do anything
@@ -281,7 +282,7 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
                         // it should be visited
                         if (!(node.data.node.attributes.is_collapsed ||
                               (this.renderer.adaptiveHiding &&
-                               ppp >= SDFV.NODE_LOD)) &&
+                               ppp >= SDFVSettings.get<number>('nodeLOD'))) &&
                             node instanceof NestedSDFG
                         ) {
                             this.recursivelyShadeSDFG(
