@@ -259,8 +259,8 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
 
             if (
                 (this.renderer.adaptiveHiding &&
-                 (ppp >= SDFV.STATE_LOD ||
-                  state.width / ppp <= SDFV.STATE_LOD)) ||
+                 (ppp >= SDFVSettings.get<number>('nodeLOD') ||
+                  state.width / ppp <= SDFVSettings.get<number>('nestedLOD'))) ||
                 state.data.state.attributes.is_collapsed
             ) {
                 // Currently we don't do anything

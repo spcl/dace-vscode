@@ -255,6 +255,41 @@
                         "maximum": 5.0,
                         "description": "Zoom-level threshold for drawing tasklet contents"
                     },
+                    "dace.sdfv.scopeLOD": {
+                        "type": "number",
+                        "default": 0.75,
+                        "minimum": 0.0,
+                        "maximum": 5.0,
+                        "description": "Zoom threshold for drawing simple versions of scopes"
+                    },
+                    "dace.sdfv.edgeLOD": {
+                        "type": "number",
+                        "default": 5.0,
+                        "minimum": 0.0,
+                        "maximum": 10.0,
+                        "description": "Zoom threshold for drawing memlets and control flow edges"
+                    },
+                    "dace.sdfv.nodeLOD": {
+                        "type": "number",
+                        "default": 5.0,
+                        "minimum": 0.0,
+                        "maximum": 10.0,
+                        "description": "Zoom threshold for drawing node shapes and labels"
+                    },
+                    "dace.sdfv.textLOD": {
+                        "type": "number",
+                        "default": 1.5,
+                        "minimum": 0.0,
+                        "maximum": 10.0,
+                        "description": "Zoom threshold for drawing node text"
+                    },
+                    "dace.sdfv.nestedLOD": {
+                        "type": "number",
+                        "default": 100,
+                        "minimum": 0,
+                        "maximum": 1000,
+                        "description": "Zoom threshold for drawing contents of control flow blocks (including states) and nested SDFGs"
+                    },
                     "dace.backend.interpreterPath": {
                         "type": "string",
                         "default": "",
