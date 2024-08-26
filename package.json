@@ -248,6 +248,13 @@
                         "maximum": 100,
                         "description": "Horizontal node spacing"
                     },
+                    "dace.sdfv.taskletLOD": {
+                        "type": "number",
+                        "default": 0.35,
+                        "minimum": 0.0,
+                        "maximum": 5.0,
+                        "description": "Zoom-level threshold for drawing tasklet contents"
+                    },
                     "dace.backend.interpreterPath": {
                         "type": "string",
                         "default": "",

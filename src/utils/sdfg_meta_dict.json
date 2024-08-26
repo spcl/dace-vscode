@@ -318,9 +318,9 @@
     },
     "Property": {
       "metatype": "Property",
-      "desc": "",
+      "desc": "A scalar which will be multiplied with A @ B before adding C",
       "category": "General",
-      "default": null
+      "default": 1
     },
     "Number": {
       "metatype": "Number",
@@ -417,9 +417,6 @@
     }
   },
   "__libs__": {
-    "CodeLibraryNode": "dace.libraries.standard.nodes.code.CodeLibraryNode",
-    "Gearbox": "dace.libraries.standard.nodes.gearbox.Gearbox",
-    "Reduce": "dace.libraries.standard.nodes.reduce.Reduce",
     "MatMul": "dace.libraries.blas.nodes.matmul.MatMul",
     "Dot": "dace.libraries.blas.nodes.dot.Dot",
     "Gemv": "dace.libraries.blas.nodes.gemv.Gemv",
@@ -428,6 +425,9 @@
     "BatchedMatMul": "dace.libraries.blas.nodes.batched_matmul.BatchedMatMul",
     "Axpy": "dace.libraries.blas.nodes.axpy.Axpy",
     "Einsum": "dace.libraries.blas.nodes.einsum.Einsum",
+    "CodeLibraryNode": "dace.libraries.standard.nodes.code.CodeLibraryNode",
+    "Gearbox": "dace.libraries.standard.nodes.gearbox.Gearbox",
+    "Reduce": "dace.libraries.standard.nodes.reduce.Reduce",
     "Transpose": "dace.libraries.standard.nodes.transpose.Transpose",
     "TensorTranspose": "dace.libraries.standard.nodes.ttranspose.TensorTranspose"
   },
@@ -3616,6 +3616,13 @@
       "default": false,
       "indirected": true
     },
+    "unroll_factor": {
+      "metatype": "int",
+      "desc": "How much iterations should be unrolled. To prevent unrolling, set this value to 1.",
+      "category": "General",
+      "default": 0,
+      "indirected": true
+    },
     "collapse": {
       "metatype": "int",
       "desc": "How many dimensions to collapse into the parallel range",
@@ -3789,6 +3796,12 @@
       "desc": "Map unrolling",
       "category": "General",
       "default": false
+    },
+    "unroll_factor": {
+      "metatype": "int",
+      "desc": "How much iterations should be unrolled. To prevent unrolling, set this value to 1.",
+      "category": "General",
+      "default": 0
     },
     "collapse": {
       "metatype": "int",
@@ -4184,6 +4197,13 @@
       "default": false,
       "indirected": true
     },
+    "unroll_factor": {
+      "metatype": "int",
+      "desc": "How much iterations should be unrolled. To prevent unrolling, set this value to 1.",
+      "category": "General",
+      "default": 0,
+      "indirected": true
+    },
     "collapse": {
       "metatype": "int",
       "desc": "How many dimensions to collapse into the parallel range",
@@ -4387,6 +4407,12 @@
       "desc": "Map unrolling",
       "category": "General",
       "default": false
+    },
+    "unroll_factor": {
+      "metatype": "int",
+      "desc": "How much iterations should be unrolled. To prevent unrolling, set this value to 1.",
+      "category": "General",
+      "default": 0
     },
     "collapse": {
       "metatype": "int",
@@ -4657,6 +4683,102 @@
       "key_type": "str",
       "value_type": "pystr_to_symbolic"
     },
+    "is_collapsed": {
+      "metatype": "bool",
+      "desc": "Show this block as collapsed",
+      "category": "General",
+      "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    }
+  },
+  "ContinueBlock": {
+    "is_collapsed": {
+      "metatype": "bool",
+      "desc": "Show this block as collapsed",
+      "category": "General",
+      "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    }
+  },
+  "BreakBlock": {
+    "is_collapsed": {
+      "metatype": "bool",
+      "desc": "Show this block as collapsed",
+      "category": "General",
+      "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    }
+  },
+  "ReturnBlock": {
     "is_collapsed": {
       "metatype": "bool",
       "desc": "Show this block as collapsed",
@@ -5336,647 +5458,6 @@
       "desc": "Subgraph in transformation instance",
       "category": "General",
       "default": []
-    }
-  },
-  "StateReachability": {},
-  "SymbolAccessSets": {},
-  "AccessSets": {},
-  "FindAccessStates": {},
-  "FindAccessNodes": {},
-  "SymbolWriteScopes": {},
-  "ScalarWriteShadowScopes": {},
-  "AccessRanges": {},
-  "FindReferenceSources": {},
-  "DeriveSDFGConstraints": {
-    "assume_max_data_size": {
-      "metatype": "int",
-      "desc": "Assume that all data containers have no dimension larger than this value. If None, no assumption is made.",
-      "category": "General",
-      "default": null
-    }
-  },
-  "MapCollapse": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "dace.libraries.standard.nodes.code.CodeLibraryNode": {
-    "inputdict": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "General",
-      "default": {}
-    },
-    "outputdict": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "General",
-      "default": {}
-    },
-    "name": {
-      "metatype": "str",
-      "desc": "Name of node",
-      "category": "General",
-      "default": ""
-    },
-    "implementation": {
-      "metatype": "LibraryImplementationProperty",
-      "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
-      "category": "General",
-      "default": null,
-      "choices": [
-        "default"
-      ]
-    },
-    "schedule": {
-      "metatype": "ScheduleType",
-      "desc": "If set, determines the default device mapping of the node upon expansion, if expanded to a nested SDFG.",
-      "category": "General",
-      "default": "Default",
-      "choices": [
-        "Default",
-        "Sequential",
-        "MPI",
-        "CPU_Multicore",
-        "CPU_Persistent",
-        "Unrolled",
-        "SVE_Map",
-        "GPU_Default",
-        "GPU_Device",
-        "GPU_ThreadBlock",
-        "GPU_ThreadBlock_Dynamic",
-        "GPU_Persistent",
-        "FPGA_Device",
-        "Snitch",
-        "Snitch_Multicore",
-        "FPGA_Multi_Pumped"
-      ]
-    },
-    "debuginfo": {
-      "metatype": "DebugInfo",
-      "desc": "",
-      "category": "General",
-      "default": {
-        "type": "DebugInfo",
-        "start_line": 0,
-        "end_line": 0,
-        "start_column": 0,
-        "end_column": 0,
-        "filename": null
-      }
-    },
-    "label": {
-      "metatype": "str",
-      "desc": "Name of the CodeNode",
-      "category": "General",
-      "default": ""
-    },
-    "location": {
-      "metatype": "dict",
-      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "pystr_to_symbolic"
-    },
-    "environments": {
-      "metatype": "set",
-      "desc": "Environments required by CMake to build and run this code node.",
-      "category": "General",
-      "default": []
-    },
-    "in_connectors": {
-      "metatype": "dict",
-      "desc": "A set of input connectors for this node.",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "typeclass"
-    },
-    "out_connectors": {
-      "metatype": "dict",
-      "desc": "A set of output connectors for this node.",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "typeclass"
-    }
-  },
-  "Expansion": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "ExpandGearbox": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "dace.libraries.standard.nodes.gearbox.Gearbox": {
-    "size": {
-      "metatype": "SymbolicProperty",
-      "desc": "Number of wide vectors to convert to/from narrow vectors.",
-      "category": "General",
-      "default": 0
-    },
-    "name": {
-      "metatype": "str",
-      "desc": "Name of node",
-      "category": "General",
-      "default": ""
-    },
-    "implementation": {
-      "metatype": "LibraryImplementationProperty",
-      "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
-      "category": "General",
-      "default": null,
-      "choices": [
-        "pure"
-      ]
-    },
-    "schedule": {
-      "metatype": "ScheduleType",
-      "desc": "If set, determines the default device mapping of the node upon expansion, if expanded to a nested SDFG.",
-      "category": "General",
-      "default": "Default",
-      "choices": [
-        "Default",
-        "Sequential",
-        "MPI",
-        "CPU_Multicore",
-        "CPU_Persistent",
-        "Unrolled",
-        "SVE_Map",
-        "GPU_Default",
-        "GPU_Device",
-        "GPU_ThreadBlock",
-        "GPU_ThreadBlock_Dynamic",
-        "GPU_Persistent",
-        "FPGA_Device",
-        "Snitch",
-        "Snitch_Multicore",
-        "FPGA_Multi_Pumped"
-      ]
-    },
-    "debuginfo": {
-      "metatype": "DebugInfo",
-      "desc": "",
-      "category": "General",
-      "default": {
-        "type": "DebugInfo",
-        "start_line": 0,
-        "end_line": 0,
-        "start_column": 0,
-        "end_column": 0,
-        "filename": null
-      }
-    },
-    "label": {
-      "metatype": "str",
-      "desc": "Name of the CodeNode",
-      "category": "General",
-      "default": ""
-    },
-    "location": {
-      "metatype": "dict",
-      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "pystr_to_symbolic"
-    },
-    "environments": {
-      "metatype": "set",
-      "desc": "Environments required by CMake to build and run this code node.",
-      "category": "General",
-      "default": []
-    },
-    "in_connectors": {
-      "metatype": "dict",
-      "desc": "A set of input connectors for this node.",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "typeclass"
-    },
-    "out_connectors": {
-      "metatype": "dict",
-      "desc": "A set of output connectors for this node.",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "typeclass"
-    }
-  },
-  "CUDA": {},
-  "HPTT": {},
-  "ExpandReducePure": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "ExpandReducePureSequentialDim": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "ExpandReduceOpenMP": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "ExpandReduceCUDADevice": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "ExpandReduceCUDABlock": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "ExpandReduceCUDABlockAll": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "ExpandReduceFPGAPartialReduction": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "ExpandReduceGPUAuto": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "dace.libraries.standard.nodes.reduce.Reduce": {
-    "axes": {
-      "metatype": "list",
-      "desc": "",
-      "category": "General",
-      "default": null,
-      "element_type": "int"
-    },
-    "wcr": {
-      "metatype": "LambdaProperty",
-      "desc": "",
-      "category": "General",
-      "default": "(lambda a, b: a)"
-    },
-    "identity": {
-      "metatype": "Property",
-      "desc": "",
-      "category": "General",
-      "default": null
-    },
-    "name": {
-      "metatype": "str",
-      "desc": "Name of node",
-      "category": "General",
-      "default": ""
-    },
-    "implementation": {
-      "metatype": "LibraryImplementationProperty",
-      "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
-      "category": "General",
-      "default": null,
-      "choices": [
-        "pure",
-        "pure-seq",
-        "OpenMP",
-        "CUDA (device)",
-        "CUDA (block)",
-        "CUDA (block allreduce)",
-        "FPGAPartialReduction",
-        "GPUAuto"
-      ]
-    },
-    "schedule": {
-      "metatype": "ScheduleType",
-      "desc": "If set, determines the default device mapping of the node upon expansion, if expanded to a nested SDFG.",
-      "category": "General",
-      "default": "Default",
-      "choices": [
-        "Default",
-        "Sequential",
-        "MPI",
-        "CPU_Multicore",
-        "CPU_Persistent",
-        "Unrolled",
-        "SVE_Map",
-        "GPU_Default",
-        "GPU_Device",
-        "GPU_ThreadBlock",
-        "GPU_ThreadBlock_Dynamic",
-        "GPU_Persistent",
-        "FPGA_Device",
-        "Snitch",
-        "Snitch_Multicore",
-        "FPGA_Multi_Pumped"
-      ]
-    },
-    "debuginfo": {
-      "metatype": "DebugInfo",
-      "desc": "",
-      "category": "General",
-      "default": {
-        "type": "DebugInfo",
-        "start_line": 0,
-        "end_line": 0,
-        "start_column": 0,
-        "end_column": 0,
-        "filename": null
-      }
-    },
-    "label": {
-      "metatype": "str",
-      "desc": "Name of the CodeNode",
-      "category": "General",
-      "default": ""
-    },
-    "location": {
-      "metatype": "dict",
-      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "pystr_to_symbolic"
-    },
-    "environments": {
-      "metatype": "set",
-      "desc": "Environments required by CMake to build and run this code node.",
-      "category": "General",
-      "default": []
-    },
-    "in_connectors": {
-      "metatype": "dict",
-      "desc": "A set of input connectors for this node.",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "typeclass"
-    },
-    "out_connectors": {
-      "metatype": "dict",
-      "desc": "A set of output connectors for this node.",
-      "category": "General",
-      "default": {},
-      "key_type": "str",
-      "value_type": "typeclass"
     }
   },
   "SpecializeMatMul": {
@@ -7989,6 +7470,602 @@
       "default": 0
     }
   },
+  "dace.libraries.standard.nodes.code.CodeLibraryNode": {
+    "inputdict": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {}
+    },
+    "outputdict": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {}
+    },
+    "name": {
+      "metatype": "str",
+      "desc": "Name of node",
+      "category": "General",
+      "default": ""
+    },
+    "implementation": {
+      "metatype": "LibraryImplementationProperty",
+      "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
+      "category": "General",
+      "default": null,
+      "choices": [
+        "default"
+      ]
+    },
+    "schedule": {
+      "metatype": "ScheduleType",
+      "desc": "If set, determines the default device mapping of the node upon expansion, if expanded to a nested SDFG.",
+      "category": "General",
+      "default": "Default",
+      "choices": [
+        "Default",
+        "Sequential",
+        "MPI",
+        "CPU_Multicore",
+        "CPU_Persistent",
+        "Unrolled",
+        "SVE_Map",
+        "GPU_Default",
+        "GPU_Device",
+        "GPU_ThreadBlock",
+        "GPU_ThreadBlock_Dynamic",
+        "GPU_Persistent",
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore",
+        "FPGA_Multi_Pumped"
+      ]
+    },
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    },
+    "label": {
+      "metatype": "str",
+      "desc": "Name of the CodeNode",
+      "category": "General",
+      "default": ""
+    },
+    "location": {
+      "metatype": "dict",
+      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "pystr_to_symbolic"
+    },
+    "environments": {
+      "metatype": "set",
+      "desc": "Environments required by CMake to build and run this code node.",
+      "category": "General",
+      "default": []
+    },
+    "in_connectors": {
+      "metatype": "dict",
+      "desc": "A set of input connectors for this node.",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "typeclass"
+    },
+    "out_connectors": {
+      "metatype": "dict",
+      "desc": "A set of output connectors for this node.",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "typeclass"
+    }
+  },
+  "Expansion": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "ExpandGearbox": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "dace.libraries.standard.nodes.gearbox.Gearbox": {
+    "size": {
+      "metatype": "SymbolicProperty",
+      "desc": "Number of wide vectors to convert to/from narrow vectors.",
+      "category": "General",
+      "default": 0
+    },
+    "name": {
+      "metatype": "str",
+      "desc": "Name of node",
+      "category": "General",
+      "default": ""
+    },
+    "implementation": {
+      "metatype": "LibraryImplementationProperty",
+      "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
+      "category": "General",
+      "default": null,
+      "choices": [
+        "pure"
+      ]
+    },
+    "schedule": {
+      "metatype": "ScheduleType",
+      "desc": "If set, determines the default device mapping of the node upon expansion, if expanded to a nested SDFG.",
+      "category": "General",
+      "default": "Default",
+      "choices": [
+        "Default",
+        "Sequential",
+        "MPI",
+        "CPU_Multicore",
+        "CPU_Persistent",
+        "Unrolled",
+        "SVE_Map",
+        "GPU_Default",
+        "GPU_Device",
+        "GPU_ThreadBlock",
+        "GPU_ThreadBlock_Dynamic",
+        "GPU_Persistent",
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore",
+        "FPGA_Multi_Pumped"
+      ]
+    },
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    },
+    "label": {
+      "metatype": "str",
+      "desc": "Name of the CodeNode",
+      "category": "General",
+      "default": ""
+    },
+    "location": {
+      "metatype": "dict",
+      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "pystr_to_symbolic"
+    },
+    "environments": {
+      "metatype": "set",
+      "desc": "Environments required by CMake to build and run this code node.",
+      "category": "General",
+      "default": []
+    },
+    "in_connectors": {
+      "metatype": "dict",
+      "desc": "A set of input connectors for this node.",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "typeclass"
+    },
+    "out_connectors": {
+      "metatype": "dict",
+      "desc": "A set of output connectors for this node.",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "typeclass"
+    }
+  },
+  "CUDA": {},
+  "HPTT": {},
+  "ExpandReducePure": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "ExpandReducePureSequentialDim": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "ExpandReduceOpenMP": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "ExpandReduceCUDADevice": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "ExpandReduceCUDABlock": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "ExpandReduceCUDABlockAll": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "ExpandReduceFPGAPartialReduction": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "ExpandReduceGPUAuto": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "dace.libraries.standard.nodes.reduce.Reduce": {
+    "axes": {
+      "metatype": "list",
+      "desc": "",
+      "category": "General",
+      "default": null,
+      "element_type": "int"
+    },
+    "wcr": {
+      "metatype": "LambdaProperty",
+      "desc": "",
+      "category": "General",
+      "default": "(lambda a, b: a)"
+    },
+    "identity": {
+      "metatype": "Property",
+      "desc": "",
+      "category": "General",
+      "default": null
+    },
+    "name": {
+      "metatype": "str",
+      "desc": "Name of node",
+      "category": "General",
+      "default": ""
+    },
+    "implementation": {
+      "metatype": "LibraryImplementationProperty",
+      "desc": "Which implementation this library node will expand into.Must match a key in the list of possible implementations.",
+      "category": "General",
+      "default": null,
+      "choices": [
+        "pure",
+        "pure-seq",
+        "OpenMP",
+        "CUDA (device)",
+        "CUDA (block)",
+        "CUDA (block allreduce)",
+        "FPGAPartialReduction",
+        "GPUAuto"
+      ]
+    },
+    "schedule": {
+      "metatype": "ScheduleType",
+      "desc": "If set, determines the default device mapping of the node upon expansion, if expanded to a nested SDFG.",
+      "category": "General",
+      "default": "Default",
+      "choices": [
+        "Default",
+        "Sequential",
+        "MPI",
+        "CPU_Multicore",
+        "CPU_Persistent",
+        "Unrolled",
+        "SVE_Map",
+        "GPU_Default",
+        "GPU_Device",
+        "GPU_ThreadBlock",
+        "GPU_ThreadBlock_Dynamic",
+        "GPU_Persistent",
+        "FPGA_Device",
+        "Snitch",
+        "Snitch_Multicore",
+        "FPGA_Multi_Pumped"
+      ]
+    },
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    },
+    "label": {
+      "metatype": "str",
+      "desc": "Name of the CodeNode",
+      "category": "General",
+      "default": ""
+    },
+    "location": {
+      "metatype": "dict",
+      "desc": "Full storage location identifier (e.g., rank, GPU ID)",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "pystr_to_symbolic"
+    },
+    "environments": {
+      "metatype": "set",
+      "desc": "Environments required by CMake to build and run this code node.",
+      "category": "General",
+      "default": []
+    },
+    "in_connectors": {
+      "metatype": "dict",
+      "desc": "A set of input connectors for this node.",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "typeclass"
+    },
+    "out_connectors": {
+      "metatype": "dict",
+      "desc": "A set of output connectors for this node.",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "typeclass"
+    }
+  },
   "ExpandTransposePure": {
     "cfg_id": {
       "metatype": "int",
@@ -8364,6 +8441,51 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    }
+  },
+  "StateReachability": {},
+  "SymbolAccessSets": {},
+  "AccessSets": {},
+  "FindAccessStates": {},
+  "FindAccessNodes": {},
+  "SymbolWriteScopes": {},
+  "ScalarWriteShadowScopes": {},
+  "AccessRanges": {},
+  "FindReferenceSources": {},
+  "DeriveSDFGConstraints": {
+    "assume_max_data_size": {
+      "metatype": "int",
+      "desc": "Assume that all data containers have no dimension larger than this value. If None, no assumption is made.",
+      "category": "General",
+      "default": null
+    }
+  },
+  "MapCollapse": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
     }
   },
   "MapReduceFusion": {
@@ -10783,5 +10905,12 @@
       "element_type": "Pass"
     }
   },
-  "TransientReuse": {}
+  "TransientReuse": {
+    "verbose": {
+      "metatype": "bool",
+      "desc": "Print information about the memory reduction.",
+      "category": "General",
+      "default": false
+    }
+  }
 }
