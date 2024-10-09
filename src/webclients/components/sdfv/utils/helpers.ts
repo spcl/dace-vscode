@@ -429,8 +429,11 @@ export function reselectRendererElement(elem: SDFGElement): void {
     if (renderer) {
         const uuid = getGraphElementUUID(elem);
         const newElem = findGraphElementByUUID(renderer.getCFGList(), uuid);
-        if (newElem && newElem instanceof SDFGElement)
-            VSCodeSDFV.getInstance().fillInfo(newElem);
+        if (newElem && newElem instanceof SDFGElement) {
+            VSCodeSDFV.getInstance().linkedUI.showElementInfo(
+                newElem, VSCodeRenderer.getInstance()!
+            );
+        }
     }
 }
 

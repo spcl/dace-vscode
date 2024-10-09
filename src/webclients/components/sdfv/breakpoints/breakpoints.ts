@@ -4,20 +4,19 @@
 import {
     DagreGraph,
     Edge,
-    GenericSdfgOverlay,
     GraphElementInfo,
     NestedSDFG,
     Point2D,
     SDFGElement,
     SDFGElementGroup,
     SDFGNode,
-    SDFV,
     SDFVSettings,
     SimpleRect,
     State,
 } from '@spcl/sdfv/src';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent } from '../vscode_sdfv';
+import { GenericSdfgOverlay } from '@spcl/sdfv/src/overlays/generic_sdfg_overlay';
 
 declare const vscode: any;
 
@@ -25,7 +24,7 @@ export function refreshBreakpoints(): void {
     const renderer = VSCodeRenderer.getInstance();
     if (renderer !== null && vscode !== undefined) {
         let isActive = false;
-        const overlays = renderer.get_overlay_manager().get_overlays();
+        const overlays = renderer.overlayManager.get_overlays();
         for (const activeOverlay of overlays) {
             if (activeOverlay instanceof BreakpointIndicator) {
                 isActive = true;

@@ -9,7 +9,7 @@ import {
 } from '../../transformations/transformations';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { generateAttributesTable } from '../utils/attributes_table';
-import { getTransformationMetadata, highlightUUIDs, readDaCeProp, zoomToUUIDs } from '../utils/helpers';
+import { highlightUUIDs, zoomToUUIDs } from '../utils/helpers';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 
 /**
@@ -343,7 +343,7 @@ export async function refreshTransformationList(
 
 export function clearSelectedTransformation(): void {
     if (VSCodeSDFV.getInstance().getSelectedTransformation() !== null)
-        VSCodeSDFV.getInstance().clearInfoBox(true);
+        VSCodeSDFV.getInstance().linkedUI.infoClear(true);
 }
 
 /**
@@ -359,7 +359,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     $('#goto-edge-start').hide();
     $('#goto-edge-end').hide();
 
-    VSCodeSDFV.getInstance().infoBoxSetTitle(xform.transformation);
+    VSCodeSDFV.getInstance().linkedUI.infoSetTitle(xform.transformation);
 
     const infoContents = $('#info-contents');
     infoContents.html('');
@@ -461,14 +461,14 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     }).appendTo(infoContents);
     generateAttributesTable(undefined, xform, tableContainer);
 
-    VSCodeSDFV.getInstance().infoBoxShow(true);
+    VSCodeSDFV.getInstance().linkedUI.infoShow(true);
 }
 
 export async function applyTransformations(
     ...xforms: JsonTransformation[]
 ): Promise<void> {
     VSCodeRenderer.getInstance()?.clearSelectedItems();
-    VSCodeSDFV.getInstance().clearInfoBox(true);
+    VSCodeSDFV.getInstance().linkedUI.infoClear(true);
     $('#exit-preview-button').hide();
     return SDFVComponent.getInstance().invoke(
         'applyTransformations', [xforms], ComponentTarget.DaCe
