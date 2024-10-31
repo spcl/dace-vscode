@@ -15,7 +15,7 @@ import {
     StaticFlopsOverlay,
     DepthOverlay,
     AvgParallelismOverlay,
-    SDFGElement
+    SDFGElement,
 } from '@spcl/sdfv/src';
 import { AnalysisController } from '../analysis/analysis_controller';
 import {

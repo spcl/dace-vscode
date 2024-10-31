@@ -505,7 +505,8 @@ export class VSCodeSDFV extends SDFV {
             if (parsedSdfg !== null)
                 this.renderer = VSCodeRenderer.init(
                     parsedSdfg, contentsElem,
-                    this.onMouseEvent, null, VSCodeSDFV.DEBUG_DRAW, null, null
+                    this.onMouseEvent.bind(this), null, VSCodeSDFV.DEBUG_DRAW,
+                    null, null
                 );
             else
                 return;
@@ -534,6 +535,26 @@ export class VSCodeSDFV extends SDFV {
             this.UI.showElementInfo(
                 new SDFG(this.renderer.get_sdfg()), this.renderer
             );
+
+        const renderer = this.renderer;
+        renderer.on('selection_changed', () => {
+            const selectedElements = renderer.get_selected_elements();
+            let element;
+            if (selectedElements.length === 0)
+                element = new SDFG(renderer.get_sdfg());
+            else if (selectedElements.length === 1)
+                element = selectedElements[0];
+            else
+                element = null;
+
+            if (element !== null) {
+                this.UI.showElementInfo(element, renderer);
+            } else {
+                this.UI.infoClear();
+                this.UI.infoSetTitle('Multiple elements selected');
+            }
+            this.UI.infoShow();
+        });
     }
 
     public resetRendererContent(): void {
@@ -554,8 +575,8 @@ export class VSCodeSDFV extends SDFV {
         }
 
         renderer = VSCodeRenderer.init(
-            this.origSDFG, contentsElem, this.onMouseEvent, userTransform,
-            VSCodeSDFV.DEBUG_DRAW, null, null
+            this.origSDFG, contentsElem, this.onMouseEvent.bind(this),
+            userTransform, VSCodeSDFV.DEBUG_DRAW, null, null
         );
 
         const graph = renderer?.get_graph();

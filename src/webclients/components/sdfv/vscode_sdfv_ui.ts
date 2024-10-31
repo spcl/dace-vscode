@@ -1,20 +1,20 @@
 // Copyright 2019-2024 ETH Zurich and the DaCe authors. All rights reserved.
 
+import { findGraphElementByUUID } from '@spcl/sdfv/src/utils/sdfg/sdfg_utils';
+import { ISDFVUserInterface } from '@spcl/sdfv/src/sdfv_ui';
 import {
     AccessNode,
     Edge,
     EntryNode,
     ExitNode,
-    findGraphElementByUUID,
-    ISDFVUserInterface,
     NestedSDFG,
     ScopeNode,
     SDFG,
     SDFGElement,
-    SDFGRenderer,
-    SDFVSettings,
-} from '@spcl/sdfv/src';
-import { SDFVComponent, VSCodeSDFV } from './vscode_sdfv';
+} from '@spcl/sdfv/src/renderer/renderer_elements';
+import { SDFGRenderer } from '@spcl/sdfv/src/renderer/renderer';
+import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
+import { SDFVComponent } from './vscode_sdfv';
 import {
     appendDataDescriptorTable,
     appendSymbolsTable,
@@ -31,7 +31,7 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
     }
 
     public static getInstance(): SDFVVSCodeUI {
-        return this.INSTANCE;
+        return SDFVVSCodeUI.INSTANCE;
     }
 
     private infoContainer?: JQuery<HTMLElement>;

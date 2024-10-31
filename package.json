@@ -2,7 +2,7 @@
     "name": "sdfv",
     "displayName": "DaCe SDFG Editor",
     "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "1.7.10",
+    "version": "1.7.11",
     "engines": {
         "vscode": "^1.75.0"
     },
