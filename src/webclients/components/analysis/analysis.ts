@@ -11,7 +11,7 @@ import 'material-symbols';
 
 import './analysis.css';
 
-import { SymbolMap } from '@spcl/sdfv/src';
+import { OverlayType, SymbolMap } from '@spcl/sdfv/src';
 import {
     ICPCWebclientMessagingComponent
 } from '../../messaging/icpc_webclient_messaging_component';
@@ -19,7 +19,6 @@ import {
     ICPCRequest
 } from '../../../common/messaging/icpc_messaging_component';
 import { ComponentTarget } from '../../../components/components';
-import { OverlayType } from '@spcl/sdfv/src/overlays/generic_sdfg_overlay';
 
 declare const vscode: any;
 

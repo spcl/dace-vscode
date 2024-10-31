@@ -414,7 +414,8 @@ export class VSCodeSDFV extends SDFV {
                         icon = 'code';
                         break;
                     case 'Map':
-                        icon = 'call_split';
+                    case 'Consume':
+                        icon = 'mediation';
                         break;
                     case 'SDFGState':
                         icon = 'crop_square';
@@ -426,8 +427,15 @@ export class VSCodeSDFV extends SDFV {
                         icon = 'res:icons/sdfg.svg';
                         break;
                     case 'LoopRegion':
-                        icon = 'restart_alt';
+                        icon = 'repeat';
                         break;
+                    case 'ConditionalBlock':
+                        icon = 'alt_route';
+                        break;
+                    case 'FunctionCallRegion':
+                        icon = 'function';
+                        break;
+                    case 'NamedRegion':
                     case 'ControlFlowRegion':
                         icon = 'turn_sharp_right';
                         break;

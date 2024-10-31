@@ -5,8 +5,7 @@ import $ = require('jquery');
 (window as any).jQuery = $;
 
 import 'bootstrap';
-
-import '@spcl/sdfv/scss/sdfv.scss';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 import './breakpoints.css';
 
