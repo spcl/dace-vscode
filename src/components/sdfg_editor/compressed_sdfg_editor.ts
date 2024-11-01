@@ -49,7 +49,7 @@ export class CompressedSDFGEditor extends SDFGEditorBase {
 
     public async handleLocalEdit(sdfg: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            const compressed = gzipSync(sdfg);
+            const compressed = new Uint8Array(gzipSync(sdfg));
             Promise.all([
                 this.onSDFGEdited(compressed),
                 this.invoke('updateContents', [compressed, false])

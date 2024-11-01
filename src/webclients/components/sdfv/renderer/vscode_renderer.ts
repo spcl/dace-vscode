@@ -15,7 +15,7 @@ import {
     StaticFlopsOverlay,
     DepthOverlay,
     AvgParallelismOverlay,
-    SDFGElement
+    SDFGElement,
 } from '@spcl/sdfv/src';
 import { AnalysisController } from '../analysis/analysis_controller';
 import {
@@ -102,9 +102,8 @@ export class VSCodeRenderer extends SDFGRenderer {
                         if (!flopsMap)
                             return;
                         const renderer = VSCodeRenderer.getInstance();
-                        const oMan = renderer?.get_overlay_manager();
                         const oType = VSCodeSDFV.OVERLAYS[overlay];
-                        const ol = oMan?.get_overlay(oType);
+                        const ol = renderer?.overlayManager.get_overlay(oType);
                         (ol as
                             StaticFlopsOverlay |
                             OperationalIntensityOverlay
@@ -118,9 +117,8 @@ export class VSCodeRenderer extends SDFGRenderer {
                         if (!depthMap)
                             return;
                         const renderer = VSCodeRenderer.getInstance();
-                        const oMan = renderer?.get_overlay_manager();
                         const oType = VSCodeSDFV.OVERLAYS[overlay];
-                        const ol = oMan?.get_overlay(oType);
+                        const ol = renderer?.overlayManager.get_overlay(oType);
                         (ol as
                             DepthOverlay
                         )?.update_depth_map(depthMap);
@@ -133,9 +131,8 @@ export class VSCodeRenderer extends SDFGRenderer {
                         if (!avgParallelismMap)
                             return;
                         const renderer = VSCodeRenderer.getInstance();
-                        const oMan = renderer?.get_overlay_manager();
                         const oType = VSCodeSDFV.OVERLAYS[overlay];
-                        const ol = oMan?.get_overlay(oType);
+                        const ol = renderer?.overlayManager.get_overlay(oType);
                         (ol as
                             AvgParallelismOverlay
                         )?.update_avg_parallelism_map(avgParallelismMap);
@@ -148,9 +145,8 @@ export class VSCodeRenderer extends SDFGRenderer {
                         if (!opInMap)
                             return;
                         const renderer = VSCodeRenderer.getInstance();
-                        const oMan = renderer?.get_overlay_manager();
                         const oType = VSCodeSDFV.OVERLAYS[overlay];
-                        const ol = oMan?.get_overlay(oType);
+                        const ol = renderer?.overlayManager.get_overlay(oType);
                         (ol as
                             SimulatedOperationalIntensityOverlay
                         )?.update_op_in_map(opInMap);
@@ -172,18 +168,21 @@ export class VSCodeRenderer extends SDFGRenderer {
         super.destroy();
     }
 
-    public setSDFG(new_sdfg: JsonSDFG, layout?: boolean | undefined): void {
-        super.setSDFG(new_sdfg, layout);
-
-        // TODO(later): This is a fix for broken memlet trees when the graph
-        // is changed / edited (including when the collapse state changes).
-        // This is only necessary because these type of events send changes to
-        // the underlying document, which in turn updates the webview with the
-        // same contents to ensure the two representations are kept in sync.
-        // This needs to be handled better, i.e. _without_ requiring this
-        // two-sided update, which causes slowdowns when the graph is edited.
-        this.all_memlet_trees_sdfg = memletTreeComplete(this.sdfg);
-        this.update_fast_memlet_lookup();
+    public async setSDFG(
+        sdfg: JsonSDFG, layout?: boolean | undefined
+    ): Promise<void> {
+        return super.setSDFG(sdfg, layout).then(() => {
+            // TODO(later): This is a fix for broken memlet trees when the graph
+            // is changed / edited (including when the collapse state changes).
+            // This is only necessary because these type of events send changes
+            // to the underlying document, which in turn updates the webview
+            // with the same contents to ensure the two representations are kept
+            // in sync. This needs to be handled better, i.e. _without_
+            // requiring this two-sided update, which causes slowdowns when the
+            // graph is edited.
+            this.all_memlet_trees_sdfg = memletTreeComplete(this.sdfg);
+            this.update_fast_memlet_lookup();
+        });
     }
 
     private constructor(
@@ -229,7 +228,7 @@ export class VSCodeRenderer extends SDFGRenderer {
         }
 
         super(
-            sdfv, sdfg, container, onMouseEvent, userTransform, debugDraw,
+            sdfg, container, sdfv, onMouseEvent, userTransform, debugDraw,
             backgroundColor, modeButtons
         );
     }

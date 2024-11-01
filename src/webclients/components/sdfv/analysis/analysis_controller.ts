@@ -2,14 +2,12 @@
 // All rights reserved.
 
 import {
-    instrumentation_report_read_complete,
     LogicalGroupOverlay,
     MemoryLocationOverlay,
     MemoryVolumeOverlay,
     OperationalIntensityOverlay,
     SimulatedOperationalIntensityOverlay,
     RuntimeMicroSecondsOverlay,
-    RuntimeReportOverlay,
     SDFGRenderer,
     StaticFlopsOverlay,
     DepthOverlay,
@@ -21,6 +19,9 @@ import {
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 import { ComponentTarget } from '../../../../components/components';
+import {
+    RuntimeReportOverlay,
+} from '@spcl/sdfv/src/overlays/generic_sdfg_overlay';
 
 declare const vscode: any;
 
@@ -42,10 +43,9 @@ export class AnalysisController {
      */
     @ICPCRequest()
     public onSymbolValueChanged(symbol: string, value?: number): void {
-        VSCodeRenderer.getInstance()?.get_overlay_manager()
-            .on_symbol_value_changed(
-                symbol, value
-            );
+        VSCodeRenderer.getInstance()?.overlayManager.on_symbol_value_changed(
+            symbol, value
+        );
     }
 
     /**
@@ -55,7 +55,7 @@ export class AnalysisController {
      */
     @ICPCRequest()
     public onHeatmapScalingChanged(method: string, subMethod?: number): void {
-        const olManager = VSCodeRenderer.getInstance()?.get_overlay_manager();
+        const olManager = VSCodeRenderer.getInstance()?.overlayManager;
         olManager?.update_heatmap_scaling_method(method);
 
         if (subMethod !== undefined) {
@@ -81,7 +81,7 @@ export class AnalysisController {
     ): void {
         const sdfv = VSCodeSDFV.getInstance();
         const renderer = sdfv.get_renderer() ?? undefined;
-        instrumentation_report_read_complete(sdfv, report, renderer);
+        sdfv.onLoadedRuntimeReport(report, renderer);
         this.setInstrumentationReportCriterium(criterium, renderer);
     }
 
@@ -95,7 +95,7 @@ export class AnalysisController {
         criterium: string, renderer?: SDFGRenderer
     ): void {
         const rend = renderer ?? VSCodeRenderer.getInstance();
-        const overlays = rend?.get_overlay_manager().get_overlays();
+        const overlays = rend?.overlayManager.get_overlays();
         for (const ol of overlays ?? []) {
             if (ol instanceof RuntimeReportOverlay) {
                 ol.set_criterium(criterium);
@@ -110,7 +110,7 @@ export class AnalysisController {
      */
     @ICPCRequest()
     public clearRuntimeReport(types?: string[]): void {
-        const olManager = VSCodeRenderer.getInstance()?.get_overlay_manager();
+        const olManager = VSCodeRenderer.getInstance()?.overlayManager;
         if (types) {
             for (const clearType of types) {
                 const rtOverlay = olManager?.get_overlay(
@@ -134,7 +134,7 @@ export class AnalysisController {
     public async refreshAnalysisPane(): Promise<void> {
         const renderer = VSCodeRenderer.getInstance();
         if (renderer !== null && vscode !== undefined) {
-            const overlayManager = renderer.get_overlay_manager();
+            const overlayManager = renderer.overlayManager;
             const symbolResolver = overlayManager?.get_symbol_resolver();
             symbolResolver?.removeStaleSymbols();
             const map = symbolResolver?.get_symbol_value_map();

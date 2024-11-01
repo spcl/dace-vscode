@@ -3065,6 +3065,12 @@
       "desc": "Bypass out-of-bounds validation",
       "category": "General",
       "default": false
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "Node": {
@@ -3083,6 +3089,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "AccessNode": {
@@ -3146,6 +3158,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "CodeNode": {
@@ -3184,6 +3202,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "Tasklet": {
@@ -3305,6 +3329,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "RTLTasklet": {
@@ -3434,6 +3464,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "NestedSDFG": {
@@ -3556,6 +3592,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "MapEntry": {
@@ -3724,6 +3766,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "MapExit": {
@@ -3742,6 +3790,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "Map": {
@@ -3994,6 +4048,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "ConsumeExit": {
@@ -4012,6 +4072,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "Consume": {
@@ -4305,6 +4371,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "PipelineExit": {
@@ -4323,6 +4395,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "PipelineScope": {
@@ -4577,11 +4655,23 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "DataflowGraphView": {},
   "ControlGraphView": {},
   "ControlFlowBlock": {
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
     "is_collapsed": {
       "metatype": "bool",
       "desc": "Show this block as collapsed",
@@ -4683,6 +4773,12 @@
       "key_type": "str",
       "value_type": "pystr_to_symbolic"
     },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
     "is_collapsed": {
       "metatype": "bool",
       "desc": "Show this block as collapsed",
@@ -4715,6 +4811,12 @@
     }
   },
   "ContinueBlock": {
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
     "is_collapsed": {
       "metatype": "bool",
       "desc": "Show this block as collapsed",
@@ -4747,6 +4849,12 @@
     }
   },
   "BreakBlock": {
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
     "is_collapsed": {
       "metatype": "bool",
       "desc": "Show this block as collapsed",
@@ -4779,6 +4887,12 @@
     }
   },
   "ReturnBlock": {
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
     "is_collapsed": {
       "metatype": "bool",
       "desc": "Show this block as collapsed",
@@ -4811,6 +4925,12 @@
     }
   },
   "ControlFlowRegion": {
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
     "is_collapsed": {
       "metatype": "bool",
       "desc": "Show this block as collapsed",
@@ -4867,9 +4987,169 @@
       "category": "General",
       "default": false
     },
+    "update_before_condition": {
+      "metatype": "bool",
+      "desc": "If False, the loop condition is checked before the update statement is executed. This only applies to inverted loops, turning them from a typical do-while style into a while(true) with a break before the update (at the end of an iteration) if the condition no longer holds.",
+      "category": "General",
+      "default": true
+    },
     "loop_variable": {
       "metatype": "str",
       "desc": "The loop variable, if given",
+      "category": "General",
+      "default": ""
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
+    "is_collapsed": {
+      "metatype": "bool",
+      "desc": "Show this block as collapsed",
+      "category": "General",
+      "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    }
+  },
+  "ConditionalBlock": {
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
+    "is_collapsed": {
+      "metatype": "bool",
+      "desc": "Show this block as collapsed",
+      "category": "General",
+      "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    }
+  },
+  "NamedRegion": {
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
+    "is_collapsed": {
+      "metatype": "bool",
+      "desc": "Show this block as collapsed",
+      "category": "General",
+      "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    }
+  },
+  "FunctionCallRegion": {
+    "arguments": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "str"
+    },
+    "debuginfo": {
+      "metatype": "DebugInfo",
+      "desc": "",
+      "category": "General",
+      "default": {
+        "type": "DebugInfo",
+        "start_line": 0,
+        "end_line": 0,
+        "start_column": 0,
+        "end_column": 0,
+        "filename": null
+      }
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
       "category": "General",
       "default": ""
     },
@@ -5124,6 +5404,12 @@
         "string_data": "1",
         "language": "Python"
       }
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "SDFG": {
@@ -5274,6 +5560,12 @@
       "desc": "Whether the SDFG contains experimental control flow blocks",
       "category": "General",
       "default": false
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     },
     "is_collapsed": {
       "metatype": "bool",
@@ -5588,6 +5880,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "BLAS": {},
@@ -5941,6 +6239,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "ExpandGemvPure": {
@@ -6263,6 +6567,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "ExpandGemmPure": {
@@ -6676,6 +6986,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "ExpandGerPure": {
@@ -6853,6 +7169,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "ExpandBatchedMatMulPure": {
@@ -7173,6 +7495,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "ExpandAxpyVectorized": {
@@ -7332,6 +7660,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "dace.libraries.blas.nodes.einsum.Einsum": {
@@ -7440,6 +7774,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "SpecializeEinsum": {
@@ -7570,6 +7910,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "Expansion": {
@@ -7722,6 +8068,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "CUDA": {},
@@ -8064,6 +8416,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "ExpandTransposePure": {
@@ -8275,6 +8633,12 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "ExpandPure": {
@@ -8441,9 +8805,23 @@
       "default": {},
       "key_type": "str",
       "value_type": "typeclass"
+    },
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
     }
   },
   "StateReachability": {},
+  "ControlFlowBlockReachability": {
+    "contain_to_single_level": {
+      "metatype": "bool",
+      "desc": "",
+      "category": "General",
+      "default": false
+    }
+  },
   "SymbolAccessSets": {},
   "AccessSets": {},
   "FindAccessStates": {},
@@ -8616,34 +8994,6 @@
     }
   },
   "TrivialMapElimination": {
-    "cfg_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "state_id": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    },
-    "_subgraph": {
-      "metatype": "dict",
-      "desc": "",
-      "category": "(Debug)",
-      "default": {},
-      "key_type": "int",
-      "value_type": "int"
-    },
-    "expr_index": {
-      "metatype": "int",
-      "desc": "",
-      "category": "(Debug)",
-      "default": 0
-    }
-  },
-  "TrivialMapRangeElimination": {
     "cfg_id": {
       "metatype": "int",
       "desc": "",
@@ -9248,6 +9598,40 @@
       "default": 0
     }
   },
+  "CopyToMap": {
+    "ignore_strides": {
+      "metatype": "Property",
+      "desc": "Ignore the stride of the data container; Defaults to `False`.",
+      "category": "General",
+      "default": false
+    },
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
   "GPUGridStridedTiling": {
     "new_dim_prefix": {
       "metatype": "str",
@@ -9473,12 +9857,6 @@
     }
   },
   "PruneConnectors": {
-    "remove_unused_containers": {
-      "metatype": "bool",
-      "desc": "If True, remove unused containers from parent SDFG.",
-      "category": "General",
-      "default": false
-    },
     "cfg_id": {
       "metatype": "int",
       "desc": "",

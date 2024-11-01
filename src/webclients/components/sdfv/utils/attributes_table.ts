@@ -5,7 +5,6 @@ import {
     Connector,
     Edge,
     JsonSDFG,
-    JsonSDFGNode,
     LibraryNode,
     LogicalGroup,
     SDFGElement,
@@ -47,8 +46,11 @@ function updateAttrTable(): void {
     // upate all related property keys while making sure none are left over or
     // forgotten. Re-rendering the panel takes care of this for now.
     const sdfg = VSCodeRenderer.getInstance()?.get_sdfg();
-    if (sdfg)
-        VSCodeSDFV.getInstance().fillInfo(new SDFG(sdfg));
+    if (sdfg) {
+        VSCodeSDFV.getInstance().linkedUI.showElementInfo(
+            new SDFG(sdfg), VSCodeRenderer.getInstance()!
+        );
+    }
 }
 
 function getMonacoThemeName() {
