@@ -40,6 +40,7 @@ import {
 import { ComponentTarget } from '../../../../components/components';
 
 function updateAttrTable(): void {
+    console.warn('EXPENSIVE CALL!');
     // TODO(later): this is an ugly workaround to how the system of filling the
     // info bar currently works. It should instead update the information
     // _without_ re-rendering everything, but at the moment it is difficult to
@@ -65,7 +66,7 @@ function getMonacoThemeName() {
     }
 }
 
-export function attrTablePutBool(
+function attrTablePutBool(
     key: string, subkey: string | undefined, val: boolean,
     elem: any | undefined, xform: any | undefined, target: any,
     cell: JQuery, dtype: string
@@ -87,7 +88,7 @@ export function attrTablePutBool(
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
 }
 
-export function attrTablePutText(
+function attrTablePutText(
     key: string, subkey: string | undefined, val: string, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string
 ): ValueProperty {
@@ -99,7 +100,7 @@ export function attrTablePutText(
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
 }
 
-export function attrTablePutCode(
+function attrTablePutCode(
     key: string, subkey: string | undefined, val: string, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string
 ): CodeProperty {
@@ -156,7 +157,7 @@ export function attrTablePutCode(
     );
 }
 
-export function attrTablePutData(
+function attrTablePutData(
     key: string, subkey: string | undefined, val: any, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string,
     meta: any, editableKeys: boolean = false
@@ -196,7 +197,7 @@ export function attrTablePutData(
             }).appendTo(rowbox);
             const attrProp = await attributeTablePutEntry(
                 k, v, valMeta, val.attributes, elem, xform, row,
-                editableKeys, false, editableKeys
+                editableKeys, false, false, editableKeys
             );
 
             if (attrProp.deleteBtn)
@@ -239,7 +240,7 @@ export function attrTablePutData(
                     }).appendTo(rowbox);
                     const newProp = await attributeTablePutEntry(
                         '', '', { metatype: 'str' }, val.attributes, elem,
-                        xform, row, true, false, true
+                        xform, row, true, false, false, true
                     );
                     if (newProp) {
                         prop.getProperties().push(newProp);
@@ -272,7 +273,7 @@ export function attrTablePutData(
     return prop;
 }
 
-export function attrTablePutNumber(
+function attrTablePutNumber(
     key: string, subkey: string | undefined, val: number, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string
 ): ValueProperty {
@@ -284,7 +285,7 @@ export function attrTablePutNumber(
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
 }
 
-export function attrTablePutSelect(
+function attrTablePutSelect(
     key: string, subkey: string | undefined, val: string, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string,
     choices: string[]
@@ -336,7 +337,7 @@ export function attrTablePutSelect(
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
 }
 
-export function attrTablePutTypeclass(
+function attrTablePutTypeclass(
     key: string, subkey: string | undefined, val: string, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string,
     baseTypes: string[], compoundTypes: { [keys: string]: any }
@@ -391,7 +392,7 @@ export function attrTablePutTypeclass(
     );
 }
 
-export function attrTablePutDict(
+function attrTablePutDict(
     key: string, subkey: string | undefined, val: any, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string,
     valMeta: any, allowAdding: boolean = true
@@ -430,7 +431,7 @@ export function attrTablePutDict(
                 class: 'row attr-table-row',
             }).appendTo(rowbox);
             const attrProp = await attributeTablePutEntry(
-                k, v, valMeta, val, elem, xform, row, true, false, true
+                k, v, valMeta, val, elem, xform, row, true, false, false, true
             );
 
             if (attrProp.deleteBtn)
@@ -474,12 +475,12 @@ export function attrTablePutDict(
                 if (valMeta)
                     newPropRet = attributeTablePutEntry(
                         '', '', valMeta, val, elem, xform, row, true, false,
-                        true
+                        false, true
                     );
                 else
                     newPropRet = attributeTablePutEntry(
                         '', '', { metatype: 'str' }, val, elem, xform, row,
-                        true, false, true
+                        true, false, false, true
                     );
                 newPropRet.then(newProp => {
                     if (newProp) {
@@ -513,7 +514,7 @@ export function attrTablePutDict(
     return prop;
 }
 
-export function attrTablePutList(
+function attrTablePutList(
     key: string, subkey: string | undefined, val: any[],
     elem: any | undefined, xform: any | undefined, target: any, cell: JQuery,
     dtype: string, elemMeta: any
@@ -561,7 +562,7 @@ export function attrTablePutList(
                 }).appendTo(rowbox);
                 const attrProp = await attributeTablePutEntry(
                     i.toString(), v, elemMeta, val, elem, xform, row, false,
-                    false, true
+                    false, false, true
                 );
 
                 if (attrProp.deleteBtn) {
@@ -605,7 +606,7 @@ export function attrTablePutList(
                 }).appendTo(rowbox);
                 attributeTablePutEntry(
                     i.toString(), '', elemMeta, val, elem, xform, row, false,
-                    false, true
+                    false, false, true
                 ).then(newProp => {
                     if (newProp && newProp.valProp) {
                         prop.getPropertiesList().push(...newProp.valProp);
@@ -641,7 +642,7 @@ export function attrTablePutList(
     return prop;
 }
 
-export function attrTablePutRange(
+function attrTablePutRange(
     key: string, subkey: string | undefined, val: any, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string
 ): RangeProperty {
@@ -855,7 +856,7 @@ export function attrTablePutRange(
     return prop;
 }
 
-export function attrTablePutLogicalGroup(
+function attrTablePutLogicalGroup(
     key: string, subkey: string | undefined, val: LogicalGroup,
     elem: any | undefined, xform: any | undefined, target: any, cell: JQuery,
     dtype: string
@@ -878,7 +879,7 @@ export function attrTablePutLogicalGroup(
 export async function attributeTablePutEntry(
     key: string, val: any, meta: any, target: any, elem: any | undefined,
     xform: any | undefined, row: JQuery, editableKey: boolean,
-    updateOnChange: boolean, addDeleteButton: boolean,
+    updateOnChange: boolean, delayedEdit: boolean, addDeleteButton: boolean,
     isNonDefault: boolean = false,
     keyChangeHandlerOverride?: (prop: KeyProperty) => void,
     valueChangeHandlerOverride?: (prop: Property) => void,
@@ -928,7 +929,7 @@ export async function attributeTablePutEntry(
         };
 
     let keyCell = undefined;
-    if (editableKey) {
+    if (editableKey && !delayedEdit) {
         keyCell = $('<div>', {
             'class': 'attr-table-cell ' + (
                 invertedSpacing ? 'attr-cell-l' : 'attr-cell-s'
@@ -976,38 +977,34 @@ export async function attributeTablePutEntry(
             invertedSpacing ? 'attr-cell-s' : 'attr-cell-l'
         ),
     }).appendTo(contentRow);
+    const valContents = $('<div>').appendTo(valueCell);
 
-    if (key === 'constants_prop') {
-        const constContainer = $('<div>').appendTo(valueCell);
-        for (const k in val) {
-            const v = val[k];
-            constContainer.append($('<div>', {
-                text: k + ': ' + v[1].toString(),
-            }));
-        }
-    } else if (dtype === undefined) {
+    const setValContentsPlain = () => {
         // Implementations that are set to null should still be visible. Other
         // null properties should be shown as an empty field.
-        if (key === 'implementation' && val === null)
-            valueCell.html('null');
-        else
-            valueCell.html(sdfg_property_to_string(
+        if (key === 'implementation' && val === null) {
+            valContents.html('null');
+        } else {
+            valContents.html(sdfg_property_to_string(
                 val, VSCodeRenderer.getInstance()?.view_settings()
             ));
-    } else {
+        }
+    };
+
+    const setValContentsRich = async () => {
         const sdfgMetaDict = await VSCodeSDFV.getInstance().getMetaDict();
         switch (dtype) {
             case 'typeclass':
                 if (meta !== undefined && meta['base_types'] &&
                     meta['compound_types'])
                     valProp = [attrTablePutTypeclass(
-                        key, undefined, val, elem, xform, target, valueCell,
+                        key, undefined, val, elem, xform, target, valContents,
                         dtype, meta['base_types'], meta['compound_types']
                     )];
                 break;
             case 'bool':
                 valProp = [attrTablePutBool(
-                    key, undefined, val, elem, xform, target, valueCell, dtype
+                    key, undefined, val, elem, xform, target, valContents, dtype
                 )];
                 break;
             case 'str':
@@ -1016,12 +1013,12 @@ export async function attributeTablePutEntry(
                 // TODO(later): Treat symbolic expressions with a symbolic
                 // parser, they're not just a regular string.
                 valProp = [attrTablePutText(
-                    key, undefined, val, elem, xform, target, valueCell, dtype
+                    key, undefined, val, elem, xform, target, valContents, dtype
                 )];
                 break;
             case 'int':
                 valProp = [attrTablePutNumber(
-                    key, undefined, val, elem, xform, target, valueCell, dtype
+                    key, undefined, val, elem, xform, target, valContents, dtype
                 )];
                 break;
             case 'dict':
@@ -1035,8 +1032,8 @@ export async function attributeTablePutEntry(
                     valMeta = sdfgMetaDict['__reverse_type_lookup__'][valType];
                 const allowAdding = addDeleteButton;
                 attrTablePutDict(
-                    key, undefined, val, elem, xform, target, valueCell, dtype,
-                    valMeta, allowAdding
+                    key, undefined, val, elem, xform, target, valContents,
+                    dtype, valMeta, allowAdding
                 );
                 break;
             case 'set':
@@ -1058,31 +1055,31 @@ export async function attributeTablePutEntry(
                     };
 
                 valProp = [attrTablePutList(
-                    key, undefined, val, elem, xform, target, valueCell, dtype,
-                    elemMeta
+                    key, undefined, val, elem, xform, target, valContents,
+                    dtype, elemMeta
                 )];
                 break;
             case 'Range':
             case 'SubsetProperty':
                 valProp = [attrTablePutRange(
-                    key, undefined, val, elem, xform, target, valueCell, dtype
+                    key, undefined, val, elem, xform, target, valContents, dtype
                 )];
                 break;
             case 'DataProperty':
                 valProp = [attrTablePutSelect(
-                    key, undefined, val, elem, xform, target, valueCell, dtype,
-                    elem ? Object.keys(elem.sdfg.attributes._arrays): []
+                    key, undefined, val, elem, xform, target, valContents,
+                    dtype, elem ? Object.keys(elem.sdfg.attributes._arrays): []
                 )];
                 break;
             case 'CodeBlock':
                 valProp = [attrTablePutCode(
                     key, undefined, val ? val.string_data : '', elem, xform,
-                    target, valueCell, dtype
+                    target, valContents, dtype
                 )];
                 break;
             case 'LogicalGroup':
                 valProp = [attrTablePutLogicalGroup(
-                    key, undefined, val, elem, xform, target, valueCell, dtype
+                    key, undefined, val, elem, xform, target, valContents, dtype
                 )];
                 break;
             default:
@@ -1091,30 +1088,120 @@ export async function attributeTablePutEntry(
                         sdfgMetaDict['__data_container_types__']
                     );
                     const dataTypeProp = attrTablePutSelect(
-                        key, 'type', val.type, elem, xform, target, valueCell,
+                        key, 'type', val.type, elem, xform, target, valContents,
                         dtype, containerTypeChoices
                     );
                     const dataAttrProp = attrTablePutData(
                         key, 'attributes', val, elem, xform, target,
-                        valueCell, dtype, meta
+                        valContents, dtype, meta
                     );
                     valProp = [dataTypeProp, dataAttrProp];
                 } else {
                     if (choices !== undefined)
                         valProp = [attrTablePutSelect(
-                            key, undefined, val, elem, xform, target, valueCell,
-                            dtype, choices
+                            key, undefined, val, elem, xform, target,
+                            valContents, dtype, choices
                         )];
                     else
-                        valueCell.html(sdfg_property_to_string(
+                        valContents.html(sdfg_property_to_string(
                             val, VSCodeRenderer.getInstance()?.view_settings()
                         ));
                 }
                 break;
         }
+        return valProp;
+    };
+
+    if (key === 'constants_prop') {
+        const constContainer = $('<div>').appendTo(valContents);
+        for (const k in val) {
+            const v = val[k];
+            constContainer.append($('<div>', {
+                text: k + ': ' + v[1].toString(),
+            }));
+        }
+    } else if (dtype === undefined) {
+        setValContentsPlain();
+    } else if (delayedEdit) {
+        setValContentsPlain();
+
+        const delayedEditBtn = $('<i>', {
+            class: 'material-symbols-outlined property-edit-btn',
+            text: 'edit',
+            title: 'Click to edit',
+        }).appendTo(valueCell);
+
+        delayedEditBtn.on('click', async () => {
+            delayedEditBtn.hide();
+
+            valContents.html('');
+            if (editableKey) {
+                keyCell.removeClass('attr-table-heading');
+                keyCell.html('');
+                const keyInput = $('<input>', {
+                    'type': 'text',
+                    'class': 'property-key-input sdfv-property-text',
+                    'value': key,
+                }).appendTo(keyCell);
+                keyProp = new KeyProperty(elem, xform, target, key, keyInput);
+            }
+            valProp = await setValContentsRich();
+
+            if (valProp === undefined) {
+                // TODO: gracefully fail.
+            } else {
+                const delayedEditDiscardBtn = $('<i>', {
+                    class: 'material-symbols-outlined property-edit-btn',
+                    text: 'close',
+                    title: 'Discard change',
+                }).appendTo(valueCell);
+                const delayedEditAcceptBtn = $('<i>', {
+                    class: 'material-symbols-outlined property-edit-btn',
+                    text: 'check',
+                    title: 'Confirm change',
+                }).appendTo(valueCell);
+                delayedEditAcceptBtn.on('click', () => {
+                    if (keyProp)
+                        keyPropUpdateHandler(keyProp);
+
+                    if (editableKey) {
+                        keyCell.addClass('attr-table-heading');
+                        keyCell.html('');
+                        keyCell.text(key);
+                    }
+
+                    valProp!.forEach(prop => {
+                        valPropUpdateHandler(prop);
+                    });
+                    valContents.html('');
+                    setValContentsPlain();
+
+                    delayedEditBtn.show();
+                    delayedEditAcceptBtn.remove();
+                    delayedEditDiscardBtn.remove();
+                });
+
+                delayedEditDiscardBtn.on('click', () => {
+                    if (editableKey) {
+                        keyCell.addClass('attr-table-heading');
+                        keyCell.html('');
+                        keyCell.text(key);
+                    }
+
+                    valContents.html('');
+                    setValContentsPlain();
+
+                    delayedEditBtn.show();
+                    delayedEditAcceptBtn.remove();
+                    delayedEditDiscardBtn.remove();
+                });
+            }
+        });
+    } else {
+        valProp = await setValContentsRich();
     }
 
-    if (updateOnChange && valProp !== undefined) {
+    if (updateOnChange && !delayedEdit && valProp !== undefined) {
         valProp.forEach(prop => {
             if (prop instanceof ValueProperty) {
                 if (prop instanceof TypeclassProperty) {
@@ -1141,7 +1228,8 @@ export async function attributeTablePutEntry(
         });
     }
 
-    if (updateOnChange && keyProp && keyProp.getInput() !== undefined) {
+    if (updateOnChange && !delayedEdit && keyProp &&
+        keyProp.getInput() !== undefined) {
         for (const vProp of valProp ?? [])
             keyProp.connectedProperties.add(vProp);
         keyProp.getInput().on('change', () => {
@@ -1181,6 +1269,7 @@ const ATTR_TABLE_HIDDEN_ATTRIBUTES = [
 export function generateAttributesTable(
     elem: any | undefined, xform: any | undefined, root: JQuery<HTMLElement>
 ): void {
+    console.debug('Generating attributes table for', elem, xform);
     let attributes: any | undefined = undefined;
     let identifier = '';
     if (elem) {
@@ -1365,8 +1454,13 @@ export function generateAttributesTable(
 }
 
 export function appendSymbolsTable(
-    root: JQuery<HTMLElement>, symbols: Record<string, string>, sdfg: JsonSDFG
+    root: JQuery<HTMLElement>, symbols: Record<string, string>,
+    startExpandedThreshold: number
 ): void {
+    console.debug('Generating symbols table');
+    const nSymbols = Object.keys(symbols).length;
+    const startExpanded = nSymbols <= startExpandedThreshold;
+
     const symbolsTableBaseContainer = $('<div>', {
         'class': 'container-fluid attr-table-base-container',
     }).appendTo(root);
@@ -1378,13 +1472,13 @@ export function appendSymbolsTable(
         'class': 'col-12 attr-table-cat-container',
     }).appendTo(catRow);
     const catToggleBtn = $('<button>', {
-        'class': 'attr-cat-toggle-btn active',
+        'class': 'attr-cat-toggle-btn' + (startExpanded ? ' active' : ''),
         'type': 'button',
-        'text': 'Symbols',
+        'text': 'Symbols (' + nSymbols.toString() + ')',
         'data-bs-toggle': 'collapse',
-        'data-bs-target': '#info-table-symbols-containers',
+        'data-bs-target': '#info-table-symbols-container',
         'aria-expanded': 'false',
-        'aria-controls': 'info-table-symbols-containers',
+        'aria-controls': 'info-table-symbols-container',
     }).appendTo(catContainer);
     $('<i>', {
         'class': 'attr-cat-toggle-btn-indicator material-symbols-outlined',
@@ -1392,8 +1486,10 @@ export function appendSymbolsTable(
     }).appendTo(catToggleBtn);
 
     const attrTable = $('<div>', {
-        'class': 'container-fluid attr-table collapse show',
-        'id': 'info-table-symbols-containers',
+        class: 'container-fluid attr-table collapse' + (
+            startExpanded ? ' show' : ''
+        ),
+        id: 'info-table-symbols-container',
     }).appendTo(catContainer);
     attrTable.on('hide.bs.collapse', () => {
         catToggleBtn.removeClass('active');
@@ -1412,8 +1508,8 @@ export function appendSymbolsTable(
             }).appendTo(attrTable);
             attributeTablePutEntry(
                 symbol, symType, attrMeta, symbols, undefined,
-                undefined, row, true, true, true, false, undefined, undefined,
-                true
+                undefined, row, true, false, true, true, false, undefined,
+                undefined, true
             ).then(res => {
                 if (res.deleteBtn)
                     res.deleteBtn.on('click', () => {
@@ -1458,7 +1554,7 @@ export function appendSymbolsTable(
                         addItemButtonRow.before(row);
                         attributeTablePutEntry(
                             nameVal, defaultNewType, attrMeta, symbols,
-                            undefined, undefined, row, true, true, true,
+                            undefined, undefined, row, true, true, false, true,
                             false, undefined, undefined, true
                         ).then(newProp => {
                             if (newProp) {
@@ -1495,8 +1591,12 @@ export function appendSymbolsTable(
 export function appendDataDescriptorTable(
     root: JQuery<HTMLElement>,
     descriptors: { [key: string]: { type: string, attributes: any } },
-    sdfg: JsonSDFG
+    sdfg: JsonSDFG, startExpandedThreshold: number
 ): void {
+    console.debug('Generating Data descriptor table');
+    const nDescriptors = Object.keys(descriptors).length;
+    const startExpanded = nDescriptors <= startExpandedThreshold;
+
     const dataTableBaseContainer = $('<div>', {
         'class': 'container-fluid attr-table-base-container',
     }).appendTo(root);
@@ -1508,13 +1608,13 @@ export function appendDataDescriptorTable(
         'class': 'col-12 attr-table-cat-container',
     }).appendTo(catRow);
     const catToggleBtn = $('<button>', {
-        'class': 'attr-cat-toggle-btn active',
+        'class': 'attr-cat-toggle-btn' + (startExpanded ? ' active' : ''),
         'type': 'button',
-        'text': 'Data Containers',
+        'text': 'Data Containers (' + nDescriptors.toString() + ')',
         'data-bs-toggle': 'collapse',
-        'data-bs-target': '#info-table-data-containers',
+        'data-bs-target': '#info-table-data-container',
         'aria-expanded': 'false',
-        'aria-controls': 'info-table-data-containers',
+        'aria-controls': 'info-table-data-container',
     }).appendTo(catContainer);
     $('<i>', {
         'class': 'attr-cat-toggle-btn-indicator material-symbols-outlined',
@@ -1522,8 +1622,10 @@ export function appendDataDescriptorTable(
     }).appendTo(catToggleBtn);
 
     const attrTable = $('<div>', {
-        'class': 'container-fluid attr-table collapse show',
-        'id': 'info-table-data-containers',
+        'class': 'container-fluid attr-table collapse' + (
+            startExpanded ? ' show' : ''
+        ),
+        'id': 'info-table-data-container',
     }).appendTo(catContainer);
     attrTable.on('hide.bs.collapse', () => {
         catToggleBtn.removeClass('active');
@@ -1613,8 +1715,8 @@ export function appendDataDescriptorTable(
             }).appendTo(attrTable);
             attributeTablePutEntry(
                 descriptor, val, attrMeta, descriptors, undefined,
-                undefined, row, true, true, true, false, updateNameListener,
-                updateContainerListener, true
+                undefined, row, true, true, true, true, false,
+                updateNameListener, updateContainerListener, true
             ).then(res => {
                 if (res.deleteBtn)
                     res.deleteBtn.on('click', () => {
@@ -1679,8 +1781,9 @@ export function appendDataDescriptorTable(
                         addItemButtonRow.before(row);
                         attributeTablePutEntry(
                             nameVal, defaultValues, newMetaType, descriptors,
-                            undefined, undefined, row, true, true, true, false,
-                            updateNameListener, updateContainerListener, true
+                            undefined, undefined, row, true, true, false, true,
+                            false, updateNameListener, updateContainerListener,
+                            true
                         ).then(newProp => {
                             if (newProp) {
                                 if (newProp.deleteBtn)

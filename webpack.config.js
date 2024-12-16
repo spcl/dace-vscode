@@ -5,6 +5,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const MonacoEditorWebpackPlugin = require('monaco-editor-webpack-plugin');
 
 /**
  * @type {import('webpack').Configuration}
@@ -132,6 +133,7 @@ const webclientConfig = {
                 },
             ],
         }),
+        new MonacoEditorWebpackPlugin(),
     ],
 };
 

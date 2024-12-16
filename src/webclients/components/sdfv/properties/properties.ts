@@ -423,7 +423,7 @@ export class TypeclassProperty extends ComboboxProperty {
                 }).appendTo(rowbox);
                 attributeTablePutEntry(
                     key, val, valMeta, this.compoundValues, undefined,
-                    undefined, row, false, false, false
+                    undefined, row, false, false, false, false
                 ).then(attrProp => {
                     if (attrProp)
                         this.compoundProp?.getProperties().push(attrProp);

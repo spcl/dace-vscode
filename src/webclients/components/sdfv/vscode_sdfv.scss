@@ -359,6 +359,7 @@ body.sdfv {
   }
 
   .property-edit-btn {
+    user-select: none;
     margin-left: .8rem;
     cursor: pointer;
   }

@@ -23,6 +23,9 @@ import {
 
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
 
+const SYMBOLS_START_EXPANDED_THRESHOLD = 10;
+const DATA_CONTAINERS_START_EXPANDED_THRESHOLD = 10;
+
 export class SDFVVSCodeUI implements ISDFVUserInterface {
 
     private static readonly INSTANCE: SDFVVSCodeUI = new SDFVVSCodeUI();
@@ -335,10 +338,12 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
             } else if (elem instanceof SDFG) {
                 if (elem.data?.attributes) {
                     appendDataDescriptorTable(
-                        contents, elem.data.attributes._arrays, elem.data
+                        contents, elem.data.attributes._arrays, elem.data,
+                        DATA_CONTAINERS_START_EXPANDED_THRESHOLD
                     );
                     appendSymbolsTable(
-                        contents, elem.data.attributes.symbols, elem.data
+                        contents, elem.data.attributes.symbols,
+                        SYMBOLS_START_EXPANDED_THRESHOLD
                     );
                 }
             } else if (elem instanceof NestedSDFG) {
@@ -346,12 +351,13 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
                     appendDataDescriptorTable(
                         contents,
                         elem.data.node.attributes.sdfg.attributes._arrays,
-                        elem.data.node.attributes.sdfg
+                        elem.data.node.attributes.sdfg,
+                        DATA_CONTAINERS_START_EXPANDED_THRESHOLD
                     );
                     appendSymbolsTable(
                         contents,
                         elem.data.node.attributes.sdfg.attributes.symbols,
-                        elem.data.node.attributes.sdfg
+                        SYMBOLS_START_EXPANDED_THRESHOLD
                     );
                 }
             }
