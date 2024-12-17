@@ -159,7 +159,7 @@ function attrTablePutCode(
 function attrTablePutData(
     key: string, subkey: string | undefined, val: any, elem: any | undefined,
     xform: any | undefined, target: any, cell: JQuery, dtype: string,
-    meta: any, editableKeys: boolean = false
+    meta: any
 ): DictProperty {
     const dataCellContainer = $('<div>', {
         'class': 'popup-editable-property-container',
@@ -174,7 +174,7 @@ function attrTablePutData(
         elem, xform, target, key, subkey, dtype, [], val
     );
 
-    dataEditBtn.on('click', () => {
+    dataEditBtn.on('click', async () => {
         prop.setProperties([]);
 
         const modal = createSingleUseModal(
@@ -182,33 +182,14 @@ function attrTablePutData(
         );
 
         const rowbox = $('<div>', {
-            'class': 'container-fluid',
+            'class': 'container-fluid attr-table',
         }).appendTo(modal.body);
-        Object.keys(val.attributes).forEach(async k => {
-            let v = val.attributes[k];
-
-            let valMeta = undefined;
-            if (k in meta)
-                valMeta = meta[k];
-
-            const row = $('<div>', {
-                class: 'row attr-table-row',
-            }).appendTo(rowbox);
-            const attrProp = await attributeTablePutEntry(
-                k, v, valMeta, val.attributes, elem, xform, row,
-                editableKeys, false, false, editableKeys
-            );
-
-            if (attrProp.deleteBtn)
-                attrProp.deleteBtn.on('click', () => {
-                    attrProp.keyProp?.getInput().val('');
-                    attrProp.keyProp?.markDeleted();
-                    attrProp.row.hide();
-                });
-
-            if (attrProp)
-                prop.getProperties().push(attrProp);
-        });
+        const allProps = await setTableFromAttributes(
+            val.attributes, meta, '', rowbox, false, false, false, false,
+            elem, xform
+        );
+        for (const nProp of allProps)
+            prop.getProperties().push(nProp);
 
         // If code editors (monaco editors) are part of this dictionary, they
         // need to be resized again as soon as the modal is shown in order to
@@ -221,40 +202,6 @@ function attrTablePutData(
                 });
             }
         });
-
-        if (editableKeys) {
-            const addItemContainer = $('<div>', {
-                'class': 'container-fluid',
-            }).appendTo(modal.body);
-            const addItemButtonRow = $('<div>', {
-                'class': 'row',
-            }).appendTo(addItemContainer);
-            $('<i>', {
-                'class': 'material-symbols-outlined property-add-row-btn',
-                'text': 'playlist_add',
-                'title': 'Add item',
-                'click': async () => {
-                    const row = $('<div>', {
-                        class: 'row attr-table-row',
-                    }).appendTo(rowbox);
-                    const newProp = await attributeTablePutEntry(
-                        '', '', { metatype: 'str' }, val.attributes, elem,
-                        xform, row, true, false, false, true
-                    );
-                    if (newProp) {
-                        prop.getProperties().push(newProp);
-
-                        if (newProp.deleteBtn)
-                            newProp.deleteBtn.on('click', () => {
-                                newProp.keyProp?.getInput().val('');
-                                newProp.row.hide();
-                            });
-                    }
-                },
-            }).appendTo($('<div>', {
-                'class': 'col-2',
-            }).appendTo(addItemButtonRow));
-        }
 
         if (modal.confirmBtn)
             modal.confirmBtn.on('click', () => {
@@ -423,7 +370,7 @@ function attrTablePutDict(
         );
 
         const rowbox = $('<div>', {
-            'class': 'container-fluid',
+            'class': 'container-fluid attr-table',
         }).appendTo(modal.body);
         Object.keys(val).forEach(async k => {
             let v = val[k];
@@ -554,7 +501,7 @@ function attrTablePutList(
         );
 
         const rowbox = $('<div>', {
-            'class': 'container-fluid',
+            'class': 'container-fluid attr-table',
         }).appendTo(modal.body);
         if (val) {
             for (let i = 0; i < val.length; i++) {
@@ -674,7 +621,7 @@ function attrTablePutRange(
         );
 
         const rowbox = $('<div>', {
-            'class': 'container-fluid',
+            'class': 'container-fluid attr-table',
         }).appendTo(modal.body);
         if (val && val.ranges)
             val.ranges.forEach((range: Range) => {
@@ -983,21 +930,40 @@ export async function attributeTablePutEntry(
         class: 'attr-table-value',
     }).appendTo(valueCell);
 
-    const setValContentsPlain = () => {
+    const setValContentsPlain = async () => {
+        const sdfgMetaDict = await VSCodeSDFV.getInstance().getMetaDict();
         // Implementations that are set to null should still be visible. Other
         // null properties should be shown as an empty field.
         if (key === 'implementation' && val === null) {
-            valContents.html('null');
-        } else {
+            valContents.text('null');
+        } else if (dtype == undefined) {
             valContents.html(sdfg_property_to_string(
                 val, VSCodeRenderer.getInstance()?.view_settings()
             ));
+        } else if (dtype in sdfgMetaDict['__data_container_types__']) {
+            let containerLabel = dtype + ' ';
+            if (val['attributes']) {
+                const attr = val['attributes']
+                if (dtype.endsWith('Array') && attr['shape'])
+                    containerLabel += sdfg_property_to_string(attr['shape']);
+            }
+            $('<div>', {
+                class: 'data-container-summary',
+                text: containerLabel,
+            }).appendTo(valContents);
+        } else {
+            switch (dtype) {
+                default:
+                    valContents.html(sdfg_property_to_string(
+                        val, VSCodeRenderer.getInstance()?.view_settings()
+                    ));
+                    break;
+            }
         }
     };
 
     const setValContentsRich = async () => {
         const sdfgMetaDict = await VSCodeSDFV.getInstance().getMetaDict();
-        console.log(dtype);
         switch (dtype) {
             case 'typeclass':
                 if (meta !== undefined && meta['base_types'] &&
@@ -1088,18 +1054,22 @@ export async function attributeTablePutEntry(
                 )];
                 break;
             default:
-                console.log(key);
-                if (key in sdfgMetaDict['__data_container_types__']) {
+                if (dtype in sdfgMetaDict['__data_container_types__']) {
                     const containerTypeChoices = Object.keys(
                         sdfgMetaDict['__data_container_types__']
                     );
+                    const dataContainer = $('<div>', {
+                        class: 'data-container-editing-container',
+                    }).appendTo(valContents);
+                    const typeContainer = $('<div>').appendTo(dataContainer);
                     const dataTypeProp = attrTablePutSelect(
-                        key, 'type', val.type, elem, xform, target, valContents,
-                        dtype, containerTypeChoices
+                        key, 'type', val.type, elem, xform, target,
+                        typeContainer, dtype, containerTypeChoices
                     );
+                    const editBtnContainer = $('<div>').appendTo(dataContainer);
                     const dataAttrProp = attrTablePutData(
                         key, 'attributes', val, elem, xform, target,
-                        valContents, dtype, meta
+                        editBtnContainer, dtype, meta
                     );
                     valProp = [dataTypeProp, dataAttrProp];
                 } else {
@@ -1127,9 +1097,9 @@ export async function attributeTablePutEntry(
             }));
         }
     } else if (dtype === undefined) {
-        setValContentsPlain();
+        await setValContentsPlain();
     } else if (delayedEdit) {
-        setValContentsPlain();
+        await setValContentsPlain();
 
         const delayedEditBtnContainer = $('<div>', {
             class: 'value-edit-control',
@@ -1170,7 +1140,7 @@ export async function attributeTablePutEntry(
                     text: 'check',
                     title: 'Confirm change',
                 }).appendTo(delayedEditBtnContainer);
-                delayedEditAcceptBtn.on('click', () => {
+                delayedEditAcceptBtn.on('click', async () => {
                     if (keyProp)
                         keyPropUpdateHandler(keyProp);
 
@@ -1184,14 +1154,14 @@ export async function attributeTablePutEntry(
                         valPropUpdateHandler(prop);
                     });
                     valContents.html('');
-                    setValContentsPlain();
+                    await setValContentsPlain();
 
                     delayedEditBtn.show();
                     delayedEditAcceptBtn.remove();
                     delayedEditDiscardBtn.remove();
                 });
 
-                delayedEditDiscardBtn.on('click', () => {
+                delayedEditDiscardBtn.on('click', async () => {
                     if (editableKey) {
                         keyCell.addClass('attr-table-heading');
                         keyCell.html('');
@@ -1199,7 +1169,7 @@ export async function attributeTablePutEntry(
                     }
 
                     valContents.html('');
-                    setValContentsPlain();
+                    await setValContentsPlain();
 
                     delayedEditBtn.show();
                     delayedEditAcceptBtn.remove();
@@ -1273,13 +1243,129 @@ const ATTR_TABLE_HIDDEN_ATTRIBUTES = [
     'position',
     'transformation_hist',
     'symbols',
+    'metatype',
 ];
 
+async function setTableFromAttributes(
+    attributes: any, metadata: any, identifier: string,
+    root: JQuery<HTMLElement>, editableKeys: boolean = false,
+    updateOnChange: boolean = false, delayedEdit: boolean = false,
+    addDeleteButton: boolean = false, elem?: any, xform?: any
+): Promise<PropertyEntry[]> {
+    const propertyEntries: PropertyEntry[] = [];
+
+    let sortedAttributes: { [key: string]: any } = {};
+    let handledKeys = new Set<string>();
+    for (const k in metadata){
+        const val = metadata[k];
+        if (ATTR_TABLE_HIDDEN_ATTRIBUTES.includes(k) || k.startsWith('_'))
+            continue;
+        if (!sortedAttributes[metadata[k]['category']])
+            sortedAttributes[metadata[k]['category']] = {};
+        sortedAttributes[metadata[k]['category']][k] = val;
+        handledKeys.add(k);
+    }
+
+    for (const k in attributes) {
+        if (ATTR_TABLE_HIDDEN_ATTRIBUTES.includes(k) || k.startsWith('_'))
+            continue;
+        if (!handledKeys.has(k)) {
+            if (!sortedAttributes['Uncategorized'])
+                sortedAttributes['Uncategorized'] = {};
+            sortedAttributes['Uncategorized'][k] = attributes[k];
+            handledKeys.add(k);
+        }
+    }
+
+    for (const category in sortedAttributes) {
+        if (category === '(Debug)')
+            continue;
+        if (!Object.keys(sortedAttributes[category]).length)
+            continue;
+
+        const catRow = $('<div>', {
+            'class': 'row attr-table-cat-row',
+        }).appendTo(root);
+        const catContainer = $('<div>', {
+            'class': 'col-12 attr-table-cat-container',
+        }).appendTo(catRow);
+
+        const catToggleBtn = $('<button>', {
+            'class': 'attr-cat-toggle-btn active',
+            'type': 'button',
+            'text': category,
+            'data-bs-toggle': 'collapse',
+            'data-bs-target': '#info-table-' + category + '-' + identifier,
+            'aria-expanded': 'false',
+            'aria-controls': 'info-table-' + category + '-' + identifier,
+        }).appendTo(catContainer);
+        $('<i>', {
+            'class': 'attr-cat-toggle-btn-indicator ' +
+                'material-symbols-outlined',
+            'text': 'expand_less'
+        }).appendTo(catToggleBtn);
+
+        const attrTable = $('<div>', {
+            'class': 'container-fluid attr-table collapse show',
+            'id': 'info-table-' + category + '-' + identifier,
+        }).appendTo(catContainer);
+
+        attrTable.on('hide.bs.collapse', () => {
+            catToggleBtn.removeClass('active');
+        });
+        attrTable.on('show.bs.collapse', () => {
+            catToggleBtn.addClass('active');
+        });
+
+        for (const k in sortedAttributes[category]) {
+            const isNonDefault = attributes[k] !== undefined;
+            const val = isNonDefault ?
+                attributes[k] : sortedAttributes[category][k]?.default;
+
+            // Debug info isn't printed in the attributes table, but instead
+            // we show a button to jump to the referenced code location.
+            if (k === 'debuginfo') {
+                if (val) {
+                    const gotoSourceBtn = $('#goto-source-btn');
+                    gotoSourceBtn.on('click', function() {
+                        VSCodeSDFV.getInstance().gotoSource(
+                            val.filename,
+                            val.start_line,
+                            val.start_column,
+                            val.end_line,
+                            val.end_column
+                        );
+                    });
+                    gotoSourceBtn.prop(
+                        'title',
+                        val.filename + ':' + val.start_line
+                    );
+                    gotoSourceBtn.show();
+                }
+                continue;
+            }
+
+            let attrMeta = undefined;
+            if (metadata && metadata[k])
+                attrMeta = metadata[k];
+
+            const row = $('<div>', {
+                class: 'row attr-table-row',
+            }).appendTo(attrTable);
+            const prop = await attributeTablePutEntry(
+                k, val, attrMeta, attributes, elem, xform, row, editableKeys,
+                updateOnChange, delayedEdit, addDeleteButton, isNonDefault
+            );
+            propertyEntries.push(prop);
+        }
+    }
+
+    return propertyEntries;
+}
 
 export function generateAttributesTable(
     elem: any | undefined, xform: any | undefined, root: JQuery<HTMLElement>
 ): void {
-    console.log('Generating attributes table');
     let attributes: any | undefined = undefined;
     let identifier = '';
     if (elem) {
@@ -1302,110 +1388,10 @@ export function generateAttributesTable(
         metadataPromise = getTransformationMetadata(xform);
 
     metadataPromise.then((metadata: any) => {
-        let sortedAttributes: { [key: string]: any } = {};
-        let handledKeys = new Set<string>();
-        Object.keys(metadata).forEach(k => {
-            const val = metadata[k];
-            if (ATTR_TABLE_HIDDEN_ATTRIBUTES.includes(k) || k.startsWith('_'))
-                return;
-            if (!sortedAttributes[metadata[k]['category']])
-                sortedAttributes[metadata[k]['category']] = {};
-            sortedAttributes[metadata[k]['category']][k] = val;
-            handledKeys.add(k);
-        });
-
-        Object.keys(attributes).forEach(k => {
-            if (ATTR_TABLE_HIDDEN_ATTRIBUTES.includes(k) || k.startsWith('_'))
-                return;
-            if (!handledKeys.has(k)) {
-                if (!sortedAttributes['Uncategorized'])
-                    sortedAttributes['Uncategorized'] = {};
-                sortedAttributes['Uncategorized'][k] = attributes[k];
-                handledKeys.add(k);
-            }
-        });
-
-        Object.keys(sortedAttributes).forEach(category => {
-            if (category === '(Debug)')
-                return;
-            if (!Object.keys(sortedAttributes[category]).length)
-                return;
-
-            const catRow = $('<div>', {
-                'class': 'row attr-table-cat-row',
-            }).appendTo(root);
-            const catContainer = $('<div>', {
-                'class': 'col-12 attr-table-cat-container',
-            }).appendTo(catRow);
-
-            const catToggleBtn = $('<button>', {
-                'class': 'attr-cat-toggle-btn active',
-                'type': 'button',
-                'text': category,
-                'data-bs-toggle': 'collapse',
-                'data-bs-target': '#info-table-' + category + '-' + identifier,
-                'aria-expanded': 'false',
-                'aria-controls': 'info-table-' + category + '-' + identifier,
-            }).appendTo(catContainer);
-            $('<i>', {
-                'class': 'attr-cat-toggle-btn-indicator ' +
-                    'material-symbols-outlined',
-                'text': 'expand_less'
-            }).appendTo(catToggleBtn);
-
-            const attrTable = $('<div>', {
-                'class': 'container-fluid attr-table collapse show',
-                'id': 'info-table-' + category + '-' + identifier,
-            }).appendTo(catContainer);
-
-            attrTable.on('hide.bs.collapse', () => {
-                catToggleBtn.removeClass('active');
-            });
-            attrTable.on('show.bs.collapse', () => {
-                catToggleBtn.addClass('active');
-            });
-
-            Object.keys(sortedAttributes[category]).forEach(k => {
-                const isNonDefault = attributes[k] !== undefined;
-                const val = isNonDefault ?
-                    attributes[k] : sortedAttributes[category][k]?.default;
-
-                // Debug info isn't printed in the attributes table, but instead
-                // we show a button to jump to the referenced code location.
-                if (k === 'debuginfo') {
-                    if (val) {
-                        const gotoSourceBtn = $('#goto-source-btn');
-                        gotoSourceBtn.on('click', function() {
-                            VSCodeSDFV.getInstance().gotoSource(
-                                val.filename,
-                                val.start_line,
-                                val.start_column,
-                                val.end_line,
-                                val.end_column
-                            );
-                        });
-                        gotoSourceBtn.prop(
-                            'title',
-                            val.filename + ':' + val.start_line
-                        );
-                        gotoSourceBtn.show();
-                    }
-                    return;
-                }
-
-                let attrMeta = undefined;
-                if (metadata && metadata[k])
-                    attrMeta = metadata[k];
-
-                const row = $('<div>', {
-                    class: 'row attr-table-row',
-                }).appendTo(attrTable);
-                attributeTablePutEntry(
-                    k, val, attrMeta, attributes, elem, xform, row, false,
-                    true, false, false, isNonDefault
-                );
-            });
-        });
+        setTableFromAttributes(
+            attributes, metadata, identifier, root, false, true, false, false,
+            elem, xform
+        );
     });
 
     // Display a button to jump to the generated C++ code.
@@ -1602,7 +1588,6 @@ export function appendDataDescriptorTable(
     descriptors: { [key: string]: { type: string, attributes: any } },
     sdfg: JsonSDFG, startExpandedThreshold: number
 ): void {
-    console.log('Generating Data descriptors table');
     const nDescriptors = Object.keys(descriptors).length;
     const startExpanded = nDescriptors <= startExpandedThreshold;
 
@@ -1718,8 +1703,6 @@ export function appendDataDescriptorTable(
                 attrMeta = metaDict[val.type];
                 attrMeta['metatype'] = val.type;
             }
-
-            console.log('Processing', descriptor);
 
             const row = $('<div>', {
                 class: 'row attr-table-row',

@@ -335,9 +335,7 @@ export class VSCodeSDFV extends SDFV {
         sdfv: SDFV,
         endsPan: boolean
     ): boolean {
-        if (evtype === 'click' || evtype === 'dblclick') {
-            this.UI.infoShow();
-        } else if (evtype === 'contextmenu') {
+        if (evtype === 'contextmenu') {
             if (VSCodeRenderer.getInstance()?.overlayManager.is_overlay_active(
                 LogicalGroupOverlay
             )) {

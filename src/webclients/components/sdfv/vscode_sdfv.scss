@@ -159,6 +159,7 @@ body.sdfv {
   /* Info container/box */
 
   #info-container {
+    z-index: 1030 !important; /* Needs to be below z-index of modal backdrop */
     overflow-y: scroll;
     background-color: var(--vscode-editor-background);
     color: var(--vscode-editor-foreground);
@@ -285,30 +286,6 @@ body.sdfv {
     padding: 0;
   }
 
-  .attr-table-row {
-    padding: .5rem 0;
-    border-bottom: 1px solid var(--vscode-list-inactiveSelectionBackground);
-    margin-left: 0;
-    margin-right: 0;
-  }
-
-  .attr-table-cell {
-    text-align: left;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    padding-left: 0;
-    flex: 0 0 auto;
-
-    .attr-table-value {
-      flex-grow: 1;
-    }
-
-    .value-edit-control {
-      display: flex;
-    }
-  }
-
   .attr-row-prefix-cell {
     height: 100%;
     padding: .5rem;
@@ -316,18 +293,6 @@ body.sdfv {
 
   .attr-table-cell.col-12 {
     margin-bottom: .5rem;
-  }
-
-  .attr-cell-s {
-    width: 25%;
-  }
-
-  .attr-cell-m {
-    width: 50%;
-  }
-
-  .attr-cell-l {
-    width: 75%;
   }
 
   .attr-changed-bar {
