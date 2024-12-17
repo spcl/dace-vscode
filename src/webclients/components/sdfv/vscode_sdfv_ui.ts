@@ -366,6 +366,8 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
         } else {
             this.infoClear();
         }
+
+        this.infoShow();
     }
 
     private infoBoxCheckUncoverTopBar(

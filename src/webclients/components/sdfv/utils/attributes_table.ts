@@ -40,7 +40,6 @@ import {
 import { ComponentTarget } from '../../../../components/components';
 
 function updateAttrTable(): void {
-    console.warn('EXPENSIVE CALL!');
     // TODO(later): this is an ugly workaround to how the system of filling the
     // info bar currently works. It should instead update the information
     // _without_ re-rendering everything, but at the moment it is difficult to
@@ -72,7 +71,7 @@ function attrTablePutBool(
     cell: JQuery, dtype: string
 ): ValueProperty {
     const boolInputContainer = $('<div>', {
-        'class': 'form-check form-switch sdfv-property-bool',
+        'class': 'form-check form-switch sdfv-property-input sdfv-property-bool',
     }).appendTo(cell);
     const input = $('<input>', {
         'type': 'checkbox',
@@ -94,7 +93,7 @@ function attrTablePutText(
 ): ValueProperty {
     const input = $('<input>', {
         'type': 'text',
-        'class': 'sdfv-property-text',
+        'class': 'sdfv-property-input sdfv-property-text',
         'value': val,
     }).appendTo(cell);
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
@@ -279,7 +278,7 @@ function attrTablePutNumber(
 ): ValueProperty {
     const input = $('<input>', {
         'type': 'number',
-        'class': 'sdfv-property-number',
+        'class': 'sdfv-property-input sdfv-property-number',
         'value': val,
     }).appendTo(cell);
     return new ValueProperty(elem, xform, target, key, subkey, dtype, input);
@@ -291,7 +290,7 @@ function attrTablePutSelect(
     choices: string[]
 ): ValueProperty {
     const input = $('<select>', {
-        'class': 'sdfv-property-dropdown',
+        'class': 'sdfv-property-input sdfv-property-dropdown',
     }).appendTo(cell);
     if (!choices.includes(val))
         input.append(new Option(
@@ -348,7 +347,7 @@ function attrTablePutTypeclass(
     const r = (Math.random() + 1).toString(36).substring(7);
     const input = $('<select>', {
         'id': key + '-' + r + '-typeclass-dropdown',
-        'class': 'sdfv-property-dropdown',
+        'class': 'sdfv-property-input sdfv-property-dropdown',
     }).appendTo(cell);
     const choices = baseTypes.concat(Object.keys(compoundTypes));
 
@@ -401,6 +400,7 @@ function attrTablePutDict(
         'class': 'popup-editable-property-container',
     }).appendTo(cell);
     $('<div>', {
+        class: 'sdfv-dict-value-container',
         'html': sdfg_property_to_string(
             val, VSCodeRenderer.getInstance()?.view_settings()
         ),
@@ -457,46 +457,48 @@ function attrTablePutDict(
             }
         });
 
-        const addItemContainer = $('<div>', {
-            'class': 'container-fluid',
-        }).appendTo(modal.body);
-        const addItemButtonRow = $('<div>', {
-            'class': 'row',
-        }).appendTo(addItemContainer);
-        $('<i>', {
-            'class': 'material-symbols-outlined property-add-row-btn',
-            'text': 'playlist_add',
-            'title': 'Add item',
-            'click': () => {
-                const row = $('<div>', {
-                    class: 'row attr-table-row',
-                }).appendTo(rowbox);
-                let newPropRet: Promise<PropertyEntry>;
-                if (valMeta)
-                    newPropRet = attributeTablePutEntry(
-                        '', '', valMeta, val, elem, xform, row, true, false,
-                        false, true
-                    );
-                else
-                    newPropRet = attributeTablePutEntry(
-                        '', '', { metatype: 'str' }, val, elem, xform, row,
-                        true, false, false, true
-                    );
-                newPropRet.then(newProp => {
-                    if (newProp) {
-                        prop.getProperties().push(newProp);
+        if (allowAdding) {
+            const addItemContainer = $('<div>', {
+                'class': 'container-fluid',
+            }).appendTo(modal.body);
+            const addItemButtonRow = $('<div>', {
+                'class': 'row',
+            }).appendTo(addItemContainer);
+            $('<i>', {
+                'class': 'material-symbols-outlined property-add-row-btn',
+                'text': 'playlist_add',
+                'title': 'Add item',
+                'click': () => {
+                    const row = $('<div>', {
+                        class: 'row attr-table-row',
+                    }).appendTo(rowbox);
+                    let newPropRet: Promise<PropertyEntry>;
+                    if (valMeta)
+                        newPropRet = attributeTablePutEntry(
+                            '', '', valMeta, val, elem, xform, row, true, false,
+                            false, true
+                        );
+                    else
+                        newPropRet = attributeTablePutEntry(
+                            '', '', { metatype: 'str' }, val, elem, xform, row,
+                            true, false, false, true
+                        );
+                    newPropRet.then(newProp => {
+                        if (newProp) {
+                            prop.getProperties().push(newProp);
 
-                        if (newProp.deleteBtn)
-                            newProp.deleteBtn.on('click', () => {
-                                newProp.keyProp?.getInput().val('');
-                                newProp.row.hide();
-                            });
-                    }
-                });
-            },
-        }).appendTo($('<div>', {
-            'class': 'col-2',
-        }).appendTo(addItemButtonRow));
+                            if (newProp.deleteBtn)
+                                newProp.deleteBtn.on('click', () => {
+                                    newProp.keyProp?.getInput().val('');
+                                    newProp.row.hide();
+                                });
+                        }
+                    });
+                },
+            }).appendTo($('<div>', {
+                'class': 'col-2',
+            }).appendTo(addItemButtonRow));
+        }
 
         if (modal.confirmBtn)
             modal.confirmBtn.on('click', () => {
@@ -977,7 +979,9 @@ export async function attributeTablePutEntry(
             invertedSpacing ? 'attr-cell-s' : 'attr-cell-l'
         ),
     }).appendTo(contentRow);
-    const valContents = $('<div>').appendTo(valueCell);
+    const valContents = $('<div>', {
+        class: 'attr-table-value',
+    }).appendTo(valueCell);
 
     const setValContentsPlain = () => {
         // Implementations that are set to null should still be visible. Other
@@ -993,6 +997,7 @@ export async function attributeTablePutEntry(
 
     const setValContentsRich = async () => {
         const sdfgMetaDict = await VSCodeSDFV.getInstance().getMetaDict();
+        console.log(dtype);
         switch (dtype) {
             case 'typeclass':
                 if (meta !== undefined && meta['base_types'] &&
@@ -1083,6 +1088,7 @@ export async function attributeTablePutEntry(
                 )];
                 break;
             default:
+                console.log(key);
                 if (key in sdfgMetaDict['__data_container_types__']) {
                     const containerTypeChoices = Object.keys(
                         sdfgMetaDict['__data_container_types__']
@@ -1125,11 +1131,15 @@ export async function attributeTablePutEntry(
     } else if (delayedEdit) {
         setValContentsPlain();
 
+        const delayedEditBtnContainer = $('<div>', {
+            class: 'value-edit-control',
+        }).appendTo(valueCell);
+
         const delayedEditBtn = $('<i>', {
             class: 'material-symbols-outlined property-edit-btn',
             text: 'edit',
             title: 'Click to edit',
-        }).appendTo(valueCell);
+        }).appendTo(delayedEditBtnContainer);
 
         delayedEditBtn.on('click', async () => {
             delayedEditBtn.hide();
@@ -1154,12 +1164,12 @@ export async function attributeTablePutEntry(
                     class: 'material-symbols-outlined property-edit-btn',
                     text: 'close',
                     title: 'Discard change',
-                }).appendTo(valueCell);
+                }).appendTo(delayedEditBtnContainer);
                 const delayedEditAcceptBtn = $('<i>', {
                     class: 'material-symbols-outlined property-edit-btn',
                     text: 'check',
                     title: 'Confirm change',
-                }).appendTo(valueCell);
+                }).appendTo(delayedEditBtnContainer);
                 delayedEditAcceptBtn.on('click', () => {
                     if (keyProp)
                         keyPropUpdateHandler(keyProp);
@@ -1269,7 +1279,7 @@ const ATTR_TABLE_HIDDEN_ATTRIBUTES = [
 export function generateAttributesTable(
     elem: any | undefined, xform: any | undefined, root: JQuery<HTMLElement>
 ): void {
-    console.debug('Generating attributes table for', elem, xform);
+    console.log('Generating attributes table');
     let attributes: any | undefined = undefined;
     let identifier = '';
     if (elem) {
@@ -1392,7 +1402,7 @@ export function generateAttributesTable(
                 }).appendTo(attrTable);
                 attributeTablePutEntry(
                     k, val, attrMeta, attributes, elem, xform, row, false,
-                    true, false, isNonDefault
+                    true, false, false, isNonDefault
                 );
             });
         });
@@ -1457,7 +1467,6 @@ export function appendSymbolsTable(
     root: JQuery<HTMLElement>, symbols: Record<string, string>,
     startExpandedThreshold: number
 ): void {
-    console.debug('Generating symbols table');
     const nSymbols = Object.keys(symbols).length;
     const startExpanded = nSymbols <= startExpandedThreshold;
 
@@ -1593,7 +1602,7 @@ export function appendDataDescriptorTable(
     descriptors: { [key: string]: { type: string, attributes: any } },
     sdfg: JsonSDFG, startExpandedThreshold: number
 ): void {
-    console.debug('Generating Data descriptor table');
+    console.log('Generating Data descriptors table');
     const nDescriptors = Object.keys(descriptors).length;
     const startExpanded = nDescriptors <= startExpandedThreshold;
 
@@ -1709,6 +1718,8 @@ export function appendDataDescriptorTable(
                 attrMeta = metaDict[val.type];
                 attrMeta['metatype'] = val.type;
             }
+
+            console.log('Processing', descriptor);
 
             const row = $('<div>', {
                 class: 'row attr-table-row',

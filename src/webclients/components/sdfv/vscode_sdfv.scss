@@ -2,6 +2,7 @@
  * All rights reserved. */
 
 @import "bootstrap_color_overrides";
+@import "attributes_table";
 
 body.sdfv {
   display: flex;
@@ -280,12 +281,6 @@ body.sdfv {
     transform: rotate(180deg);
   }
 
-  .attr-table {
-    border: 1px solid var(--vscode-list-inactiveSelectionBackground);
-    padding-left: 0;
-    padding-right: 0;
-  }
-
   .attr-table-cat-container {
     padding: 0;
   }
@@ -304,6 +299,14 @@ body.sdfv {
     overflow: hidden;
     padding-left: 0;
     flex: 0 0 auto;
+
+    .attr-table-value {
+      flex-grow: 1;
+    }
+
+    .value-edit-control {
+      display: flex;
+    }
   }
 
   .attr-row-prefix-cell {
@@ -317,6 +320,10 @@ body.sdfv {
 
   .attr-cell-s {
     width: 25%;
+  }
+
+  .attr-cell-m {
+    width: 50%;
   }
 
   .attr-cell-l {
@@ -345,12 +352,6 @@ body.sdfv {
 
   .attr-table-heading {
     font-weight: bold;
-  }
-
-  .popup-editable-property-container {
-    width: 100%;
-    display: flex;
-    align-items: center;
   }
 
   .property-add-row-btn {
@@ -445,6 +446,10 @@ body.sdfv {
     background-color: var(--vscode-dropdown-background);
     color: var(--vscode-dropdown-foreground);
     border-color: var(--vscode-dropdown-border);
+
+    &.es-input {
+      width: 100%;
+    }
   }
 
   .sdfv-property-expand-libnode-btn {
@@ -488,6 +493,7 @@ body.sdfv {
   .es-list {
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
+    padding-left: 0;
   }
 
   .context-menu {

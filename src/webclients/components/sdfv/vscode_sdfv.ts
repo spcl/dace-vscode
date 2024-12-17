@@ -539,10 +539,6 @@ export class VSCodeSDFV extends SDFV {
         const selectedElements = this.renderer.get_selected_elements();
         if (selectedElements && selectedElements.length === 1)
             reselectRendererElement(selectedElements[0]);
-        else if (!selectedElements || selectedElements.length === 0)
-            this.UI.showElementInfo(
-                new SDFG(this.renderer.get_sdfg()), this.renderer
-            );
 
         const renderer = this.renderer;
         renderer.on('selection_changed', () => {
