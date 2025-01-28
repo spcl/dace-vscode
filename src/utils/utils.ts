@@ -6,8 +6,10 @@ import {
     FileType,
     Position,
     Range,
+    TabInputText,
     TextDocument,
     Uri,
+    ViewColumn,
     env,
     window,
     workspace
@@ -28,19 +30,37 @@ export function goToFileLocation(
     endCol: number
 ): void {
     // Load the file and show it in a new editor, highlighting the
-    // indicated range.
-    workspace.openTextDocument(fileUri).then(
-        (doc: TextDocument) => {
-            const startPos = new Position(startLine - 1, startCol);
-            const endPos = new Position(endLine, endCol);
-            const range = new Range(startPos, endPos);
-            window.showTextDocument(doc, { preview: false, selection: range });
-        }, (reason) => {
-            window.showInformationMessage(
-                'Could not open file ' + fileUri.fsPath + ', ' + reason
-            );
-        }
-    );
+    // indicated range. If the file is open already, open the opened editor
+    // instead of loading the file.
+    const _goToFileLoc = (doc: TextDocument) => {
+        const startPos = new Position(startLine - 1, startCol);
+        const endPos = new Position(endLine, endCol);
+        const range = new Range(startPos, endPos);
+        window.showTextDocument(doc, {
+            viewColumn: ViewColumn.Beside,
+            preview: false,
+            selection: range,
+        });
+    }
+
+    let document = null;
+    for (const doc of workspace.textDocuments) {
+        if (doc.uri.fsPath === fileUri.fsPath)
+            document = doc;
+    }
+    if (document) {
+        _goToFileLoc(document);
+    } else {
+        workspace.openTextDocument(fileUri).then(
+            (doc: TextDocument) => {
+                _goToFileLoc(doc);
+            }, (reason) => {
+                window.showInformationMessage(
+                    'Could not open file ' + fileUri.fsPath + ', ' + reason
+                );
+            }
+        );
+    }
 }
 
 export async function goToSource(
