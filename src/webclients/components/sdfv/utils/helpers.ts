@@ -1,9 +1,8 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
     AccessNode,
-    Edge,
     EntryNode,
     ExitNode,
     findGraphElementByUUID,
@@ -14,66 +13,81 @@ import {
     ScopeNode,
     SDFGElement,
     SDFGElementType,
-    sdfg_range_elem_to_string,
     SDFGNode,
     CFGListType,
     JsonSDFGElement,
     JsonSDFGControlFlowRegion,
     JsonSDFGBlock,
+    sdfgRangeElemToString,
+    SDFGRange,
+    ControlFlowBlock,
+    JsonSDFGCodeBlock,
+    LibraryNode,
+    InterstateEdge,
+    JsonSDFGDataDesc,
 } from '@spcl/sdfv/src';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
+import { MetaDictT } from '../../../../types';
+import { WithAttributes } from './attributes_table';
+
 
 export function findMaximumSdfgId(sdfg: JsonSDFG): number {
     let maxId = sdfg.cfg_list_id;
     for (const node of sdfg.nodes) {
-        if (node.type === SDFGElementType.SDFGState)
+        if (node.type === SDFGElementType.SDFGState.toString()) {
             for (const n of node.nodes ?? []) {
-                if (n.type === SDFGElementType.NestedSDFG)
-                    maxId = Math.max(
-                        findMaximumSdfgId(n.attributes.sdfg), maxId
-                    );
+                if (n.type === SDFGElementType.NestedSDFG.toString()) {
+                    if (n.attributes?.sdfg) {
+                        maxId = Math.max(
+                            findMaximumSdfgId(n.attributes.sdfg as JsonSDFG),
+                            maxId
+                        );
+                    }
+                }
             }
+        }
     }
     return maxId;
 }
 
 export function jsonSDFGElemReadAttr(elem: JsonSDFGElement, attr: string): any {
-    if (Object.hasOwn(elem.attributes, attr))
+    if (elem.attributes && Object.hasOwn(elem.attributes, attr))
         return elem.attributes[attr];
     const meta = VSCodeSDFV.getInstance().getCachedMetaDict();
     if (!meta)
         return undefined;
-    const attrMeta = meta[elem.type][attr];
-    if (attrMeta && Object.hasOwn(attrMeta, 'default'))
+    const elemMeta = meta[elem.type] as MetaDictT | undefined;
+    const attrMeta = elemMeta?.[attr] as MetaDictT | undefined;
+    if (attrMeta && 'default' in attrMeta)
         return attrMeta.default;
     return undefined;
 }
 
 export function isCollapsible(elem: JsonSDFGElement): boolean {
-    if (Object.hasOwn(elem.attributes, 'is_collapsed'))
+    if (elem.attributes && 'is_collapsed' in elem.attributes)
         return true;
     const meta = VSCodeSDFV.getInstance().getCachedMetaDict();
     if (!meta)
         return false;
-    return Object.hasOwn(meta[elem.type], 'is_collapsed');
+    return Object.hasOwn(meta[elem.type] ?? {}, 'is_collapsed');
 }
 
 export function findJsonSDFGElementByUUID(cfgList: CFGListType, uuid: string): [
     JsonSDFGElement | undefined, JsonSDFGControlFlowRegion
 ] {
     const rootSDFG = cfgList[0].jsonObj;
-    const parts = uuid?.split('/');
-    if (!parts || parts.length < 2 || parts.length > 4)
+    const parts = uuid.split('/');
+    if (parts.length < 2 || parts.length > 4)
         return [undefined, rootSDFG];
 
     const sdfgId = parseInt(parts[0]);
-    if (sdfgId >= 0 && rootSDFG) {
-        const cfg = cfgList[sdfgId]?.jsonObj;
+    if (sdfgId >= 0) {
+        const cfg = cfgList[sdfgId].jsonObj;
         const stateId = parseInt(parts[1]);
-        if (stateId >= 0 && cfg?.nodes) {
+        if (stateId >= 0) {
             const state = cfg.nodes[stateId];
-            if (state && state.nodes) {
+            if (state.nodes) {
                 if (parts.length > 2) {
                     const nodeId = parseInt(parts[2]);
                     if (nodeId >= 0) {
@@ -87,7 +101,7 @@ export function findJsonSDFGElementByUUID(cfgList: CFGListType, uuid: string): [
 
                 return [state, cfg];
             }
-        } else if (parts.length === 4 && cfg?.edges) {
+        } else if (parts.length === 4) {
             const edgeId = parseInt(parts[3]);
             if (edgeId > 0)
                 return [cfg.edges[edgeId], cfg];
@@ -98,23 +112,22 @@ export function findJsonSDFGElementByUUID(cfgList: CFGListType, uuid: string): [
 }
 
 function recursiveDoForScopeChildren(
-    element: SDFGNode, action: CallableFunction
+    element: SDFGNode, action: (elem: SDFGNode | ControlFlowBlock) => unknown
 ): void {
-    const stateId = element.parent_id;
-    if (element instanceof EntryNode && stateId !== null &&
-        !element.attributes().is_collapsed) {
+    const stateId = element.parentStateId;
+    if (element instanceof EntryNode && stateId !== undefined &&
+        !element.attributes()?.is_collapsed) {
         const state = element.cfg?.nodes[stateId] as JsonSDFGState;
-        if (state?.scope_dict[element.id] !== undefined) {
-            const stateGraph = element.parentElem?.data.graph;
-            if (!stateGraph) {
-                throw Error(
-                    'State graph missing on node' + element.label()
-                );
-            }
-            for (const nId of state.scope_dict[element.id]) {
-                const nd = stateGraph.node(nId);
-                action(nd);
-                recursiveDoForScopeChildren(nd, action);
+        if (state.scope_dict?.[element.id] !== undefined) {
+            const stateGraph = element.parentElem?.graph;
+            if (!stateGraph)
+                throw Error('State graph missing on node' + element.label);
+            for (const nId of state.scope_dict[element.id] ?? []) {
+                const nd = stateGraph.node(nId.toString());
+                if (nd) {
+                    action(nd);
+                    recursiveDoForScopeChildren(nd as SDFGNode, action);
+                }
             }
         }
     }
@@ -122,7 +135,7 @@ function recursiveDoForScopeChildren(
 
 /**
  * Perform an action for each element in an array given by their uuids.
- * 
+ *
  * @param uuids                 Element UUIDs to perform the action for.
  * @param action                Action to perform for each element.
  * @param applyToScopeChildren  Perform the action for all elements in a scope,
@@ -133,14 +146,14 @@ function recursiveDoForScopeChildren(
  *                              Defaults to false.
  */
 export function doForAllUUIDs(
-    uuids: string[], action: CallableFunction,
+    uuids: string[], action: (elem?: SDFGElement) => unknown,
     applyToScopeChildren: boolean = false, applyToUndef: boolean = false
 ): void {
     const renderer = VSCodeRenderer.getInstance();
     if (!renderer)
         return;
     uuids.forEach((uuid) => {
-        const element = findGraphElementByUUID(renderer.getCFGList(), uuid);
+        const element = findGraphElementByUUID(renderer.cfgList, uuid);
 
         if (element || applyToUndef) {
             action(element);
@@ -162,10 +175,12 @@ export function zoomToUUIDs(uuids: string[]): void {
     if (renderer) {
         const elementsToDisplay: SDFGElement[] = [];
         doForAllUUIDs(
-            uuids, (element: SDFGElement) => elementsToDisplay.push(element),
-            true
+            uuids, (element) => {
+                if (element)
+                    elementsToDisplay.push(element);
+            }, true
         );
-        renderer.zoom_to_view(elementsToDisplay);
+        renderer.zoomToFit(elementsToDisplay);
     }
 }
 
@@ -179,34 +194,26 @@ export function highlightUUIDs(
     uuids: string[], pColor?: string
 ): void {
     const renderer = VSCodeRenderer.getInstance();
-    const context = renderer?.get_context();
+    const context = renderer?.ctx;
     if (renderer && context) {
         // Make sure no previously shaded elements remain shaded by drawing
         // synchronously.
-        renderer.draw(null);
+        renderer.draw();
 
         let color = 'wheat';
         if (pColor !== undefined)
             color = pColor;
 
         if (!uuids.length) {
-            renderer.get_graph()?.nodes().forEach((stateId: string) => {
-                renderer.get_graph()?.node(stateId).shade(
-                    renderer,
-                    context,
-                    color
-                );
-            });
+            for (const stateId of renderer.graph?.nodes() ?? [])
+                renderer.graph!.node(stateId)?.shade(color);
         } else {
-            doForAllUUIDs(uuids, (element: SDFGElement) => {
+            doForAllUUIDs(uuids, (element) => {
                 if (element) {
-                    element.shade(renderer, context, color);
+                    element.shade(color);
                 } else {
-                    renderer.get_graph()?.nodes().forEach(sId => {
-                        renderer.get_graph()?.node(sId).shade(
-                            renderer, context, color
-                        );
-                    });
+                    for (const sId of renderer.graph?.nodes() ?? [])
+                        renderer.graph!.node(sId)?.shade(color);
                 }
             }, true, true);
         }
@@ -215,7 +222,12 @@ export function highlightUUIDs(
 
 export function createSingleUseModal(
     title: string, withConfirm: boolean, bodyClass: string
-): { modal: any, body: JQuery, confirmBtn: JQuery | undefined, modalId: string } {
+): {
+    modal: JQuery,
+    body: JQuery,
+    confirmBtn: JQuery | undefined,
+    modalId: string,
+} {
     const randomDivId = Math.random().toString(36).replace('0.', 'su-div-');
     const propEditModal = $('<div>', {
         'class': 'modal fade',
@@ -254,12 +266,13 @@ export function createSingleUseModal(
     }).appendTo(modalFooter);
 
     let modalConfirmBtn = undefined;
-    if (withConfirm)
+    if (withConfirm) {
         modalConfirmBtn = $('<button>', {
             'class': 'btn btn-primary',
             'type': 'button',
             'text': 'Ok',
         }).appendTo(modalFooter);
+    }
 
     propEditModal.on('hidden.bs.modal', () => propEditModal.remove());
 
@@ -272,21 +285,27 @@ export function createSingleUseModal(
 }
 
 export function computeScopeLabel(scopeEntry: EntryNode): string {
-    const attributes = scopeEntry.data.node.attributes;
+    const attributes = scopeEntry.attributes() as {
+        range?: {
+            ranges?: SDFGRange[];
+        },
+        params?: string[];
+        label?: string;
+    } | undefined;
+    if (!attributes?.label)
+        return scopeEntry.label;
+
     const baseLabel = attributes.label;
 
-    let rangeSnippets = [];
-    for (let i = 0; i < attributes.range.ranges.length; i++) {
+    const rangeSnippets = [];
+    const rngs = attributes.range?.ranges;
+    for (let i = 0; i < (rngs?.length ?? 0); i++) {
         let parameter = '_';
-        if (i < attributes.params.length)
-            parameter = attributes.params[i];
+        if (i < (attributes.params?.length ?? 0))
+            parameter = attributes.params![i];
 
-        let range = attributes.range.ranges[i];
-        rangeSnippets.push(
-            parameter + '=' + sdfg_range_elem_to_string(
-                range, VSCodeRenderer.getInstance()?.view_settings()
-            )
-        );
+        const range = attributes.range!.ranges![i];
+        rangeSnippets.push(parameter + '=' + sdfgRangeElemToString(range));
     }
 
     if (rangeSnippets.length > 0) {
@@ -304,72 +323,70 @@ export function computeScopeLabel(scopeEntry: EntryNode): string {
 }
 
 export function elementUpdateLabel(
-    element: SDFGElement, attributes: any
+    element: WithAttributes, attributes: Record<string, unknown>
 ): void {
-    const renderer = VSCodeRenderer.getInstance();
-    if (element.data && renderer) {
-        if (element.data.node) {
-            if (attributes.label)
-                element.data.node.label = attributes.label;
+    if (element instanceof InterstateEdge && element.data) {
+        let condition = null;
+        const attrs = element.attributes();
+        const condCode =
+            attrs?.condition as JsonSDFGCodeBlock | undefined;
+        if (condCode?.string_data) {
+            const strdata = condCode.string_data.toLowerCase();
+            if (strdata !== '1' && strdata !== 'true')
+                condition = strdata;
+        }
+        let assignments = null;
+        const assignDict = attrs?.assignments as Record<
+            string, string | number | boolean
+        > | undefined;
+        if (assignDict) {
+            const assignList = [];
+            for (const k in assignDict)
+                assignList.push(k + '=' + assignDict[k].toString());
+            assignments = assignList.join(', ');
+        }
+        let newLabel = '';
+        if (condition)
+            newLabel += (condition + (assignments ? '; ' : ''));
+        if (assignments)
+            newLabel += assignments;
+        element.data.label = newLabel;
+    } else if (element.jsonData) {
+        if (attributes.label) {
+            (element.jsonData as Record<string, unknown>).label =
+                attributes.label;
+        }
 
-            if (element instanceof ScopeNode) {
-                // In scope nodes the range is attached.
-                if (element instanceof EntryNode) {
-                    const exitElem = findGraphElementByUUID(
-                        renderer.getCFGList(),
-                        element.sdfg.cfg_list_id + '/' +
-                        element.parent_id + '/' +
-                        element.data.node.scope_exit + '/-1'
-                    );
-                    if (exitElem && exitElem instanceof SDFGElement) {
-                        element.data.node.label = computeScopeLabel(element);
-                        exitElem.data.node.label = element.data.node.label;
-                    }
-                } else if (element instanceof ExitNode) {
-                    const entryElem = findGraphElementByUUID(
-                        renderer.getCFGList(),
-                        element.sdfg.cfg_list_id + '/' +
-                        element.parent_id + '/' +
-                        element.data.node.scope_entry + '/-1'
-                    );
-                    if (entryElem && entryElem instanceof EntryNode) {
-                        element.data.node.label = computeScopeLabel(entryElem);
-                        entryElem.data.node.label = element.data.node.label;
-                    }
+        if (element instanceof ScopeNode) {
+            // In scope nodes the range is attached.
+            if (element instanceof EntryNode) {
+                const exitElem = findGraphElementByUUID(
+                    element.renderer.cfgList,
+                    element.sdfg.cfg_list_id.toString() + '/' +
+                    (element.parentStateId?.toString() ?? '-1') + '/' +
+                    (element.jsonData.scope_exit?.toString() ?? '-1') +
+                    '/-1'
+                );
+                if (exitElem?.jsonData && exitElem instanceof SDFGElement) {
+                    element.jsonData.label = computeScopeLabel(element);
+                    exitElem.jsonData.label = element.jsonData.label;
                 }
-                element.clear_cached_labels();
-            } else if (element instanceof AccessNode && attributes.data) {
-                element.data.node.label = attributes.data;
-            }
-        } else if (element.data.label) {
-            if (element instanceof Edge) {
-                if (element.data.type === 'InterstateEdge') {
-                    let condition = null;
-                    if (element.data.attributes?.condition?.string_data) {
-                        const strdata =
-                            element.data.attributes.condition.string_data;
-                        if (strdata !== '1' && strdata !== 1 &&
-                            strdata !== 'true' && strdata !== true)
-                            condition = strdata;
-                    }
-                    let assignments = null;
-                    if (element.data.attributes?.assignments) {
-                        const assignDict = element.data.attributes.assignments;
-                        const assignList = [];
-                        for (const k in assignDict)
-                            assignList.push(
-                                k.toString() + '=' + assignDict[k].toString()
-                            );
-                        assignments = assignList.join(', ');
-                    }
-                    let newLabel = '';
-                    if (condition)
-                        newLabel += (condition + (assignments ? '; ' : ''));
-                    if (assignments)
-                        newLabel += assignments;
-                    element.data.label = newLabel;
+            } else if (element instanceof ExitNode) {
+                const entryElem = findGraphElementByUUID(
+                    element.renderer.cfgList,
+                    element.sdfg.cfg_list_id.toString() + '/' +
+                    (element.parentStateId?.toString() ?? '-1') + '/' +
+                    (element.jsonData.scope_entry?.toString() ?? '-1') +
+                    '/-1'
+                );
+                if (entryElem?.jsonData && entryElem instanceof EntryNode) {
+                    element.jsonData.label = computeScopeLabel(entryElem);
+                    entryElem.jsonData.label = element.jsonData.label;
                 }
             }
+            element.clearCachedLabels();
+        } else if (element instanceof AccessNode && attributes.data) {
+            element.jsonData.label = attributes.data as string;
         }
     }
 }
@@ -384,23 +401,29 @@ export function elementUpdateLabel(
  * NOTE: This operates in-place on the renderer's graph representation.
  */
 export function unGraphiphySdfg(sdfg: JsonSDFG): void {
-    const unGraphiphyGraph = (g: any) => {
-        g.edges?.forEach((e: any) => {
-            if (e.attributes.data.edge)
-                delete e.attributes.data.edge;
+    const unGraphiphyGraph = (g: JsonSDFGControlFlowRegion | JsonSDFGState) => {
+        g.edges.forEach((e) => {
+            const data =
+                e.attributes?.data as Record<string, unknown> | undefined;
+            if (data && 'edge' in data && data.edge)
+                delete data.edge;
         });
 
-        g.nodes?.forEach((s: any) => {
-            if (s.attributes.layout)
+        g.nodes.forEach((s) => {
+            if (s.attributes?.layout)
                 delete s.attributes.layout;
 
-            if (s.type === SDFGElementType.NestedSDFG)
-                unGraphiphySdfg(s.attributes.sdfg);
-            else
-                unGraphiphyGraph(s);
+            if (s.type === SDFGElementType.NestedSDFG.toString()) {
+                if (s.attributes?.sdfg)
+                    unGraphiphySdfg(s.attributes.sdfg as JsonSDFG);
+            } else if ('nodes' in s && 'edges' in s) {
+                unGraphiphyGraph(
+                    s as JsonSDFGControlFlowRegion | JsonSDFGState
+                );
+            }
         });
     };
-    
+
     unGraphiphyGraph(sdfg);
 }
 
@@ -411,7 +434,7 @@ export async function vscodeWriteGraph(g: JsonSDFG): Promise<void> {
     // Stringify with a replacer that removes undefined and sets it to null,
     // so the values don't get dropped.
     const nv = JSON.stringify(g, (_k, v) => {
-        return v === undefined ? null : v;
+        return v === undefined ? null : v as unknown;
     }, 1);
     const t3 = performance.now();
     if (VSCodeSDFV.getInstance().getViewingCompressed())
@@ -419,16 +442,16 @@ export async function vscodeWriteGraph(g: JsonSDFG): Promise<void> {
     else
         await SDFVComponent.getInstance().invoke('onSDFGEdited', [nv]);
     const t4 = performance.now();
-    console.debug('unGraphiphySdfg took ' + (t2 - t1) + 'ms');
-    console.debug('JSON.stringify took ' + (t3 - t2) + 'ms');
-    console.debug('writeToActiveDocument took ' + (t4 - t3) + 'ms');
+    console.debug('unGraphiphySdfg took ' + (t2 - t1).toString() + 'ms');
+    console.debug('JSON.stringify took ' + (t3 - t2).toString() + 'ms');
+    console.debug('writeToActiveDocument took ' + (t4 - t3).toString() + 'ms');
 }
 
 export function reselectRendererElement(elem: SDFGElement): void {
     const renderer = VSCodeRenderer.getInstance();
     if (renderer) {
         const uuid = getGraphElementUUID(elem);
-        const newElem = findGraphElementByUUID(renderer.getCFGList(), uuid);
+        const newElem = findGraphElementByUUID(renderer.cfgList, uuid);
         if (newElem && newElem instanceof SDFGElement) {
             VSCodeSDFV.getInstance().linkedUI.showElementInfo(
                 newElem, VSCodeRenderer.getInstance()!
@@ -438,78 +461,76 @@ export function reselectRendererElement(elem: SDFGElement): void {
 }
 
 export async function getTransformationMetadata(
-    transformation: any
-): Promise<{ [key: string ]: any}> {
-    if (transformation.transformation)
-        return VSCodeSDFV.getInstance().getMetaDict().then(sdfgMetaDict => {
-            return sdfgMetaDict[transformation.transformation];
-        });
+    transformation: Record<string, unknown>
+): Promise<MetaDictT> {
+    if (transformation.transformation) {
+        const mDict = await VSCodeSDFV.getInstance().getMetaDict();
+        return mDict[transformation.transformation as string] as MetaDictT;
+    }
     return {};
 }
 
 export async function getElementMetadata(
-    elem: any
-): Promise<{ [key: string ]: any}> {
-    return VSCodeSDFV.getInstance().getMetaDict().then(sdfgMetaDict => {
-        if (typeof elem === 'string') {
-            return sdfgMetaDict[elem];
-        } else if (elem instanceof SDFGElement) {
-            if (elem.data.sdfg) {
-                return sdfgMetaDict[elem.data.sdfg.type];
-            } else if (elem.data.state) {
-                return sdfgMetaDict[elem.data.state.type];
-            } else if (elem.data.node) {
-                const nodeType = elem.data.node.type;
-                if (elem instanceof ScopeNode) {
-                    let nodeMeta = sdfgMetaDict[nodeType];
-                    let scopeMeta: any = undefined;
-                    let entryIdx = nodeType.indexOf('Entry');
-                    let exitIdx = nodeType.indexOf('Exit');
-                    if (entryIdx)
-                        scopeMeta = sdfgMetaDict[
-                            nodeType.substring(0, entryIdx)
-                        ];
-                    else if (exitIdx)
-                        scopeMeta = sdfgMetaDict[
-                            nodeType.substring(0, exitIdx)
-                        ];
-
-                    const metadata: { [key: string]: any } = {};
-                    if (nodeMeta !== undefined)
-                        Object.keys(nodeMeta).forEach(k => {
-                            metadata[k] = nodeMeta[k];
-                        });
-                    if (scopeMeta !== undefined)
-                        Object.keys(scopeMeta).forEach(k => {
-                            metadata[k] = scopeMeta[k];
-                        });
-                    return metadata;
-                } else if (nodeType === 'LibraryNode') {
-                    return sdfgMetaDict[elem.data.node.classpath];
-                } else {
-                    return sdfgMetaDict[nodeType];
-                }
-            } else if (elem.data.type) {
-                return sdfgMetaDict[elem.data.type];
+    elem: string | SDFGElement | JsonSDFGElement | JsonSDFGDataDesc
+): Promise<MetaDictT> {
+    const sdfgMetaDict = await VSCodeSDFV.getInstance().getMetaDict();
+    if (typeof elem === 'string') {
+        return sdfgMetaDict[elem] as MetaDictT;
+    } else if (elem instanceof SDFGElement) {
+        if (elem instanceof ScopeNode) {
+            const elemType = elem.type;
+            const nodeMeta = sdfgMetaDict[elemType] as MetaDictT | undefined;
+            let scopeMeta: MetaDictT | undefined = undefined;
+            const entryIdx = elemType.indexOf('Entry');
+            const exitIdx = elemType.indexOf('Exit');
+            if (entryIdx) {
+                scopeMeta = sdfgMetaDict[
+                    elemType.substring(0, entryIdx)
+                ] as MetaDictT | undefined;
+            } else if (exitIdx) {
+                scopeMeta = sdfgMetaDict[
+                    elemType.substring(0, exitIdx)
+                ] as MetaDictT | undefined;
             }
-        } else if (elem.type) {
-            return sdfgMetaDict[elem.type];
+
+            const metadata: MetaDictT = {};
+            if (nodeMeta !== undefined) {
+                Object.keys(nodeMeta).forEach(k => {
+                    metadata[k] = nodeMeta[k];
+                });
+            }
+            if (scopeMeta !== undefined) {
+                Object.keys(scopeMeta).forEach(k => {
+                    metadata[k] = scopeMeta[k];
+                });
+            }
+            return metadata;
+        } else if (elem instanceof LibraryNode) {
+            const classpath = elem.jsonData?.classpath as string | undefined;
+            if (classpath && sdfgMetaDict[classpath])
+                return sdfgMetaDict[classpath] as MetaDictT;
         }
-        return {};
-    });
+    }
+    return sdfgMetaDict[elem.type ?? 'undefined'] as MetaDictT;
 }
 
 export function readDaCeProp(
-    obj: Record<string, unknown>, key: string,
-    meta: Record<string, { default: unknown }>
+    obj: unknown, key: string, meta: MetaDictT
 ): { val: unknown, isNonDefault: boolean } {
-    const isNonDefault = obj[key] !== undefined;
-    const val = isNonDefault ? obj[key] : meta[key]?.default;
-    return { val, isNonDefault };
+    const isObj = obj && typeof obj === 'object';
+    if (isObj) {
+        const objAsRecord = obj as Record<string, unknown>;
+        const isNonDefault = objAsRecord[key] !== undefined;
+        const val = isNonDefault ? objAsRecord[key] : (
+            meta[key] as MetaDictT
+        ).default;
+        return { val, isNonDefault };
+    }
+    return { val: undefined, isNonDefault: false };
 }
 
 export async function readElementProp(
-    elem: Record<string, unknown>, key: string
+    elem: SDFGElement | JsonSDFGElement, key: string
 ): Promise<{ val: unknown, isNonDefault: boolean }> {
     return getElementMetadata(elem).then(meta => {
         return readDaCeProp(elem, key, meta);
@@ -532,14 +553,16 @@ export function doForAllNodeTypes(
         if (block.type === type)
             fun(block);
 
-        if (block.type === SDFGElementType.SDFGState) {
+        if (block.type === SDFGElementType.SDFGState.toString()) {
             block.nodes?.forEach(node => {
                 if (node.type === type)
                     fun(node);
 
-                if (node.type === SDFGElementType.NestedSDFG && recurseNested) {
+                if (node.type === SDFGElementType.NestedSDFG.toString() &&
+                    recurseNested && node.attributes?.sdfg) {
                     doForAllNodeTypes(
-                        node.attributes.sdfg, type, fun, recurseNested
+                        node.attributes.sdfg as JsonSDFG, type, fun,
+                        recurseNested
                     );
                 }
             });
@@ -559,8 +582,8 @@ class ContextMenu {
         return ContextMenu.INSTANCE;
     }
 
-    private readonly container: JQuery<HTMLElement>;
-    private readonly items: JQuery<HTMLElement>;
+    private readonly container: JQuery;
+    private readonly items: JQuery;
 
     private constructor() {
         $(document.body).on('click', () => {
@@ -588,7 +611,7 @@ class ContextMenu {
         x: number, y: number,
         opts: {
             label: string | null,
-            callback: CallableFunction | null,
+            callback: (() => void) | null,
             disabled: boolean,
         }[]
     ): void {
@@ -639,7 +662,7 @@ export function showContextMenu(
     x: number, y: number,
     options: {
         label: string | null,
-        callback: CallableFunction | null,
+        callback: (() => void) | null,
         disabled: boolean,
     }[]
 ): void {

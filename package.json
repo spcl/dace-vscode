@@ -28,7 +28,8 @@
     },
     "icon": "icon.png",
     "extensionDependencies": [
-        "benjamin-simmonds.pythoncpp-debug"
+        "benjamin-simmonds.pythoncpp-debug",
+        "ms-python.python"
     ],
     "capabilities": {
         "untrustedWorkspaces": {
@@ -169,6 +170,18 @@
                             "Split the SDFG Optimizer layout vertically"
                         ]
                     },
+                    "dace.sdfv.colorTheme": {
+                        "type": "string",
+                        "default": "DefaultBlue",
+                        "enum": [
+                            "DefaultBlue",
+                            "DefaultGreen"
+                        ],
+                        "enumDescriptions": [
+                            "Default blue color theme",
+                            "Default green color theme"
+                        ]
+                    },
                     "dace.sdfv.minimap": {
                         "type": "boolean",
                         "default": true,
@@ -289,6 +302,66 @@
                         "minimum": 0,
                         "maximum": 1000,
                         "description": "Zoom threshold for drawing contents of control flow blocks (including states) and nested SDFGs"
+                    },
+                    "dace.sdfv.defaultTextColor": {
+                        "description": "Default text color",
+                        "type": "string",
+                        "default": "#000000"
+                    },
+                    "dace.sdfv.nodeBackgroundColor": {
+                        "description": "Default node background color",
+                        "type": "string",
+                        "default": "#ffffff"
+                    },
+                    "dace.sdfv.stateBackgroundColor": {
+                        "description": "State background color",
+                        "type": "string",
+                        "default": "#deebf7"
+                    },
+                    "dace.sdfv.breakBlockColor": {
+                        "description": "Break block color",
+                        "type": "string",
+                        "default": "#ffc79a"
+                    },
+                    "dace.sdfv.continueBlockColor": {
+                        "description": "Continue block color",
+                        "type": "string",
+                        "default": "#94ffa2"
+                    },
+                    "dace.sdfv.returnBlockColor": {
+                        "description": "Return block color",
+                        "type": "string",
+                        "default": "#ff7d7d"
+                    },
+                    "dace.sdfv.conditionalColor": {
+                        "description": "Conditional block color",
+                        "type": "string",
+                        "default": "#bec080"
+                    },
+                    "dace.sdfv.controlFlowRegionColor": {
+                        "description": "Control flow region color",
+                        "type": "string",
+                        "default": "#ffffff"
+                    },
+                    "dace.sdfv.loopColor": {
+                        "description": "Loop region color",
+                        "type": "string",
+                        "default": "#fafafa"
+                    },
+                    "dace.sdfv.interstateEdgeColor": {
+                        "description": "Interstate edge color",
+                        "type": "string",
+                        "default": "#86add9"
+                    },
+                    "dace.sdfv.errorNodeBackgroundColor": {
+                        "description": "Background color for nodes with errors",
+                        "type": "string",
+                        "default": "#ff1010"
+                    },
+                    "dace.sdfv.errorNodeForegroundColor": {
+                        "description": "Text color for nodes with errors",
+                        "type": "string",
+                        "default": "#ffffff"
                     },
                     "dace.backend.interpreterPath": {
                         "type": "string",
@@ -753,50 +826,57 @@
         "postinstall": "patch-package --patch-dir ./packages/sdfv/patches"
     },
     "devDependencies": {
-        "@types/dagre": "^0.7.52",
+        "@types/dagre": "^0.7.53",
         "@types/glob": "^8.0.0",
-        "@types/jquery": "^3.5.16",
-        "@types/jquery-editable-select": "^2.2.1",
-        "@types/mocha": "^10.0.1",
-        "@types/node": "^12.20.55",
-        "@types/semver": "^7.5.8",
-        "@types/uuid": "^8.3.4",
-        "@types/vscode": "^1.75.0",
-        "@typescript-eslint/eslint-plugin": "^8.4.0",
-        "@typescript-eslint/parser": "^8.4.0",
-        "@vscode/test-electron": "^2.2.2",
-        "autoprefixer": "^10.4.13",
-        "copy-webpack-plugin": "^11.0.0",
+        "@types/jquery": "^3.5.32",
+        "@types/jquery-editable-select": "^2.2.4",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "^24.2.0",
+        "@types/semver": "^7.7.0",
+        "@types/uuid": "^10.0.0",
+        "@types/vscode": "^1.102.0",
+        "@types/vscode-webview": "^1.57.5",
+        "@typescript-eslint/eslint-plugin": "^8.38.0",
+        "@typescript-eslint/parser": "^8.38.0",
+        "@vscode/test-electron": "^2.5.2",
+        "autoprefixer": "^10.4.21",
+        "babel-loader": "^10.0.0",
+        "copy-webpack-plugin": "^13.0.0",
         "css-loader": "^7.1.2",
-        "eslint": "^9.9.1",
+        "eslint": "^9.32.0",
         "file-loader": "^6.2.0",
         "glob": "^8.0.3",
-        "mocha": "^10.2.0",
+        "mocha": "^11.7.1",
         "postcss-loader": "^8.1.1",
+        "prettier": "^3.6.2",
         "rimraf": "^6.0.1",
-        "sass": "^1.77.6",
-        "sass-loader": "^16.0.1",
+        "sass": "1.77.6",
+        "sass-loader": "^16.0.5",
         "style-loader": "^4.0.0",
-        "ts-loader": "^9.5.1",
-        "typescript": "^5.5.4",
-        "webpack": "^5.94.0",
-        "webpack-cli": "^5.1.4"
+        "ts-loader": "^9.5.2",
+        "typedoc": "^0.28.9",
+        "typescript": "^5.8.0",
+        "typescript-eslint": "^8.38.0",
+        "webpack": "^5.101.0",
+        "webpack-cli": "^6.0.1"
     },
     "dependencies": {
         "@popperjs/core": "^2.11.6",
+        "@spcl/sdfv": "^1.5.0",
         "@vscode/debugadapter": "^1.58.0",
         "@vscode/debugprotocol": "^1.58.0",
-        "bootstrap": "^5.3.3",
+        "@vscode/python-extension": "^1.0.6",
+        "bootstrap": "^5.3.7",
         "browserify-zlib": "^0.2.0",
         "dagre": "^0.8.5",
         "jquery": "^3.7.1",
         "jquery-editable-select": "^2.2.5",
-        "material-symbols": "^0.22.2",
-        "monaco-editor": "^0.51.0",
+        "material-symbols": "^0.38.0",
+        "monaco-editor": "^0.54.0",
         "process": "^0.11.10",
-        "semver": "^7.6.2",
+        "semver": "^7.7.2",
         "stream-browserify": "^3.0.0",
-        "uuid": "^9.0.0"
+        "uuid": "^13.0.0"
     },
     "workspaces": [
         "./packages/sdfv"

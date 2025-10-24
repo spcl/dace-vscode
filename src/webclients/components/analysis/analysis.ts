@@ -1,8 +1,7 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import $ = require('jquery');
-(window as any).jQuery = $;
+import $ from 'jquery';
 
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -13,22 +12,23 @@ import './analysis.css';
 
 import { OverlayType, SymbolMap } from '@spcl/sdfv/src';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent,
 } from '../../messaging/icpc_webclient_messaging_component';
 import {
-    ICPCRequest
+    ICPCRequest,
 } from '../../../common/messaging/icpc_messaging_component';
 import { ComponentTarget } from '../../../components/components';
+import type { Uri } from 'vscode';
+import type { WebviewApi } from 'vscode-webview';
+import { IOverlayDescription } from '../../../types';
 
-declare const vscode: any;
+
+declare const vscode: WebviewApi<unknown>;
 
 class SymbolResolution {
 
-    private symbols: { [key: string]: any | undefined } = {};
-    private symbolTable: JQuery<HTMLElement> | undefined = undefined;
-
-    public constructor() {
-    }
+    private symbols: Record<string, number | undefined> = {};
+    private symbolTable: JQuery | undefined = undefined;
 
     public addSymbol(symbol: string): void {
         if (!(symbol in this.symbols)) {
@@ -37,7 +37,7 @@ class SymbolResolution {
         }
     }
 
-    public addSymbols(symbols: any): void {
+    public addSymbols(symbols: object): void {
         Object.keys(symbols).forEach((symbol) => {
             if (!(symbol in this.symbols))
                 this.symbols[symbol] = undefined;
@@ -45,7 +45,7 @@ class SymbolResolution {
         this.updateSymbolList();
     }
 
-    public defineSymbol(symbol: string, definition: any): void {
+    public defineSymbol(symbol: string, definition?: number): void {
         if (definition !== undefined && !isNaN(definition)) {
             this.symbols[symbol] = definition;
             this.updateSymbolList();
@@ -73,7 +73,7 @@ class SymbolResolution {
         this.updateSymbolList();
     }
 
-    public setSymbols(symbols: { [key: string]: any | undefined }): void {
+    public setSymbols(symbols: Record<string, number | undefined>): void {
         this.symbols = symbols;
         this.updateSymbolList();
     }
@@ -85,8 +85,7 @@ class SymbolResolution {
     }
 
     public updateSymbolList(): void {
-        if (this.symbolTable === undefined)
-            this.symbolTable = $('#symbol-table');
+        this.symbolTable ??= $('#symbol-table');
 
         this.symbolTable.html('');
         Object.keys(this.symbols).forEach((symbol) => {
@@ -111,15 +110,15 @@ class SymbolResolution {
                 }).appendTo(definitionContainer);
                 if (this.symbols[symbol] !== undefined)
                     input.val(this.symbols[symbol]);
-                input.on('change', (event: any) => {
-                    let value = event.target.value;
-                    if (value !== undefined && !isNaN(value)) {
+                input.on('change', event => {
+                    let value = +(event.target as HTMLInputElement).value;
+                    if (!isNaN(value)) {
                         if (value < 1) {
                             value = 1;
-                            event.target.value = 1;
+                            (event.target as HTMLInputElement).value = '1';
                         }
                         this.symbols[symbol] = value;
-                        AnalysisPanel.symbolValueChanged(symbol, value);
+                        void AnalysisPanel.symbolValueChanged(symbol, value);
                     }
                 });
                 $('<button>', {
@@ -128,12 +127,13 @@ class SymbolResolution {
                     'click': () => {
                         input.val('');
                         this.symbols[symbol] = undefined;
-                        AnalysisPanel.symbolValueChanged(symbol, undefined);
+                        void AnalysisPanel.symbolValueChanged(
+                            symbol, undefined
+                        );
                     },
                 }).appendTo(definitionContainer);
-                let definition = this.symbols[symbol];
+                const definition = this.symbols[symbol];
                 if (definition !== undefined && !isNaN(definition)) {
-                    definition = +definition;
                     if (definition > 0)
                         input.val(definition);
                 }
@@ -142,7 +142,7 @@ class SymbolResolution {
     }
 
     public specializeGraph(): void {
-        AnalysisPanel.specialize(this.symbols);
+        void AnalysisPanel.specialize(this.symbols);
     }
 
 }
@@ -161,16 +161,16 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
     private symbolResolution?: SymbolResolution;
 
-    private noneMessage?: JQuery<HTMLElement>;
-    private contents?: JQuery<HTMLElement>;
+    private noneMessage?: JQuery;
+    private contents?: JQuery;
 
     private nodeOverlaySelect?: JQuery<HTMLSelectElement>;
     private edgeOverlaySelect?: JQuery<HTMLSelectElement>;
 
     private scalingMethodInput?: JQuery<HTMLSelectElement>;
-    private scalingMethodHistBucketsContainer?: JQuery<HTMLElement>;
+    private scalingMethodHistBucketsContainer?: JQuery;
     private scalingMethodHistBucketsInput?: JQuery<HTMLInputElement>;
-    private scalingMethodExpBaseContainer?: JQuery<HTMLElement>;
+    private scalingMethodExpBaseContainer?: JQuery;
     private scalingMethodExpBaseInput?: JQuery<HTMLInputElement>;
 
     private runtimeReportFilenameLabel?: JQuery<HTMLSpanElement>;
@@ -192,7 +192,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
         this.edgeOverlaySelect = $('#edge-overlays-input');
 
         this.scalingMethodInput = $('#scaling-method-input');
-        this.scalingMethodInput?.on('change', () => {
+        this.scalingMethodInput.on('change', () => {
             this.onScalingUpdated();
         });
 
@@ -200,25 +200,25 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
             $('#scaling-method-hist-buckets-container');
         this.scalingMethodHistBucketsInput =
             $('#scaling-method-hist-buckets-input');
-        this.scalingMethodHistBucketsInput?.on('change', () => {
+        this.scalingMethodHistBucketsInput.on('change', () => {
             this.onScalingUpdated();
         });
 
         this.scalingMethodExpBaseContainer =
             $('#scaling-method-exp-base-container');
         this.scalingMethodExpBaseInput = $('#scaling-method-exp-base-input');
-        this.scalingMethodExpBaseInput?.on('change', () => {
+        this.scalingMethodExpBaseInput.on('change', () => {
             this.onScalingUpdated();
         });
 
         this.runtimeReportFilenameLabel = $('#runtime-report-filename-label');
 
         this.runtimeTimeCriteriumSelect = $('#runtime-time-criterium-select');
-        this.runtimeTimeCriteriumSelect?.on('change', () => {
+        this.runtimeTimeCriteriumSelect.on('change', () => {
             const crit = this.runtimeTimeCriteriumSelect?.val();
             if (!crit || typeof crit !== 'string')
                 return;
-            AnalysisPanel.instrumentationReportChangeCriterium(crit);
+            void AnalysisPanel.instrumentationReportChangeCriterium(crit);
         });
 
         $('#specialize-btn').on('click', () => {
@@ -229,7 +229,10 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
             this.clearRuntimeReport();
         });
         $('#runtime-report-browse-btn').on('click', () => {
-            this.invoke('selectReportFile').then(retval => {
+            void this.invoke<{
+                data?: string,
+                path?: Uri,
+            }>('selectReportFile').then(retval => {
                 const aPanel = AnalysisPanel.getInstance();
                 if (retval.data && retval.path) {
                     const splits = retval.path.path.split('/');
@@ -239,7 +242,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
                     const rtSelCrit = aPanel.rtTimeCriteriumSelect?.val();
                     if (!rtSelCrit || typeof rtSelCrit !== 'string')
                         return;
-                    AnalysisPanel.onLoadInstrumentationReport(
+                    void AnalysisPanel.onLoadInstrumentationReport(
                         retval.data, rtSelCrit
                     );
                 }
@@ -255,26 +258,33 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
         this.symbolResolution = new SymbolResolution();
 
         this.register(
-            this.symbolResolution.addSymbol, this.symbolResolution
-        );
-        this.register(
-            this.symbolResolution.addSymbols, this.symbolResolution
-        );
-        this.register(
-            this.symbolResolution.defineSymbol, this.symbolResolution
-        );
-        this.register(
-            this.symbolResolution.removeSymbolDefinition, this.symbolResolution
-        );
-        this.register(
-            this.symbolResolution.removeAllSymbolDefinitions,
+            this.symbolResolution.addSymbol.bind(this.symbolResolution),
             this.symbolResolution
         );
         this.register(
-            this.symbolResolution.removeSymbol, this.symbolResolution
+            this.symbolResolution.addSymbols.bind(this.symbolResolution),
+            this.symbolResolution
+        );
+        this.register(
+            this.symbolResolution.defineSymbol.bind(this.symbolResolution),
+            this.symbolResolution
+        );
+        this.register(
+            this.symbolResolution.removeSymbolDefinition.bind(
+                this.symbolResolution
+            ), this.symbolResolution
+        );
+        this.register(
+            this.symbolResolution.removeAllSymbolDefinitions.bind(
+                this.symbolResolution
+            ), this.symbolResolution
+        );
+        this.register(
+            this.symbolResolution.removeSymbol.bind(this.symbolResolution),
+            this.symbolResolution
         );
 
-        this.invoke('onReady');
+        void this.invoke('onReady');
     }
 
     @ICPCRequest()
@@ -290,8 +300,10 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
     @ICPCRequest()
     public updateAnalysisPane(
-        activeOverlays: any[], symbols: any, scalingMethod?: string,
-        scalingSubMethod?: string, availableOverlays?: any[]
+        activeOverlays: string[],
+        symbols: Record<string, string | number | undefined>,
+        scalingMethod?: string,
+        scalingSubMethod?: string, availableOverlays?: IOverlayDescription[]
     ): void {
         if (scalingMethod !== undefined) {
             this.scalingMethodInput?.val(scalingMethod);
@@ -359,7 +371,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
                     $('#runtime-measurement').hide();
                 }
 
-                AnalysisPanel.setOverlays(overlays);
+                void AnalysisPanel.setOverlays(overlays);
             };
 
             this.nodeOverlaySelect?.on('change', updateHandler);
@@ -370,14 +382,18 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
     }
 
     @ICPCRequest()
-    public setSymbols(newSymbols: any): void {
+    public setSymbols(
+        newSymbols?: Record<string, string | number | undefined>
+    ): void {
         if (newSymbols !== undefined) {
             const symbols: SymbolMap = {};
             Object.keys(newSymbols).forEach((symbol) => {
                 if (newSymbols[symbol] === '')
                     symbols[symbol] = undefined;
+                else if (newSymbols[symbol] === undefined)
+                    symbols[symbol] = undefined;
                 else
-                    symbols[symbol] = newSymbols[symbol];
+                    symbols[symbol] = +newSymbols[symbol];
             });
             this.symbolResolution?.setSymbols(symbols);
         }
@@ -396,7 +412,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
             clearTypes.push(nodeType);
         if (edgeType && typeof edgeType === 'string' && edgeType !== 'none')
             clearTypes.push(edgeType);
-        AnalysisPanel.clearRuntimeReport(clearTypes);
+        void AnalysisPanel.clearRuntimeReport(clearTypes);
     }
 
     public onScalingUpdated(): void {
@@ -405,7 +421,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
             return;
 
         let additionalVal: number | undefined = undefined;
-        let tmpVal: any = undefined;
+        let tmpVal: string | number | undefined = undefined;
         switch (scalingMethod) {
             case 'hist':
                 this.scalingMethodHistBucketsContainer?.show();
@@ -443,7 +459,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
                 break;
         }
 
-        AnalysisPanel.updateScalingMethod(scalingMethod, additionalVal);
+        void AnalysisPanel.updateScalingMethod(scalingMethod, additionalVal);
     }
 
     @ICPCRequest()
@@ -458,19 +474,19 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
     public static async symbolValueChanged(
         symbol: string, value?: number
-    ): Promise<void> {
+    ): Promise<any> {
         return this.INSTANCE.invokeEditorProcedure(
             'onSymbolValueChanged', [symbol, value]
         );
     }
 
-    public static async specialize(valueMap: SymbolMap): Promise<void> {
+    public static async specialize(valueMap: SymbolMap): Promise<any> {
         return this.INSTANCE.invokeEditorProcedure('specialize', [valueMap]);
     }
 
     public static async onLoadInstrumentationReport(
         report: any, crit: string
-    ): Promise<void> {
+    ): Promise<any> {
         return this.INSTANCE.invokeEditorProcedure(
             'loadInstrumentationReport', [report, crit]
         );
@@ -478,7 +494,7 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
     public static async instrumentationReportChangeCriterium(
         criterium: string
-    ): Promise<void> {
+    ): Promise<any> {
         return this.INSTANCE.invokeEditorProcedure(
             'setInstrumentationReportCriterium', [criterium]
         );
@@ -486,17 +502,17 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 
     public static async updateScalingMethod(
         method: string, subMethod?: number
-    ): Promise<void> {
+    ): Promise<any> {
         return this.INSTANCE.invokeEditorProcedure(
             'onHeatmapScalingChanged', [method, subMethod]
         );
     }
 
-    public static async setOverlays(overlays: string[]): Promise<void> {
+    public static async setOverlays(overlays: string[]): Promise<any> {
         return this.INSTANCE.invokeEditorProcedure('setOverlays', [overlays]);
     }
 
-    public static async clearRuntimeReport(types?: string[]): Promise<void> {
+    public static async clearRuntimeReport(types?: string[]): Promise<any> {
         return this.INSTANCE.invokeEditorProcedure(
             'clearRuntimeReport', [types]
         );
@@ -505,7 +521,6 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 }
 
 $(() => {
-    ($('[data-bs-toggle="tooltip"') as any)?.tooltip();
-
+    $('[data-bs-toggle="tooltip"').tooltip();
     AnalysisPanel.getInstance().init();
 });

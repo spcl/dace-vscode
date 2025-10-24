@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
@@ -14,7 +14,7 @@ import {
     WebviewPanelOptions,
     WorkspaceEdit,
     window,
-    workspace
+    workspace,
 } from 'vscode';
 import { SDFGEditorBase } from './common';
 
@@ -30,7 +30,7 @@ export class SDFGEditor extends SDFGEditorBase {
         super(context, _token, webviewPanel, document);
 
         const alwaysAutoUpdate =
-            workspace.getConfiguration('dace.general')?.get<boolean>(
+            workspace.getConfiguration('dace.general').get<boolean>(
                 'autoRefreshOnDocumentChange'
             );
 
@@ -38,28 +38,34 @@ export class SDFGEditor extends SDFGEditorBase {
         // accordingly. We do not want to capture arbitrary changes, as they
         // can lead to event handler loops when the edit occurs from the
         // extension or webview itself.
-		const changeSubs = workspace.onDidChangeTextDocument(e => {
-			if (e.document.uri.toString() === document.uri.toString()) {
+        const changeSubs = workspace.onDidChangeTextDocument(e => {
+            if (e.document.uri.toString() === document.uri.toString()) {
                 if (alwaysAutoUpdate ||
                     e.reason === TextDocumentChangeReason.Redo ||
-                    e.reason === TextDocumentChangeReason.Undo)
-                    this._updateContents();
+                    e.reason === TextDocumentChangeReason.Undo) {
+                    this._updateContents().catch((reason: unknown) => {
+                        console.error(
+                            'Failed to update SDFG editor contents: ',
+                            reason
+                        );
+                    });
+                }
             }
-		});
-		webviewPanel.onDidDispose(() => {
-			changeSubs.dispose();
-		});
+        });
+        webviewPanel.onDidDispose(() => {
+            changeSubs.dispose();
+        });
     }
 
     protected async _updateContents(
         preventRefreshes: boolean = false
-    ): Promise<void> {
+    ): Promise<any> {
         return this.invoke(
             'updateContents', [this.document.getText(), preventRefreshes]
         );
     }
 
-    protected async _getUpToDateContents(): Promise<string> {
+    protected _getUpToDateContents(): string {
         return this.document.getText();
     }
 
@@ -67,28 +73,32 @@ export class SDFGEditor extends SDFGEditorBase {
         return new Promise((resolve, reject) => {
             Promise.all([
                 this.onSDFGEdited(sdfg),
-                this.invoke('updateContents', [sdfg, false])
+                this.invoke('updateContents', [sdfg, false]),
             ]).then(() => {
                 resolve();
-            }).catch((reason) => {
-                reject(reason);
+            }).catch((reason: unknown) => {
+                if (reason instanceof Error)
+                    reject(reason);
+                else
+                    reject(new Error(String(reason)));
             });
         });
     }
 
     protected async _onSDFGEdited(sdfg: string): Promise<boolean> {
         const edit = new WorkspaceEdit();
-        if (typeof sdfg === 'string')
+        if (typeof sdfg === 'string') {
             edit.replace(
                 this.document.uri,
                 new Range(0, 0, this.document.lineCount, 0), sdfg
             );
-        else
+        } else {
             edit.replace(
                 this.document.uri,
                 new Range(0, 0, this.document.lineCount, 0),
                 JSON.stringify(sdfg, null, 1)
             );
+        }
         return workspace.applyEdit(edit);
     }
 
@@ -102,7 +112,9 @@ export class SDFGEditorProvider implements CustomTextEditorProvider {
         return SDFGEditorProvider.INSTANCE;
     }
 
-    private constructor() {}
+    private constructor() {
+        return;
+    }
 
     public static readonly viewType = 'sdfgCustom.sdfv';
 
@@ -122,10 +134,10 @@ export class SDFGEditorProvider implements CustomTextEditorProvider {
         );
     }
 
-    public async resolveCustomTextEditor(
+    public resolveCustomTextEditor(
         document: TextDocument, webviewPanel: WebviewPanel,
         token: CancellationToken
-    ): Promise<void> {
+    ): void {
         // Create editor and add it to the open editors.
         if (!this.context)
             throw new Error('SDFGEditorProvider not initialized');

@@ -1,10 +1,9 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import { v4 as uuidv4 } from 'uuid';
+import { WebviewApi } from 'vscode-webview';
 
-
-const DEBUG_LOG_MESSAGES = false;
 
 export enum ICPCMessageType {
     REQUEST = 'icpc_request',
@@ -19,46 +18,46 @@ export interface ICPCMessage {
 
 export interface ICPCRequestMessage extends ICPCMessage {
     procedure: string;
-    args?: any[];
+    args?: unknown[];
     component?: string;
 }
 
 export interface ICPCResponseMessage extends ICPCMessage {
-    response?: any;
+    response?: unknown;
     success: boolean;
 }
 
 export interface ICPCProcedure {
-    f: Function;
-    obj?: any;
+    f: (...args: any[]) => any;
+    obj?: unknown;
     name?: string;
-    staticArgs?: any[];
+    remoteInvokeable?: boolean;
+    staticArgs?: unknown[];
     internal: boolean;
 }
 
-type ICPCCallback = {
-    resolve: Function;
-    reject: Function;
+interface ICPCCallback {
+    resolve: (...args: any[]) => any;
+    reject: (...args: any[]) => any;
     procedure: string;
     component?: string;
-};
+}
 
 export abstract class ICPCMessagingComponent {
 
     protected constructor(
         public readonly designation: string,
-        protected target?: any,
+        protected target?: WebviewApi<unknown>
     ) {
     }
 
-    protected initializeTarget(target: any): void {
+    protected initializeTarget(target: WebviewApi<unknown>): void {
         this.target = target;
     }
 
-    protected localProcedures: Map<string, ICPCProcedure> = new Map();
-    protected callbacks: Map<string, ICPCCallback> =
-        new Map();
-    protected requestHandlers: Set<any> = new Set();
+    protected localProcedures = new Map<string, ICPCProcedure>();
+    protected callbacks = new Map<string, ICPCCallback>();
+    protected requestHandlers = new Set<any>();
 
     protected _doSendRequest(message: ICPCRequestMessage): void {
         try {
@@ -83,28 +82,22 @@ export abstract class ICPCMessagingComponent {
             procedure: procedure,
             args: args,
             component: component,
-            source: source || this.designation,
+            source: source ?? this.designation,
         };
-
-        if (DEBUG_LOG_MESSAGES)
-            console.log(this.designation, 'sendRequest', message);
 
         this._doSendRequest(message);
     }
 
     protected sendResponse(
-        id: string, response?: any, success: boolean = true, source?: string
+        id: string, response?: unknown, success: boolean = true, source?: string
     ): void {
         const message: ICPCResponseMessage = {
             type: ICPCMessageType.RESPONSE,
             id: id,
             response: response,
             success: success,
-            source: source || this.designation,
+            source: source ?? this.designation,
         };
-
-        if (DEBUG_LOG_MESSAGES)
-            console.log(this.designation, 'sendResponse', message);
 
         try {
             if (!this.target)
@@ -121,7 +114,7 @@ export abstract class ICPCMessagingComponent {
     ): void {
         switch (message.type) {
             case ICPCMessageType.REQUEST:
-                this.handleRequest(
+                void this.handleRequest(
                     message as ICPCRequestMessage, responseHandler
                 );
                 break;
@@ -132,32 +125,41 @@ export abstract class ICPCMessagingComponent {
     }
 
     public registerProcedure(procedure: ICPCProcedure): void {
-        const name = procedure.name || procedure.f.name;
-        if (this.localProcedures.has(name))
+        const name = procedure.name ?? procedure.f.name;
+        if (this.localProcedures.has(name)) {
             throw new Error(
                 `Local procedure ${name} already registered`
             );
+        }
         this.localProcedures.set(name, procedure);
     }
 
     public register(
-        f: Function, obj?: any, name?: string, staticArgs?: any[],
-        internal: boolean = false
+        f: (...args: any[]) => any, obj?: unknown,
+        name?: string, staticArgs?: unknown[], internal: boolean = false
     ): void {
         this.registerProcedure({ f, name, obj, staticArgs, internal });
     }
 
-    public deregister(fun: Function): void {
+    public deregister(fun: (...args: unknown[]) => unknown): void {
         this.localProcedures.delete(fun.name);
     }
 
     public async invoke(
         procedure: string, args?: any[], component?: string
-    ): Promise<any> {
+    ): Promise<unknown>;
+
+    public async invoke<T>(
+        procedure: string, args?: any[], component?: string
+    ): Promise<T>;
+
+    public async invoke<T>(
+        procedure: string, args?: any[], component?: string
+    ): Promise<T> {
         let uuid = uuidv4();
         while (this.callbacks.has(uuid))
             uuid = uuidv4();
-        return new Promise((resolve, reject) => {
+        return new Promise<T>((resolve, reject) => {
             this.callbacks.set(uuid, {
                 resolve: resolve,
                 reject: reject,
@@ -171,25 +173,25 @@ export abstract class ICPCMessagingComponent {
     protected async handleRequest(
         message: ICPCRequestMessage, responseHandler?: ICPCMessagingComponent
     ): Promise<void> {
-        if (DEBUG_LOG_MESSAGES)
-            console.log(this.designation, 'handleRequest', message);
-
         const procedure = this.localProcedures.get(message.procedure);
-        const _responseHandler = responseHandler || this;
+        const _responseHandler = responseHandler ?? this;
         if (procedure) {
             if (procedure.internal && message.source !== this.designation &&
                 (message.source !== 'sdfgEditor' &&
-                 !this.designation.startsWith('SDFV_')))
+                 !this.designation.startsWith('SDFV_'))) {
                 throw new Error(
                     `Internal procedure ${message.procedure} called externally`
                 );
+            }
 
             try {
                 const args = procedure.staticArgs ?
                     procedure.staticArgs.concat(message.args) : message.args;
-                let promiseOrResponse = procedure.f.apply(procedure.obj, args);
+                const promiseOrResponse = procedure.f.apply(
+                    procedure.obj, args ?? []
+                ) as unknown;
                 // Await promises if the procedure is async.
-                let response = undefined;
+                let response: unknown = undefined;
                 if (promiseOrResponse && promiseOrResponse instanceof Promise)
                     response = await promiseOrResponse;
                 else
@@ -206,9 +208,6 @@ export abstract class ICPCMessagingComponent {
     }
 
     protected handleResponse(message: ICPCResponseMessage): void {
-        if (DEBUG_LOG_MESSAGES)
-            console.log(this.designation, 'handleResponse', message);
-
         const callback = this.callbacks.get(message.id);
         if (callback) {
             if (message.success)
@@ -219,16 +218,14 @@ export abstract class ICPCMessagingComponent {
         }
     }
 
-    private static getAllFunctionDescriptors(obj: any): {
-        [name: string]: PropertyDescriptor,
-    } & {
-        [name: string]: TypedPropertyDescriptor<any>,
-    } {
-        const descs: {
-            [name: string]: PropertyDescriptor,
-        } & {
-            [name: string]: TypedPropertyDescriptor<any>,
-        }= {};
+    private static getAllFunctionDescriptors(
+        obj: unknown
+    ): Record<string, PropertyDescriptor | undefined> & Record<
+        string, TypedPropertyDescriptor<unknown> | undefined
+    > {
+        const descs: Record<string, PropertyDescriptor | undefined> & Record<
+            string, TypedPropertyDescriptor<unknown> | undefined
+        >= {};
 
         let toCheck = obj;
         do {
@@ -240,10 +237,12 @@ export abstract class ICPCMessagingComponent {
                 if (typeof desc.value === 'function' && name !== 'constructor')
                     descs[name] = desc;
             }
-        } while (
-            toCheck = Object.getPrototypeOf(toCheck) && // Walk up inheritance.
-            Object.getPrototypeOf(toCheck) // Avoid including Object methods.
-        );
+            // Walk up inheritance.
+            toCheck = Object.getPrototypeOf(toCheck);
+            // Using a second getPrototypeOf in the check ensures we don't end
+            // up at the base Object prototype, which avoids including
+            // Object.prototype methods like toString, hasOwnProperty, etc.
+        } while (toCheck && Object.getPrototypeOf(toCheck));
 
         return descs;
     }
@@ -255,7 +254,7 @@ export abstract class ICPCMessagingComponent {
      * @param includeIntenal If true, internal methods will also be registered.
      */
     public static registerAnnotatedProcedures(
-        obj: any, component: ICPCMessagingComponent,
+        obj: unknown, component: ICPCMessagingComponent,
         includeIntenal: boolean = false
     ): void {
         // Loop over all methods the provided object has available. If they are
@@ -264,14 +263,13 @@ export abstract class ICPCMessagingComponent {
         const descs = ICPCMessagingComponent.getAllFunctionDescriptors(obj);
         for (const name in descs) {
             const desc = descs[name];
-            const fun = desc.value;
+            const fun = desc?.value as ICPCProcedure | undefined;
 
-            if (fun && fun.remoteInvokeable && (
-                !fun.internal || includeIntenal
-            ))
+            if (fun?.remoteInvokeable && (!fun.internal || includeIntenal)) {
                 component.register(
-                    fun, obj, name, fun.staticArgs, fun.internal
+                    fun.f, obj, name, fun.staticArgs, fun.internal
                 );
+            }
         }
     }
 
@@ -301,10 +299,13 @@ export abstract class ICPCMessagingComponent {
 export const ICPCRequest = (
     internal: boolean = false, name?: string, staticArgs?: any[]
 ) => {
-    return (_target: any, _memberName: string, desc: PropertyDescriptor) => {
-        desc.value.remoteInvokeable = true;
-        desc.value.internal = internal;
-        desc.value.procName = name;
-        desc.value.staticArgs = staticArgs;
+    return (
+        _obj: object, _memberName: string, desc: PropertyDescriptor
+    ) => {
+        const procedure = desc.value as ICPCProcedure;
+        procedure.remoteInvokeable = true;
+        procedure.internal = internal;
+        procedure.name = name;
+        procedure.staticArgs = staticArgs;
     };
 };

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as vscode from 'vscode';
@@ -10,7 +10,7 @@ export function activateSdfgPython(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'sdfg.debug.run',
-            (resource: vscode.Uri) => {
+            (resource?: vscode.Uri) => {
                 executeTrusted(() => {
                     if (resource) {
                         vscode.debug.startDebugging(undefined, {
@@ -27,7 +27,7 @@ export function activateSdfgPython(context: vscode.ExtensionContext) {
         ),
         vscode.commands.registerCommand(
             'sdfg.debug.profile',
-            (resource: vscode.Uri) => {
+            (resource?: vscode.Uri) => {
                 executeTrusted(() => {
                     if (resource) {
                         vscode.debug.startDebugging(undefined, {
@@ -88,12 +88,11 @@ const workspaceFileAccessor: FileAccessor = {
                 return `cannot read file '${path}'`;
             }
         }
-    }
+    },
 
 };
 
-class SdfgPythonInlineFactory
-implements vscode.DebugAdapterDescriptorFactory {
+class SdfgPythonInlineFactory implements vscode.DebugAdapterDescriptorFactory {
 
     createDebugAdapterDescriptor(
         _session: vscode.DebugSession,

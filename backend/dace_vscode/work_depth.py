@@ -1,4 +1,4 @@
-# Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+# Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
 from typing import Any
@@ -9,10 +9,7 @@ try:
 except ImportError:
     work_depth = None
 
-from dace_vscode.utils import (
-    load_sdfg_from_json,
-    get_exception_message,
-)
+from dace_vscode.utils import load_sdfg_from_json, get_exception_message
 
 def get_work(sdfg_json: Any, assumptions: str):
     if not work_depth:

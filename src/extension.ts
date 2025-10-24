@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import { ExtensionContext, window, workspace } from 'vscode';
@@ -44,15 +44,15 @@ export function activate(ctx: ExtensionContext): void {
         '**/.dacecache/**/program.sdfgl'
     );
     sdfgWatcher.onDidCreate((url) => {
-        workspace.fs.readFile(url).then((data) => {
-            DaCeVSCode.getInstance().parseSdfgLinkFile(
+        workspace.fs.readFile(url).then(async (data) => {
+            await DaCeVSCode.getInstance().parseSdfgLinkFile(
                 data.toString(), url.fsPath
             );
         });
     });
     sdfgWatcher.onDidChange((url) => {
-        workspace.fs.readFile(url).then((data) => {
-            DaCeVSCode.getInstance().parseSdfgLinkFile(
+        workspace.fs.readFile(url).then(async (data) => {
+            await DaCeVSCode.getInstance().parseSdfgLinkFile(
                 data.toString(), url.fsPath
             );
         });
@@ -64,13 +64,15 @@ export function activate(ctx: ExtensionContext): void {
     );
     perfReportWatcher.onDidCreate((url) => {
         workspace.fs.readFile(url).then((data) => {
-            const report = JSON.parse(data.toString());
+            const report = JSON.parse(
+                data.toString()
+            ) as Record<string, unknown>;
 
             const autoOpen =
                 workspace.getConfiguration('dace.general');
             const configKey = 'autoOpenInstrumentationReports';
 
-            const autoOpenPref = autoOpen?.get<string>(configKey);
+            const autoOpenPref = autoOpen.get<string>(configKey);
             if (autoOpenPref === 'Always') {
                 DaCeVSCode.getInstance().openInstrumentationReport(url, report);
                 return;
@@ -115,7 +117,10 @@ export function activate(ctx: ExtensionContext): void {
  * Called when the extension gets deactivated, ie. when VSCode is shut down.
  */
 export function deactivate(): void {
-    let context = DaCeVSCode.getInstance().getExtensionContext();
-    if (context)
-        context.subscriptions.forEach(item => item.dispose());
+    const context = DaCeVSCode.getInstance().getExtensionContext();
+    if (context) {
+        context.subscriptions.forEach(item => {
+            item.dispose();
+        });
+    }
 }

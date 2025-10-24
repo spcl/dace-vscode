@@ -1,10 +1,9 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as vscode from 'vscode';
 
-interface CompressedSDFGEdit {
-}
+type CompressedSDFGEdit = unknown;
 
 interface CompressedSDFGDocumentDelegate {
     getFileData(): Promise<Uint8Array>;
@@ -81,13 +80,13 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         this._edits.push(edit);
         this._onDidChange.fire({
             label: 'Edit',
-            undo: async () => {
+            undo: () => {
                 this._edits.pop();
                 this._onDidChangeDocument.fire({
                     edits: this._edits,
                 });
             },
-            redo: async () => {
+            redo: () => {
                 this._edits.push(edit);
                 this._onDidChangeDocument.fire({
                     edits: this._edits,
@@ -115,7 +114,7 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         targetResource: vscode.Uri, token?: vscode.CancellationToken
     ): Promise<boolean> {
         const fileData = await this._delegate.getFileData();
-        if (token && token.isCancellationRequested)
+        if (token?.isCancellationRequested)
             return false;
         try {
             await vscode.workspace.fs.writeFile(targetResource, fileData);
@@ -145,13 +144,9 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         await this.saveAs(destination, cancellation);
         return {
             id: destination.toString(),
-            delete: async () => {
-                try {
-                    await vscode.workspace.fs.delete(destination);
-                } catch {
-                    // noop
-                }
-            }
+            delete: () => {
+                void vscode.workspace.fs.delete(destination);
+            },
         };
     }
 

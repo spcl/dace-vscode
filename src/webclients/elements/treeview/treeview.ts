@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import EventEmitter from 'events';
@@ -8,7 +8,7 @@ export class CustomTreeViewItem extends EventEmitter {
     public parentItem: CustomTreeViewItem | undefined = undefined;
     public children: CustomTreeViewItem[] | undefined = undefined;
     public list: CustomTreeView | undefined = undefined;
-    public element: any = undefined;
+    public element: JQuery | undefined = undefined;
 
     public constructor(
         protected label: string,
@@ -25,8 +25,7 @@ export class CustomTreeViewItem extends EventEmitter {
     }
 
     public addItem(child: CustomTreeViewItem): void {
-        if (this.children === undefined)
-            this.children = [];
+        this.children ??= [];
         this.children.push(child);
         child.parentItem = this;
         child.list = this.list;
@@ -63,10 +62,11 @@ export class CustomTreeViewItem extends EventEmitter {
                 'class': 'tree-view-list',
             });
 
-            if (!this.collapsed)
+            if (!this.collapsed) {
                 this.children.forEach(child => {
                     nestedList.append(child.generateHtml());
                 });
+            }
 
             if (this.unfoldDoubleClick) {
                 nestedLabel.on('dblclick', (event) => {
@@ -112,41 +112,47 @@ export class CustomTreeViewItem extends EventEmitter {
         // Add children count to label if exists
         let extra = '';
         if (this.children)
-            extra = ' (' + this.children.length + ')';
+            extra = ' (' + this.children.length.toString() + ')';
 
         const labelText = $('<span>', {
             'text': this.label + extra,
         });
         if (this.icon !== undefined && this.icon !== '') {
             let iconElement;
-            if (this.icon.startsWith('res:') && this.MEDIA_DIR !== undefined)
+            if (this.icon.startsWith('res:') && this.MEDIA_DIR !== undefined) {
                 iconElement = $('<img>', {
                     'class': 'tree-view-item-icon',
                     'style': 'height: 1rem; width: 1rem;',
-                    'src': this.MEDIA_DIR + '/resources/' + this.icon.substr(4),
+                    'src': this.MEDIA_DIR + '/resources/' +
+                        this.icon.substring(4),
                 }).appendTo(label);
-            else
+            } else {
                 iconElement = $('<i>', {
                     'class': 'material-symbols-outlined tree-view-item-icon',
                     'style': 'font-size: inherit;',
                     'text': this.icon,
                 }).appendTo(label);
+            }
 
-            if (this.iconStyle !== undefined && this.iconStyle !== '')
+            if (this.iconStyle !== undefined && this.iconStyle !== '') {
                 iconElement.attr(
-                    'style',
-                    iconElement.attr('style') + ';' + this.iconStyle
+                    'style', (
+                        iconElement.attr('style')?.toString() ?? ''
+                    ) + ';' + this.iconStyle
                 );
+            }
 
             label.append('&nbsp;');
         }
 
         label.append(labelText);
-        if (this.labelStyle !== undefined && this.labelStyle !== '')
+        if (this.labelStyle !== undefined && this.labelStyle !== '') {
             labelText.attr(
-                'style',
-                labelText.attr('style') + ';' + this.labelStyle
+                'style', (
+                    labelText.attr('style')?.toString() ?? ''
+                ) + ';' + this.labelStyle
             );
+        }
 
         this.element = item;
         return item;
@@ -161,7 +167,7 @@ export class CustomTreeView extends EventEmitter {
 
     public constructor(
         protected rootElement: JQuery
-    ){
+    ) {
         super();
     }
 
@@ -184,7 +190,7 @@ export class CustomTreeView extends EventEmitter {
     }
 
     public generateHtml(): void {
-        if (this.items && this.items.length) {
+        if (this.items.length) {
             const list = $('<ul>', {
                 'class': 'tree-view-list',
             });

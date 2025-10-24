@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import 'bootstrap';
@@ -10,23 +10,25 @@ import '../../elements/treeview/treeview.css';
 
 import './outline.css';
 
-import $ = require('jquery');
-(window as any).jQuery = $;
+import $ from 'jquery';
 
 import {
-    ICPCRequest
+    ICPCRequest,
 } from '../../../common/messaging/icpc_messaging_component';
 import {
     CustomTreeView,
-    CustomTreeViewItem
+    CustomTreeViewItem,
 } from '../../elements/treeview/treeview';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent,
 } from '../../messaging/icpc_webclient_messaging_component';
 import { ComponentTarget } from '../../../components/components';
+import { IOutlineElem } from '../../../types';
+import { WebviewApi } from 'vscode-webview';
 
-declare const vscode: any;
-declare const media_src: string;
+
+declare const vscode: WebviewApi<unknown>;
+declare const mediaSrc: string;
 
 class OutlineItem extends CustomTreeViewItem {
 
@@ -42,11 +44,11 @@ class OutlineItem extends CustomTreeViewItem {
             type, icon, collapsed, true,
             type === 'SDFG' ? 'font-size: 1.1rem; font-style: italic;' : '',
             'color: var(--vscode-gitDecoration-addedResourceForeground);',
-            media_src
+            mediaSrc
         );
 
         this.on('toggle_collapse', () => {
-            OutlinePanel.getInstance().invokeEditorProcedure(
+            void OutlinePanel.getInstance().invokeEditorProcedure(
                 'toggleCollapseFor', [this.elementUUID]
             );
         });
@@ -56,14 +58,14 @@ class OutlineItem extends CustomTreeViewItem {
         const item = super.generateHtml();
 
         item.on('click', (e) => {
-            OutlinePanel.getInstance().invokeEditorProcedure(
+            void OutlinePanel.getInstance().invokeEditorProcedure(
                 'zoomToUUIDs', [[this.elementUUID]]
             );
             e.stopPropagation();
         });
 
         item.on('mouseover', () => {
-            OutlinePanel.getInstance().invokeEditorProcedure(
+            void OutlinePanel.getInstance().invokeEditorProcedure(
                 'highlightUUIDs', [[this.elementUUID]]
             );
         });
@@ -126,35 +128,35 @@ class OutlinePanel extends ICPCWebclientMessagingComponent {
         this.outlineList.generateHtml();
         this.outlineList.show();
 
-        this.invoke('onReady');
+        void this.invoke('onReady');
     }
 
     @ICPCRequest()
-    public setOutline(outlineList: any[]): void {
+    public setOutline(outlineList: IOutlineElem[]): void {
         this.outlineList?.clear();
         this.setOutlineRecursive(outlineList, this.outlineList);
         this.outlineList?.notifyDataChanged();
     }
 
     private setOutlineRecursive(
-        list: any[], parent?: OutlineList | OutlineItem
+        list: IOutlineElem[], parent?: OutlineList | OutlineItem
     ): void {
         if (!parent)
             return;
 
         for (const item of list) {
             const outlineItem = new OutlineItem(
-                item['icon'],
-                item['type'],
-                item['label'],
-                item['collapsed'],
-                item['uuid']
+                item.icon,
+                item.type,
+                item.label,
+                item.collapsed,
+                item.uuid
             );
             outlineItem.list = this.outlineList;
 
-            if (!item['collapsed']) {
-                if (item['children'] !== undefined && item['children'].length)
-                    this.setOutlineRecursive(item['children'], outlineItem);
+            if (!item.collapsed) {
+                if (item.children.length)
+                    this.setOutlineRecursive(item.children, outlineItem);
             } else {
                 outlineItem.children = [];
             }

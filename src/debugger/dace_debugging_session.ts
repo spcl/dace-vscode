@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import { LoggingDebugSession, TerminatedEvent } from '@vscode/debugadapter';
@@ -6,7 +6,14 @@ import { DebugProtocol } from '@vscode/debugprotocol';
 import * as vscode from 'vscode';
 import * as os from 'os';
 import { BreakpointHandler } from './breakpoint_handler';
-import { PORT } from './dace_listener';
+import { DACE_DEBUG_PORT } from './dace_listener';
+
+
+export interface LaunchConfigEntry {
+    name: string;
+    type: string;
+    env?: Record<string, string>;
+}
 
 export interface DaceLaunchRequestArguments
     extends DebugProtocol.LaunchRequestArguments {
@@ -20,13 +27,14 @@ export interface DaceLaunchRequestArguments
 }
 
 export class DaceDebuggingSession extends LoggingDebugSession {
+
     private folder: vscode.WorkspaceFolder | undefined;
 
     public constructor() {
         super();
-        let folders = vscode.workspace.workspaceFolders;
+        const folders = vscode.workspace.workspaceFolders;
         if (!folders) {
-            let msg = "Working folder not found, open a folder and try again";
+            const msg = 'Working folder not found, open a folder and try again';
             vscode.window.showErrorMessage(msg).then((_) => {
                 this.sendEvent(new TerminatedEvent());
             });
@@ -38,18 +46,19 @@ export class DaceDebuggingSession extends LoggingDebugSession {
     protected launchRequest(
         response: DebugProtocol.LaunchResponse,
         args: DaceLaunchRequestArguments
-    ): Thenable<void> | void {
+    ): void {
         if (!this.folder) {
-            let msg = "Working folder not found, open a folder and try again";
-            return vscode.window.showErrorMessage(msg).then((_) => {
+            const msg = 'Working folder not found, open a folder and try again';
+            vscode.window.showErrorMessage(msg).then((_) => {
                 this.sendEvent(new TerminatedEvent());
                 return; // abort launch
             });
+            return;
         }
 
-        const buildType = !args.buildType ? "Debug" : args.buildType;
+        const buildType = args.buildType ?? 'Debug';
         const daceDev = args.daCeDev;
-        const portNum: string = String(PORT);
+        const portNum: string = String(DACE_DEBUG_PORT);
 
         /**
          * Default:
@@ -62,28 +71,30 @@ export class DaceDebuggingSession extends LoggingDebugSession {
          *   pass it to the attribute 'entirePyConfig'
          */
         let entirePyConfig;
-        if (!args.pythonConfig || args.pythonConfig === "default") {
+        if (!args.pythonConfig || args.pythonConfig === 'default') {
             entirePyConfig = {
-                name: "Python: Current File",
-                type: "python",
-                request: "launch",
-                program: "${file}",
-                console: "integratedTerminal",
+                name: 'Python: Current File',
+                type: 'python',
+                request: 'launch',
+                program: '${file}',
+                console: 'integratedTerminal',
                 env: {
                     DACE_compiler_build_type: buildType,
-                    DACE_port: portNum
+                    DACE_port: portNum,
+                    DACE_compiler_codegen_lineinfo: 'false',
                 },
             };
         } else {
             if (!args.pythonLaunchName) {
-                let msg =
-                    "Please make sure to define 'pythonLaunchName'" +
-                    "for dace-debug in your launch.json file or set" +
-                    "pythonConfig' to default";
-                return vscode.window.showInformationMessage(msg).then((_) => {
+                const msg =
+                    'Please make sure to define \'pythonLaunchName\'' +
+                    'for dace-debug in your launch.json file or set ' +
+                    '\'pythonConfig\' to default';
+                vscode.window.showInformationMessage(msg).then((_) => {
                     this.sendEvent(new TerminatedEvent());
                     return; // abort launch
                 });
+                return;
             } else {
                 entirePyConfig = getConfig(
                     args.pythonLaunchName,
@@ -91,15 +102,16 @@ export class DaceDebuggingSession extends LoggingDebugSession {
                 );
 
                 if (!entirePyConfig) {
-                    let message =
-                        "Please make sure you have a configurations" +
-                        " with the name '" +
+                    const message =
+                        'Please make sure you have a configurations' +
+                        ' with the name \'' +
                         args.pythonLaunchName +
-                        "' in your launch.json file.";
-                    return vscode.window.showErrorMessage(message).then(_ => {
+                        '\' in your launch.json file.';
+                    vscode.window.showErrorMessage(message).then(_ => {
                         this.sendEvent(new TerminatedEvent());
                         return; // abort launch
                     });
+                    return;
                 }
 
                 /**
@@ -110,10 +122,12 @@ export class DaceDebuggingSession extends LoggingDebugSession {
                 if (entirePyConfig.env) {
                     entirePyConfig.env.DACE_compiler_build_type = buildType;
                     entirePyConfig.env.DACE_port = portNum;
+                    entirePyConfig.env.DACE_compiler_codegen_lineinfo = 'false';
                 } else {
                     entirePyConfig.env = {
                         DACE_compiler_build_type: buildType,
-                        DACE_port: portNum
+                        DACE_port: portNum,
+                        DACE_compiler_codegen_lineinfo: 'false',
                     };
                 }
             }
@@ -121,9 +135,10 @@ export class DaceDebuggingSession extends LoggingDebugSession {
 
         // We don't want to override the value in .dace.config if the
         // dev doesn't define daceDev
-        if (daceDev !== undefined)
-            entirePyConfig.env.
-                DACE_compiler_codegen_lineinfo = daceDev ? "true" : "false";
+        if (daceDev !== undefined && entirePyConfig.env) {
+            entirePyConfig.env.DACE_compiler_codegen_lineinfo =
+                daceDev ? 'true' : 'false';
+        }
 
         /**
          * Default:
@@ -137,33 +152,33 @@ export class DaceDebuggingSession extends LoggingDebugSession {
          */
         let cppAttribute;
         let cppValue;
-        if (!args.cppConfig || args.cppConfig === "default") {
-            cppAttribute = "cppConfig";
-            if (os.platform().startsWith("win")) {
-                cppValue = "default (win) Attach";
-            } else {
-                cppValue = "default (gdb) Attach";
-            }
+        if (!args.cppConfig || args.cppConfig === 'default') {
+            cppAttribute = 'cppConfig';
+            if (os.platform().startsWith('win'))
+                cppValue = 'default (win) Attach';
+            else
+                cppValue = 'default (gdb) Attach';
         } else {
             if (!args.cppAttachName) {
-                let msg =
-                    "Please make sure to define 'cppAttachName' for " +
-                    "dace-debug in your launch.json file or set " +
-                    "'cppConfig' to default";
-                return vscode.window.showInformationMessage(msg).then((_) => {
+                const msg =
+                    'Please make sure to define \'cppAttachName\' for ' +
+                    'dace-debug in your launch.json file or set ' +
+                    '\'cppConfig\' to default';
+                vscode.window.showInformationMessage(msg).then((_) => {
                     this.sendEvent(new TerminatedEvent());
                     return; // abort launch
                 });
+                return;
             } else {
-                cppAttribute = "cppAttachName";
+                cppAttribute = 'cppAttachName';
                 cppValue = args.cppAttachName;
             }
         }
 
-        let pyCppDebuggerConfig: vscode.DebugConfiguration = {
-            name: "Python C++ Debugger",
-            type: "pythoncpp",
-            request: "launch",
+        const pyCppDebuggerConfig: vscode.DebugConfiguration = {
+            name: 'Python C++ Debugger',
+            type: 'pythoncpp',
+            request: 'launch',
             entirePythonConfig: entirePyConfig,
         };
         pyCppDebuggerConfig[cppAttribute] = cppValue;
@@ -181,11 +196,12 @@ export class DaceDebuggingSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
-    protected async terminateRequest(
+    protected terminateRequest(
         response: DebugProtocol.TerminateResponse
-    ) {
+    ): void {
         this.sendResponse(response);
     }
+
 }
 
 /**
@@ -196,13 +212,13 @@ export class DaceDebuggingSession extends LoggingDebugSession {
  */
 function getConfig(name: string, folder: vscode.WorkspaceFolder) {
     const launchConfigs = vscode.workspace.getConfiguration(
-        "launch",
+        'launch',
         folder.uri
     );
 
-    const values = launchConfigs.get("configurations");
+    const values = launchConfigs.get<LaunchConfigEntry[]>('configurations');
     if (!values) {
-        let message = "Unexpected error with the launch.json file";
+        const message = 'Unexpected error with the launch.json file';
         vscode.window.showErrorMessage(message);
         return undefined;
     }
@@ -214,12 +230,13 @@ function getConfig(name: string, folder: vscode.WorkspaceFolder) {
  * Search through all configurations in the launch.json file
  * for the configuration with launch[i].name === name
  */
-function nameDefinedInLaunch(name: string, launch: any) {
+function nameDefinedInLaunch(
+    name: string, launch: LaunchConfigEntry[]
+): LaunchConfigEntry | undefined {
     let i = 0;
     while (launch[i]) {
-        if (launch[i].name === name) {
+        if (launch[i].name === name)
             return launch[i];
-        }
         i++;
     }
     return undefined;

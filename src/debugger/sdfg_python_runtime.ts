@@ -1,10 +1,10 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as cp from 'child_process';
 import { EventEmitter } from 'events';
 import * as vscode from 'vscode';
-import { DaCeInterface } from '../components/dace_interface';
+import { DaCeInterface, DaCeMessage } from '../components/dace_interface';
 import { SDFGEditorBase } from '../components/sdfg_editor/common';
 import { SdfgPythonLaunchRequestArguments } from './sdfg_python_debug_session';
 import { DaCeVSCode } from '../dace_vscode';
@@ -80,13 +80,13 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
                     'No source file found for SDFG: ' + uri.fsPath,
                     'console'
                 );
-                reject();
+                reject(new Error('No wrapper file defined'));
             }
             resolve();
         });
     }
 
-    public async start(args: SdfgPythonLaunchRequestArguments) {
+    public async start(args: SdfgPythonLaunchRequestArguments): Promise<void> {
         let program = args.program ? vscode.Uri.file(args.program) : undefined;
 
         if (args.profile !== undefined)
@@ -96,12 +96,12 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
 
         if (program === undefined) {
             const editor = DaCeVSCode.getInstance().activeSDFGEditor;
-            program = editor?.document?.uri;
+            program = editor?.document.uri;
         }
 
         if (!program) {
             vscode.window.showWarningMessage(
-                `No currently active SDFG to run/profile`
+                'No currently active SDFG to run/profile'
             );
             this.sendEvent('end');
             return;
@@ -111,29 +111,27 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
         const editor = DaCeVSCode.getInstance().sdfgEditorMap.get(uri);
 
         if (!editor) {
-            vscode.commands.executeCommand('vscode.open', uri).then(() => {
-                const editor = DaCeVSCode.getInstance().sdfgEditorMap.get(uri);
-                if (editor && program) {
-                    if (editor.document.isDirty)
-                        editor.document.save();
-                    this.checkHasWrapper(editor, uri).then(() => {
-                        this.run(editor.wrapperFile, uri);
-                    });
-                } else {
-                    this.sendEvent(
-                        'output',
-                        'No corresponding SDFG editor could be found for ' +
-                        'the SDFG: ' + program,
-                        'stderr'
-                    );
-                    this.sendEvent('end');
-                }
-            });
+            await vscode.commands.executeCommand('vscode.open', uri);
+            const editor = DaCeVSCode.getInstance().sdfgEditorMap.get(uri);
+            if (editor) {
+                if (editor.document.isDirty)
+                    editor.document.save();
+                await this.checkHasWrapper(editor, uri);
+                await this.run(editor.wrapperFile, uri);
+            } else {
+                this.sendEvent(
+                    'output',
+                    'No corresponding SDFG editor could be found for ' +
+                    'the SDFG: ' + program.toString(),
+                    'stderr'
+                );
+                this.sendEvent('end');
+            }
         } else {
             if (editor.document.isDirty)
                 editor.document.save();
-            this.checkHasWrapper(editor, uri).then(() => {
-                this.run(editor.wrapperFile, uri);
+            this.checkHasWrapper(editor, uri).then(async () => {
+                await this.run(editor.wrapperFile, uri);
             }, () => {
                 this.sendEvent('end');
             });
@@ -168,9 +166,8 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
         // only a file or a directory, but no VS Code workspace), then we try
         // to use the selected run-script's (parent) directory as our workspace
         // root path.
-        const scriptRoot = vscode.Uri.joinPath(vscode.Uri.file(path), '..' );
-        if (!workspaceRoot)
-            workspaceRoot = scriptRoot.fsPath;
+        const scriptRoot = vscode.Uri.joinPath(vscode.Uri.file(path), '..');
+        workspaceRoot ??= scriptRoot.fsPath;
 
         if (this.debug) {
             vscode.window.showWarningMessage(
@@ -181,20 +178,22 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
             const suppressInstrumentation = this.profile;
             DaCeInterface.getInstance()?.compileSdfgFromFile(
                 sdfgUri,
-                (data: any) => {
+                (data: DaCeMessage) => {
                     if (data.filename === undefined) {
                         let errorMsg = 'Failed to compile SDFG.';
-                        if (data.error)
+                        if (data.error) {
                             errorMsg += ' Error message: ' +
-                                data.error.message + ' (' + data.error.details +
+                                data.error.message + ' (' +
+                                (data.error.details?.toString() ?? '') +
                                 ')';
+                        }
                         vscode.window.showErrorMessage(errorMsg);
                         console.error(errorMsg);
                         this.sendEvent('end');
                         return;
                     }
 
-                    let env = {
+                    const env = {
                         ...process.env,
                         DACE_compiler_use_cache: '1',
                         DACE_profiling: '0',
@@ -208,11 +207,11 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
                         env: env,
                     });
                     this.runningProcesses.push(child);
-                    child.stderr.on('data', (chunk) => {
-                        this.sendEvent('output', chunk.toString(), 'stderr');
+                    child.stderr.on('data', (chunk: unknown) => {
+                        this.sendEvent('output', String(chunk), 'stderr');
                     });
                     child.stdout.on('data', (chunk) => {
-                        this.sendEvent('output', chunk.toString(), 'stdout');
+                        this.sendEvent('output', String(chunk), 'stdout');
                     });
                     child.on('error', (err) => {
                         this.sendEvent('output', 'Fatal error!', 'stderr');
@@ -243,7 +242,7 @@ export class SdfgPythonDebuggerRuntime extends EventEmitter {
         });
     }
 
-    private sendEvent(event: string, ...args: any[]) {
+    private sendEvent(event: string, ...args: unknown[]) {
         setImmediate(_ => {
             this.emit(event, ...args);
         });

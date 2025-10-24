@@ -1,33 +1,26 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
-    DagreGraph,
+    ControlFlowBlock,
     Edge,
-    GraphElementInfo,
+    GenericSdfgOverlay,
     NestedSDFG,
-    Point2D,
     SDFGElement,
-    SDFGElementGroup,
     SDFGNode,
-    SDFVSettings,
-    SimpleRect,
     State,
 } from '@spcl/sdfv/src';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent } from '../vscode_sdfv';
-import { GenericSdfgOverlay } from '@spcl/sdfv/src/overlays/generic_sdfg_overlay';
 
 declare const vscode: any;
 
 export function refreshBreakpoints(): void {
     const renderer = VSCodeRenderer.getInstance();
     if (renderer !== null && vscode !== undefined) {
-        let isActive = false;
-        const overlays = renderer.overlayManager.get_overlays();
-        for (const activeOverlay of overlays) {
+        for (const activeOverlay of renderer.overlayManager.overlays) {
             if (activeOverlay instanceof BreakpointIndicator) {
-                isActive = true;
+                activeOverlay.refresh();
                 break;
             }
         }
@@ -39,24 +32,38 @@ export enum BreakpointType {
     UNBOUND,
 };
 
-type NodeIdTuple = {
-    sdfgId: number,
-    stateId: number,
-    nodeId: number,
-};
+interface NodeIdTuple {
+    sdfgId: number;
+    stateId: number;
+    nodeId: number;
+}
 
 export class BreakpointIndicator extends GenericSdfgOverlay {
 
-    private breakpoints: Map<string, BreakpointType> = new Map();
+    private breakpoints = new Map<string, BreakpointType>();
 
     constructor(renderer: VSCodeRenderer) {
         super(renderer);
 
         SDFVComponent.getInstance().invoke(
-            'getSavedNodes', [this.renderer.get_sdfg().attributes.name]
+            'getSavedNodes', [this.renderer.sdfg?.attributes?.name]
         ).then(() => {
             this.refresh();
+        }).catch((err: unknown) => {
+            console.error(
+                'Error retrieving saved breakpoints: ', err
+            );
         });
+
+        this.renderer.canvas.addEventListener(
+            'contextmenu', this.onCtxtMenuClicked.bind(this)
+        );
+    }
+
+    public destroy(): void {
+        this.renderer.canvas.removeEventListener(
+            'contextmenu', this.onCtxtMenuClicked.bind(this)
+        );
     }
 
     public getSDFGElement(element: SDFGElement): NodeIdTuple {
@@ -66,16 +73,13 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
         let nodeId = undefinedVal;
 
         if (element instanceof NestedSDFG) {
-            sdfgId = element.data.node.attributes.sdfg.cfg_list_id;
+            sdfgId = element.attributes()?.sdfg?.cfg_list_id ?? undefinedVal;
         } else if (element instanceof State) {
             sdfgId = element.sdfg.cfg_list_id;
             stateId = element.id;
         } else if (element instanceof SDFGNode) {
             sdfgId = element.sdfg.cfg_list_id;
-            if (element.parent_id === null)
-                stateId = undefinedVal;
-            else
-                stateId = element.parent_id;
+            stateId = element.parentStateId ?? undefinedVal;
             nodeId = element.id;
         }
 
@@ -87,72 +91,76 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
     }
 
     public draw(): void {
-        const graph  = this.renderer.get_graph();
-        if (graph)
-            this.recursivelyShadeSDFG(
-                graph,
-                this.renderer.get_context(),
-                this.renderer.get_canvas_manager()?.points_per_pixel(),
-                this.renderer.get_visible_rect()
-            );
+        this.shadeSDFG();
     }
 
-    public on_mouse_event(
-        type: string, ev: MouseEvent, mousepos: Point2D,
-        elements: Record<SDFGElementGroup, GraphElementInfo[]>,
-        foregroundElem: SDFGElement | null,
-        endsDrag: boolean
-    ): boolean {
-        if (type === 'contextmenu') {
-            if (
-                foregroundElem !== undefined &&
-                foregroundElem !== null &&
-                !(foregroundElem instanceof Edge)
-            ) {
-                const sdfgElem = this.getSDFGElement(foregroundElem);
+    public onCtxtMenuClicked(): boolean {
+        const mPos = this.renderer.getMousePos();
+        if (!mPos)
+            return false;
+        const elements = this.renderer.findElementsUnderCursor(mPos.x, mPos.y);
+        const foregroundElem = elements.foregroundElement;
+        if (foregroundElem !== undefined && !(foregroundElem instanceof Edge)) {
+            const sdfgElem = this.getSDFGElement(foregroundElem);
 
-                const elemUUID = (
-                    sdfgElem.sdfgId + '/' +
-                    sdfgElem.stateId + '/' +
-                    sdfgElem.nodeId
+            const elemUUID = (
+                sdfgElem.sdfgId.toString() + '/' +
+                sdfgElem.stateId.toString() + '/' +
+                sdfgElem.nodeId.toString()
+            );
+            if (this.breakpoints.has(elemUUID)) {
+                this.breakpoints.delete(elemUUID);
+                this.eraseBreakpoint(foregroundElem, this.renderer.ctx);
+                SDFVComponent.getInstance().invoke(
+                    'removeBreakpoint',
+                    [sdfgElem, this.renderer.sdfg?.attributes?.name]
+                ).then(() => {
+                    this.renderer.drawAsync();
+                }).catch((err: unknown) => {
+                    console.error(
+                        'Error removing breakpoint: ', err
+                    );
+                });
+                return true;
+            } else {
+                this.breakpoints.set(elemUUID, BreakpointType.BOUND);
+                this.drawBreakpoint(
+                    foregroundElem, this.renderer.ctx,
+                    BreakpointType.BOUND
                 );
-                if (this.breakpoints.has(elemUUID)) {
-                    this.breakpoints.delete(elemUUID);
-                    this.eraseBreakpoint(
-                        foregroundElem, this.renderer.get_context()
+                SDFVComponent.getInstance().invoke(
+                    'addBreakpoint',
+                    [sdfgElem, this.renderer.sdfg?.attributes?.name]
+                ).then(() => {
+                    this.renderer.drawAsync();
+                }).catch((err: unknown) => {
+                    console.error(
+                        'Error adding breakpoint: ', err
                     );
-                    SDFVComponent.getInstance().invoke(
-                        'removeBreakpoint',
-                        [sdfgElem, this.renderer.get_sdfg().attributes.name]
-                    );
-                } else {
-                    this.breakpoints.set(elemUUID, BreakpointType.BOUND);
-                    this.drawBreakpoint(
-                        foregroundElem, this.renderer.get_context(),
-                        BreakpointType.BOUND
-                    );
-                    SDFVComponent.getInstance().invoke(
-                        'addBreakpoint',
-                        [sdfgElem, this.renderer.get_sdfg().attributes.name]
-                    );
-                }
-
-                this.renderer.draw_async();
+                });
+                return true;
             }
         }
-
         return false;
     }
 
     public removeBreakpoint(node: NodeIdTuple): void {
         const elemUUID = (
-            node.sdfgId + '/' +
-            node.stateId + '/' +
-            node.nodeId
+            node.sdfgId.toString() + '/' +
+            node.stateId.toString() + '/' +
+            node.nodeId.toString()
         );
         this.breakpoints.delete(elemUUID);
         this.draw();
-        this.renderer.draw_async();
+        this.renderer.drawAsync();
+    }
+
+    public shadeNode(node: SDFGNode, ..._args: any[]): void {
+        this.checkBreakpoint(node, this.renderer.ctx);
+    }
+
+    public shadeBlock(block: ControlFlowBlock, ..._args: any[]): void {
+        this.checkBreakpoint(block, this.renderer.ctx);
     }
 
     public checkBreakpoint(
@@ -161,15 +169,15 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
         const nodeTuple = this.getSDFGElement(node);
 
         const elemUUID = (
-            nodeTuple.sdfgId + '/' +
-            nodeTuple.stateId + '/' +
-            nodeTuple.nodeId
+            nodeTuple.sdfgId.toString() + '/' +
+            nodeTuple.stateId.toString() + '/' +
+            nodeTuple.nodeId.toString()
         );
 
         if (this.breakpoints.has(elemUUID)) {
             const breakpointType = this.breakpoints.get(elemUUID);
             if (breakpointType !== undefined) {
-                let msg = (breakpointType === BreakpointType.BOUND) ?
+                const msg = (breakpointType === BreakpointType.BOUND) ?
                     'Right click to remove the Breakpoint' :
                     'The Breakpoint set on this node is unbounded';
                 this.drawTooltip(node, msg);
@@ -181,18 +189,19 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
     }
 
     public drawBreakpoint(
-        node: SDFGNode, ctx: CanvasRenderingContext2D | null,
+        node: SDFGElement,
+        ctx: CanvasRenderingContext2D | null,
         type: BreakpointType
     ): void {
         if (!ctx)
             return;
         // Draw a red circle to indicate that a breakpoint is set
-        let color = (type === BreakpointType.BOUND) ? 'red' : '#D3D3D3';
+        const color = (type === BreakpointType.BOUND) ? 'red' : '#D3D3D3';
         this.drawBreakpointCircle(node, ctx, 'black', color);
     }
 
     public eraseBreakpoint(
-        node: SDFGNode, ctx: CanvasRenderingContext2D | null
+        node: SDFGElement, ctx: CanvasRenderingContext2D | null
     ): void {
         if (!ctx)
             return;
@@ -205,8 +214,10 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
     }
 
     public drawBreakpointCircle(
-        node: SDFGNode, ctx: CanvasRenderingContext2D,
-        strokeColor: string, fillColor: string
+        node: SDFGElement,
+        ctx: CanvasRenderingContext2D,
+        strokeColor: string,
+        fillColor: string
     ): void {
         // Draw the circle, if the node is a STATE, draw the BP at
         // the top left, otherwise draw the BP at the middle left
@@ -214,114 +225,44 @@ export class BreakpointIndicator extends GenericSdfgOverlay {
         ctx.strokeStyle = strokeColor;
         ctx.fillStyle = fillColor;
         ctx.beginPath();
-        (node instanceof State) ?
-            ctx.arc(topleft.x + 10, topleft.y + 20, 4, 0, 2 * Math.PI) :
+        if (node instanceof State) {
+            ctx.arc(topleft.x + 10, topleft.y + 20, 4, 0, 2 * Math.PI);
+        } else {
             ctx.arc(topleft.x - 10, topleft.y + node.height / 2.0, 4, 0,
                 2 * Math.PI);
+        }
         ctx.stroke();
         ctx.fill();
     }
 
-    public drawTooltip(node: SDFGNode, msg: string): void {
-        const mousepos = this.renderer.get_mousepos();
-        if (mousepos && node.intersect(mousepos.x, mousepos.y)) {
-            this.renderer.set_tooltip(() => {
-                const container = this.renderer.get_tooltip_container();
-                if (container) {
-                    container.innerText = msg;
-                    container.className = 'sdfvtooltip';
-                }
-            });
-        }
-    }
-
-    public recursivelyShadeSDFG(
-        graph: DagreGraph,
-        ctx: CanvasRenderingContext2D | null,
-        ppp: number | undefined,
-        visibleRect: SimpleRect | null
-    ): void {
-        if (!ctx || ppp === undefined || visibleRect === null)
-            return;
-
-        // First go over visible states, skipping invisible ones. We only draw
-        // something if the state is collapsed or we're zoomed out far enough.
-        // If it's expanded or zoomed in close enough, we traverse inside.
-        graph.nodes().forEach((v: string) => {
-            let state = graph.node(v);
-            // If the node's invisible, we skip it.
-            if (this.renderer.viewportOnly && !state.intersect(
-                visibleRect.x, visibleRect.y,
-                visibleRect.w, visibleRect.h
-            ))
-                return;
-
-            if (
-                (this.renderer.adaptiveHiding &&
-                 (ppp >= SDFVSettings.get<number>('nodeLOD') ||
-                  state.width / ppp <= SDFVSettings.get<number>('nestedLOD'))) ||
-                state.data.state.attributes.is_collapsed
-            ) {
-                // Currently we don't do anything
-            } else {
-                this.checkBreakpoint(state, ctx);
-                const stateGraph = state.data.graph;
-                if (stateGraph) {
-                    stateGraph.nodes().forEach((v: string) => {
-                        const node = stateGraph.node(v);
-
-                        // Skip the node if it's not visible.
-                        if (this.renderer.viewportOnly && !node.intersect(
-                            visibleRect.x, visibleRect.y,
-                            visibleRect.w, visibleRect.h
-                        ))
-                            return;
-
-                        // Check if the node is a NestedSDFG and if
-                        // it should be visited
-                        if (!(node.data.node.attributes.is_collapsed ||
-                              (this.renderer.adaptiveHiding &&
-                               ppp >= SDFVSettings.get<number>('nodeLOD'))) &&
-                            node instanceof NestedSDFG
-                        ) {
-                            this.recursivelyShadeSDFG(
-                                node.data.graph, ctx, ppp, visibleRect
-                            );
-                        }
-
-                        this.checkBreakpoint(node, ctx);
-                    });
-                }
-            }
-        });
+    public drawTooltip(node: SDFGElement, msg: string): void {
+        const mousepos = this.renderer.getMousePos();
+        if (mousepos && node.intersect(mousepos.x, mousepos.y))
+            this.renderer.showTooltipAtMouse(msg);
     }
 
     public refresh(): void {
-        this.draw();
-        this.renderer.draw_async();
+        this.renderer.drawAsync();
     }
 
     public unboundBreakpoint(node: NodeIdTuple): void {
         const elemUUID = (
-            node.sdfgId + '/' +
-            node.stateId + '/' +
-            node.nodeId
+            node.sdfgId.toString() + '/' +
+            node.stateId.toString() + '/' +
+            node.nodeId.toString()
         );
 
         if (this.breakpoints.has(elemUUID))
             this.breakpoints.set(elemUUID, BreakpointType.UNBOUND);
 
-        this.draw();
-        this.renderer.draw_async();
+        this.renderer.drawAsync();
     }
 
-    public setSavedNodes(nodes: NodeIdTuple[]): void {
-        if (nodes === undefined || nodes === null)
-            return;
-        nodes.forEach(node => {
-            const elemUUID = node.sdfgId + '/' +
-                node.stateId + '/' +
-                node.nodeId;
+    public setSavedNodes(nodes?: NodeIdTuple[]): void {
+        nodes?.forEach(node => {
+            const elemUUID = node.sdfgId.toString() + '/' +
+                node.stateId.toString() + '/' +
+                node.nodeId.toString();
             this.breakpoints.set(elemUUID, BreakpointType.BOUND);
         });
         this.refresh();

@@ -1,7 +1,6 @@
-# Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+# Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
-import sympy as sp
 try:
     from dace.sdfg.performance_evaluation.operational_intensity import (
         analyze_sdfg_op_in
@@ -9,10 +8,7 @@ try:
 except ModuleNotFoundError:
     analyze_sdfg_op_in = None
 
-from dace_vscode.utils import (
-    load_sdfg_from_json,
-    get_exception_message,
-)
+from dace_vscode.utils import load_sdfg_from_json, get_exception_message
 
 def get_operational_intensity(sdfg_json, cache_params, assumptions):
     if not analyze_sdfg_op_in:

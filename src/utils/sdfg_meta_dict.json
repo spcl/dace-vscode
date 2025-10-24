@@ -4697,6 +4697,47 @@
   },
   "DataflowGraphView": {},
   "ControlGraphView": {},
+  "GlobalDepAccessEntry": {
+    "node_id": {
+      "metatype": "int",
+      "desc": "ID of the node describing the access (access node, or CFG block). None if the access is on an interstate edge or meta access.",
+      "category": "General",
+      "default": null
+    },
+    "edge_id": {
+      "metatype": "int",
+      "desc": "ID of the edge for the access. None if the access node is a CFG block.",
+      "category": "General",
+      "default": null
+    }
+  },
+  "GlobalDepDataRecord": {
+    "subset": {
+      "metatype": "SubsetProperty",
+      "desc": "Subset of the data involved in the dependency entry",
+      "category": "General",
+      "default": null
+    },
+    "dynamic": {
+      "metatype": "bool",
+      "desc": "",
+      "category": "General",
+      "default": false
+    },
+    "volume": {
+      "metatype": "SymbolicProperty",
+      "desc": "",
+      "category": "General",
+      "default": 0
+    },
+    "accesses": {
+      "metatype": "list",
+      "desc": "Accesses involved in this dependency",
+      "category": "General",
+      "default": [],
+      "element_type": "GlobalDepAccessEntry"
+    }
+  },
   "ControlFlowBlock": {
     "guid": {
       "metatype": "str",
@@ -4760,7 +4801,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -4768,7 +4809,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -4776,7 +4817,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -4784,7 +4825,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "SDFGState": {
@@ -4899,7 +4940,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -4907,7 +4948,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -4915,7 +4956,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -4923,7 +4964,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ContinueBlock": {
@@ -4989,7 +5030,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -4997,7 +5038,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -5005,7 +5046,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -5013,7 +5054,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "BreakBlock": {
@@ -5079,7 +5120,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -5087,7 +5128,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -5095,7 +5136,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -5103,7 +5144,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ReturnBlock": {
@@ -5169,7 +5210,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -5177,7 +5218,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -5185,7 +5226,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -5193,7 +5234,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "AbstractControlFlowRegion": {
@@ -5259,7 +5300,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -5267,7 +5308,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -5275,7 +5316,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -5283,7 +5324,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ControlFlowRegion": {
@@ -5349,7 +5390,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -5357,7 +5398,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -5365,7 +5406,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -5373,7 +5414,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "LoopRegion": {
@@ -5475,7 +5516,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -5483,7 +5524,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -5491,7 +5532,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -5499,7 +5540,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ConditionalBlock": {
@@ -5565,7 +5606,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -5573,7 +5614,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -5581,7 +5622,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -5589,7 +5630,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "NamedRegion": {
@@ -5668,7 +5709,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -5676,7 +5717,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -5684,7 +5725,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -5692,7 +5733,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "FunctionCallRegion": {
@@ -5779,7 +5820,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -5787,7 +5828,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -5795,7 +5836,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -5803,7 +5844,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ProcessGrid": {
@@ -6050,7 +6091,7 @@
     },
     "constants_prop": {
       "metatype": "dict",
-      "desc": "Compile-time constants",
+      "desc": "Compile-time constants. The dictionary maps between a constant name to a tuple of its type and the actual constant data.",
       "category": "General",
       "default": {}
     },
@@ -6245,7 +6286,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_reads": {
       "metatype": "dict",
@@ -6253,7 +6294,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "certain_writes": {
       "metatype": "dict",
@@ -6261,7 +6302,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     },
     "possible_writes": {
       "metatype": "dict",
@@ -6269,7 +6310,7 @@
       "category": "General",
       "default": {},
       "key_type": "str",
-      "value_type": "Memlet"
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "Pass": {},
@@ -9015,7 +9056,7 @@
       "metatype": "Property",
       "desc": "",
       "category": "General",
-      "default": null
+      "default": "None"
     },
     "name": {
       "metatype": "str",

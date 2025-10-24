@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
@@ -31,9 +31,8 @@ export class SdfgPythonDebugSession extends LoggingDebugSession {
     }
 
     private initEventListeners() {
-        this.runtime.on('output', (text, cat) => {
-            if (cat === undefined)
-                cat = 'stdout';
+        this.runtime.on('output', (text: string, cat?: string) => {
+            cat ??= 'stdout';
             this.sendEvent(new OutputEvent(`${text}\n`, cat));
         });
 
@@ -42,12 +41,12 @@ export class SdfgPythonDebugSession extends LoggingDebugSession {
         });
     }
 
-    protected async initializeRequest(
+    protected initializeRequest(
         response: DebugProtocol.InitializeResponse,
         _args: DebugProtocol.InitializeRequestArguments
     ) {
         // Build and return the capabilities of this debug adapter.
-        response.body = response.body || {};
+        response.body = response.body ?? {};
 
         // To kill our spawned child processes, we need to manually terminate
         // them when a terminate request is sent. This means we need to support
@@ -65,18 +64,18 @@ export class SdfgPythonDebugSession extends LoggingDebugSession {
         this.sendEvent(new InitializedEvent());
     }
 
-    protected async launchRequest(
+    protected launchRequest(
         response: DebugProtocol.LaunchResponse,
         args: SdfgPythonLaunchRequestArguments
     ) {
         Logger.logger.setup(Logger.LogLevel.Verbose, true);
 
-        this.runtime.start(args);
+        void this.runtime.start(args);
 
         this.sendResponse(response);
     }
 
-    protected async terminateRequest(
+    protected terminateRequest(
         response: DebugProtocol.TerminateResponse
     ) {
         this.runtime.terminateRunning();

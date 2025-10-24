@@ -6,7 +6,6 @@ import {
     FileType,
     Position,
     Range,
-    TabInputText,
     TextDocument,
     Uri,
     ViewColumn,

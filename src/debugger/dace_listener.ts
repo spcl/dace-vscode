@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
@@ -9,14 +9,14 @@ import {
 import * as vscode from 'vscode';
 import { BreakpointHandler } from './breakpoint_handler';
 
-export var PORT: number = 0;
+export let DACE_DEBUG_PORT: number = 0;
 
 export class DaceListener extends vscode.Disposable {
 
     server: Server;
 
     // To not spam the user with messages only indicate the restricted features
-    // message maximally once per activation 
+    // message maximally once per activation.
     hasIndicatedRestricted: boolean;
 
     constructor() {
@@ -31,11 +31,14 @@ export class DaceListener extends vscode.Disposable {
         // Create a server to receive information from DaCe
         const server = createServer((socket) => {
             socket.on('end', () => {
+                return;
             });
 
             socket.on('data', data => {
-                let dataStr = String.fromCharCode(...data);
-                this.handleData(JSON.parse(dataStr));
+                const dataStr = String.fromCharCode(...data);
+                this.handleData(
+                    JSON.parse(dataStr) as { type?: string, reason?: string }
+                );
             });
         });
 
@@ -44,18 +47,18 @@ export class DaceListener extends vscode.Disposable {
         server.listen(0, () => {
             if (!server.address() || typeof server.address() === 'string') {
                 console.log(server.address());
-                let msg = 'Error occurred while starting server';
+                const msg = 'Error occurred while starting server';
                 vscode.window.showErrorMessage(msg);
             }
 
-            let addr = server.address() as AddressInfo;
-            PORT = addr.port;
+            const addr = server.address() as AddressInfo;
+            DACE_DEBUG_PORT = addr.port;
         });
 
         return server;
     }
 
-    protected handleData(data: any | undefined): void {
+    protected handleData(data?: { type?: string, reason?: string }): void {
         if (!data)
             return;
 

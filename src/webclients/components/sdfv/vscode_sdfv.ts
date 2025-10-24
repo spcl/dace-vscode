@@ -1,8 +1,7 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import $ from 'jquery';
-(window as any).jQuery = $;
 
 // JQuery Plugin to allow for editable selects.
 import 'jquery-editable-select';
@@ -26,9 +25,7 @@ import {
     MemoryVolumeOverlay,
     OperationalIntensityOverlay,
     SimulatedOperationalIntensityOverlay,
-    parse_sdfg,
     Point2D,
-    read_or_decompress,
     RuntimeMicroSecondsOverlay,
     SDFG,
     SDFGElement,
@@ -45,6 +42,9 @@ import {
     ISDFVUserInterface,
     findInGraphPredicate,
     findInGraph,
+    GenericSdfgOverlay,
+    readOrDecompress,
+    parseSDFG,
 } from '@spcl/sdfv/src';
 import { LViewRenderer } from '@spcl/sdfv/src/local_view/lview_renderer';
 import {
@@ -53,26 +53,26 @@ import {
     SDFVSettings,
 } from '@spcl/sdfv/src/utils/sdfv_settings';
 import {
-    ICPCRequest
+    ICPCRequest,
 } from '../../../common/messaging/icpc_messaging_component';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent,
 } from '../../messaging/icpc_webclient_messaging_component';
 import {
     JsonTransformation,
-    JsonTransformationList
+    JsonTransformationList,
 } from '../transformations/transformations';
 import { AnalysisController } from './analysis/analysis_controller';
 import {
     BreakpointIndicator,
-    refreshBreakpoints
+    refreshBreakpoints,
 } from './breakpoints/breakpoints';
 import { VSCodeRenderer } from './renderer/vscode_renderer';
 import {
     clearSelectedTransformation,
     refreshTransformationList,
     refreshXform,
-    showTransformationDetails
+    showTransformationDetails,
 } from './transformation/transformation';
 import {
     findJsonSDFGElementByUUID,
@@ -83,16 +83,16 @@ import {
     showContextMenu,
     unGraphiphySdfg,
     vscodeWriteGraph,
-    zoomToUUIDs
+    zoomToUUIDs,
 } from './utils/helpers';
 import { ComponentTarget } from '../../../components/components';
 import { gzipSync } from 'zlib';
 import { SDFVVSCodeUI } from './vscode_sdfv_ui';
-import {
-    GenericSdfgOverlay,
-} from '@spcl/sdfv/src/overlays/generic_sdfg_overlay';
+import { IOutlineElem, MetaDictT } from '../../../types';
+import { WebviewApi } from 'vscode-webview';
 
-declare const vscode: any;
+
+declare const vscode: WebviewApi<unknown>;
 
 export class VSCodeSDFV extends SDFV {
 
@@ -110,9 +110,9 @@ export class VSCodeSDFV extends SDFV {
 
     private readonly UI: SDFVVSCodeUI = SDFVVSCodeUI.getInstance();
 
-    public static readonly OVERLAYS: {
-        [key: string]: typeof GenericSdfgOverlay,
-    } = {
+    public static readonly OVERLAYS: Record<
+        string, typeof GenericSdfgOverlay
+    > = {
             'MemoryVolumeOverlay': MemoryVolumeOverlay,
             'StaticFlopsOverlay': StaticFlopsOverlay,
             'DepthOverlay': DepthOverlay,
@@ -121,16 +121,17 @@ export class VSCodeSDFV extends SDFV {
             'BreakpointIndicator': BreakpointIndicator,
             'MemoryLocationOverlay': MemoryLocationOverlay,
             'OperationalIntensityOverlay': OperationalIntensityOverlay,
-            'SimulatedOperationalIntensityOverlay': SimulatedOperationalIntensityOverlay,
+            'SimulatedOperationalIntensityOverlay':
+                SimulatedOperationalIntensityOverlay,
             'LogicalGroupOverlay': LogicalGroupOverlay,
         };
 
-    private processingOverlay?: JQuery<HTMLElement>;
-    private processingOverlayMsg?: JQuery<HTMLElement>;
+    private processingOverlay?: JQuery;
+    private processingOverlayMsg?: JQuery;
 
-    private monaco: any | null = null;
+    private monaco: unknown = null;
     private origSDFG: JsonSDFG | null = null;
-    private sdfgMetaDict: { [key: string]: any } | null = null;
+    private sdfgMetaDict: MetaDictT | null = null;
     private queryMetaDictFunc: Promise<Record<string, any>> | null= null;
     private viewingHistoryState: boolean = false;
     private viewingHistoryIndex: number | undefined = undefined;
@@ -152,14 +153,17 @@ export class VSCodeSDFV extends SDFV {
 
         this.refreshSdfg().then(() => {
             this.processingOverlay?.hide();
-            SDFVComponent.getInstance().invoke('onReady');
+            void SDFVComponent.getInstance().invoke('onReady');
+        }).catch((reason: unknown) => {
+            console.error('Error initializing SDFV:', reason);
+            // TODO: show an UI error message.
+            this.processingOverlay?.hide();
         });
     }
 
     private initDOM(): void {
         this.processingOverlay = $('#processing-overlay');
         this.processingOverlayMsg = $('#processing-overlay-msg');
-
     }
 
     public initSearch(): void {
@@ -204,20 +208,18 @@ export class VSCodeSDFV extends SDFV {
             const renderer = VSCodeRenderer.getInstance();
             if (renderer) {
                 setTimeout(() => {
-                    const graph = renderer.get_graph();
+                    const graph = renderer.graph;
                     const code = $('#advsearch').val();
                     if (graph && code) {
-                        const predicate = eval(code.toString());
+                        const predicate = eval(code.toString()) as (
+                            graph: DagreGraph, elem: SDFGElement
+                        ) => boolean;
                         findInGraphPredicate(this.UI, renderer, predicate);
                     }
                 }, 1);
             }
             return false;
         });
-    }
-
-    public start_find_in_graph(): void {
-        this.startFindInGraph();
     }
 
     private handleShowGroupsContextMenu(
@@ -228,94 +230,93 @@ export class VSCodeSDFV extends SDFV {
 
         // Ensure that all elements belong to the same SDFG.
         let target: JsonSDFG | null = null;
-        selectedElements.forEach(elem => {
+        for (const elem of selectedElements) {
             if (target === null) {
                 target = elem.sdfg;
             } else if (target.cfg_list_id !== elem.sdfg.cfg_list_id) {
                 target = null;
-                return;
+                break;
             }
-        });
+        }
 
         if (target !== null) {
             const options: {
                 label: string | null,
-                callback: CallableFunction | null,
+                callback: (() => void) | null,
                 disabled: boolean,
             }[] = [];
 
             // Add options to add elements to groups.
-            (target as JsonSDFG).attributes?.logical_groups.forEach(
-                (lg: LogicalGroup) => {
-                    options.push({
-                        label: `Add selection to group "${lg.name}"`,
-                        disabled: false,
-                        callback: () => {
-                            selectedElements.forEach(el => {
-                                if (el instanceof State) {
-                                    if (!lg.states.includes(el.id))
-                                        lg.states.push(el.id);
-                                } else if (el.parent_id !== null) {
-                                    const hasTuple = lg.nodes.some((v) => {
-                                        return v[0] === el.parent_id &&
-                                            v[1] === el.id;
-                                    });
-                                    if (!hasTuple)
-                                        lg.nodes.push([el.parent_id, el.id]);
-                                }
-                            });
+            const attrs = target.attributes as Record<string, unknown>;
+            const lGroups = attrs.logical_groups as LogicalGroup[] | undefined;
+            for (const lg of lGroups ?? []) {
+                options.push({
+                    label: `Add selection to group "${lg.name}"`,
+                    disabled: false,
+                    callback: () => {
+                        selectedElements.forEach(el => {
+                            if (el instanceof State) {
+                                if (!lg.states.includes(el.id))
+                                    lg.states.push(el.id);
+                            } else if (el.parentStateId !== undefined) {
+                                const hasTuple = lg.nodes.some((v) => {
+                                    return v[0] === el.parentStateId &&
+                                        v[1] === el.id;
+                                });
+                                if (!hasTuple)
+                                    lg.nodes.push([el.parentStateId, el.id]);
+                            }
+                        });
 
-                            const sdfg =
-                                VSCodeRenderer.getInstance()?.get_sdfg();
-                            if (sdfg)
-                                vscodeWriteGraph(sdfg);
-                        },
-                    });
-                }
-            );
+                        const sdfg = VSCodeRenderer.getInstance()?.sdfg;
+                        if (sdfg)
+                            void vscodeWriteGraph(sdfg);
+                    },
+                });
+            }
 
             // Adds a separator.
-            if ((target as JsonSDFG).attributes?.logical_groups)
+            if (lGroups) {
                 options.push({
                     label: null,
                     disabled: true,
                     callback: null,
                 });
+            }
 
             // Add options to remove from groups.
-            (target as JsonSDFG).attributes?.logical_groups.forEach(
-                (lg: LogicalGroup) => {
-                    options.push({
-                        label: `Remove selection from group "${lg.name}"`,
-                        disabled: false,
-                        callback: () => {
-                            selectedElements.forEach(el => {
-                                if (el instanceof State)
-                                    lg.states = lg.states.filter(v => {
-                                        return v !== el.id;
-                                    });
-                                else if (el.parent_id !== null)
-                                    lg.nodes = lg.nodes.filter(v => {
-                                        return v[0] !== el.parent_id ||
-                                            v[1] !== el.id;
-                                    });
-                            });
+            for (const lg of lGroups ?? []) {
+                options.push({
+                    label: `Remove selection from group "${lg.name}"`,
+                    disabled: false,
+                    callback: () => {
+                        selectedElements.forEach(el => {
+                            if (el instanceof State) {
+                                lg.states = lg.states.filter(v => {
+                                    return v !== el.id;
+                                });
+                            } else if (el.parentStateId !== undefined) {
+                                lg.nodes = lg.nodes.filter(v => {
+                                    return v[0] !== el.parentStateId ||
+                                        v[1] !== el.id;
+                                });
+                            }
+                        });
 
-                            const sdfg =
-                                VSCodeRenderer .getInstance()?.get_sdfg();
-                            if (sdfg)
-                                vscodeWriteGraph(sdfg);
-                        },
-                    });
-                }
-            );
+                        const sdfg = VSCodeRenderer.getInstance()?.sdfg;
+                        if (sdfg)
+                            void vscodeWriteGraph(sdfg);
+                    },
+                });
+            }
 
-            if (options)
+            if (options.length > 0) {
                 showContextMenu(
                     (event as MouseEvent).clientX,
                     (event as MouseEvent).clientY,
                     options
                 );
+            }
         }
     }
 
@@ -332,11 +333,11 @@ export class VSCodeSDFV extends SDFV {
         },
         renderer: SDFGRenderer,
         selectedElements: SDFGElement[],
-        sdfv: SDFV,
-        endsPan: boolean
+        _sdfv: SDFV,
+        _endsPan: boolean
     ): boolean {
         if (evtype === 'contextmenu') {
-            if (VSCodeRenderer.getInstance()?.overlayManager.is_overlay_active(
+            if (VSCodeRenderer.getInstance()?.overlayManager.isOverlayActive(
                 LogicalGroupOverlay
             )) {
                 VSCodeSDFV.getInstance().handleShowGroupsContextMenu(
@@ -352,7 +353,7 @@ export class VSCodeSDFV extends SDFV {
     }
 
     @ICPCRequest()
-    public async getCompressedSDFG(): Promise<Uint8Array | null> {
+    public getCompressedSDFG(): Uint8Array | null {
         const sdfgString = this.getSdfgString();
         if (sdfgString)
             return new Uint8Array(gzipSync(sdfgString));
@@ -360,49 +361,52 @@ export class VSCodeSDFV extends SDFV {
     }
 
     @ICPCRequest()
-    public async outline(
+    public outline(
         pRenderer?: SDFGRenderer, pGraph?: DagreGraph
-    ): Promise<void> {
-        const renderer = pRenderer || this.renderer;
-        const graph = pGraph || renderer?.get_graph();
+    ): void {
+        const renderer = pRenderer ?? this.renderer;
+        const graph = pGraph ?? renderer?.graph;
         if (!graph || !renderer)
             return;
 
         const outlineList = [];
 
-        const topLevelSDFG = {
-            'icon': 'res:icons/sdfg.svg',
-            'type': 'SDFG',
-            'label': `SDFG ${renderer.get_sdfg().attributes.name}`,
-            'collapsed': false,
-            'uuid': getGraphElementUUID(null),
-            'children': [],
+        const topLevelSDFG: IOutlineElem = {
+            icon: 'res:icons/sdfg.svg',
+            type: 'SDFG',
+            label: `SDFG ${renderer.sdfg?.attributes?.name ?? ''}`,
+            collapsed: false,
+            uuid: getGraphElementUUID(undefined),
+            children: [],
         };
         outlineList.push(topLevelSDFG);
 
-        const stack: any[] = [topLevelSDFG];
+        const stack: (IOutlineElem | undefined)[] = [topLevelSDFG];
 
         traverseSDFGScopes(
             graph, (node) => {
                 // Skip exit nodes when scopes are known.
-                if (node.type().endsWith('Exit') &&
-                    node.data.node.scope_entry >= 0) {
+                if (node.type.endsWith('Exit') &&
+                    (node.jsonData?.scope_entry ?? -1) as number >= 0) {
                     stack.push(undefined);
                     return true;
                 }
 
                 // Create an entry.
-                const isCollapsed = node.attributes().is_collapsed ?? false;
-                const nodeLabel = node.type() === 'NestedSDFG' ?
-                    node.data.node.label : node.label();
+                const isCollapsed = (
+                    node.attributes()?.is_collapsed as boolean | undefined ??
+                    false
+                );
+                const nodeLabel = node.type === 'NestedSDFG' ?
+                    node.jsonData?.label as string : node.label;
 
                 // If scope has children, remove the name "Entry" from the type.
-                let nodeType = node.type();
+                let nodeType = node.type;
                 if (nodeType.endsWith('Entry')) {
-                    const state = node.parent_id !== null ?
-                        (node.cfg?.nodes[node.parent_id] as JsonSDFGState) ??
-                            null : null;
-                    if (state?.scope_dict[node.id])
+                    const state = node.parentStateId !== undefined ?
+                        (node.cfg?.nodes[node.parentStateId] as
+                                JsonSDFGState | undefined) ??  null : null;
+                    if (state?.scope_dict?.[node.id])
                         nodeType = nodeType.slice(0, -5);
                 }
 
@@ -443,12 +447,12 @@ export class VSCodeSDFV extends SDFV {
                 }
 
                 stack.push({
-                    'icon': icon,
-                    'type': nodeType,
-                    'label': nodeLabel,
-                    'collapsed': isCollapsed,
-                    'uuid': getGraphElementUUID(node),
-                    'children': [],
+                    icon: icon,
+                    type: nodeType,
+                    label: nodeLabel,
+                    collapsed: isCollapsed,
+                    uuid: getGraphElementUUID(node),
+                    children: [],
                 });
 
                 // If the node's collapsed we don't traverse any further.
@@ -459,38 +463,40 @@ export class VSCodeSDFV extends SDFV {
                 // After scope ends, pop ourselves as the current element and
                 // add outselves to the parent.
                 const elem = stack.pop();
-                const elem_parent = stack[stack.length - 1];
-                if (elem !== undefined && elem_parent !== undefined)
-                    elem_parent['children'].push(elem);
+                const elemParent = stack[stack.length - 1];
+                if (elem !== undefined && elemParent !== undefined)
+                    elemParent.children.push(elem);
             }
         );
 
-        return SDFVComponent.getInstance().invoke(
+        void SDFVComponent.getInstance().invoke(
             'setOutline', [outlineList], ComponentTarget.Outline
         );
     }
 
     public startFindInGraph(): void {
         const renderer = VSCodeRenderer.getInstance();
-        if (renderer)
+        if (renderer) {
             setTimeout(() => {
                 const searchVal = $('#search').val();
-                const graph = renderer.get_graph();
+                const graph = renderer.graph;
                 if (graph && searchVal !== undefined &&
-                    typeof searchVal === 'string' && searchVal.length > 0)
+                    typeof searchVal === 'string' && searchVal.length > 0) {
                     findInGraph(
                         this.UI, renderer, searchVal,
                         $('#search-case').is(':checked')
                     );
+                }
             }, 1);
+        }
     }
 
     public async refreshSdfg(): Promise<void> {
-        return SDFVComponent.getInstance().invoke('getUpToDateContents').then(
-            sdfg => {
-                this.updateContents(sdfg);
-            }
-        );
+        return SDFVComponent.getInstance().invoke<string | ArrayBuffer>(
+            'getUpToDateContents'
+        ).then(sdfg => {
+            this.updateContents(sdfg);
+        });
     }
 
     public setRendererContent(
@@ -498,9 +504,9 @@ export class VSCodeSDFV extends SDFV {
         preventRefreshes: boolean = false
     ): void {
         const parsedSdfg = typeof sdfg === 'string' ?
-            checkCompatLoad(parse_sdfg(sdfg)) : checkCompatLoad(sdfg);
+            checkCompatLoad(parseSDFG(sdfg)) : checkCompatLoad(sdfg);
         if (this.renderer) {
-            this.renderer.setSDFG(parsedSdfg);
+            void this.renderer.setSDFG(parsedSdfg);
         } else {
             const contentsElem = document.getElementById('contents');
             if (contentsElem === null) {
@@ -508,46 +514,46 @@ export class VSCodeSDFV extends SDFV {
                 return;
             }
 
-            if (parsedSdfg !== null)
-                this.renderer = VSCodeRenderer.init(
-                    parsedSdfg, contentsElem,
-                    this.onMouseEvent.bind(this), null, VSCodeSDFV.DEBUG_DRAW,
-                    null, null
-                );
-            else
-                return;
+            this._renderer = VSCodeRenderer.init(
+                parsedSdfg, contentsElem,
+                this.onMouseEvent.bind(this), null, VSCodeSDFV.DEBUG_DRAW,
+                null
+            );
         }
 
         if (!previewing) {
             this.origSDFG = parsedSdfg;
             if (!preventRefreshes) {
-                refreshXform(this);
-                this.resyncTransformationHistory();
+                void refreshXform(this);
+                void this.resyncTransformationHistory();
             }
         }
 
         if (!preventRefreshes) {
-            const graph = this.renderer.get_graph();
+            const graph = this.renderer?.graph;
             if (graph)
                 this.outline(this.renderer, graph);
-            AnalysisController.getInstance().refreshAnalysisPane();
+            void AnalysisController.getInstance().refreshAnalysisPane();
             refreshBreakpoints();
         }
 
-        const selectedElements = this.renderer.get_selected_elements();
-        if (selectedElements && selectedElements.length === 1)
-            reselectRendererElement(selectedElements[0]);
+        const selectedElements = this.renderer?.selectedRenderables;
+        if (selectedElements?.size === 1)
+            reselectRendererElement(Array.from(selectedElements)[0]);
 
         const renderer = this.renderer;
-        renderer.on('selection_changed', () => {
-            const selectedElements = renderer.get_selected_elements();
+        renderer?.on('selection_changed', () => {
+            const selectedElements = renderer.selectedRenderables;
             let element;
-            if (selectedElements.length === 0)
-                element = new SDFG(renderer.get_sdfg());
-            else if (selectedElements.length === 1)
-                element = selectedElements[0];
-            else
+            if (selectedElements.size === 0 && renderer.sdfg) {
+                element = new SDFG(
+                    renderer, renderer.ctx, renderer.minimapCtx, renderer.sdfg
+                );
+            } else if (selectedElements.size === 1) {
+                element = Array.from(selectedElements)[0];
+            } else {
                 element = null;
+            }
 
             if (element !== null) {
                 this.UI.showElementInfo(element, renderer);
@@ -566,7 +572,7 @@ export class VSCodeSDFV extends SDFV {
         let userTransform = null;
         let renderer = VSCodeRenderer.getInstance();
         if (renderer) {
-            userTransform = renderer.get_canvas_manager()?.get_user_transform();
+            userTransform = renderer.canvasManager.getUserTransform();
             renderer.destroy();
         }
 
@@ -578,13 +584,12 @@ export class VSCodeSDFV extends SDFV {
 
         renderer = VSCodeRenderer.init(
             this.origSDFG, contentsElem, this.onMouseEvent.bind(this),
-            userTransform, VSCodeSDFV.DEBUG_DRAW, null, null
+            userTransform, VSCodeSDFV.DEBUG_DRAW, null
         );
 
-        const graph = renderer?.get_graph();
-        if (renderer && graph) {
-            this.outline(renderer, graph);
-            AnalysisController.getInstance().refreshAnalysisPane();
+        if (renderer.graph) {
+            this.outline(renderer, renderer.graph);
+            void AnalysisController.getInstance().refreshAnalysisPane();
             refreshBreakpoints();
         }
     }
@@ -597,7 +602,7 @@ export class VSCodeSDFV extends SDFV {
         filePath: string, startRow: number, startChar: number, endRow: number,
         endChar: number
     ): Promise<void> {
-        return SDFVComponent.getInstance().invoke(
+        await SDFVComponent.getInstance().invoke(
             'goToSource', [filePath, startRow, startChar, endRow, endChar]
         );
     }
@@ -609,7 +614,7 @@ export class VSCodeSDFV extends SDFV {
     public async gotoCpp(
         sdfgName: string, sdfgId: number, stateId: number, nodeId: number
     ): Promise<void> {
-        return SDFVComponent.getInstance().invoke(
+        await SDFVComponent.getInstance().invoke(
             'goToCPP', [sdfgName, sdfgId, stateId, nodeId]
         );
     }
@@ -618,37 +623,38 @@ export class VSCodeSDFV extends SDFV {
         this.setShowingBreakpoints(!this.showingBreakpoints);
     }
 
-    public getMonaco(): any | null {
+    public getMonaco(): unknown {
         return this.monaco;
     }
 
-    public async getMetaDict(): Promise<Record<string, any>> {
+    public async getMetaDict(): Promise<MetaDictT> {
         if (!this.sdfgMetaDict) {
             // If SDFG property metadata isn't available, use the static one and
             // query an up-to-date one from the dace github page. If that
             // doesn't work, query the daemon (waking it up if it isn't up).
-            if (!this.queryMetaDictFunc) {
-                this.queryMetaDictFunc = new Promise((resolve) => {
-                    SDFVComponent.getInstance().invoke(
-                        'querySdfgMetadata', undefined, ComponentTarget.DaCe
-                    ).then((metaDict: Record<string, any>) => {
-                        resolve(metaDict);
+            this.queryMetaDictFunc ??= new Promise((resolve) => {
+                SDFVComponent.getInstance().invoke<MetaDictT>(
+                    'querySdfgMetadata', undefined, ComponentTarget.DaCe
+                ).then(metaDict => {
+                    resolve(metaDict);
+                }).catch(() => {
+                    fetch(
+                        'https://spcl.github.io/dace/metadata/' +
+                            'minified.sdfg_meta_dict.json'
+                    ).then((response) => {
+                        resolve(response.json());
                     }).catch(() => {
-                        fetch(
-                            'https://spcl.github.io/dace/metadata/' +
-                                'sdfg_meta_dict.json'
-                        ).then((response) => {
-                            resolve(response.json());
-                        });
+                        // If the fetch fails, use the static one.
+                        resolve(staticSdfgMetaDict);
                     });
                 });
-            }
+            });
 
             return this.queryMetaDictFunc.then((data) => {
                 this.sdfgMetaDict = data;
                 this.queryMetaDictFunc = null;
                 return this.sdfgMetaDict;
-            }).catch((reason) => {
+            }).catch((reason: unknown) => {
                 console.error(reason);
                 this.sdfgMetaDict = staticSdfgMetaDict;
                 this.queryMetaDictFunc = null;
@@ -658,7 +664,7 @@ export class VSCodeSDFV extends SDFV {
         return this.sdfgMetaDict;
     }
 
-    public getCachedMetaDict(): Record<string, any> | null {
+    public getCachedMetaDict(): MetaDictT | null {
         return this.sdfgMetaDict;
     }
 
@@ -690,16 +696,16 @@ export class VSCodeSDFV extends SDFV {
         return this.selectedTransformation;
     }
 
-    public setMonaco(monaco: any | null): void {
+    public setMonaco(monaco: unknown): void {
         this.monaco = monaco;
     }
 
     public getSdfgString(): string | null {
-        const sdfg = this.get_renderer()?.get_sdfg();
+        const sdfg = this.renderer?.sdfg;
         if (sdfg) {
             unGraphiphySdfg(sdfg);
             const sdfgString = JSON.stringify(sdfg, (_k, v) => {
-                return v === undefined ? null : v;
+                return v === undefined ? null : v as unknown;
             }, 2);
             return sdfgString;
         }
@@ -707,7 +713,7 @@ export class VSCodeSDFV extends SDFV {
     }
 
     @ICPCRequest()
-    public setMetaDict(sdfgMetaDict: { [key: string]: any } | null): void {
+    public setMetaDict(sdfgMetaDict: Record<string, any> | null): void {
         this.sdfgMetaDict = sdfgMetaDict;
     }
 
@@ -725,7 +731,7 @@ export class VSCodeSDFV extends SDFV {
     public setShowingBreakpoints(showingBreakpoints: boolean): void {
         this.showingBreakpoints = showingBreakpoints;
         const alreadyActive =
-            VSCodeRenderer.getInstance()?.overlayManager.get_overlay(
+            VSCodeRenderer.getInstance()?.overlayManager.getOverlay(
                 BreakpointIndicator
             );
         if (this.showingBreakpoints && alreadyActive === undefined) {
@@ -757,30 +763,30 @@ export class VSCodeSDFV extends SDFV {
         this.selectedTransformation = selectedTransformation;
     }
 
-    public set_renderer(renderer: SDFGRenderer | null): void {
+    public setRenderer(renderer: SDFGRenderer | undefined): void {
         if (renderer) {
             this.localViewRenderer?.destroy();
-            this.localViewRenderer = null;
+            this._localViewRenderer = undefined;
         }
-        this.renderer = renderer;
+        this._renderer = renderer;
     }
 
-    public setLocalViewRenderer(localViewRenderer: LViewRenderer | null): void {
-        if (localViewRenderer) {
+    public setLocalViewRenderer(
+        localViewRenderer: LViewRenderer | undefined
+    ): void {
+        if (localViewRenderer)
             this.renderer?.destroy();
-            this.renderer = null;
-        }
-        this.localViewRenderer = localViewRenderer;
+        this._localViewRenderer = localViewRenderer;
         this.UI.infoShow(true);
     }
 
     @ICPCRequest()
     public updateContents(
-        newContent: string | Uint8Array, preventRefreshes: boolean = false
+        newContent: string | ArrayBuffer, preventRefreshes: boolean = false
     ): void {
         this.setViewingHistoryState(false);
-        $('#exit-preview-button')?.hide();
-        const [content, compressed] = read_or_decompress(newContent);
+        $('#exit-preview-button').hide();
+        const [content, compressed] = readOrDecompress(newContent);
         this.viewingCompressed = compressed;
         this.setRendererContent(content, false, preventRefreshes);
     }
@@ -801,19 +807,19 @@ export class VSCodeSDFV extends SDFV {
     ): void {
         if (pSdfg) {
             this.setRendererContent(pSdfg, true);
-            $('#exit-preview-button')?.show();
+            $('#exit-preview-button').show();
             if (histIndex !== undefined) {
                 this.UI.infoClear();
                 this.setViewingHistoryState(true, histIndex);
-                refreshTransformationList();
+                void refreshTransformationList();
             }
         } else {
             // No SDFG provided, exit preview.
             this.resetRendererContent();
             this.setViewingHistoryState(false);
-            $('#exit-preview-button')?.hide();
+            $('#exit-preview-button').hide();
             if (refresh)
-                refreshTransformationList();
+                void refreshTransformationList();
         }
     }
 
@@ -843,21 +849,19 @@ export class VSCodeSDFV extends SDFV {
     }
 
     @ICPCRequest()
-    public async selectTransformation(
-        transformation: JsonTransformation
-    ): Promise<void> {
+    public selectTransformation(transformation: JsonTransformation): void {
         showTransformationDetails(transformation);
         this.setSelectedTransformation(transformation);
     }
 
     @ICPCRequest()
     public async resyncTransformationHistory(): Promise<void> {
-        const sdfg = this.get_renderer()?.get_sdfg();
+        const sdfg = this.renderer?.sdfg;
         if (sdfg) {
-            const transformationHistory = jsonSDFGElemReadAttr(
+            const transformationHistory = (jsonSDFGElemReadAttr(
                 sdfg, 'transformation_hist'
-            ) ?? [];
-            SDFVComponent.getInstance().invoke(
+            ) ?? []) as JsonTransformation[];
+            await SDFVComponent.getInstance().invoke(
                 'setHistory',
                 [transformationHistory, this.viewingHistoryIndex],
                 ComponentTarget.History
@@ -868,22 +872,23 @@ export class VSCodeSDFV extends SDFV {
     @ICPCRequest()
     public async toggleCollapseFor(uuid: string): Promise<void> {
         const renderer = this.renderer;
-        const cfgList = renderer?.getCFGList();
+        const cfgList = renderer?.cfgList;
         if (renderer && cfgList) {
             const [elem, _] = findJsonSDFGElementByUUID(cfgList, uuid);
             if (elem && isCollapsible(elem)) {
+                elem.attributes ??= {};
                 elem.attributes.is_collapsed = !jsonSDFGElemReadAttr(
                     elem, 'is_collapsed'
                 );
                 renderer.emit('collapse_state_changed');
-                renderer.relayout();
-                renderer.draw_async();
+                await renderer.layout();
+                renderer.drawAsync();
             }
         }
     }
 
     @ICPCRequest()
-    public async setOverlays(overlays: string[]): Promise<void> {
+    public setOverlays(overlays: string[]): void {
         const overlayManager = VSCodeRenderer.getInstance()?.overlayManager;
 
         const toActivate = [];
@@ -895,8 +900,8 @@ export class VSCodeSDFV extends SDFV {
 
         // Register all the selected overlays.
         for (const ol of toActivate) {
-            if (!overlayManager?.is_overlay_active(ol))
-                overlayManager?.register_overlay(ol);
+            if (!overlayManager?.isOverlayActive(ol))
+                overlayManager?.registerOverlay(ol);
         }
     }
 
@@ -906,7 +911,7 @@ export class VSCodeSDFV extends SDFV {
         const specialized = await SDFVComponent.getInstance().invoke(
             'specializeGraph',
             [this.getSdfgString(), valueMap], ComponentTarget.DaCe
-        );
+        ) as JsonSDFG;
         this.setRendererContent(specialized, false, false);
         this.setProcessingOverlay(false);
     }
@@ -941,14 +946,17 @@ export class SDFVComponent extends ICPCWebclientMessagingComponent {
         this.registerRequestHandler(AnalysisController.getInstance());
 
         // Load the default settings.
-        this.invoke('getSettings', [SDFVSettings.settingsKeys]).then(
-            (settings: Record<SDFVSettingKey, SDFVSettingValT>) => {
-                for (const [k, v] of Object.entries(settings))
-                    SDFVSettings.set(k as SDFVSettingKey, v);
-                sdfv.initialize();
-                sdfv.get_renderer()?.draw_async();
-            }
-        );
+        this.invoke<Map<SDFVSettingKey, SDFVSettingValT>>(
+            'getSettings', [SDFVSettings.settingsKeys]
+        ).then(settings => {
+            for (const [k, v] of Object.entries(settings))
+                SDFVSettings.set(k as SDFVSettingKey, v);
+            sdfv.initialize();
+            sdfv.renderer?.drawAsync();
+        }).catch((reason: unknown) => {
+            console.error('Error loading SDFV settings:', reason);
+            // TODO: show an UI error message.
+        });
     }
 
 }
@@ -964,7 +972,7 @@ $(() => {
         const renderer = VSCodeRenderer.getInstance();
         if (renderer) {
             renderer.onresize();
-            renderer.draw_async();
+            renderer.drawAsync();
         }
     };
 
