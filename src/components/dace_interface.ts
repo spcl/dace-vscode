@@ -25,6 +25,7 @@ import {
     TransformationListProvider,
 } from './transformation_list';
 import * as semver from 'semver';
+import { MetaDictT } from '../types';
 
 
 export interface DaCeException {
@@ -1214,59 +1215,58 @@ export class DaCeInterface
     }
 
     @ICPCRequest()
-    public async querySdfgMetadata(): Promise<Record<string, unknown>> {
-        return new Promise<Record<string, unknown>>((resolve, reject) => {
+    public async querySdfgMetadata(): Promise<MetaDictT | undefined> {
+        return new Promise<MetaDictT | undefined>((resolve) => {
             if (this.daemonRunning) {
-                this.sendGetRequest(
-                    '/get_metadata',
-                    (data: DaCeMessage) => {
-                        resolve(data.metaDict as Record<string, unknown>);
-                    }
-                );
+                this.sendGetRequest('/get_metadata', (data: DaCeMessage) => {
+                    resolve(data.metaDict as MetaDictT);
+                });
             } else {
-                reject(new Error('Daemon not running'));
+                resolve(undefined);
             }
-        }).catch((err: unknown) => {
-            console.error(err);
-            return {};
         });
     }
 
     @ICPCRequest()
     public async loadTransformations(
         sdfg: string, selectedElements: unknown
-    ): Promise<JsonTransformation[]> {
+    ): Promise<JsonTransformation[] | undefined> {
         await TransformationListProvider.getInstance()?.showLoading();
 
-        return new Promise<JsonTransformation[]>((resolve, reject) => {
-            this.sendPostRequest(
-                '/transformations',
-                {
-                    sdfg: JSON.parse(sdfg) as JsonSDFG,
-                    selected_elements: selectedElements,
-                    permissive: false,
-                },
-                (data: DaCeMessage) => {
-                    const xforms = data.transformations as JsonTransformation[];
-                    const docstrings = data.docstrings as
-                        Record<string, string> | undefined;
-                    for (const elem of xforms) {
-                        let docstring = '';
-                        if (docstrings)
-                            docstring = docstrings[elem.transformation];
-                        elem.docstring = docstring;
-                    }
+        return new Promise<JsonTransformation[] | undefined>(
+            (resolve, reject) => {
+                this.sendPostRequest(
+                    '/transformations',
+                    {
+                        sdfg: JSON.parse(sdfg) as JsonSDFG,
+                        selected_elements: selectedElements,
+                        permissive: false,
+                    },
+                    (data: DaCeMessage) => {
+                        const xforms =
+                            data.transformations as JsonTransformation[];
+                        const docstrings = data.docstrings as
+                            Record<string, string> | undefined;
+                        for (const elem of xforms) {
+                            let docstring = '';
+                            if (docstrings)
+                                docstring = docstrings[elem.transformation];
+                            elem.docstring = docstring;
+                        }
 
-                    resolve(xforms);
-                },
-                async (error: DaCeException) => {
-                    await this.genericErrorHandler(
-                        error.message, error.details
-                    );
-                    reject(new Error(error.message));
-                }
-            );
-        });
+                        resolve(xforms);
+                    },
+                    async (error: DaCeException) => {
+                        await this.genericErrorHandler(
+                            error.message, error.details
+                        );
+                        reject(new Error(error.message));
+                    }
+                );
+                // Daemon not running: return undefined.
+                resolve(undefined);
+            }
+        );
     }
 
     /**

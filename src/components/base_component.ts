@@ -6,8 +6,10 @@ import {
     ICPCExtensionMessagingComponent,
 } from './messaging/icpc_extension_messaging_component';
 import {
+    ICPCMessageType,
     ICPCRequest,
     ICPCRequestMessage,
+    ICPCResponseMessage,
 } from '../common/messaging/icpc_messaging_component';
 
 
@@ -28,11 +30,17 @@ export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
         super(type, webview);
     }
 
-    protected _doSendRequest(message: ICPCRequestMessage): void {
-        if (!this.isReady || !this.target)
-            this.pcMap.set(message.procedure, message);
-        else
+    protected _doSendRequest(
+        message: ICPCRequestMessage, buffer?: boolean
+    ): void {
+        if (!this.isReady || !this.target) {
+            if (buffer)
+                this.pcMap.set(message.id, message);
+            else
+                this.handleUninitializedTargetRequest(message);
+        } else {
             super._doSendRequest(message);
+        }
     }
 
     private processQueuedRequests(): void {

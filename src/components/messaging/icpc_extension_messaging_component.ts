@@ -42,10 +42,17 @@ export class ICPCExtensionMessagingComponent extends ICPCMessagingComponent {
             (message.component === this.designation) ||
             (message.component === ComponentTarget.Editor.toString() &&
                 this.designation.startsWith('SDFV_'))) {
-            if (this.localProcedures.has(message.procedure))
+            if (this.localProcedures.has(message.procedure)) {
                 return super.handleRequest(message, responseHandler);
-            else
-                this.target?.postMessage(message);
+            } else {
+                if (this.target) {
+                    this.target.postMessage(message);
+                } else {
+                    this.handleUninitializedTargetRequest(
+                        message, responseHandler
+                    );
+                }
+            }
         } else {
             return ICPCHost.getInstance().handleRequest(
                 message, responseHandler ?? this

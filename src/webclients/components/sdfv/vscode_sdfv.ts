@@ -518,32 +518,30 @@ export class VSCodeSDFV extends SDFV {
                 null
             );
         }
-        await this.renderer!.setSDFG(parsedSdfg);
+        const renderer = this.renderer!;
+        await renderer.setSDFG(parsedSdfg);
 
         if (!previewing) {
             this.origSDFG = parsedSdfg;
             if (!preventRefreshes) {
-                await Promise.all([
-                    refreshXform(this),
-                    this.resyncTransformationHistory(),
-                ]);
+                await refreshXform(this);
+                await this.resyncTransformationHistory();
             }
         }
 
         if (!preventRefreshes) {
-            const graph = this.renderer?.graph;
+            const graph = renderer.graph;
             if (graph)
-                this.outline(this.renderer, graph);
+                this.outline(renderer, graph);
             await AnalysisController.getInstance().refreshAnalysisPane();
             refreshBreakpoints();
         }
 
-        const selectedElements = this.renderer?.selectedRenderables;
-        if (selectedElements?.size === 1)
+        const selectedElements = renderer.selectedRenderables;
+        if (selectedElements.size === 1)
             reselectRendererElement(Array.from(selectedElements)[0]);
 
-        const renderer = this.renderer;
-        renderer?.on('selection_changed', () => {
+        renderer.on('selection_changed', () => {
             const selectedElements = renderer.selectedRenderables;
             let element;
             if (selectedElements.size === 0 && renderer.sdfg) {
@@ -632,13 +630,27 @@ export class VSCodeSDFV extends SDFV {
         if (!this.sdfgMetaDict) {
             // If SDFG property metadata isn't available, use the static one and
             // query an up-to-date one from the dace github page. If that
-            // doesn't work, query the daemon (waking it up if it isn't up).
+            // doesn't work, query the daemon.
             this.queryMetaDictFunc ??= new Promise((resolve) => {
-                SDFVComponent.getInstance().invoke<MetaDictT>(
+                SDFVComponent.getInstance().invoke<MetaDictT | undefined>(
                     'querySdfgMetadata', undefined, ComponentTarget.DaCe
                 ).then(metaDict => {
-                    resolve(metaDict);
+                    if (metaDict) {
+                        resolve(metaDict);
+                        return;
+                    }
+
+                    fetch(
+                        'https://spcl.github.io/dace/metadata/' +
+                            'minified.sdfg_meta_dict.json'
+                    ).then((response) => {
+                        resolve(response.json());
+                    }).catch(() => {
+                        // If the fetch fails, use the static one.
+                        resolve(staticSdfgMetaDict);
+                    });
                 }).catch(() => {
+                    // Something went wrong, try fetching from the web.
                     fetch(
                         'https://spcl.github.io/dace/metadata/' +
                             'minified.sdfg_meta_dict.json'

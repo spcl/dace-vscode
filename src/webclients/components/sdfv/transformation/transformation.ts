@@ -82,32 +82,31 @@ export async function getApplicableTransformations(
 
 export async function refreshXform(sdfv: VSCodeSDFV): Promise<void> {
     clearSelectedTransformation();
-    return getApplicableTransformations().then(transformations => {
+    const transformations = await getApplicableTransformations();
+    if (transformations !== undefined) {
         sdfv.setDaemonConnected(true);
-        if (transformations !== undefined) {
-            sdfv.setTransformations({
-                selection: [],
-                viewport: [],
-                passes: [],
-                uncategorized: [
-                    {
-                        title: 'Uncategorized',
-                        ordering: 0,
-                        xforms: transformations,
-                    },
-                ],
-            });
-        } else {
-            sdfv.setTransformations({
-                selection: [],
-                viewport: [],
-                passes: [],
-                uncategorized: [],
-            });
-        }
+        sdfv.setTransformations({
+            selection: [],
+            viewport: [],
+            passes: [],
+            uncategorized: [
+                {
+                    title: 'Uncategorized',
+                    ordering: 0,
+                    xforms: transformations,
+                },
+            ],
+        });
+    } else {
+        sdfv.setTransformations({
+            selection: [],
+            viewport: [],
+            passes: [],
+            uncategorized: [],
+        });
+    }
 
-        sortTransformations(true, refreshTransformationList, true);
-    });
+    sortTransformations(true, refreshTransformationList, true);
 }
 
 /**

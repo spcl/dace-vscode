@@ -294,6 +294,25 @@ export abstract class ICPCMessagingComponent {
         );
     }
 
+    protected handleUninitializedTargetRequest(
+        message: ICPCRequestMessage, responseHandler?: ICPCMessagingComponent
+    ): void {
+        const response: ICPCResponseMessage = {
+            id: message.id,
+            type: ICPCMessageType.RESPONSE,
+            source: this.designation,
+            response: undefined,
+            success: true,
+        };
+        if (responseHandler) {
+            responseHandler.sendResponse(
+                message.id, undefined, true, responseHandler.designation
+            );
+        } else {
+            this.handleResponse(response);
+        }
+    }
+
 }
 
 /**
