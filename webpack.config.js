@@ -76,23 +76,17 @@ const webclientConfig = {
     },
     module: {
         rules: [
-            // transpile rendure (shipped as TS inside node_modules of the local packages)
-            //{
-            //    test: /\.m?[jt]sx?$/,
-            //    include: [path.resolve(__dirname, 'packages/sdfv/node_modules/rendure/src')],
-            //    use: [
-            //        'babel-loader',
-            //        {
-            //            loader: 'ts-loader',
-            //            options: {
-            //                configFile: 'tsconfig.json',
-            //            },
-            //        }
-            //    ],
-            //},
             {
                 test: /\.m?[jt]sx?$/,
-                exclude: /node_modules/,
+                include: [
+                    path.resolve(__dirname, 'src'),
+                    path.resolve(
+                        __dirname, 'packages/sdfv/src'
+                    ),
+                    //path.resolve(
+                    //    __dirname, 'packages/sdfv/node_modules/rendure/src'
+                    //)
+                ],
                 use: [
                     'babel-loader',
                     {

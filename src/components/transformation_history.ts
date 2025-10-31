@@ -91,13 +91,18 @@ export class TransformationHistoryProvider
     }
 
     @ICPCRequest(true)
-    public async onReady(): Promise<void> {
+    public onReady(): void {
         const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
-        if (activeEditor)
-            await activeEditor.invoke('resyncTransformationHistory');
-        else
-            await this.invoke('clearHistory', ['No SDFG selected']);
-        return super.onReady();
+        if (activeEditor) {
+            activeEditor.invoke(
+                'resyncTransformationHistory'
+            ).catch(console.error);
+        } else {
+            this.invoke(
+                'clearHistory', ['No SDFG selected']
+            ).catch(console.error);
+        }
+        super.onReady();
     }
 
 }

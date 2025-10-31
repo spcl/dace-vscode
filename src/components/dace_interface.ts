@@ -1399,22 +1399,22 @@ export class DaCeInterface
     }
 
     @ICPCRequest(true)
-    public async onReady(): Promise<void> {
+    public onReady(): void {
         if (this.port)
-            await this.invoke('setPort', [this.port]);
+            this.invoke('setPort', [this.port]).catch(console.error);
         if (this.daemonRunning)
-            await this.invoke('setStatus', [this.daemonRunning]);
+            this.invoke('setStatus', [this.daemonRunning]).catch(console.error);
         if (this.version) {
-            await this.invoke(
+            this.invoke(
                 'setVersion',
                 [
                     this.version,
                     this.versionOk,
                     this.additionalVersionInfo,
                 ]
-            );
+            ).catch(console.error);
         }
-        return super.onReady();
+        super.onReady();
     }
 
 }

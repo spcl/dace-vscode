@@ -31,10 +31,18 @@ export interface ICPCProcedure {
     f: (...args: any[]) => any;
     obj?: unknown;
     name?: string;
-    remoteInvokeable?: boolean;
     staticArgs?: unknown[];
     internal: boolean;
 }
+
+export interface ICPCFuncProps {
+    remoteInvokeable?: boolean;
+    obj?: unknown;
+    procName?: string;
+    staticArgs?: unknown[];
+    internal: boolean;
+}
+export type ICPCFunc = ((...args: any[]) => any) & ICPCFuncProps;
 
 interface ICPCCallback {
     resolve: (...args: any[]) => any;
@@ -263,11 +271,11 @@ export abstract class ICPCMessagingComponent {
         const descs = ICPCMessagingComponent.getAllFunctionDescriptors(obj);
         for (const name in descs) {
             const desc = descs[name];
-            const fun = desc?.value as ICPCProcedure | undefined;
+            const fun = desc?.value as ICPCFunc | undefined;
 
             if (fun?.remoteInvokeable && (!fun.internal || includeIntenal)) {
                 component.register(
-                    fun.f, obj, name, fun.staticArgs, fun.internal
+                    fun, obj, name, fun.staticArgs, fun.internal
                 );
             }
         }
@@ -300,12 +308,12 @@ export const ICPCRequest = (
     internal: boolean = false, name?: string, staticArgs?: any[]
 ) => {
     return (
-        _obj: object, _memberName: string, desc: PropertyDescriptor
+        _obj: object, memberName: string, desc: PropertyDescriptor
     ) => {
-        const procedure = desc.value as ICPCProcedure;
-        procedure.remoteInvokeable = true;
-        procedure.internal = internal;
-        procedure.name = name;
-        procedure.staticArgs = staticArgs;
+        const func = desc.value as ICPCFunc;
+        func.remoteInvokeable = true;
+        func.internal = internal;
+        func.procName = name ?? memberName;
+        func.staticArgs = staticArgs;
     };
 };

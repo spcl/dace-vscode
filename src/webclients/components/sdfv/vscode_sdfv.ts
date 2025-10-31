@@ -499,15 +499,13 @@ export class VSCodeSDFV extends SDFV {
         });
     }
 
-    public setRendererContent(
+    public async setRendererContent(
         sdfg: string | JsonSDFG, previewing: boolean = false,
         preventRefreshes: boolean = false
-    ): void {
+    ): Promise<void> {
         const parsedSdfg = typeof sdfg === 'string' ?
             checkCompatLoad(parseSDFG(sdfg)) : checkCompatLoad(sdfg);
-        if (this.renderer) {
-            void this.renderer.setSDFG(parsedSdfg);
-        } else {
+        if (!this.renderer) {
             const contentsElem = document.getElementById('contents');
             if (contentsElem === null) {
                 console.error('Could not find element to attach renderer to');
@@ -520,12 +518,15 @@ export class VSCodeSDFV extends SDFV {
                 null
             );
         }
+        await this.renderer!.setSDFG(parsedSdfg);
 
         if (!previewing) {
             this.origSDFG = parsedSdfg;
             if (!preventRefreshes) {
-                void refreshXform(this);
-                void this.resyncTransformationHistory();
+                await Promise.all([
+                    refreshXform(this),
+                    this.resyncTransformationHistory(),
+                ]);
             }
         }
 
@@ -533,7 +534,7 @@ export class VSCodeSDFV extends SDFV {
             const graph = this.renderer?.graph;
             if (graph)
                 this.outline(this.renderer, graph);
-            void AnalysisController.getInstance().refreshAnalysisPane();
+            await AnalysisController.getInstance().refreshAnalysisPane();
             refreshBreakpoints();
         }
 
@@ -788,7 +789,9 @@ export class VSCodeSDFV extends SDFV {
         $('#exit-preview-button').hide();
         const [content, compressed] = readOrDecompress(newContent);
         this.viewingCompressed = compressed;
-        this.setRendererContent(content, false, preventRefreshes);
+        this.setRendererContent(
+            content, false, preventRefreshes
+        ).catch(console.error);
     }
 
     /**
@@ -801,17 +804,17 @@ export class VSCodeSDFV extends SDFV {
      * @param refresh   Whether or not to refresh the transformation list
      */
     @ICPCRequest()
-    public previewSdfg(
+    public async previewSdfg(
         pSdfg?: string, histIndex: number | undefined = undefined,
         refresh: boolean = false
-    ): void {
+    ): Promise<void> {
         if (pSdfg) {
-            this.setRendererContent(pSdfg, true);
+            await this.setRendererContent(pSdfg, true);
             $('#exit-preview-button').show();
             if (histIndex !== undefined) {
                 this.UI.infoClear();
                 this.setViewingHistoryState(true, histIndex);
-                void refreshTransformationList();
+                await refreshTransformationList();
             }
         } else {
             // No SDFG provided, exit preview.
@@ -819,7 +822,7 @@ export class VSCodeSDFV extends SDFV {
             this.setViewingHistoryState(false);
             $('#exit-preview-button').hide();
             if (refresh)
-                void refreshTransformationList();
+                await refreshTransformationList();
         }
     }
 
@@ -912,7 +915,7 @@ export class VSCodeSDFV extends SDFV {
             'specializeGraph',
             [this.getSdfgString(), valueMap], ComponentTarget.DaCe
         ) as JsonSDFG;
-        this.setRendererContent(specialized, false, false);
+        await this.setRendererContent(specialized, false, false);
         this.setProcessingOverlay(false);
     }
 

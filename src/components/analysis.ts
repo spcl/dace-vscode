@@ -92,9 +92,9 @@ export class AnalysisProvider
     }
 
     @ICPCRequest(true)
-    public async onReady(): Promise<void> {
+    public onReady(): void {
         vscode.commands.executeCommand('sdfgAnalysis.sync');
-        return super.onReady();
+        super.onReady();
     }
 
     @ICPCRequest(true)

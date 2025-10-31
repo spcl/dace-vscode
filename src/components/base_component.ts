@@ -41,7 +41,7 @@ export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
     }
 
     @ICPCRequest(true)
-    public onReady(): void | Promise<void> {
+    public onReady(): void {
         this.isReady = true;
         this.processQueuedRequests();
     }

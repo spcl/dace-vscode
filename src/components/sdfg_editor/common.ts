@@ -5,12 +5,14 @@ import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
     CancellationToken,
+    Disposable,
     ExtensionContext,
     TextDocument,
     Uri,
     Webview,
     WebviewPanel,
     commands,
+    window,
     workspace,
 } from 'vscode';
 import { ICPCRequest } from '../../common/messaging/icpc_messaging_component';
@@ -27,6 +29,8 @@ export abstract class SDFGEditorBase extends BaseComponent {
     public linkFile?: string;
 
     public readonly componentId: string;
+
+    private readonly statusBarMessages = new Map<string, Disposable>();
 
     public constructor(
         context: ExtensionContext, _token: CancellationToken,
@@ -220,6 +224,25 @@ export abstract class SDFGEditorBase extends BaseComponent {
         await editor?.invoke('zoomToUUIDs', [zoomTo]);
         if (displayBreakpoints)
             await editor?.invoke('displayBreakpoints', [displayBreakpoints]);
+    }
+
+    @ICPCRequest()
+    public showActivity(text: string): string {
+        const cancellation = window.setStatusBarMessage(text);
+        let uuid = uuidv4();
+        while (this.statusBarMessages.has(uuid))
+            uuid = uuidv4();
+        this.statusBarMessages.set(uuid, cancellation);
+        return uuid;
+    }
+
+    @ICPCRequest()
+    public hideActivity(uuid: string): void {
+        const cancellation = this.statusBarMessages.get(uuid);
+        if (cancellation) {
+            cancellation.dispose();
+            this.statusBarMessages.delete(uuid);
+        }
     }
 
 }

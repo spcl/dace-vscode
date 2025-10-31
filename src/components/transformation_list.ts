@@ -104,9 +104,9 @@ export class TransformationListProvider
     }
 
     @ICPCRequest(true)
-    public async onReady(): Promise<void> {
+    public onReady(): void {
         vscode.commands.executeCommand('transformationList.sync');
-        return super.onReady();
+        super.onReady();
     }
 
 }

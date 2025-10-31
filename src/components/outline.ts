@@ -99,9 +99,9 @@ export class OutlineProvider
     }
 
     @ICPCRequest(true)
-    public async onReady(): Promise<void> {
+    public onReady(): void {
         vscode.commands.executeCommand('sdfgOutline.sync');
-        return super.onReady();
+        super.onReady();
     }
 
 }

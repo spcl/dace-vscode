@@ -22,7 +22,5 @@
 	],
 	"include": [
 		"src/**/*",
-		//"packages/sdfv/src/**/*",
-		//"packages/sdfv/packages/rendure/src/**/*"
 	]
 }

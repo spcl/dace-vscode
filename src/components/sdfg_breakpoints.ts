@@ -132,9 +132,9 @@ export class SdfgBreakpointProvider
     }
 
     @ICPCRequest(true)
-    public async onReady(): Promise<void> {
+    public onReady(): void {
         vscode.commands.executeCommand('sdfgBreakpoints.sync');
-        return super.onReady();
+        super.onReady();
     }
 
 }

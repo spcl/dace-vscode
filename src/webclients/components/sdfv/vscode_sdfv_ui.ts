@@ -431,10 +431,16 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
         }
     }
 
-    showActivityIndicatorFor<T>(
-        _message: string, _fun: (...args: unknown[]) => Promise<T>
+    public async showActivityIndicatorFor<T>(
+        message: string, fun: (...args: unknown[]) => Promise<T>
     ): Promise<T> {
-        throw new Error('Method not implemented.');
+        const sdfvComponent = SDFVComponent.getInstance();
+        const uuid = await sdfvComponent.invoke<string>(
+            'showActivity', [message]
+        );
+        const ret = await fun();
+        await sdfvComponent.invoke('hideActivity', [uuid]);
+        return ret;
     }
 
 }
