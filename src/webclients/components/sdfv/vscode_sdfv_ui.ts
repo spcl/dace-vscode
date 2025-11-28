@@ -55,11 +55,28 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
         return $('#info-contents');
     }
 
+    public registerExpandInfoButton(): void {
+        this.expandInfoBtn = $('<div>', {
+            id: 'expand-info-btn',
+            title: 'Expand Tray',
+            html: '<span><i class="material-symbols-outlined">' +
+                (SPLIT_DIRECTION === 'vertical' ?
+                    'right_panel_open' : 'bottom_panel_open') +
+                '</i></span>',
+        }).prependTo($('.button-bar-secondary'));
+        this.expandInfoBtn.on('click', () => {
+            this.expandInfoBtn?.hide();
+            this.infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
+            this.infoContainer?.addClass('show');
+            this.infoTrayExplicitlyHidden = false;
+            this.checkTrayCoversMinimap(true);
+        });
+    }
+
     public init(): void {
         this.infoContainer = $('#info-container');
         this.layoutToggleBtn = $('#layout-toggle-btn');
         this.infoDragBar = $('#info-drag-bar');
-        this.expandInfoBtn = $('#expand-info-btn');
         this.infoCloseBtn = $('#info-close-btn');
         this.topBar = $('#top-bar');
 
@@ -168,13 +185,6 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
             this.expandInfoBtn?.show();
             this.infoContainer?.removeClass('show');
             this.infoTrayExplicitlyHidden = true;
-            this.checkTrayCoversMinimap(true);
-        });
-        this.expandInfoBtn.on('click', () => {
-            this.expandInfoBtn?.hide();
-            this.infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
-            this.infoContainer?.addClass('show');
-            this.infoTrayExplicitlyHidden = false;
             this.checkTrayCoversMinimap(true);
         });
     }

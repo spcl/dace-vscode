@@ -981,7 +981,7 @@
         "dagre": "^0.8.5",
         "jquery": "^3.7.1",
         "jquery-editable-select": "^2.2.5",
-        "material-symbols": "^0.38.0",
+        "material-symbols": "^0.40.0",
         "monaco-editor": "^0.54.0",
         "process": "^0.11.10",
         "semver": "^7.7.2",

@@ -38,6 +38,7 @@ import {
     SDFVComponent,
     VSCodeSDFV,
 } from '../vscode_sdfv';
+import { SDFVVSCodeUI } from '../vscode_sdfv_ui';
 
 
 export class VSCodeRenderer extends SDFGRenderer {
@@ -199,6 +200,8 @@ export class VSCodeRenderer extends SDFGRenderer {
                 console.error('Could not update settings:', err);
             });
         });
+
+        SDFVVSCodeUI.getInstance().registerExpandInfoButton();
 
         return this.INSTANCE;
     }

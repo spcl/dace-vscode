@@ -110,10 +110,6 @@ export abstract class SDFGEditorBase extends BaseComponent {
                 'offcanvas offcanvas-bottom'
             );
             baseHtml = baseHtml.replace(
-                'right_panel_open',
-                'bottom_panel_open'
-            );
-            baseHtml = baseHtml.replace(
                 'id="layout-toggle-btn" class="vertical"',
                 'id="layout-toggle-btn" class="horizontal"'
             );
