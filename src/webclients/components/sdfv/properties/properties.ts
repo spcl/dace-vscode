@@ -458,10 +458,10 @@ export class TypeclassProperty extends ComboboxProperty {
                 this.compoundValues.type = this.compoundValueType;
                 this.input.trigger('typeclass.change');
             }
-            modal.modal.modal('hide');
+            modal.modal.hide();
         });
 
-        modal.modal.modal('show');
+        modal.modal.show();
     }
 
     public getValue(): PropertyValueReturn {

@@ -3,7 +3,7 @@
 
 import $ from 'jquery';
 
-import 'bootstrap';
+import * as bootstrap from 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import 'material-symbols';
@@ -521,6 +521,6 @@ class AnalysisPanel extends ICPCWebclientMessagingComponent {
 }
 
 $(() => {
-    $('[data-bs-toggle="tooltip"').tooltip();
+    new bootstrap.Tooltip('[data-bs-toggle="tooltip"]');
     AnalysisPanel.getInstance().init();
 });

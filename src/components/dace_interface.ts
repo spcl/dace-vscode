@@ -43,7 +43,7 @@ enum InteractionMode {
 }
 
 const MIN_SAFE_VERSION = '0.16.0';
-const MAX_SAFE_VERSION = '1.0.0';
+const MAX_SAFE_VERSION = '1.0.2';
 
 export class DaCeInterface
     extends BaseComponent

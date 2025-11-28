@@ -212,7 +212,7 @@ function attrTablePutData(
             // If code editors (monaco editors) are part of this dictionary,
             // they need to be resized again as soon as the modal is shown in
             // order to properly fill the container.
-            modal.modal.on('shown.bs.modal', () => {
+            modal.modalElement.on('shown.bs.modal', () => {
                 for (const property of prop.getProperties()) {
                     property.valProp?.forEach(vProp => {
                         if (vProp instanceof CodeProperty)
@@ -230,11 +230,11 @@ function attrTablePutData(
                             console.error('Failed to write SDFG:', reason);
                         });
                     }
-                    modal.modal.modal('hide');
+                    modal.modal.hide();
                 });
             }
 
-            modal.modal.modal('show');
+            modal.modal.show();
         });
     });
 
@@ -420,7 +420,7 @@ function attrTablePutDict(
         // If code editors (monaco editors) are part of this dictionary, they
         // need to be resized again as soon as the modal is shown in order to
         // properly fill the container.
-        modal.modal.on('shown.bs.modal', () => {
+        modal.modalElement.on('shown.bs.modal', () => {
             for (const property of prop.getProperties()) {
                 property.valProp?.forEach(vProp => {
                     if (vProp instanceof CodeProperty)
@@ -478,15 +478,15 @@ function attrTablePutDict(
                 if (prop.update() && !xform && sdfg) {
                     updateAttrTable();
                     void vscodeWriteGraph(sdfg).then(() => {
-                        modal.modal.modal('hide');
+                        modal.modal.hide();
                     });
                 } else {
-                    modal.modal.modal('hide');
+                    modal.modal.hide();
                 }
             });
         }
 
-        modal.modal.modal('show');
+        modal.modal.show();
     });
 
     return prop;
@@ -562,7 +562,7 @@ function attrTablePutList(
             // If code editors (monaco editors) are part of this list, they
             // need to be resized again as soon as the modal is shown in order
             // to properly fill the container.
-            modal.modal.on('shown.bs.modal', () => {
+            modal.modalElement.on('shown.bs.modal', () => {
                 for (const property of prop.getPropertiesList()) {
                     if (property instanceof CodeProperty)
                         property.getEditor().layout();
@@ -620,11 +620,11 @@ function attrTablePutList(
                         console.error('Failed to write SDFG:', reason);
                     });
                 }
-                modal.modal.modal('hide');
+                modal.modal.hide();
             });
         }
 
-        modal.modal.modal('show');
+        modal.modal.show();
     });
 
     return prop;
@@ -835,15 +835,15 @@ function attrTablePutRange(
                 if (prop.update() && !xform && sdfg) {
                     updateAttrTable();
                     void vscodeWriteGraph(sdfg).then(() => {
-                        modal.modal.modal('hide');
+                        modal.modal.hide();
                     });
                 } else {
-                    modal.modal.modal('hide');
+                    modal.modal.hide();
                 }
             });
         }
 
-        modal.modal.modal('show');
+        modal.modal.show();
     });
 
     return prop;
@@ -1639,7 +1639,7 @@ export function appendSymbolsTable(
 
                     if (nameVal && nameVal !== '' &&
                         typeof nameVal === 'string') {
-                        nContModalRet.modal.modal('hide');
+                        nContModalRet.modal.hide();
 
                         const defaultNewType = 'int32';
                         const row = $('<div>', {
@@ -1688,7 +1688,7 @@ export function appendSymbolsTable(
                     }
                 });
 
-                nContModalRet.modal.modal('show');
+                nContModalRet.modal.show();
             },
         }).appendTo($('<div>', {
             'class': 'col-2',
@@ -1868,7 +1868,7 @@ export function appendDataDescriptorTable(
 
                     if (nameVal && nameVal !== '' &&
                         typeof nameVal === 'string') {
-                        nContModalRet.modal.modal('hide');
+                        nContModalRet.modal.hide();
 
                         const defaultNewType = 'Scalar';
                         const newMetaType =
@@ -1932,7 +1932,7 @@ export function appendDataDescriptorTable(
                     }
                 });
 
-                nContModalRet.modal.modal('show');
+                nContModalRet.modal.show();
             },
         }).appendTo($('<div>', {
             'class': 'col-2',

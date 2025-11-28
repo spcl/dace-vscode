@@ -524,8 +524,8 @@ export class VSCodeSDFV extends SDFV {
         if (!previewing) {
             this.origSDFG = parsedSdfg;
             if (!preventRefreshes) {
-                await refreshXform(this);
-                await this.resyncTransformationHistory();
+                refreshXform(this).catch(console.error);
+                this.resyncTransformationHistory().catch(console.error);
             }
         }
 
@@ -533,7 +533,7 @@ export class VSCodeSDFV extends SDFV {
             const graph = renderer.graph;
             if (graph)
                 this.outline(renderer, graph);
-            await AnalysisController.getInstance().refreshAnalysisPane();
+            AnalysisController.getInstance().refreshAnalysisPane();
             refreshBreakpoints();
         }
 
@@ -588,7 +588,7 @@ export class VSCodeSDFV extends SDFV {
 
         if (renderer.graph) {
             this.outline(renderer, renderer.graph);
-            void AnalysisController.getInstance().refreshAnalysisPane();
+            AnalysisController.getInstance().refreshAnalysisPane();
             refreshBreakpoints();
         }
     }

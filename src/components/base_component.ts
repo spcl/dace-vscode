@@ -6,10 +6,8 @@ import {
     ICPCExtensionMessagingComponent,
 } from './messaging/icpc_extension_messaging_component';
 import {
-    ICPCMessageType,
     ICPCRequest,
     ICPCRequestMessage,
-    ICPCResponseMessage,
 } from '../common/messaging/icpc_messaging_component';
 
 

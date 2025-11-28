@@ -134,7 +134,7 @@ export class AnalysisController {
      * Refresh the analysis side panel.
      */
     @ICPCRequest()
-    public async refreshAnalysisPane(): Promise<any> {
+    public refreshAnalysisPane(): void {
         const renderer = VSCodeRenderer.getInstance();
         if (renderer !== null && vscode !== undefined) {
             const overlayManager = renderer.overlayManager;
@@ -208,7 +208,7 @@ export class AnalysisController {
                     type: RuntimeMicroSecondsOverlay.type,
                 },
             ];
-            return SDFVComponent.getInstance().invoke(
+            SDFVComponent.getInstance().invoke(
                 'updateAnalysisPane', [
                     activeOverlays,
                     symbols,
@@ -216,7 +216,7 @@ export class AnalysisController {
                     additionalMethodVal,
                     availableOverlays,
                 ], ComponentTarget.Analysis
-            );
+            ).catch(console.error);
         }
     }
 

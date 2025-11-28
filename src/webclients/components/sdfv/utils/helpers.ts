@@ -30,6 +30,7 @@ import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 import { MetaDictT } from '../../../../types';
 import { WithAttributes } from './attributes_table';
+import { Modal } from 'bootstrap';
 
 
 export function findMaximumSdfgId(sdfg: JsonSDFG): number {
@@ -180,7 +181,9 @@ export function zoomToUUIDs(uuids: string[]): void {
                     elementsToDisplay.push(element);
             }, true
         );
-        renderer.zoomToFit(elementsToDisplay);
+        renderer.zoomToFit(
+            elementsToDisplay.length > 0 ? elementsToDisplay : undefined
+        );
     }
 }
 
@@ -223,7 +226,8 @@ export function highlightUUIDs(
 export function createSingleUseModal(
     title: string, withConfirm: boolean, bodyClass: string
 ): {
-    modal: JQuery,
+    modalElement: JQuery,
+    modal: Modal,
     body: JQuery,
     confirmBtn: JQuery | undefined,
     modalId: string,
@@ -277,7 +281,8 @@ export function createSingleUseModal(
     propEditModal.on('hidden.bs.modal', () => propEditModal.remove());
 
     return {
-        modal: propEditModal,
+        modalElement: propEditModal,
+        modal: new Modal(propEditModal[0], {}),
         body: modalBody,
         confirmBtn: modalConfirmBtn,
         modalId: randomDivId,
