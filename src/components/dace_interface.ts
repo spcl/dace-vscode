@@ -1235,6 +1235,11 @@ export class DaCeInterface
 
         return new Promise<JsonTransformation[] | undefined>(
             (resolve, reject) => {
+                if (!this.daemonRunning) {
+                    resolve(undefined);
+                    return;
+                }
+
                 this.sendPostRequest(
                     '/transformations',
                     {
@@ -1263,8 +1268,6 @@ export class DaCeInterface
                         reject(new Error(error.message));
                     }
                 );
-                // Daemon not running: return undefined.
-                resolve(undefined);
             }
         );
     }
