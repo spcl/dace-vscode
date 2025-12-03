@@ -6,11 +6,11 @@ import * as vscode from 'vscode';
 type CompressedSDFGEdit = unknown;
 
 interface CompressedSDFGDocumentDelegate {
-    getFileData(): Promise<Uint8Array>;
+    getFileData(): Promise<ArrayBuffer>;
 }
 
 interface CompressedSDFGDocumentChangedEvent {
-    readonly content?: Uint8Array;
+    readonly content?: ArrayBuffer;
     readonly edits: readonly CompressedSDFGEdit[];
 }
 
@@ -42,12 +42,12 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         this._onDidDispose, this._onDidChangeDocument, this._onDidChange
     );
 
-    private _documentData: Uint8Array;
+    private _documentData: ArrayBuffer;
     private _edits: CompressedSDFGEdit[] = [];
     private _savedEdits: CompressedSDFGEdit[] = [];
 
     private constructor(
-        uri: vscode.Uri, initialContent: Uint8Array,
+        uri: vscode.Uri, initialContent: ArrayBuffer,
         delegate: CompressedSDFGDocumentDelegate
     ) {
         this._uri = uri;
@@ -65,10 +65,11 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         return new CompressedSDFGDocument(uri, fileData, delegate);
     }
 
-    private static async readFile(uri: vscode.Uri): Promise<Uint8Array> {
+    private static async readFile(uri: vscode.Uri): Promise<ArrayBuffer> {
         if (uri.scheme === 'untitled')
-            return new Uint8Array();
-        return new Uint8Array(await vscode.workspace.fs.readFile(uri));
+            return (new Uint8Array()).buffer;
+        const res = await vscode.workspace.fs.readFile(uri);
+        return res.buffer as ArrayBuffer;
     }
 
     public dispose(): void {
@@ -100,7 +101,7 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         return this._uri;
     }
 
-    public get documentData(): Uint8Array {
+    public get documentData(): ArrayBuffer {
         return this._documentData;
     }
 
@@ -117,7 +118,9 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         if (token?.isCancellationRequested)
             return false;
         try {
-            await vscode.workspace.fs.writeFile(targetResource, fileData);
+            await vscode.workspace.fs.writeFile(
+                targetResource, new Uint8Array(fileData)
+            );
             this._dirty = false;
             return true;
         } catch (_) {

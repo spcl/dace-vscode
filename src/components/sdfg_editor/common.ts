@@ -136,19 +136,19 @@ export abstract class SDFGEditorBase extends BaseComponent {
     }
 
     protected abstract _getUpToDateContents(
-    ): Promise<string | Uint8Array> | string | Uint8Array;
+    ): Promise<string | ArrayBuffer> | string | ArrayBuffer;
 
     @ICPCRequest()
-    public async getUpToDateContents(): Promise<string | Uint8Array> {
+    public async getUpToDateContents(): Promise<string | ArrayBuffer> {
         return this._getUpToDateContents();
     }
 
     protected abstract _onSDFGEdited(
-        sdfg: string | Uint8Array
+        sdfg: string | ArrayBuffer
     ): Promise<boolean> | boolean;
 
     @ICPCRequest()
-    public async onSDFGEdited(sdfg: string | Uint8Array): Promise<boolean> {
+    public async onSDFGEdited(sdfg: string | ArrayBuffer): Promise<boolean> {
         return this._onSDFGEdited(sdfg);
     }
 

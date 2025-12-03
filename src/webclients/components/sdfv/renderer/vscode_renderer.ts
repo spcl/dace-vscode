@@ -3,16 +3,24 @@
 
 import {
     AvgParallelismOverlay,
+    Connector,
+    ControlFlowBlock,
+    ControlFlowRegion,
+    deleteCFGBlocks,
+    deleteSDFGNodes,
     DepthOverlay,
     EntryNode,
     findGraphElementByUUID,
+    InterstateEdge,
     JsonSDFG,
     JsonSDFGControlFlowRegion,
     JsonSDFGEdge,
     JsonSDFGNode,
     JsonSDFGState,
+    Memlet,
     ModeButtons,
     OperationalIntensityOverlay,
+    SDFG,
     SDFGElementType,
     SDFGRenderer,
     setPositioningInfo,
@@ -276,6 +284,8 @@ export class VSCodeRenderer extends SDFGRenderer {
             container, sdfv, onMouseEvent, userTransform, debugDraw,
             backgroundColor, modeButtons
         );
+
+        document.body.addEventListener('keydown', this.onKeyDown.bind(this));
     }
 
     public async cutoutSelection(
@@ -713,6 +723,74 @@ export class VSCodeRenderer extends SDFGRenderer {
         }).catch(() => {
             console.error('Could not retrieve SDFG meta dictionary');
         });
+    }
+
+    protected onKeyDown(event: KeyboardEvent): boolean {
+        // Prevent handling of the event if the event is designed for something
+        // other than the body, such as an input element.
+        if (event.target !== document.body)
+            return false;
+
+        if (this.ctrlKeySelection && !event.ctrlKey)
+            this.ui?.selectModeBtn?.trigger('click', [event, false]);
+
+        if (this.shiftKeyMovement && !event.shiftKey)
+            this.ui?.moveModeBtn?.trigger('click', [event, false]);
+
+        if (this.mouseMode !== 'pan') {
+            if (event.key === 'Escape' && !event.ctrlKey && !event.shiftKey)
+                this.ui?.panModeBtn?.trigger('click', [event, false]);
+        } else if (event.key === 'Escape') {
+            this.deselect();
+            this.drawAsync();
+        } else if (event.key === 'Delete' || event.key === 'Backspace') {
+            const selection = Array.from(this.selectedRenderables);
+            // Sort selection by descending ID to ensure that when removing
+            // elements in sequence we retain original IDs.
+            selection.sort((a, b) => (b.id - a.id));
+
+            for (const elem of selection) {
+                if (elem instanceof Connector) {
+                    continue;
+                } else if (elem instanceof Memlet) {
+                    const state = (
+                        elem.parentElem?.jsonData as JsonSDFGState | undefined
+                    );
+                    if (state) {
+                        state.edges = state.edges.filter(
+                            (_, ind: number) => ind !== elem.id
+                        );
+                    }
+                } else if (elem instanceof InterstateEdge) {
+                    if (!elem.parentElem || elem.parentElem instanceof SDFG) {
+                        elem.sdfg.edges = elem.sdfg.edges.filter(
+                            (_, ind: number) => ind !== elem.id
+                        );
+                    } else {
+                        const tGraph =
+                            elem.parentElem.jsonData as JsonSDFGState;
+                        tGraph.edges = tGraph.edges.filter(
+                            (_, ind: number) => ind !== elem.id
+                        );
+                    }
+                } else if (elem instanceof ControlFlowBlock) {
+                    if (elem.parentElem?.jsonData &&
+                        elem.parentElem instanceof ControlFlowRegion)
+                        deleteCFGBlocks(elem.parentElem.jsonData, [elem.id]);
+                    else
+                        deleteCFGBlocks(elem.sdfg, [elem.id]);
+                } else {
+                    deleteSDFGNodes(
+                        elem.sdfg, elem.parentStateId ?? 0, [elem.id]
+                    );
+                }
+            }
+            this.setSDFG(this.sdfg!).catch(console.error);
+            this.deselect();
+            this.emit('graph_edited');
+        }
+
+        return true;
     }
 
     public clearSelectedItems(): void {

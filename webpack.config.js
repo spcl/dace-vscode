@@ -83,9 +83,6 @@ const webclientConfig = {
                     path.resolve(
                         __dirname, 'packages/sdfv/src'
                     ),
-                    //path.resolve(
-                    //    __dirname, 'packages/sdfv/node_modules/rendure/src'
-                    //)
                 ],
                 use: [
                     'babel-loader',

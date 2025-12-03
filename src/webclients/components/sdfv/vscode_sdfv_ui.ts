@@ -3,7 +3,7 @@
 import { findGraphElementByUUID } from '@spcl/sdfv/src/utils/sdfg/sdfg_utils';
 import { ISDFVUserInterface } from '@spcl/sdfv/src/sdfv_ui';
 import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
-import { SDFVComponent } from './vscode_sdfv';
+import { SDFVComponent, VSCodeSDFV } from './vscode_sdfv';
 import {
     appendDataDescriptorTable,
     appendSymbolsTable,
@@ -11,6 +11,7 @@ import {
 } from './utils/attributes_table';
 import {
     AccessNode,
+    Connector,
     Edge,
     EntryNode,
     ExitNode,
@@ -19,6 +20,7 @@ import {
     SDFG,
     SDFGElement,
     SDFGRenderer,
+    State,
 } from '@spcl/sdfv/src';
 
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
@@ -375,6 +377,51 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
                         SYMBOLS_START_EXPANDED_THRESHOLD
                     );
                 }
+            }
+
+            // Display a button to jump to the generated C++ code.
+            if (
+                elem instanceof SDFGElement &&
+                !(elem instanceof Edge) &&
+                !(elem instanceof Connector)
+            ) {
+                const gotoCppBtn = $('#goto-cpp-btn');
+                const undefinedVal = -1;
+                const sdfgName =
+                    VSCodeSDFV.getInstance().renderer?.sdfg?.attributes?.name ??
+                    'program';
+                const sdfgId = elem.sdfg.cfg_list_id;
+                let stateId = undefinedVal;
+                let nodeId = undefinedVal;
+
+                if (elem instanceof State) {
+                    stateId = elem.id;
+                } else if (elem instanceof Node) {
+                    if (elem.parentStateId === undefined)
+                        stateId = undefinedVal;
+                    else
+                        stateId = elem.parentStateId;
+                    nodeId = elem.id;
+                }
+
+                gotoCppBtn.on('click', () => {
+                    VSCodeSDFV.getInstance().gotoCpp(
+                        sdfgName,
+                        sdfgId,
+                        stateId,
+                        nodeId
+                    ).catch((reason: unknown) => {
+                        console.error('Failed to jump to C++ code:', reason);
+                    });
+                });
+                gotoCppBtn.prop(
+                    'title',
+                    sdfgName + ':' + String(sdfgId) +
+                        (stateId === undefinedVal ?
+                            '' : (':' + String(stateId)) +
+                        (nodeId === undefinedVal ? '' : (':' + String(nodeId))))
+                );
+                gotoCppBtn.show();
             }
 
             this.infoBoxCheckStacking($('#info-container'));

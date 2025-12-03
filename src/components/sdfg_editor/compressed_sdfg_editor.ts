@@ -42,13 +42,13 @@ export class CompressedSDFGEditor extends SDFGEditorBase {
         );
     }
 
-    protected _getUpToDateContents(): Uint8Array {
-        return this.document.documentData;
+    protected _getUpToDateContents(): string {
+        return Buffer.from(this.document.documentData).toString('base64');
     }
 
     public async handleLocalEdit(sdfg: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            const compressed = new Uint8Array(gzipSync(sdfg));
+            const compressed = gzipSync(sdfg).buffer;
             Promise.all([
                 this.onSDFGEdited(compressed),
                 this.invoke('updateContents', [compressed, false]),
@@ -142,11 +142,11 @@ export class CompressedSDFGEditorProvider implements CustomEditorProvider {
                 getFileData: async () => {
                     const editor = DaCeVSCode.getInstance().activeSDFGEditor;
                     if (editor && editor instanceof CompressedSDFGEditor) {
-                        return (await editor.invoke(
+                        return (await editor.invoke<ArrayBuffer | null>(
                             'getCompressedSDFG'
-                        ) as Uint8Array | null) ?? new Uint8Array();
+                        )) ?? (new Uint8Array()).buffer;
                     }
-                    return new Uint8Array();
+                    return (new Uint8Array()).buffer;
                 },
             }
         );

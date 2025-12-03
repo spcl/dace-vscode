@@ -353,10 +353,10 @@ export class VSCodeSDFV extends SDFV {
     }
 
     @ICPCRequest()
-    public getCompressedSDFG(): Uint8Array | null {
+    public getCompressedSDFG(): ArrayBuffer | null {
         const sdfgString = this.getSdfgString();
         if (sdfgString)
-            return new Uint8Array(gzipSync(sdfgString));
+            return gzipSync(sdfgString).buffer;
         return null;
     }
 

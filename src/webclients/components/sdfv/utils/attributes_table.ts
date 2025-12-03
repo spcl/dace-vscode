@@ -1482,50 +1482,7 @@ export function generateAttributesTable(
             attributes ?? {}, metadata, identifier, root, false, true, false,
             false, elem, xform
         ).then(() => {
-            // Display a button to jump to the generated C++ code.
-            if (
-                elem instanceof SDFGElement &&
-                !(elem instanceof Edge) &&
-                !(elem instanceof Connector)
-            ) {
-                const gotoCppBtn = $('#goto-cpp-btn');
-                const undefinedVal = -1;
-                const sdfgName =
-                    VSCodeRenderer.getInstance()?.sdfg?.attributes?.name ??
-                    'program';
-                const sdfgId = elem.sdfg.cfg_list_id;
-                let stateId = undefinedVal;
-                let nodeId = undefinedVal;
-
-                if (elem instanceof State) {
-                    stateId = elem.id;
-                } else if (elem instanceof Node) {
-                    if (elem.parentStateId === undefined)
-                        stateId = undefinedVal;
-                    else
-                        stateId = elem.parentStateId;
-                    nodeId = elem.id;
-                }
-
-                gotoCppBtn.on('click', () => {
-                    VSCodeSDFV.getInstance().gotoCpp(
-                        sdfgName,
-                        sdfgId,
-                        stateId,
-                        nodeId
-                    ).catch((reason: unknown) => {
-                        console.error('Failed to jump to C++ code:', reason);
-                    });
-                });
-                gotoCppBtn.prop(
-                    'title',
-                    sdfgName + ':' + String(sdfgId) +
-                        (stateId === undefinedVal ?
-                            '' : (':' + String(stateId)) +
-                        (nodeId === undefinedVal ? '' : (':' + String(nodeId))))
-                );
-                gotoCppBtn.show();
-            } else if (elem instanceof Edge) {
+            if (elem instanceof Edge) {
                 const jumpToStartBtn = $('#goto-edge-start');
                 const jumpToEndBtn = $('#goto-edge-end');
                 jumpToStartBtn.on('click', () => {
