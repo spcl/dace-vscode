@@ -416,7 +416,7 @@ export class VSCodeRenderer extends SDFGRenderer {
                 let exitElem: JsonSDFGNode | undefined = undefined;
                 switch (addType) {
                     case SDFGElementType.SDFGState:
-                        element.collapsed = false;
+                        element.attributes!.is_collapsed = false;
                         element.edges = [];
                         element.nodes = [];
                         element.scope_dict = {};

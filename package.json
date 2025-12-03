@@ -156,66 +156,14 @@
         ],
         "configuration": [
             {
-                "title": "DaCe IOE",
-                "order": 0,
-                "properties": {
-                    "dace.general.autoRefreshOnDocumentChange": {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Automatically update SDFG editor contents if file contents have changed"
-                    },
-                    "dace.general.autoOpenSdfgs": {
-                        "type": "string",
-                        "default": "Ask",
-                        "enum": [
-                            "Always",
-                            "Ask",
-                            "Never"
-                        ],
-                        "enumDescriptions": [
-                            "Automatically open any newly generated SDFG",
-                            "Ask when a new SDFG is generated, whether or not it should be opened",
-                            "Never automatically open newly generated SDFGs, and don't ask"
-                        ]
-                    },
-                    "dace.general.autoOpenInstrumentationReports": {
-                        "type": "string",
-                        "default": "Ask",
-                        "enum": [
-                            "Always",
-                            "Ask",
-                            "Never"
-                        ],
-                        "enumDescriptions": [
-                            "Automatically load all newly generated instrumentation reports",
-                            "Ask when a new instrumentation report is generated, whether or not it should be loaded",
-                            "Never automatically load newly generated instrumentation reports, and don't ask"
-                        ]
-                    },
-                    "dace.backend.interpreterPath": {
-                        "type": "string",
-                        "default": "",
-                        "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter, or the one provided by your selected environment."
-                    },
-                    "dace.backend.port": {
-                        "type": "number",
-                        "default": -1,
-                        "description": "Set a fixed port to use for the DaCe backend. Setting this to -1 randomly picks an unused port when launching the backend."
-                    },
-                    "dace.optimization.customTransformationsPaths": {
-                        "type": "array",
-                        "default": [],
-                        "description": "Paths to search for custom transformations"
-                    }
-                }
-            },
-            {
+                "id": "sdfg-viewer-view",
                 "title": "SDFG Viewer: View",
                 "order": 1,
                 "properties": {
                     "dace.sdfv.layout": {
                         "type": "string",
                         "default": "vertical",
+                        "description": "The layout of the SDFG editor and side panel",
                         "enum": [
                             "horizontal",
                             "vertical"
@@ -228,6 +176,7 @@
                     "dace.sdfv.colorTheme": {
                         "type": "string",
                         "default": "DefaultBlue",
+                        "description": "The color theme of the SDFG visualization",
                         "enum": [
                             "DefaultBlue",
                             "DefaultGreen"
@@ -242,10 +191,20 @@
                         "default": true,
                         "description": "Draw edges with curves (may impact rendering performance)"
                     },
-                    "dace.sdfv.loadGraphsCollapsed": {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Start off newly loaded programs in a collapsed state"
+                    "dace.sdfv.initialGraphState": {
+                        "type": "string",
+                        "default": "asSaved",
+                        "description": "Start off newly loaded programs with a specific collapse state",
+                        "enum": [
+                            "collapsed",
+                            "expanded",
+                            "asSaved"
+                        ],
+                        "enumDescriptions": [
+                            "Load graphs in a fully collapsed state",
+                            "Load graphs in a fully expanded state",
+                            "Load graphs as they were saved"
+                        ]
                     },
                     "dace.sdfv.minimap": {
                         "type": "boolean",
@@ -304,6 +263,7 @@
                 }
             },
             {
+                "id": "sdfg-viewer-navigation",
                 "title": "SDFG Viewer: Navigation",
                 "order": 2,
                 "properties": {
@@ -320,6 +280,7 @@
                 }
             },
             {
+                "id": "sdfg-viewer-performance",
                 "title": "SDFG Viewer: Performance",
                 "order": 3,
                 "properties": {
@@ -378,6 +339,7 @@
                 }
             },
             {
+                "id": "sdfg-viewer-customize-colors",
                 "title": "SDFG Viewer: Customize Color Theme",
                 "order": 4,
                 "properties": {
@@ -520,6 +482,61 @@
                         "label": "Hovered elements",
                         "type": "string",
                         "default": "#008000"
+                    }
+                }
+            },
+            {
+                "id": "general",
+                "title": "General",
+                "order": 0,
+                "properties": {
+                    "dace.general.autoRefreshOnDocumentChange": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Automatically update SDFG editor contents if file contents have changed"
+                    },
+                    "dace.general.autoOpenSdfgs": {
+                        "type": "string",
+                        "default": "Ask",
+                        "enum": [
+                            "Always",
+                            "Ask",
+                            "Never"
+                        ],
+                        "enumDescriptions": [
+                            "Automatically open any newly generated SDFG",
+                            "Ask when a new SDFG is generated, whether or not it should be opened",
+                            "Never automatically open newly generated SDFGs, and don't ask"
+                        ]
+                    },
+                    "dace.general.autoOpenInstrumentationReports": {
+                        "type": "string",
+                        "default": "Ask",
+                        "enum": [
+                            "Always",
+                            "Ask",
+                            "Never"
+                        ],
+                        "enumDescriptions": [
+                            "Automatically load all newly generated instrumentation reports",
+                            "Ask when a new instrumentation report is generated, whether or not it should be loaded",
+                            "Never automatically load newly generated instrumentation reports, and don't ask"
+                        ]
+                    },
+                    "dace.backend.interpreterPath": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter, or the one provided by your selected environment."
+                    },
+                    "dace.backend.port": {
+                        "type": "number",
+                        "default": -1,
+                        "description": "Set a fixed port to use for the DaCe backend. Setting this to -1 randomly picks an unused port when launching the backend."
+                    },
+                    "dace.optimization.customTransformationsPaths": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Paths to search for custom transformations"
                     }
                 }
             }
