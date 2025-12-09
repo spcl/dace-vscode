@@ -1,8 +1,7 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import $ = require('jquery');
-(window as any).jQuery = $;
+import $ from 'jquery';
 
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -10,15 +9,17 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './breakpoints.css';
 
 import {
-    ICPCRequest
+    ICPCRequest,
 } from '../../../common/messaging/icpc_messaging_component';
 import { ISDFGDebugNodeInfo } from '../../../debugger/breakpoint_handler';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent,
 } from '../../messaging/icpc_webclient_messaging_component';
 import { ComponentTarget } from '../../../components/components';
+import type { WebviewApi } from 'vscode-webview';
 
-declare const vscode: any;
+
+declare const vscode: WebviewApi<unknown>;
 
 class BreakpointPanel extends ICPCWebclientMessagingComponent {
 
@@ -32,19 +33,19 @@ class BreakpointPanel extends ICPCWebclientMessagingComponent {
         return this.INSTANCE;
     }
 
-    private rootList?: JQuery<HTMLElement>;
+    private rootList?: JQuery;
 
     public createBreakpoint(
-        root: JQuery<HTMLElement>, node: ISDFGDebugNodeInfo, color: string
+        root: JQuery, node: ISDFGDebugNodeInfo, color: string
     ): void {
         const listElement = $('<div>', {
             'class': 'list-element',
             'label': node.sdfgPath,
             'title': node.sdfgPath,
         }).on('click', _ => {
-            this.invoke('goToSDFG', [node]);
+            void this.invoke('goToSDFG', [node]);
         }).on('contextmenu', _ => {
-            this.invoke('goToCPP', [node]);
+            void this.invoke('goToCPP', [node]);
         });
 
         const breakpoint = $('<div>', {
@@ -65,19 +66,22 @@ class BreakpointPanel extends ICPCWebclientMessagingComponent {
         });
         $('<div>', {
             'class': 'sdfg-name',
-        }).text(node.sdfgName ? node.sdfgName : '').appendTo(sdfgNameContainer);
+        }).text(node.sdfgName ?? '').appendTo(sdfgNameContainer);
 
         const removeBp = $('<div>', {
             'class': 'remove-bp',
         }).text('X');
         removeBp.on('click', () => {
-            this.invoke('removeBreakpoint', [node]);
+            void this.invoke('removeBreakpoint', [node]);
             return false;
         });
 
         const sdfgIdentifier = $('<div>', {
-            'class': 'sdfg-identifier'
-        }).text(`${node.sdfgId} : ${node.stateId} : ${node.nodeId}`);
+            'class': 'sdfg-identifier',
+        }).text(
+            node.sdfgId.toString() + ' : ' + node.stateId.toString() + ' : ' +
+            node.nodeId.toString()
+        );
 
         breakpoint.append(circleContainer);
         breakpoint.append(sdfgNameContainer);
@@ -92,7 +96,7 @@ class BreakpointPanel extends ICPCWebclientMessagingComponent {
 
         this.rootList = $('#sdfg-debug-list');
 
-        this.invoke('refresh');
+        void this.invoke('refresh');
     }
 
     @ICPCRequest()
@@ -109,10 +113,11 @@ class BreakpointPanel extends ICPCWebclientMessagingComponent {
     public addSDFGBreakpoint(
         node: ISDFGDebugNodeInfo, unbounded: boolean = false
     ): void {
-        if (this.rootList)
+        if (this.rootList) {
             this.createBreakpoint(
                 this.rootList, node, unbounded ? '#a3a3a3' : '#dd0000'
             );
+        }
     }
 
 }

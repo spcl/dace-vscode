@@ -1,8 +1,8 @@
 {
     "name": "sdfv",
-    "displayName": "DaCe SDFG Editor",
-    "description": "Transform and optimize data-centric programs with a click of a button",
-    "version": "1.7.11",
+    "displayName": "DaCe IOE",
+    "description": "An integrated optimization environment powered by DaCe",
+    "version": "1.9.0",
     "engines": {
         "vscode": "^1.75.0"
     },
@@ -28,7 +28,8 @@
     },
     "icon": "icon.png",
     "extensionDependencies": [
-        "benjamin-simmonds.pythoncpp-debug"
+        "benjamin-simmonds.pythoncpp-debug",
+        "ms-python.python"
     ],
     "capabilities": {
         "untrustedWorkspaces": {
@@ -36,7 +37,7 @@
             "restrictedConfigurations": [
                 "dace.backend.interpreterPath"
             ],
-            "description": "Certain functionality, like executing or transforming SDFGs, might be unavailable in untrusted workspaces to keep you safe."
+            "description": "Certain functionality, such as executing or transforming SDFGs, might be unavailable in untrusted workspaces to keep you safe."
         }
     },
     "contributes": {
@@ -155,24 +156,65 @@
         ],
         "configuration": [
             {
-                "title": "DaCe SDFG Optimizer",
+                "id": "sdfg-viewer-view",
+                "title": "SDFG Viewer: View",
+                "order": 1,
                 "properties": {
                     "dace.sdfv.layout": {
                         "type": "string",
                         "default": "vertical",
+                        "description": "The layout of the SDFG editor and side panel",
                         "enum": [
                             "horizontal",
                             "vertical"
                         ],
                         "enumDescriptions": [
-                            "Split the SDFG Optimizer layout horizontally",
-                            "Split the SDFG Optimizer layout vertically"
+                            "Split the layout horizontally",
+                            "Split the layout vertically"
+                        ]
+                    },
+                    "dace.sdfv.colorTheme": {
+                        "type": "string",
+                        "default": "DefaultBlue",
+                        "description": "The color theme of the SDFG visualization",
+                        "enum": [
+                            "DefaultBlue",
+                            "DefaultGreen"
+                        ],
+                        "enumDescriptions": [
+                            "Default blue color theme",
+                            "Default green color theme"
+                        ]
+                    },
+                    "dace.sdfv.curvedEdges": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Draw edges with curves (may impact rendering performance)"
+                    },
+                    "dace.sdfv.initialGraphState": {
+                        "type": "string",
+                        "default": "asSaved",
+                        "description": "Start off newly loaded programs with a specific collapse state",
+                        "enum": [
+                            "collapsed",
+                            "expanded",
+                            "asSaved"
+                        ],
+                        "enumDescriptions": [
+                            "Load graphs in a fully collapsed state",
+                            "Load graphs in a fully expanded state",
+                            "Load graphs as they were saved"
                         ]
                     },
                     "dace.sdfv.minimap": {
                         "type": "boolean",
                         "default": true,
                         "description": "Show a minimap in the top right corner of the SDFG editor"
+                    },
+                    "dace.sdfv.alwaysOnISEdgeLabels": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Always show interstate edge labels"
                     },
                     "dace.sdfv.showAccessNodes": {
                         "type": "boolean",
@@ -194,45 +236,15 @@
                         "default": false,
                         "description": "Show the size of data descriptors on access nodes instead of their size"
                     },
-                    "dace.sdfv.summarizeLargeNumbersOfEdges": {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Hide / summarize edges for nodes where a large number of edges are connected"
-                    },
-                    "dace.sdfv.inclusiveRanges": {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Use inclusive range labels in the SDFG editor"
-                    },
                     "dace.sdfv.useVerticalStateMachineLayout": {
                         "type": "boolean",
                         "default": false,
                         "description": "Use a vertical layout for state machines in the SDFG editor"
                     },
-                    "dace.sdfv.useVerticalScrollNavigation": {
+                    "dace.sdfv.inclusiveRanges": {
                         "type": "boolean",
                         "default": false,
-                        "description": "Use a vertical scroll navigation in the SDFG editor"
-                    },
-                    "dace.sdfv.bindToViewport": {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Restrict panning to ensure the graph is always visible"
-                    },
-                    "dace.sdfv.adaptiveContentHiding": {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Adaptively hide content in the SDFG editor based on the zoom level"
-                    },
-                    "dace.sdfv.alwaysOnISEdgeLabels": {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Always show interstate edge labels"
-                    },
-                    "dace.sdfv.curvedEdges": {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Draw edges with curves (may impact rendering performance)"
+                        "description": "Use inclusive range labels in the SDFG editor"
                     },
                     "dace.sdfv.ranksep": {
                         "type": "integer",
@@ -247,6 +259,35 @@
                         "minimum": 0,
                         "maximum": 100,
                         "description": "Horizontal node spacing"
+                    }
+                }
+            },
+            {
+                "id": "sdfg-viewer-navigation",
+                "title": "SDFG Viewer: Navigation",
+                "order": 2,
+                "properties": {
+                    "dace.sdfv.useVerticalScrollNavigation": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Use a vertical scroll navigation in the SDFG editor"
+                    },
+                    "dace.sdfv.bindToViewport": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Restrict panning to ensure the graph is always visible"
+                    }
+                }
+            },
+            {
+                "id": "sdfg-viewer-performance",
+                "title": "SDFG Viewer: Performance",
+                "order": 3,
+                "properties": {
+                    "dace.sdfv.adaptiveContentHiding": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Adaptively hide content in the SDFG editor based on the zoom level"
                     },
                     "dace.sdfv.taskletLOD": {
                         "type": "number",
@@ -290,21 +331,165 @@
                         "maximum": 1000,
                         "description": "Zoom threshold for drawing contents of control flow blocks (including states) and nested SDFGs"
                     },
-                    "dace.backend.interpreterPath": {
+                    "dace.sdfv.summarizeLargeNumbersOfEdges": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Hide / summarize edges for nodes where a large number of edges are connected"
+                    }
+                }
+            },
+            {
+                "id": "sdfg-viewer-customize-colors",
+                "title": "SDFG Viewer: Customize Color Theme",
+                "order": 4,
+                "properties": {
+                    "dace.sdfv.defaultTextColor": {
+                        "description": "Default text color",
                         "type": "string",
-                        "default": "",
-                        "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter."
+                        "default": "#000000"
                     },
-                    "dace.backend.port": {
-                        "type": "number",
-                        "default": -1,
-                        "description": "Set a fixed port to use for the DaCe backend. Setting this to -1 randomly picks an unused port when launching the backend."
+                    "dace.sdfv.nodeBackgroundColor": {
+                        "description": "Default node background color",
+                        "type": "string",
+                        "default": "#ffffff"
                     },
-                    "dace.optimization.customTransformationsPaths": {
-                        "type": "array",
-                        "default": [],
-                        "description": "Paths to search for custom transformations"
+                    "dace.sdfv.nodeBorderColor": {
+                        "description": "Default node border color",
+                        "type": "string",
+                        "default": "#333333"
                     },
+                    "dace.sdfv.scopedConnectorColor": {
+                        "description": "Scoped connector color",
+                        "type": "string",
+                        "default": "#c1dfe6"
+                    },
+                    "dace.sdfv.unscopedConnectorColor": {
+                        "description": "Unscoped connector color",
+                        "type": "string",
+                        "default": "#f0fdff"
+                    },
+                    "dace.sdfv.referenceBackgroundColor": {
+                        "description": "Reference background",
+                        "type": "string",
+                        "default": "#ffdede"
+                    },
+                    "dace.sdfv.stateBackgroundColor": {
+                        "description": "State background",
+                        "type": "string",
+                        "default": "#deebf7"
+                    },
+                    "dace.sdfv.stateBorderColor": {
+                        "description": "State border",
+                        "type": "string",
+                        "default": "#deebf7"
+                    },
+                    "dace.sdfv.breakBlockColor": {
+                        "description": "Break block",
+                        "type": "string",
+                        "default": "#ffc79a"
+                    },
+                    "dace.sdfv.continueBlockColor": {
+                        "description": "Continue block",
+                        "type": "string",
+                        "default": "#94ffa2"
+                    },
+                    "dace.sdfv.returnBlockColor": {
+                        "description": "Return block",
+                        "type": "string",
+                        "default": "#ff7d7d"
+                    },
+                    "dace.sdfv.conditionalColor": {
+                        "description": "Conditional block",
+                        "type": "string",
+                        "default": "#bec080"
+                    },
+                    "dace.sdfv.controlFlowRegionColor": {
+                        "description": "Control flow region",
+                        "type": "string",
+                        "default": "#ffffff"
+                    },
+                    "dace.sdfv.loopColor": {
+                        "description": "Loop region",
+                        "type": "string",
+                        "default": "#fafafa"
+                    },
+                    "dace.sdfv.interstateEdgeColor": {
+                        "description": "Interstate edge color",
+                        "type": "string",
+                        "default": "#86add9"
+                    },
+                    "dace.sdfv.errorNodeBackgroundColor": {
+                        "description": "Background color for nodes with errors",
+                        "type": "string",
+                        "default": "#ff1010"
+                    },
+                    "dace.sdfv.errorNodeForegroundColor": {
+                        "description": "Text color for nodes with errors",
+                        "type": "string",
+                        "default": "#ffffff"
+                    },
+                    "dace.sdfv.diffAddedColor": {
+                        "label": "Added elements in a diff",
+                        "type": "string",
+                        "default": "#5dba4c"
+                    },
+                    "dace.sdfv.diffChangedColor": {
+                        "label": "Changed elements in a diff",
+                        "type": "string",
+                        "default": "#ffcc54"
+                    },
+                    "dace.sdfv.diffRemovedColor": {
+                        "label": "Removed elements in a diff",
+                        "type": "string",
+                        "default": "#ff6d45"
+                    },
+                    "dace.sdfv.taskletInputColor": {
+                        "label": "Tasklet input tokens",
+                        "type": "string",
+                        "default": "#000000"
+                    },
+                    "dace.sdfv.taskletOutputColor": {
+                        "label": "Tasklet output tokens",
+                        "type": "string",
+                        "default": "#000000"
+                    },
+                    "dace.sdfv.taskletSymbolColor": {
+                        "label": "Tasklet symbol tokens",
+                        "type": "string",
+                        "default": "#ff1010"
+                    },
+                    "dace.sdfv.taskletNumberColor": {
+                        "label": "Tasklet number tokens",
+                        "type": "string",
+                        "default": "#000000"
+                    },
+                    "dace.sdfv.taskletHighlightedColor": {
+                        "label": "Tasklet highlighted tokens",
+                        "type": "string",
+                        "default": "#008000"
+                    },
+                    "dace.sdfv.selectedColor": {
+                        "label": "Selected elements",
+                        "type": "string",
+                        "default": "#cc3030"
+                    },
+                    "dace.sdfv.highlightedColor": {
+                        "label": "Highlighted elements",
+                        "type": "string",
+                        "default": "#ffa500"
+                    },
+                    "dace.sdfv.hoveredColor": {
+                        "label": "Hovered elements",
+                        "type": "string",
+                        "default": "#008000"
+                    }
+                }
+            },
+            {
+                "id": "general",
+                "title": "General",
+                "order": 0,
+                "properties": {
                     "dace.general.autoRefreshOnDocumentChange": {
                         "type": "boolean",
                         "default": false,
@@ -337,6 +522,21 @@
                             "Ask when a new instrumentation report is generated, whether or not it should be loaded",
                             "Never automatically load newly generated instrumentation reports, and don't ask"
                         ]
+                    },
+                    "dace.backend.interpreterPath": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Python interpreter path to use for the DaCe backend. Leave blank to use your default Python interpreter, or the one provided by your selected environment."
+                    },
+                    "dace.backend.port": {
+                        "type": "number",
+                        "default": -1,
+                        "description": "Set a fixed port to use for the DaCe backend. Setting this to -1 randomly picks an unused port when launching the backend."
+                    },
+                    "dace.optimization.customTransformationsPaths": {
+                        "type": "array",
+                        "default": [],
+                        "description": "Paths to search for custom transformations"
                     }
                 }
             }
@@ -753,50 +953,57 @@
         "postinstall": "patch-package --patch-dir ./packages/sdfv/patches"
     },
     "devDependencies": {
-        "@types/dagre": "^0.7.52",
+        "@types/dagre": "^0.7.53",
         "@types/glob": "^8.0.0",
-        "@types/jquery": "^3.5.16",
-        "@types/jquery-editable-select": "^2.2.1",
-        "@types/mocha": "^10.0.1",
-        "@types/node": "^12.20.55",
-        "@types/semver": "^7.5.8",
-        "@types/uuid": "^8.3.4",
-        "@types/vscode": "^1.75.0",
-        "@typescript-eslint/eslint-plugin": "^8.4.0",
-        "@typescript-eslint/parser": "^8.4.0",
-        "@vscode/test-electron": "^2.2.2",
-        "autoprefixer": "^10.4.13",
-        "copy-webpack-plugin": "^11.0.0",
+        "@types/jquery": "^3.5.32",
+        "@types/jquery-editable-select": "^2.2.4",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "^24.2.0",
+        "@types/semver": "^7.7.0",
+        "@types/uuid": "^10.0.0",
+        "@types/vscode": "^1.102.0",
+        "@types/vscode-webview": "^1.57.5",
+        "@typescript-eslint/eslint-plugin": "^8.38.0",
+        "@typescript-eslint/parser": "^8.38.0",
+        "@vscode/test-electron": "^2.5.2",
+        "autoprefixer": "^10.4.21",
+        "babel-loader": "^10.0.0",
+        "copy-webpack-plugin": "^13.0.0",
         "css-loader": "^7.1.2",
-        "eslint": "^9.9.1",
+        "eslint": "^9.32.0",
         "file-loader": "^6.2.0",
         "glob": "^8.0.3",
-        "mocha": "^10.2.0",
+        "mocha": "^11.7.1",
         "postcss-loader": "^8.1.1",
+        "prettier": "^3.6.2",
         "rimraf": "^6.0.1",
-        "sass": "^1.77.6",
-        "sass-loader": "^16.0.1",
+        "sass": "1.77.6",
+        "sass-loader": "^16.0.5",
         "style-loader": "^4.0.0",
-        "ts-loader": "^9.5.1",
-        "typescript": "^5.5.4",
-        "webpack": "^5.94.0",
-        "webpack-cli": "^5.1.4"
+        "ts-loader": "^9.5.2",
+        "typedoc": "^0.28.9",
+        "typescript": "^5.8.0",
+        "typescript-eslint": "^8.38.0",
+        "webpack": "^5.101.0",
+        "webpack-cli": "^6.0.1"
     },
     "dependencies": {
         "@popperjs/core": "^2.11.6",
+        "@spcl/sdfv": "^1.5.0",
         "@vscode/debugadapter": "^1.58.0",
         "@vscode/debugprotocol": "^1.58.0",
-        "bootstrap": "^5.3.3",
+        "@vscode/python-extension": "^1.0.6",
+        "bootstrap": "^5.3.7",
         "browserify-zlib": "^0.2.0",
         "dagre": "^0.8.5",
         "jquery": "^3.7.1",
         "jquery-editable-select": "^2.2.5",
-        "material-symbols": "^0.22.2",
-        "monaco-editor": "^0.51.0",
+        "material-symbols": "^0.40.0",
+        "monaco-editor": "^0.54.0",
         "process": "^0.11.10",
-        "semver": "^7.6.2",
+        "semver": "^7.7.2",
         "stream-browserify": "^3.0.0",
-        "uuid": "^9.0.0"
+        "uuid": "^13.0.0"
     },
     "workspaces": [
         "./packages/sdfv"

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as path from 'path';
@@ -9,8 +9,8 @@ import { BaseComponent } from './base_component';
 import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 
 export class AnalysisProvider
-extends BaseComponent
-implements vscode.WebviewViewProvider {
+    extends BaseComponent
+    implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = 'sdfgAnalysis';
 
@@ -87,14 +87,14 @@ implements vscode.WebviewViewProvider {
         return this.view.visible;
     }
 
-    public async clear(reason?: string): Promise<void>{
+    public async clear(reason?: string): Promise<unknown> {
         return this.invoke('clear', [reason]);
     }
 
     @ICPCRequest(true)
-    public async onReady(): Promise<void> {
+    public onReady(): void {
         vscode.commands.executeCommand('sdfgAnalysis.sync');
-        return super.onReady();
+        super.onReady();
     }
 
     @ICPCRequest(true)
@@ -116,7 +116,9 @@ implements vscode.WebviewViewProvider {
                 return vscode.workspace.fs.readFile(uri[0]).then(val => {
                     return {
                         path: uri[0],
-                        data: JSON.parse(Buffer.from(val).toString('utf-8')),
+                        data: JSON.parse(
+                            Buffer.from(val).toString('utf-8')
+                        ) as Record<string, unknown>,
                     };
                 });
             }

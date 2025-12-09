@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as path from 'path';
@@ -11,8 +11,8 @@ import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeVSCode } from '../dace_vscode';
 
 export class TransformationHistoryProvider
-extends BaseComponent
-implements vscode.WebviewViewProvider {
+    extends BaseComponent
+    implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = ComponentTarget.History;
 
@@ -41,7 +41,7 @@ implements vscode.WebviewViewProvider {
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
-        _context: vscode.WebviewViewResolveContext<unknown>,
+        _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
     ): void | Thenable<void> {
         // If the DaCe interface has not been started yet, start it here.
@@ -91,13 +91,18 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest(true)
-    public onReady(): Promise<void> {
+    public onReady(): void {
         const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
-        if (activeEditor)
-            activeEditor.invoke('resyncTransformationHistory');
-        else
-            this.invoke('clearHistory', ['No SDFG selected']);
-        return super.onReady();
+        if (activeEditor) {
+            activeEditor.invoke(
+                'resyncTransformationHistory'
+            ).catch(console.error);
+        } else {
+            this.invoke(
+                'clearHistory', ['No SDFG selected']
+            ).catch(console.error);
+        }
+        super.onReady();
     }
 
 }

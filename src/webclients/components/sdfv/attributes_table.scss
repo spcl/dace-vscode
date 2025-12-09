@@ -1,0 +1,81 @@
+/* Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
+ * All rights reserved. */
+
+.sdfv {
+  .attr-table-base-container {
+    .attr-table {
+      border: 1px solid var(--vscode-list-inactiveSelectionBackground);
+      padding-left: 0;
+      padding-right: 0;
+    }
+  }
+
+  .attr-table {
+    .attr-table-row {
+      padding: .5rem 0;
+      border-bottom: 1px solid var(--vscode-list-inactiveSelectionBackground);
+      margin-left: 0;
+      margin-right: 0;
+
+      .attr-table-cell {
+        text-align: left;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        padding-left: 0;
+        flex: 0 0 auto;
+
+        .attr-table-value {
+          flex-grow: 1;
+        }
+
+        .value-edit-control {
+          display: flex;
+        }
+
+        &.attr-cell-s {
+          width: 25%;
+        }
+
+        &.attr-cell-m {
+          width: 50%;
+        }
+
+        &.attr-cell-l {
+          width: 75%;
+        }
+      }
+    }
+
+    .sdfv-property-input {
+      width: 100%;
+    }
+
+    .popup-editable-property-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .data-container-summary {
+      word-break: break-all;
+      word-wrap: break-word;
+    }
+
+    .data-container-editing-container {
+      display: flex;
+    }
+
+    .sdfv-dict-value-container {
+      pre.code {
+        code {
+          overflow: auto;
+          max-height: 15rem;
+          word-break: break-all;
+          word-wrap: break-word;
+        }
+      }
+    }
+  }
+}

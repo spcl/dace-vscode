@@ -1,6 +1,7 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+import { PythonExtension } from '@vscode/python-extension';
 import { JsonSDFG } from '@spcl/sdfv/src';
 import { request } from 'http';
 import * as net from 'net';
@@ -12,18 +13,29 @@ import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import { DaCeVSCode } from '../dace_vscode';
 import {
     showUntrustedWorkspaceWarning,
-    walkDirectory
+    walkDirectory,
 } from '../utils/utils';
 import {
-    JsonTransformation
+    JsonTransformation,
 } from '../webclients/components/transformations/transformations';
 import { BaseComponent } from './base_component';
 import { ComponentTarget } from './components';
 import { OptimizationPanel } from './optimization_panel';
 import {
-    TransformationListProvider
+    TransformationListProvider,
 } from './transformation_list';
 import * as semver from 'semver';
+import { MetaDictT } from '../types';
+
+
+export interface DaCeException {
+    message: string;
+    details?: string;
+}
+
+export type DaCeMessage = Record<string, any> & {
+    error?: DaCeException;
+};
 
 enum InteractionMode {
     PREVIEW,
@@ -31,11 +43,11 @@ enum InteractionMode {
 }
 
 const MIN_SAFE_VERSION = '0.16.0';
-const MAX_SAFE_VERSION = '0.16.1';
+const MAX_SAFE_VERSION = '1.0.2';
 
 export class DaCeInterface
-extends BaseComponent
-implements vscode.WebviewViewProvider {
+    extends BaseComponent
+    implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = ComponentTarget.DaCe;
 
@@ -74,7 +86,7 @@ implements vscode.WebviewViewProvider {
     private additionalVersionInfo: string = '';
 
     private async getRandomPort(): Promise<number> {
-        return new Promise(resolve => {
+        return new Promise((resolve, reject) => {
             const rangeMin = 1024;
             const rangeMax = 65535;
             const portCandidate = Math.floor(
@@ -90,13 +102,18 @@ implements vscode.WebviewViewProvider {
                 tempServer.close();
             });
             tempServer.on('error', () => {
-                return this.getRandomPort();
+                this.getRandomPort().then((port) => {
+                    resolve(port);
+                }).catch((err: unknown) => {
+                    console.error(err);
+                    reject(new Error('Failed to get random port'));
+                });
             });
         });
     }
 
     @ICPCRequest()
-    public async setPort(port: number): Promise<void> {
+    public setPort(port: number): void {
         this.port = port;
     }
 
@@ -109,7 +126,7 @@ implements vscode.WebviewViewProvider {
      * @returns         Assembled command as a string.
      */
     private cleanCmd(cmds: string[], spaceSafe = true): string {
-        if (spaceSafe)
+        if (spaceSafe) {
             switch (os.platform()) {
                 case 'win32':
                     for (let i = 0; i < cmds.length; i++) {
@@ -124,6 +141,7 @@ implements vscode.WebviewViewProvider {
                     }
                     break;
             }
+        }
         return cmds.join(' ');
     }
 
@@ -133,60 +151,49 @@ implements vscode.WebviewViewProvider {
     ): Promise<string> {
         const overridePath = vscode.workspace.getConfiguration(
             'dace.backend'
-        )?.interpreterPath;
+        ).interpreterPath as string | undefined;
         if (overridePath && overridePath !== '')
             return this.cleanCmd([overridePath], spaceSafe);
 
         const fallbackCommand = 'python';
 
         try {
-            let pyExt = vscode.extensions.getExtension('ms-python.python');
-            if (!pyExt) {
-                vscode.window.showWarningMessage(
-                    `Could not find the Python extension to run the ` +
-                    `DaCe backend, falling back to the regular 'python' ` +
-                    `command. If you have DaCe installed in a virtual ` +
-                    `environment, installing the Python extension is highly ` +
-                    `recommended.`
-                );
-                return fallbackCommand;
-            }
+            const pythonApi = await PythonExtension.api();
+            const environmentsAPI = pythonApi.environments;
 
-            if (!pyExt.isActive)
-                await pyExt.activate();
-
-            const environmentsAPI = pyExt.exports.environments;
+            // Get the active environment path.
             const envPath = environmentsAPI.getActiveEnvironmentPath();
             const pyEnv = await environmentsAPI.resolveEnvironment(envPath);
+            const environment = pyEnv?.environment;
+
             // Conda environment activation can take long, which is why we want
             // to instead use conda run if the active environment is a Conda
             // environment.
-            if (pyEnv && pyEnv.environment.type === 'Conda')
-                return `conda run -n ${pyEnv.environment.name} ` +
-                    `--no-capture-output python`;
+            if (environment?.type === 'Conda' && environment.name) {
+                return `conda run -n ${environment.name} ` +
+                    '--no-capture-output python';
+            }
 
-            const pyCmd = pyExt.exports.settings.getExecutionDetails ?
-                pyExt.exports.settings.getExecutionDetails(
-                    uri
-                ).execCommand :
-                pyExt.exports.settings.getExecutionCommand(uri);
             // Ensure spaces in the python command don't trip up the
             // terminal.
-            if (pyCmd)
-                return this.cleanCmd(pyCmd, spaceSafe);
+            return this.cleanCmd(
+                [pyEnv?.executable.uri?.fsPath ?? fallbackCommand],
+                spaceSafe
+            );
         } catch (_) {
             return fallbackCommand;
         }
-        return fallbackCommand;
     }
 
-    public genericErrorHandler(message: string, details?: string) {
-        this.hideSpinner();
+    public async genericErrorHandler(
+        message: string, details?: any
+    ): Promise<void> {
+        await this.hideSpinner();
         console.error(message);
         let text = message;
         if (details) {
             console.error(details);
-            text += ' (' + details + ')';
+            text += ' (' + String(details) + ')';
         }
         vscode.window.showErrorMessage(
             text, 'Show Trace'
@@ -209,12 +216,12 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest()
-    public async quitDaemon(): Promise<void> {
+    public async quitDaemon(): Promise<unknown> {
         this.daemonTerminal?.dispose();
         this.daemonTerminal = undefined;
         this.daemonBooting = false;
         this.daemonRunning = false;
-        this.invoke('setStatus', [false]);
+        return this.invoke('setStatus', [false]);
     }
 
     @ICPCRequest()
@@ -224,18 +231,17 @@ implements vscode.WebviewViewProvider {
             // configured port exists in the settings.
             const overridePort = vscode.workspace.getConfiguration(
                 'dace.backend'
-            )?.port;
-            if (overridePort > 0)
+            ).port as number | undefined;
+            if (overridePort !== undefined && overridePort > 0)
                 port = overridePort;
         }
 
         return new Promise((resolve, reject) => {
-            if (this.daemonTerminal === undefined)
-                this.daemonTerminal = vscode.window.createTerminal({
-                    hideFromUser: false,
-                    name: 'DaCe Backend',
-                    isTransient: true,
-                });
+            this.daemonTerminal ??= vscode.window.createTerminal({
+                hideFromUser: false,
+                name: 'DaCe Backend',
+                isTransient: true,
+            });
 
             const scriptUri = this.getRunDaceScriptUri();
             if (scriptUri) {
@@ -255,14 +261,18 @@ implements vscode.WebviewViewProvider {
                         this.pollDaemon(resolve, reject);
                     } else {
                         this.getRandomPort().then(port => {
-                            this.invoke('setPort', [port]);
+                            void this.invoke('setPort', [port]);
                             this.daemonTerminal?.sendText(
                                 pyCmd + ' ' + scriptUri.fsPath + ' -p ' +
                                 port.toString()
                             );
                             this.pollDaemon(resolve, reject);
+                        }).catch(() => {
+                            reject(new Error('Failed to get random port'));
                         });
                     }
+                }).catch(() => {
+                    reject(new Error('Failed to get Python command'));
                 });
             } else {
                 this.daemonBooting = false;
@@ -272,7 +282,7 @@ implements vscode.WebviewViewProvider {
 
     @ICPCRequest()
     private pollDaemon(
-        callback?: CallableFunction, failureCallback?: CallableFunction
+        callback?: () => unknown, failureCallback?: () => unknown
     ): void {
         // We poll the daemon every second to see if it's awake.
         const connectionIntervalId = setInterval(() => {
@@ -285,7 +295,7 @@ implements vscode.WebviewViewProvider {
                 timeout: 1000,
             }, response => {
                 response.setEncoding('utf8');
-                response.on('data', (data) => {
+                response.on('data', (data?: string) => {
                     if (response.statusCode === 200 && data) {
                         this.version = data;
 
@@ -298,7 +308,7 @@ implements vscode.WebviewViewProvider {
                         this.daemonRunning = true;
                         this.daemonBooting = false;
                         clearInterval(connectionIntervalId);
-                        this.invoke('setStatus', [true]);
+                        void this.invoke('setStatus', [true]);
 
                         this.versionOk = semver.satisfies(
                             this.version,
@@ -318,12 +328,12 @@ implements vscode.WebviewViewProvider {
                             'the extension.'
                         ) + ' Compatibility is given on a best-effort basis.' +
                         ' Certain features may not work as expected.';
-                        this.invoke(
+                        void this.invoke(
                             'setVersion',
                             [
                                 this.version,
                                 this.versionOk,
-                                this.additionalVersionInfo
+                                this.additionalVersionInfo,
                             ]
                         );
 
@@ -356,7 +366,9 @@ implements vscode.WebviewViewProvider {
                 ).then(opt => {
                     switch (opt) {
                         case 'Retry':
-                            this.startDaemonInTerminal();
+                            this.startDaemonInTerminal().catch(() => {
+                                console.error('Failed to start DaCe daemon');
+                            });
                             break;
                         case 'Troubleshooting':
                             vscode.env.openExternal(vscode.Uri.parse(
@@ -374,18 +386,20 @@ implements vscode.WebviewViewProvider {
         }, 20000);
     }
 
-    private sendDaCeRequest(url: string,
-                            data?: any,
-                            callback?: CallableFunction,
-                            customErrorHandler?: CallableFunction,
-                            startIfSleeping?: boolean): void {
+    private sendDaCeRequest(
+        url: string,
+        data?: any,
+        callback?: (msg: DaCeMessage) => unknown,
+        customErrorHandler?: (err: DaCeException) => unknown,
+        startIfSleeping?: boolean
+    ): void {
         const doSend = () => {
             let method = 'GET';
             let postData = undefined;
             if (data !== undefined)
                 method = 'POST';
 
-            let parameters = {
+            const parameters = {
                 host: '::1',
                 port: this.port,
                 path: url,
@@ -406,59 +420,68 @@ implements vscode.WebviewViewProvider {
                 // Accumulate all the data, in case data is chunked up.
                 let accumulatedData = '';
                 if (callback) {
-                    response.on('data', (data) => {
+                    response.on('data', (recvData: string) => {
+                        const dace = DaCeInterface.getInstance();
                         if (response.statusCode === 200) {
-                            accumulatedData += data;
+                            accumulatedData += recvData;
                             // Check if this is all the data we're going to
                             // receive, or if the data is chunked up into
                             // pieces.
                             const contentLength =
-                                Number(response.headers?.['content-length']);
+                                Number(response.headers['content-length']);
                             if (!contentLength ||
                                 accumulatedData.length >= contentLength) {
-                                let error = undefined;
-                                let parsed = undefined;
+                                let error: DaCeException | undefined =
+                                    undefined;
+                                let parsed: DaCeMessage | undefined = undefined;
                                 try {
-                                    parsed = JSON.parse(accumulatedData);
+                                    parsed = JSON.parse(
+                                        accumulatedData
+                                    ) as DaCeMessage;
                                     if (parsed.error) {
                                         error = parsed.error;
                                         parsed = undefined;
                                     }
-                                } catch (e) {
+                                } catch (e: unknown) {
                                     error = {
                                         message: 'Failed to parse response',
-                                        details: e,
+                                        details: String(e),
                                     };
                                 }
 
                                 if (parsed) {
                                     callback(parsed);
                                 } else if (error) {
-                                    if (customErrorHandler)
+                                    if (customErrorHandler) {
                                         customErrorHandler(error);
-                                    else
-                                        DaCeInterface.getInstance()
-                                            ?.genericErrorHandler(
-                                                error.message, error.details
-                                            );
+                                    } else {
+                                        dace?.genericErrorHandler(
+                                            error.message, error.details
+                                        ).catch((err: unknown) => {
+                                            console.error(err);
+                                        });
+                                    }
                                 }
                             }
                         } else {
                             const errorMessage =
                                 'An internal DaCe error was encountered!';
                             const errorDetails =
-                                'DaCe request failed with code ' +
-                                    response.statusCode;
-                            if (customErrorHandler)
+                                'DaCe request failed with code ' + (
+                                    response.statusCode?.toString() ?? 'unknown'
+                                );
+                            if (customErrorHandler) {
                                 customErrorHandler({
                                     message: errorMessage,
                                     details: errorDetails,
                                 });
-                            else
-                                DaCeInterface.getInstance()
-                                    ?.genericErrorHandler(
-                                        errorMessage, errorDetails
-                                    );
+                            } else {
+                                dace?.genericErrorHandler(
+                                    errorMessage, errorDetails
+                                ).catch((err: unknown) => {
+                                    console.error(err);
+                                });
+                            }
                         }
                     });
                 }
@@ -468,28 +491,35 @@ implements vscode.WebviewViewProvider {
             req.end();
         };
 
-        if (this.daemonRunning)
+        if (this.daemonRunning) {
             doSend();
-        else if (startIfSleeping)
+        } else if (startIfSleeping) {
             this.startDaemonInTerminal().then(() => {
                 doSend();
+            }).catch(() => {
+                console.error('Failed to start DaCe daemon');
             });
+        }
     }
 
-    private sendGetRequest(url: string,
-                           callback?: CallableFunction,
-                           customErrorHandler?: CallableFunction,
-                           startIfSleeping?: boolean): void {
+    private sendGetRequest(
+        url: string,
+        callback?: (msg: DaCeMessage) => unknown,
+        customErrorHandler?: (msg: DaCeException) => unknown,
+        startIfSleeping?: boolean
+    ): void {
         this.sendDaCeRequest(
             url, undefined, callback, customErrorHandler, startIfSleeping
         );
     }
 
-    private sendPostRequest(url: string,
-                            requestData: any,
-                            callback?: CallableFunction,
-                            customErrorHandler?: CallableFunction,
-                            startIfSleeping?: boolean): void {
+    private sendPostRequest(
+        url: string,
+        requestData: any,
+        callback?: (msg: DaCeMessage) => unknown,
+        customErrorHandler?: (msg: DaCeException) => unknown,
+        startIfSleeping?: boolean
+    ): void {
         this.sendDaCeRequest(
             url, requestData, callback, customErrorHandler, startIfSleeping
         );
@@ -516,38 +546,43 @@ implements vscode.WebviewViewProvider {
                         DaCeInterface.getInstance()?.startDaemonInTerminal()
                             .then(() => {
                                 resolve();
-                            }).catch(() => {
-                                reject();
+                            }).catch((err: unknown) => {
+                                if (err instanceof Error)
+                                    reject(err);
+                                else
+                                    reject(new Error(String(err)));
                             });
                         break;
                     case 'No':
-                        reject();
+                        reject(new Error('User declined to start daemon'));
                         break;
                 }
             });
         });
     }
 
-    private onPostInit(): void {
-        Promise.all([
+    private async onPostInit(): Promise<void> {
+        await Promise.all([
             DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
                 'setDaemonConnected', [true]
             ),
             DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
                 'resyncTransformations', [true]
             ),
-            DaCeInterface.getInstance()?.querySdfgMetadata().then((meta) => {
-                DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
-                    'setMetaDict', [meta]
-                );
-            })
+            DaCeInterface.getInstance()?.querySdfgMetadata().then(
+                async (meta) => {
+                    await DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
+                        'setMetaDict', [meta]
+                    );
+                }
+            ),
         ]);
     }
 
     private async onDeamonConnected(): Promise<void> {
         const customXformPaths = vscode.workspace.getConfiguration(
             'dace.optimization'
-        )?.get<string[]>('customTransformationsPaths');
+        ).get<string[]>('customTransformationsPaths');
         if (customXformPaths) {
             const paths = [];
             for (const path of customXformPaths) {
@@ -573,12 +608,12 @@ implements vscode.WebviewViewProvider {
                 {
                     paths: paths,
                 },
-                () => {
-                    this.onPostInit();
+                async () => {
+                    await this.onPostInit();
                 }
             );
         } else {
-            this.onPostInit();
+            await this.onPostInit();
         }
     }
 
@@ -594,103 +629,115 @@ implements vscode.WebviewViewProvider {
         const callBoot = () => {
             this.daemonBooting = true;
 
-            this.startDaemonInTerminal(port).then(() => {
-                this.onDeamonConnected();
+            this.startDaemonInTerminal(port).then(async () => {
+                await this.onDeamonConnected();
+            }).catch(() => {
+                console.error('Failed to start DaCe daemon');
             });
         };
 
         if (vscode.workspace.isTrusted) {
             callBoot();
-        } else if (!this.daemonBooting) {
+        } else {
             this.daemonBooting = true;
             showUntrustedWorkspaceWarning('Running DaCe', callBoot);
         }
     }
 
-    public previewSdfg(
-        sdfg: any, history_index: number | undefined = undefined
-    ): void {
-        DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
-            'previewSdfg', [JSON.stringify(sdfg), history_index]
+    public async previewSdfg(
+        sdfg: JsonSDFG, historyIndex?: number
+    ): Promise<unknown> {
+        return DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
+            'previewSdfg', [JSON.stringify(sdfg), historyIndex]
         );
     }
 
-    public exitPreview(refreshTransformations: boolean = false): void {
-        DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
+    public async exitPreview(
+        refreshTransformations: boolean = false
+    ): Promise<unknown> {
+        return DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
             'previewSdfg', [undefined, undefined, refreshTransformations]
         );
     }
 
-    public showSpinner(message?: string): void {
-        DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
+    public async showSpinner(message?: string): Promise<unknown> {
+        return DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
             'setProcessingOverlay', [true, message ?? 'Processing, please wait']
         );
     }
 
-    public hideSpinner(): void {
-        DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
+    public async hideSpinner(): Promise<unknown> {
+        return DaCeVSCode.getInstance().activeSDFGEditor?.invoke(
             'setProcessingOverlay', [false, '']
         );
     }
 
     private async sendApplyTransformationRequest(
-        transformations: JsonTransformation[], callback: CallableFunction,
+        transformations: JsonTransformation[],
+        callback: (data: DaCeMessage) => unknown,
         processingMessage?: string
     ): Promise<void> {
         if (!this.daemonRunning)
             await this.promptStartDaemon();
 
-        this.showSpinner(
-            processingMessage ? processingMessage : (
-                'Applying Transformation' + (
-                    transformations.length > 1 ? 's' : ''
-                )
+        void this.showSpinner(
+            processingMessage ?? 'Applying Transformation' + (
+                transformations.length > 1 ? 's' : ''
             )
         );
 
-        DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
-            if (sdfg) {
-                this.sendPostRequest(
-                    '/apply_transformations',
-                    {
-                        sdfg: sdfg,
-                        transformations: transformations,
-                        permissive: false,
-                    },
-                    callback
-                );
+        await DaCeVSCode.getInstance().getActiveSdfg().then(
+            (sdfg?: JsonSDFG) => {
+                if (sdfg) {
+                    this.sendPostRequest(
+                        '/apply_transformations',
+                        {
+                            sdfg: sdfg,
+                            transformations: transformations,
+                            permissive: false,
+                        },
+                        callback
+                    );
+                }
             }
-        });
+        );
     }
 
     @ICPCRequest()
-    public async expandLibraryNode(nodeid: any): Promise<void> {
+    public async expandLibraryNode(nodeid: number): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+            DaCeVSCode.getInstance().getActiveSdfg().then(async (sdfg) => {
                 if (sdfg) {
-                    this.showSpinner('Expanding library node');
+                    await this.showSpinner('Expanding library node');
                     this.sendPostRequest(
                         '/expand_library_node',
                         {
                             sdfg: sdfg,
                             nodeid: nodeid,
                         },
-                        (data: any) => {
-                            this.writeToActiveDocument(data.sdfg).then(() => {
-                                this.hideSpinner();
+                        async (data: DaCeMessage) => {
+                            await this.writeToActiveDocument(
+                                data.sdfg as string | JsonSDFG
+                            ).then(() => {
+                                void this.hideSpinner();
                                 resolve();
                             });
                         },
-                        async (error: any): Promise<void> => {
-                            this.genericErrorHandler(
+                        async (error: DaCeException): Promise<void> => {
+                            await this.genericErrorHandler(
                                 error.message, error.details
                             );
-                            this.hideSpinner();
-                            reject(error.message);
+                            void this.hideSpinner();
+                            reject(new Error(error.message));
                         },
                         true
                     );
                 }
+            }).catch((reason: unknown) => {
+                if (reason instanceof Error)
+                    reject(reason);
+                else
+                    reject(new Error(String(reason)));
             });
         });
     }
@@ -701,30 +748,41 @@ implements vscode.WebviewViewProvider {
     ): Promise<void> {
         return new Promise((resolve, reject) => {
             this.sendApplyTransformationRequest(
-                transformations, (data: any) => {
-                    this.writeToActiveDocument(data.sdfg).then(() => {
-                        this.hideSpinner();
+                transformations, (data: DaCeMessage) => {
+                    this.writeToActiveDocument(
+                        data.sdfg as string | JsonSDFG
+                    ).then(() => {
+                        void this.hideSpinner();
                         resolve();
-                    }).catch(() => {
-                        reject();
+                    }).catch((err: unknown) => {
+                        if (err instanceof Error)
+                            reject(err);
+                        else
+                            reject(new Error(String(err)));
                     });
                 }
-            );
+            ).catch((err: unknown) => {
+                console.error(err);
+            });
         });
     }
 
     @ICPCRequest()
-    public async previewTransformation(transformation: any): Promise<void> {
+    public async previewTransformation(
+        transformation: JsonTransformation
+    ): Promise<void> {
         return new Promise((resolve) => {
             this.sendApplyTransformationRequest(
                 [transformation],
-                (data: any) => {
-                    this.previewSdfg(data.sdfg);
-                    this.hideSpinner();
+                async (data: DaCeMessage) => {
+                    await this.previewSdfg(data.sdfg as JsonSDFG);
+                    void this.hideSpinner();
                     resolve();
                 },
                 'Generating Preview'
-            );
+            ).catch((err: unknown) => {
+                console.error(err);
+            });
         });
     }
 
@@ -746,7 +804,7 @@ implements vscode.WebviewViewProvider {
             },
             title: 'Export Transformation',
         }).then(uri => {
-            if (uri)
+            if (uri) {
                 vscode.workspace.fs.writeFile(
                     uri,
                     new TextEncoder().encode(JSON.stringify(transformation))
@@ -762,6 +820,7 @@ implements vscode.WebviewViewProvider {
                         );
                     }
                 );
+            }
         });
     }
 
@@ -769,116 +828,128 @@ implements vscode.WebviewViewProvider {
     public async writeToActiveDocument(json: JsonSDFG | string): Promise<void> {
         const activeEditor = DaCeVSCode.getInstance().activeSDFGEditor;
         if (activeEditor) {
-            if (typeof json === 'string')
-                activeEditor.handleLocalEdit(json);
-            else
-                activeEditor.handleLocalEdit(JSON.stringify(json, null, 1));
+            if (typeof json === 'string') {
+                await activeEditor.handleLocalEdit(json);
+            } else {
+                await activeEditor.handleLocalEdit(
+                    JSON.stringify(json, null, 1)
+                );
+            }
         }
     }
 
-    private gotoHistoryPoint(
+    private async gotoHistoryPoint(
         index: number | undefined | null, mode: InteractionMode
-    ): void {
+    ): Promise<void> {
         if (index === undefined || index === null) {
             if (mode === InteractionMode.PREVIEW)
-                this.exitPreview(true);
+                await this.exitPreview(true);
             return;
         }
 
-        DaCeVSCode.getInstance().getActiveSdfg().then(async (sdfg) => {
-            if (!sdfg)
-                return;
+        const sdfg = await DaCeVSCode.getInstance().getActiveSdfg();
+        if (!sdfg)
+            return;
 
-            if (index < 0) {
-                // This item refers to the original SDFG, so we revert to that.
-                const originalSdfg = sdfg?.attributes?.orig_sdfg;
-                if (originalSdfg) {
-                    switch (mode) {
-                        case InteractionMode.APPLY:
-                            this.writeToActiveDocument(originalSdfg);
-                            break;
-                        case InteractionMode.PREVIEW:
-                        default:
-                            this.previewSdfg(originalSdfg, index);
-                            break;
-                    }
-                }
-            } else {
-                if (!this.daemonRunning) {
-                    try {
-                        await this.promptStartDaemon();
-                    } catch {
-                        return;
-                    }
-                }
-
-                this.showSpinner('Loading SDFG');
-                let callback: any;
+        if (index < 0) {
+            // This item refers to the original SDFG, so we revert to that.
+            const origSdfg = sdfg.attributes?.orig_sdfg as JsonSDFG | undefined;
+            if (origSdfg) {
                 switch (mode) {
                     case InteractionMode.APPLY:
-                        callback = function (data: any) {
-                            const daceInterface = DaCeInterface.getInstance();
-                            daceInterface?.writeToActiveDocument(data.sdfg).then(
-                                () => daceInterface?.hideSpinner()
-                            );
-                        };
+                        await this.writeToActiveDocument(origSdfg);
                         break;
                     case InteractionMode.PREVIEW:
                     default:
-                        callback = function (data: any) {
-                            const daceInterface = DaCeInterface.getInstance();
-                            daceInterface?.previewSdfg(data.sdfg, index);
-                            daceInterface?.hideSpinner();
-                        };
+                        await this.previewSdfg(origSdfg, index);
                         break;
                 }
-
-                this.sendPostRequest(
-                    '/reapply_history_until',
-                    {
-                        sdfg: sdfg,
-                        index: index,
-                    },
-                    callback
-                );
             }
-        });
+        } else {
+            if (!this.daemonRunning) {
+                try {
+                    await this.promptStartDaemon();
+                } catch {
+                    return;
+                }
+            }
+
+            await this.showSpinner('Loading SDFG');
+            let callback: (data: DaCeMessage) => unknown;
+            switch (mode) {
+                case InteractionMode.APPLY:
+                    callback = async (data: DaCeMessage) => {
+                        const dace = DaCeInterface.getInstance();
+                        await dace?.writeToActiveDocument(
+                            data.sdfg as JsonSDFG
+                        ).then(
+                            () => dace.hideSpinner()
+                        );
+                    };
+                    break;
+                case InteractionMode.PREVIEW:
+                default:
+                    callback = async (data: DaCeMessage) => {
+                        const dace = DaCeInterface.getInstance();
+                        await dace?.previewSdfg(data.sdfg as JsonSDFG, index);
+                        await dace?.hideSpinner();
+                    };
+                    break;
+            }
+
+            this.sendPostRequest(
+                '/reapply_history_until',
+                {
+                    sdfg: sdfg,
+                    index: index,
+                },
+                callback
+            );
+        }
     }
 
     @ICPCRequest()
-    public applyHistoryPoint(index?: number) {
-        this.gotoHistoryPoint(index, InteractionMode.APPLY);
+    public async applyHistoryPoint(index?: number): Promise<unknown> {
+        return this.gotoHistoryPoint(index, InteractionMode.APPLY);
     }
 
     @ICPCRequest()
-    public previewHistoryPoint(index?: number | null) {
-        this.gotoHistoryPoint(index, InteractionMode.PREVIEW);
+    public async previewHistoryPoint(index?: number | null): Promise<unknown> {
+        return this.gotoHistoryPoint(index, InteractionMode.PREVIEW);
     }
 
     private showAssumptionsInputBox(): Thenable<string | undefined> {
         return vscode.window.showInputBox({
             placeHolder: 'e.g. N>5 N<M M==STEPS STEPS==100',
             prompt: 'State assumptions for symbols separated by space.',
-            title: 'Assumptions for symbols'
+            title: 'Assumptions for symbols',
         });
     }
 
     private showCacheParamsInputBox(): Thenable<string | undefined> {
         return vscode.window.showInputBox({
             placeHolder: 'e.g. 1024 64',
-            prompt: 'State cache size C and cache line size L in bytes separated by a space.',
-            title: 'Cache Parameters'
+            prompt: 'State cache size C and cache line size L in bytes ' +
+                'separated by a space.',
+            title: 'Cache Parameters',
         });
     }
 
-    private checkAssumptionsInput(input: string | undefined): readonly [string,boolean] {
-        if (input === undefined){
-            input = "";
-        }
-        if (!(/^(([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+ )*([A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+))?$/.test(input))){
-            vscode.window.showErrorMessage(`Wrong formatting when entering assumptions. Individual assumptions
-                are separated by spaces. An assumption consists of <LHS><operator><RHS>, where <LHS> is a
-                symbol name, <operator> is in {==, <, >} and <RHS> is another symbol name or a number.`);
+    private checkAssumptionsInput(input?: string): readonly [string, boolean] {
+        input ??= '';
+        const singleAssumption = /[A-z][A-z|0-9]*(==|>|<)[A-z|0-9]+/;
+        const assumptionRegex = new RegExp((
+            '^((' + singleAssumption.source + ' ' +
+            ')*(' + singleAssumption.source + '))?$'
+        ));
+        if (!assumptionRegex.test(input)) {
+            vscode.window.showErrorMessage(
+                'Wrong formatting when entering assumptions. ' +
+                'Individual assumptions are separated by spaces. ' +
+                'An assumption consists of <LHS><operator><RHS>, where ' +
+                '<LHS> is a symbol name, <operator> is in {==, <, >} and ' +
+                '<RHS> is another symbol name or a number.'
+            );
             return [input, false] as const;
         }
         return [input, true] as const;
@@ -887,204 +958,219 @@ implements vscode.WebviewViewProvider {
 
     @ICPCRequest()
     public async getFlops(): Promise<any> {
-        return new Promise(async (resolve, reject) => {
-            if (!this.daemonRunning) {
-                try {
-                    await this.promptStartDaemon();
-                } catch (e) {
-                    reject(e);
-                    return;
-                }
-            }
-
-            this.showSpinner('Calculating FLOP count');
-
-            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
-                if (!sdfg) {
-                    const msg = 'No active SDFG editor!';
-                    console.warn(msg);
-                    reject(msg);
-                    return;
-                }
-
-                this.showAssumptionsInputBox().then((value) => {
-                    const [assumptions, valid] = this.checkAssumptionsInput(value);
-                    if(valid){
-                        this.sendPostRequest(
-                            '/get_arith_ops',
-                            {
-                                'sdfg': sdfg,
-                                'assumptions': assumptions,
-                            },
-                            (data: any) => {
-                                resolve(data.arithOpsMap);
-                                DaCeInterface.getInstance()?.hideSpinner();
-                            },
-                            (error: any) => {
-                                this.genericErrorHandler(error.message, error.details);
-                                reject(error.message);
-                            }
-                        );
-                    } else {
-                        DaCeInterface.getInstance()?.hideSpinner();
+        return new Promise((resolve, reject) => {
+            this.showSpinner('Calculating FLOP count').then(() => {
+                DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+                    if (!sdfg) {
+                        const msg = 'No active SDFG editor!';
+                        console.warn(msg);
+                        reject(new Error(msg));
+                        return;
                     }
+
+                    this.showAssumptionsInputBox().then((value) => {
+                        const [assumptions, valid] = this.checkAssumptionsInput(
+                            value
+                        );
+                        if(valid) {
+                            this.sendPostRequest(
+                                '/get_arith_ops',
+                                {
+                                    'sdfg': sdfg,
+                                    'assumptions': assumptions,
+                                },
+                                (data: DaCeMessage) => {
+                                    void DaCeInterface.getInstance(
+                                    )?.hideSpinner();
+                                    resolve(data.arithOpsMap);
+                                },
+                                async (error: DaCeException) => {
+                                    await this.genericErrorHandler(
+                                        error.message, error.details
+                                    );
+                                    reject(new Error(error.message));
+                                }
+                            );
+                        } else {
+                            void DaCeInterface.getInstance()?.hideSpinner();
+                        }
+                    });
+                }).catch((reason: unknown) => {
+                    if (reason instanceof Error)
+                        reject(reason);
+                    else
+                        reject(new Error(String(reason)));
                 });
+            }).catch((err: unknown) => {
+                console.error(err);
             });
         });
     }
 
     @ICPCRequest()
     public async getDepth(): Promise<any> {
-        return new Promise(async (resolve, reject) => {
-            if (!this.daemonRunning) {
-                try {
-                    await this.promptStartDaemon();
-                } catch (e) {
-                    reject(e);
-                    return;
-                }
-            }
-
-            this.showSpinner('Calculating Depth');
-
-            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
-                if (!sdfg) {
-                    const msg = 'No active SDFG editor!';
-                    console.warn(msg);
-                    reject(msg);
-                    return;
-                }
-
-                this.showAssumptionsInputBox().then((value) => {
-                    const [assumptions, valid] = this.checkAssumptionsInput(value);
-                    if(valid){
-                        this.sendPostRequest(
-                            '/get_depth',
-                            {
-                                'sdfg': sdfg,
-                                'assumptions': assumptions,
-                            },
-                            (data: any) => {
-                                resolve(data.depthMap);
-                                DaCeInterface.getInstance()?.hideSpinner();
-                            },
-                            (error: any) => {
-                                this.genericErrorHandler(error.message, error.details);
-                                reject(error.message);
-                            }
-                        );
-                    } else {
-                        DaCeInterface.getInstance()?.hideSpinner();
+        return new Promise((resolve, reject) => {
+            this.showSpinner('Calculating Depth').then(() => {
+                DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+                    if (!sdfg) {
+                        const msg = 'No active SDFG editor!';
+                        console.warn(msg);
+                        reject(new Error(msg));
+                        return;
                     }
+
+                    this.showAssumptionsInputBox().then((value) => {
+                        const [assumptions, valid] = this.checkAssumptionsInput(
+                            value
+                        );
+                        if(valid) {
+                            this.sendPostRequest(
+                                '/get_depth',
+                                {
+                                    'sdfg': sdfg,
+                                    'assumptions': assumptions,
+                                },
+                                (data: DaCeMessage) => {
+                                    resolve(data.depthMap);
+                                    void DaCeInterface.getInstance(
+                                    )?.hideSpinner();
+                                },
+                                async (error: DaCeException) => {
+                                    await this.genericErrorHandler(
+                                        error.message, error.details
+                                    );
+                                    reject(new Error(error.message));
+                                }
+                            );
+                        } else {
+                            void DaCeInterface.getInstance()?.hideSpinner();
+                        }
+                    });
+                }).catch((reason: unknown) => {
+                    if (reason instanceof Error)
+                        reject(reason);
+                    else
+                        reject(new Error(String(reason)));
                 });
+            }).catch((err: unknown) => {
+                console.error(err);
             });
         });
     }
 
     @ICPCRequest()
     public async getAvgParallelism(): Promise<any> {
-        return new Promise(async (resolve, reject) => {
-            if (!this.daemonRunning) {
-                try {
-                    await this.promptStartDaemon();
-                } catch (e) {
-                    reject(e);
-                    return;
-                }
-            }
-
-            this.showSpinner('Calculating Average Parallelism');
-
-            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
-                if (!sdfg) {
-                    const msg = 'No active SDFG editor!';
-                    console.warn(msg);
-                    reject(msg);
-                    return;
-                }
-
-
-                this.showAssumptionsInputBox().then((value) => {
-                    const [assumptions, valid] = this.checkAssumptionsInput(value);
-                    if(valid){
-                        this.sendPostRequest(
-                            '/get_avg_parallelism',
-                            {
-                                'sdfg': sdfg,
-                                'assumptions': assumptions,
-                            },
-                            (data: any) => {
-                                resolve(data.avgParallelismMap);
-                                DaCeInterface.getInstance()?.hideSpinner();
-                            },
-                            (error: any) => {
-                                this.genericErrorHandler(error.message, error.details);
-                                reject(error.message);
-                            }
-                        );
-                    } else {
-                        DaCeInterface.getInstance()?.hideSpinner();
+        return new Promise((resolve, reject) => {
+            this.showSpinner('Calculating Average Parallelism').then(() => {
+                DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+                    if (!sdfg) {
+                        const msg = 'No active SDFG editor!';
+                        console.warn(msg);
+                        reject(new Error(msg));
+                        return;
                     }
+
+
+                    this.showAssumptionsInputBox().then((value) => {
+                        const [assumptions, valid] = this.checkAssumptionsInput(
+                            value
+                        );
+                        if(valid) {
+                            this.sendPostRequest(
+                                '/get_avg_parallelism',
+                                {
+                                    'sdfg': sdfg,
+                                    'assumptions': assumptions,
+                                },
+                                (data: DaCeMessage) => {
+                                    void DaCeInterface.getInstance(
+                                    )?.hideSpinner();
+                                    resolve(data.avgParallelismMap);
+                                },
+                                async (error: DaCeException) => {
+                                    await this.genericErrorHandler(
+                                        error.message, error.details
+                                    );
+                                    reject(new Error(error.message));
+                                }
+                            );
+                        } else {
+                            void DaCeInterface.getInstance()?.hideSpinner();
+                        }
+                    });
+                }).catch((reason: unknown) => {
+                    if (reason instanceof Error)
+                        reject(reason);
+                    else
+                        reject(new Error(String(reason)));
                 });
+            }).catch((err: unknown) => {
+                console.error(err);
             });
         });
     }
 
     @ICPCRequest()
     public async getOperationalIntensity(): Promise<any> {
-        return new Promise(async (resolve, reject) => {
-            if (!this.daemonRunning) {
-                try {
-                    await this.promptStartDaemon();
-                } catch (e) {
-                    reject(e);
-                    return;
-                }
-            }
+        return new Promise((resolve, reject) => {
+            this.showSpinner('Calculating Operational Intensity').then(() => {
+                DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
+                    if (!sdfg) {
+                        const msg = 'No active SDFG editor!';
+                        console.warn(msg);
+                        reject(new Error(msg));
+                        return;
+                    }
 
-            this.showSpinner('Calculating Operational Intensity');
-
-            DaCeVSCode.getInstance().getActiveSdfg().then((sdfg) => {
-                if (!sdfg) {
-                    const msg = 'No active SDFG editor!';
-                    console.warn(msg);
-                    reject(msg);
-                    return;
-                }
-
-                this.showAssumptionsInputBox().then((value) => {
-                    const [assumptions, valid] = this.checkAssumptionsInput(value);
-                    if(valid){
-                        this.showCacheParamsInputBox().then((cacheParams) => {
-                            if(cacheParams === '' || cacheParams === undefined)
-                                cacheParams = '1024 64';
-                            this.sendPostRequest(
-                                '/get_operational_intensity',
-                                {
-                                    'sdfg': sdfg,
-                                    'cacheParams': cacheParams,
-                                    'assumptions': assumptions,
-                                },
-                                (data: any) => {
-                                    resolve(data.opInMap);
-                                    DaCeInterface.getInstance()?.hideSpinner();
-                                },
-                                (error: any) => {
-                                    this.genericErrorHandler(error.message, error.details);
-                                    reject(error.message);
+                    this.showAssumptionsInputBox().then((value) => {
+                        const [assumptions, valid] = this.checkAssumptionsInput(
+                            value
+                        );
+                        if(valid) {
+                            this.showCacheParamsInputBox().then(
+                                (cacheParams) => {
+                                    if(cacheParams === '' ||
+                                        cacheParams === undefined)
+                                        cacheParams = '1024 64';
+                                    this.sendPostRequest(
+                                        '/get_operational_intensity',
+                                        {
+                                            'sdfg': sdfg,
+                                            'cacheParams': cacheParams,
+                                            'assumptions': assumptions,
+                                        },
+                                        (data: DaCeMessage) => {
+                                            resolve(data.opInMap);
+                                            void DaCeInterface.getInstance(
+                                            )?.hideSpinner();
+                                        },
+                                        async (error: DaCeException) => {
+                                            await this.genericErrorHandler(
+                                                error.message, error.details
+                                            );
+                                            reject(new Error(error.message));
+                                        }
+                                    );
                                 }
                             );
-                        });
-                    } else {
-                        DaCeInterface.getInstance()?.hideSpinner();
-                    }
+                        } else {
+                            void DaCeInterface.getInstance()?.hideSpinner();
+                        }
+                    });
+                }).catch((reason: unknown) => {
+                    if (reason instanceof Error)
+                        reject(reason);
+                    else
+                        reject(new Error(String(reason)));
                 });
+            }).catch((err: unknown) => {
+                console.error(err);
             });
         });
     }
 
     public compileSdfgFromFile(
-        uri: vscode.Uri, callback: CallableFunction,
+        uri: vscode.Uri, callback: (data: DaCeMessage) => void,
         suppressInstrumentation: boolean = false
     ): void {
         this.sendPostRequest(
@@ -1101,84 +1187,89 @@ implements vscode.WebviewViewProvider {
 
     @ICPCRequest()
     public async specializeGraph(
-        sdfg: string, symbolMap?: { [symbol: string]: any | undefined }
+        sdfg: string, symbolMap?: Record<string, unknown>
     ): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.showSpinner('Specializing');
-            this.sendPostRequest(
-                '/specialize_sdfg',
-                {
-                    'sdfg': sdfg,
-                    'symbol_map': symbolMap,
-                },
-                (data: any) => {
-                    this.hideSpinner();
-                    resolve(data.sdfg);
-                },
-                (error: any) => {
-                    this.genericErrorHandler(error.message, error.details);
-                    reject(error.message);
-                }
-            );
+            this.showSpinner('Specializing').then(() => {
+                this.sendPostRequest(
+                    '/specialize_sdfg',
+                    {
+                        'sdfg': sdfg,
+                        'symbol_map': symbolMap,
+                    },
+                    (data: DaCeMessage) => {
+                        void this.hideSpinner();
+                        resolve(data.sdfg);
+                    },
+                    async (error: DaCeException) => {
+                        await this.genericErrorHandler(
+                            error.message, error.details
+                        );
+                        reject(new Error(error.message));
+                    }
+                );
+            }).catch((err: unknown) => {
+                console.error(err);
+            });
         });
     }
 
     @ICPCRequest()
-    public async querySdfgMetadata(): Promise<Record<string, any>> {
-        return new Promise<any>((resolve, reject) => {
-            if (this.daemonRunning)
-                this.sendGetRequest(
-                    '/get_metadata',
-                    (data: any) => {
-                        resolve(data.metaDict);
-                    }
-                );
-            else
-                reject();
+    public async querySdfgMetadata(): Promise<MetaDictT | undefined> {
+        return new Promise<MetaDictT | undefined>((resolve) => {
+            if (this.daemonRunning) {
+                this.sendGetRequest('/get_metadata', (data: DaCeMessage) => {
+                    resolve(data.metaDict as MetaDictT);
+                });
+            } else {
+                resolve(undefined);
+            }
         });
     }
 
     @ICPCRequest()
     public async loadTransformations(
-        sdfg: any, selectedElements: any
-    ): Promise<any[]> {
+        sdfg: string, selectedElements: unknown
+    ): Promise<JsonTransformation[] | undefined> {
         await TransformationListProvider.getInstance()?.showLoading();
 
-        return new Promise<any[]>(async (resolve, reject) => {
-            if (!this.daemonRunning) {
-                try {
-                    await this.promptStartDaemon();
-                } catch (e) {
-                    reject(e);
+        return new Promise<JsonTransformation[] | undefined>(
+            (resolve, reject) => {
+                if (!this.daemonRunning) {
+                    resolve(undefined);
                     return;
                 }
-            }
 
-            this.sendPostRequest(
-                '/transformations',
-                {
-                    sdfg: JSON.parse(sdfg),
-                    selected_elements: selectedElements,
-                    permissive: false,
-                },
-                (data: any) => {
-                    for (const elem of data.transformations) {
-                        let docstring = '';
-                        if (data.docstrings)
-                            docstring = data.docstrings[
-                                elem.transformation
-                            ];
-                        elem.docstring = docstring;
+                this.sendPostRequest(
+                    '/transformations',
+                    {
+                        sdfg: JSON.parse(sdfg) as JsonSDFG,
+                        selected_elements: selectedElements,
+                        permissive: false,
+                    },
+                    (data: DaCeMessage) => {
+                        const xforms =
+                            data.transformations as JsonTransformation[];
+                        const docstrings = data.docstrings as
+                            Record<string, string> | undefined;
+                        for (const elem of xforms) {
+                            let docstring = '';
+                            if (docstrings)
+                                docstring = docstrings[elem.transformation];
+                            elem.docstring = docstring;
+                        }
+
+                        resolve(xforms);
+                    },
+                    async (error: DaCeException) => {
+                        await this.genericErrorHandler(
+                            error.message, error.details
+                        );
+                        reject(new Error(error.message));
                     }
-
-                    resolve(data.transformations);
-                },
-                (error: any) => {
-                    this.genericErrorHandler(error.message, error.details);
-                    reject(error.message);
-                },
-            );
-        });
+                );
+            }
+        );
     }
 
     /**
@@ -1219,22 +1310,27 @@ implements vscode.WebviewViewProvider {
                         {
                             paths: paths,
                         },
-                        (data: any) => {
+                        (data: DaCeMessage) => {
                             // When done adding transformations, attempt a
                             // refresh.
                             if (data.done) {
                                 resolve();
                                 const editor =
                                     DaCeVSCode.getInstance().activeSDFGEditor;
-                                editor?.invoke('refreshTransformationList');
+                                void editor?.invoke(
+                                    'refreshTransformationList'
+                                );
                             }
                         },
-                        (error: any) => {
-                            reject(error.message);
+                        (error: unknown) => {
+                            if (error instanceof Error)
+                                reject(error);
+                            else
+                                reject(new Error('Unknown error occurred'));
                         }
                     );
                 } else {
-                    reject();
+                    reject(new Error('No files or folders selected'));
                 }
             });
         });
@@ -1246,8 +1342,9 @@ implements vscode.WebviewViewProvider {
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext,
-        token: vscode.CancellationToken): void | Thenable<void> {
+        _context: vscode.WebviewViewResolveContext,
+        _token: vscode.CancellationToken
+    ): void | Thenable<void> {
         // If the DaCe interface has not been started yet, start it here.
         DaCeInterface.getInstance()?.start();
 
@@ -1305,22 +1402,22 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest(true)
-    public onReady(): Promise<void> {
+    public onReady(): void {
         if (this.port)
-            this.invoke('setPort', [this.port]);
+            this.invoke('setPort', [this.port]).catch(console.error);
         if (this.daemonRunning)
-            this.invoke('setStatus', [this.daemonRunning]);
+            this.invoke('setStatus', [this.daemonRunning]).catch(console.error);
         if (this.version) {
             this.invoke(
                 'setVersion',
                 [
                     this.version,
                     this.versionOk,
-                    this.additionalVersionInfo
+                    this.additionalVersionInfo,
                 ]
-            );
+            ).catch(console.error);
         }
-        return super.onReady();
+        super.onReady();
     }
 
 }

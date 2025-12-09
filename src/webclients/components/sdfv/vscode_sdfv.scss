@@ -1,7 +1,8 @@
-/* Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+/* Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
  * All rights reserved. */
 
 @import "bootstrap_color_overrides";
+@import "attributes_table";
 
 body.sdfv {
   display: flex;
@@ -158,6 +159,7 @@ body.sdfv {
   /* Info container/box */
 
   #info-container {
+    z-index: 1030 !important; /* Needs to be below z-index of modal backdrop */
     overflow-y: scroll;
     background-color: var(--vscode-editor-background);
     color: var(--vscode-editor-foreground);
@@ -234,10 +236,7 @@ body.sdfv {
 
   #expand-info-btn {
     cursor: pointer;
-    position: absolute;
     margin: .4rem;
-    bottom: 0;
-    right: 0;
   }
 
   #info-contents {
@@ -280,30 +279,8 @@ body.sdfv {
     transform: rotate(180deg);
   }
 
-  .attr-table {
-    border: 1px solid var(--vscode-list-inactiveSelectionBackground);
-    padding-left: 0;
-    padding-right: 0;
-  }
-
   .attr-table-cat-container {
     padding: 0;
-  }
-
-  .attr-table-row {
-    padding: .5rem 0;
-    border-bottom: 1px solid var(--vscode-list-inactiveSelectionBackground);
-    margin-left: 0;
-    margin-right: 0;
-  }
-
-  .attr-table-cell {
-    text-align: left;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    padding-left: 0;
-    flex: 0 0 auto;
   }
 
   .attr-row-prefix-cell {
@@ -313,14 +290,6 @@ body.sdfv {
 
   .attr-table-cell.col-12 {
     margin-bottom: .5rem;
-  }
-
-  .attr-cell-s {
-    width: 25%;
-  }
-
-  .attr-cell-l {
-    width: 75%;
   }
 
   .attr-changed-bar {
@@ -347,18 +316,13 @@ body.sdfv {
     font-weight: bold;
   }
 
-  .popup-editable-property-container {
-    width: 100%;
-    display: flex;
-    align-items: center;
-  }
-
   .property-add-row-btn {
     font-size: 2rem;
     cursor: pointer;
   }
 
   .property-edit-btn {
+    user-select: none;
     margin-left: .8rem;
     cursor: pointer;
   }
@@ -444,6 +408,10 @@ body.sdfv {
     background-color: var(--vscode-dropdown-background);
     color: var(--vscode-dropdown-foreground);
     border-color: var(--vscode-dropdown-border);
+
+    &.es-input {
+      width: 100%;
+    }
   }
 
   .sdfv-property-expand-libnode-btn {
@@ -487,6 +455,7 @@ body.sdfv {
   .es-list {
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
+    padding-left: 0;
   }
 
   .context-menu {

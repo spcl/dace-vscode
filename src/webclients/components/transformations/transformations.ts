@@ -1,8 +1,7 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import $ = require('jquery');
-(window as any).jQuery = $;
+import $ from 'jquery';
 
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -14,18 +13,19 @@ import '../../elements/treeview/treeview.css';
 import './transformations.css';
 
 import {
-    ICPCRequest
+    ICPCRequest,
 } from '../../../common/messaging/icpc_messaging_component';
 import {
     CustomTreeView,
-    CustomTreeViewItem
+    CustomTreeViewItem,
 } from '../../elements/treeview/treeview';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent,
 } from '../../messaging/icpc_webclient_messaging_component';
 import { ComponentTarget } from '../../../components/components';
+import { WebviewApi } from 'vscode-webview';
 
-declare const vscode: any;
+declare const vscode: WebviewApi<unknown>;
 
 class TransformationListItem extends CustomTreeViewItem {
 
@@ -57,7 +57,7 @@ class TransformationCategory extends TransformationListItem {
         );
     }
 
-    public generateHtml(): JQuery<HTMLElement> {
+    public generateHtml(): JQuery {
         const item = super.generateHtml();
         item.addClass('transformation-category');
         return item;
@@ -65,29 +65,29 @@ class TransformationCategory extends TransformationListItem {
 
 }
 
-export type JsonTransformation = {
-    transformation: string,
-    type?: string,
-    exp_idx?: number,
-    cfg_id?: number,
-    sdfg_id?: number, // Legacy, succeeded by cfg_id.
-    state_id?: number,
-    CATEGORY?: string,
-    _subgraph?: any,
-    docstring?: string,
-};
+export interface JsonTransformation extends Record<string, unknown> {
+    transformation: string;
+    type?: string;
+    exp_idx?: number;
+    cfg_id?: number;
+    sdfg_id?: number; // Legacy, succeeded by cfg_id.
+    state_id?: number;
+    CATEGORY?: string;
+    _subgraph?: Record<string | number, string | number>;
+    docstring?: string;
+}
 
-export type JsonTransformationGroup = {
-    title: string,
-    ordering: number,
-    xforms: JsonTransformation[],
-};
+export interface JsonTransformationGroup {
+    title: string;
+    ordering: number;
+    xforms: JsonTransformation[];
+}
 
-export type JsonTransformationList = {
-    'selection': JsonTransformationGroup[],
-    'viewport': JsonTransformationGroup[],
-    'passes': JsonTransformationGroup[],
-    'uncategorized': JsonTransformationGroup[],
+export interface JsonTransformationList {
+    selection: JsonTransformationGroup[];
+    viewport: JsonTransformationGroup[];
+    passes: JsonTransformationGroup[];
+    uncategorized: JsonTransformationGroup[];
 };
 
 export type JsonTransformationCategories = (
@@ -101,7 +101,9 @@ export class Transformation extends TransformationListItem {
     private expressionIndex: number | undefined = undefined;
     private cfgId: number = -1;
     private stateId: number = -1;
-    private subgraph: any | undefined = undefined;
+    private subgraph: Record<
+        string | number, string | number
+    > | undefined = undefined;
 
     public constructor(
         private json: JsonTransformation, list: TransformationList
@@ -124,19 +126,24 @@ export class Transformation extends TransformationListItem {
         if (this.subgraph) {
             for (const key in this.subgraph) {
                 const id = this.subgraph[key];
-                if (this.stateId === -1)
-                    uuids.push(this.cfgId + '/' + id + '/-1/-1');
-                else
+                if (this.stateId === -1) {
                     uuids.push(
-                        this.cfgId + '/' + this.stateId + '/' + id + '/-1'
+                        this.cfgId.toString() + '/' + id.toString() + '/-1/-1'
                     );
+                } else {
+                    uuids.push(
+                        this.cfgId.toString() + '/' +
+                        this.stateId.toString() + '/' +
+                        id.toString() + '/-1'
+                    );
+                }
             }
         }
 
         if (uuids.length)
             return uuids;
 
-        uuids.push(this.cfgId + '/-1/-1/-1');
+        uuids.push(this.cfgId.toString() + '/-1/-1/-1');
 
         return uuids;
     }
@@ -151,7 +158,9 @@ export class Transformation extends TransformationListItem {
                 this.list.selectedItem = this;
                 this.list.generateHtml();
             }
-            TransofrmationListPanel.selectTransformation(this.json);
+            TransofrmationListPanel.selectTransformation(
+                this.json
+            ).catch(console.error);
         });
 
         const labelContainer = item.find('.tree-view-item-label-container');
@@ -163,7 +172,9 @@ export class Transformation extends TransformationListItem {
             'title': 'Apply transformation with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                TransofrmationListPanel.applyTransformations([this.json]);
+                TransofrmationListPanel.applyTransformations(
+                    [this.json]
+                ).catch(console.error);
                 return true;
             },
         }).appendTo(labelContainer);
@@ -172,7 +183,7 @@ export class Transformation extends TransformationListItem {
             labelContainer.addClass('hover-direct');
             TransofrmationListPanel.highlightElements(
                 this.getAffectedElementsUUIDs()
-            );
+            ).catch(console.error);
         });
 
         item.on('mouseout', () => {
@@ -214,7 +225,9 @@ export class PassPipeline extends TransformationListItem {
                 this.list.selectedItem = this;
                 this.list.generateHtml();
             }
-            TransofrmationListPanel.selectTransformation(this.json);
+            TransofrmationListPanel.selectTransformation(
+                this.json
+            ).catch(console.error);
         });
 
         const labelContainer = item.find('.tree-view-item-label-container');
@@ -226,7 +239,9 @@ export class PassPipeline extends TransformationListItem {
             'title': 'Run this pass with default parameters',
             'click': (event: Event) => {
                 event.stopPropagation();
-                TransofrmationListPanel.applyTransformations([this.json]);
+                TransofrmationListPanel.applyTransformations(
+                    [this.json]
+                ).catch(console.error);
                 return true;
             },
         }).appendTo(labelContainer);
@@ -273,7 +288,7 @@ export class TransformationGroup extends TransformationListItem {
             item.find('.tree-view-item-label-container').first();
         labelContainer.addClass('transformation-list-item-label-container');
 
-        if (this.allowApplyAll)
+        if (this.allowApplyAll) {
             $('<div>', {
                 class: 'transformation-list-apply-all',
                 text: 'Apply All',
@@ -281,17 +296,21 @@ export class TransformationGroup extends TransformationListItem {
                 click: () => {
                     TransofrmationListPanel.applyTransformations(
                         this.transformations
-                    );
+                    ).catch(console.error);
                 },
             }).appendTo(labelContainer);
+        }
 
         item.on('mouseover', () => {
             labelContainer.addClass('hover-direct');
             const affectedUUIDs = [];
-            if (this.children)
+            if (this.children) {
                 for (const item of (this.children as Transformation[]))
                     affectedUUIDs.push(...item.getAffectedElementsUUIDs());
-            TransofrmationListPanel.highlightElements(affectedUUIDs);
+            }
+            TransofrmationListPanel.highlightElements(
+                affectedUUIDs
+            ).catch(console.error);
         });
 
         item.on('mouseout', () => {
@@ -330,7 +349,7 @@ export class PassPipelineGroup extends TransformationListItem {
             item.find('.tree-view-item-label-container').first();
         labelContainer.addClass('transformation-list-item-label-container');
 
-        if (this.allowApplyAll)
+        if (this.allowApplyAll) {
             $('<div>', {
                 class: 'transformation-list-apply-all',
                 text: 'Run All',
@@ -338,9 +357,10 @@ export class PassPipelineGroup extends TransformationListItem {
                 click: () => {
                     TransofrmationListPanel.applyTransformations(
                         this.transformations
-                    );
+                    ).catch(console.error);
                 },
             }).appendTo(labelContainer);
+        }
 
         item.on('mouseover', () => {
             labelContainer.addClass('hover-direct');
@@ -352,6 +372,7 @@ export class PassPipelineGroup extends TransformationListItem {
 
         return item;
     }
+
 }
 
 class TransformationList extends CustomTreeView {
@@ -398,7 +419,9 @@ class TransformationList extends CustomTreeView {
 
     // We don't want to mutate the set of items, categories are supposed to
     // remain constant.
-    public addItem(item: CustomTreeViewItem): void {}
+    public addItem(_item: CustomTreeViewItem): void {
+        return;
+    }
 
     public clear(
         clearText = 'No applicable transformations',
@@ -411,11 +434,12 @@ class TransformationList extends CustomTreeView {
             this.notifyDataChanged();
     }
 
-    public nItems(): Number {
+    public nItems(): number {
         let count = 0;
-        for (const cat of this.items)
+        for (const cat of this.items) {
             if (cat.children !== undefined)
                 count += cat.children.length;
+        }
         return count;
     }
 
@@ -423,7 +447,10 @@ class TransformationList extends CustomTreeView {
         this.clear('', false);
 
         const allCats: JsonTransformationCategories = [
-            'selection', 'viewport', 'passes', 'uncategorized'
+            'selection',
+            'viewport',
+            'passes',
+            'uncategorized',
         ];
         let i = 0;
         for (const ct of allCats) {
@@ -463,8 +490,7 @@ class TransformationList extends CustomTreeView {
             }));
         }
 
-        if (this.selectedItem !== undefined &&
-            this.selectedItem.element !== undefined)
+        if (this.selectedItem?.element !== undefined)
             this.selectedItem.element.addClass('selected');
     }
 
@@ -495,7 +521,7 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
         this.transformationList.generateHtml();
         this.transformationList.show();
 
-        this.invoke('onReady');
+        this.invoke('onReady').catch(console.error);
     }
 
     @ICPCRequest()
@@ -536,7 +562,7 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
     public static async selectTransformation(
         transformation: JsonTransformation
     ): Promise<void> {
-        return this.INSTANCE.invokeEditorProcedure(
+        await this.INSTANCE.invokeEditorProcedure(
             'selectTransformation', [transformation]
         );
     }
@@ -544,13 +570,13 @@ class TransofrmationListPanel extends ICPCWebclientMessagingComponent {
     public static async applyTransformations(
         transformations: JsonTransformation[]
     ): Promise<void> {
-        return this.INSTANCE.invoke(
+        await this.INSTANCE.invoke(
             'applyTransformations', [transformations], ComponentTarget.DaCe
         );
     }
 
     public static async highlightElements(uuids: string[]): Promise<void> {
-        return this.INSTANCE.invokeEditorProcedure('highlightUUIDs', [uuids]);
+        await this.INSTANCE.invokeEditorProcedure('highlightUUIDs', [uuids]);
     }
 
 }

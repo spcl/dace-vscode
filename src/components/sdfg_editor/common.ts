@@ -1,17 +1,19 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
     CancellationToken,
+    Disposable,
     ExtensionContext,
     TextDocument,
     Uri,
     Webview,
     WebviewPanel,
     commands,
-    workspace
+    window,
+    workspace,
 } from 'vscode';
 import { ICPCRequest } from '../../common/messaging/icpc_messaging_component';
 import { DaCeVSCode } from '../../dace_vscode';
@@ -27,6 +29,8 @@ export abstract class SDFGEditorBase extends BaseComponent {
     public linkFile?: string;
 
     public readonly componentId: string;
+
+    private readonly statusBarMessages = new Map<string, Disposable>();
 
     public constructor(
         context: ExtensionContext, _token: CancellationToken,
@@ -48,7 +52,7 @@ export abstract class SDFGEditorBase extends BaseComponent {
             this.toggleActiveEditor();
         });
 
-        const extPath = this.context?.extensionPath ?? '';
+        const extPath = this.context.extensionPath;
         webviewPanel.webview.options = {
             enableScripts: true,
             localResourceRoots: [
@@ -58,9 +62,8 @@ export abstract class SDFGEditorBase extends BaseComponent {
             ],
         };
 
-        this.generateHTML(this.webviewPanel.webview).then((html) => {
+        void this.generateHTML(this.webviewPanel.webview).then((html) => {
             this.webviewPanel.webview.html = html;
-
             this.toggleActiveEditor();
         });
     }
@@ -74,7 +77,7 @@ export abstract class SDFGEditorBase extends BaseComponent {
 
     private async generateHTML(webview: Webview): Promise<string> {
         // Load the base HTML we want to display in the webview/editor.
-        const extPath = this.context?.extensionPath ?? '';
+        const extPath = this.context.extensionPath;
         const fpBaseHtml: Uri = Uri.file(path.join(
             extPath,
             'media',
@@ -101,14 +104,10 @@ export abstract class SDFGEditorBase extends BaseComponent {
         // the info container to the right instead of at the bottom. Also hide
         // the minimap if the settings say so.
         const sdfvConfig = workspace.getConfiguration('dace.sdfv');
-        if (sdfvConfig?.get<string>('layout') === 'horizontal') {
+        if (sdfvConfig.get<string>('layout') === 'horizontal') {
             baseHtml = baseHtml.replace(
                 'offcanvas offcanvas-end',
                 'offcanvas offcanvas-bottom'
-            );
-            baseHtml = baseHtml.replace(
-                'right_panel_open',
-                'bottom_panel_open'
             );
             baseHtml = baseHtml.replace(
                 'id="layout-toggle-btn" class="vertical"',
@@ -127,61 +126,60 @@ export abstract class SDFGEditorBase extends BaseComponent {
         return baseHtml;
     }
 
-    public abstract handleLocalEdit(sdfg: string): Promise<void>;
+    public abstract handleLocalEdit(sdfg: string): Promise<void> | void;
 
-    protected abstract _updateContents(preventRefresh?: boolean): Promise<void>;
+    protected abstract _updateContents(preventRefresh?: boolean): any;
 
     @ICPCRequest()
     public async updateContents(preventRefresh?: boolean): Promise<void> {
         await this._updateContents(preventRefresh);
     }
 
-    protected abstract _getUpToDateContents(): Promise<string | Uint8Array>;
+    protected abstract _getUpToDateContents(
+    ): Promise<string | ArrayBuffer> | string | ArrayBuffer;
 
     @ICPCRequest()
-    public async getUpToDateContents(): Promise<string | Uint8Array> {
+    public async getUpToDateContents(): Promise<string | ArrayBuffer> {
         return this._getUpToDateContents();
     }
 
     protected abstract _onSDFGEdited(
-        sdfg: string | Uint8Array
-    ): Promise<boolean>;
+        sdfg: string | ArrayBuffer
+    ): Promise<boolean> | boolean;
 
     @ICPCRequest()
-    public async onSDFGEdited(sdfg: string | Uint8Array): Promise<boolean> {
+    public async onSDFGEdited(sdfg: string | ArrayBuffer): Promise<boolean> {
         return this._onSDFGEdited(sdfg);
     }
 
     @ICPCRequest()
-    public async getSettings(
-        settingKeys: string[]
-    ): Promise<Record<string, any>> {
+    public getSettings(settingKeys: string[]): Record<string, any> {
         const settings: Record<string, any> = {};
         const sdfvConfig = workspace.getConfiguration('dace.sdfv');
         for (const key of settingKeys)
-            settings[key] = sdfvConfig?.get(key);
+            settings[key] = sdfvConfig.get<unknown>(key);
 
         return settings;
     }
 
     @ICPCRequest()
-    public async updateSettings(
+    public updateSettings(
         settings: Record<string, string | boolean | number>
-    ): Promise<void> {
+    ): void {
         const sdfvConfig = workspace.getConfiguration('dace.sdfv');
         const ignoredKeys = ['toolbar'];
         for (const key in settings) {
             if (ignoredKeys.includes(key))
                 continue;
 
-            if (settings[key] !== sdfvConfig?.get(key))
-                sdfvConfig?.update(key, settings[key]);
+            if (settings[key] !== sdfvConfig.get(key))
+                sdfvConfig.update(key, settings[key]);
         }
     }
 
     @ICPCRequest()
     public setSplitDirection(dir?: 'vertical' | 'horizontal'): void {
-        workspace.getConfiguration('dace.sdfv')?.update('layout', dir);
+        workspace.getConfiguration('dace.sdfv').update('layout', dir);
     }
 
     @ICPCRequest()
@@ -189,23 +187,26 @@ export abstract class SDFGEditorBase extends BaseComponent {
         pFilePath: string, startRow: number, startChar: number, endRow: number,
         endChar: number
     ): Promise<void> {
-        utils.goToSource(pFilePath, startRow, startChar, endRow, endChar);
+        return utils.goToSource(
+            pFilePath, startRow, startChar, endRow, endChar
+        );
     }
 
     @ICPCRequest()
     public async goToCPP(
         sdfgName: string, sdfgId: number, stateId: number, nodeId: number,
-        cachePath?: string,
+        cachePath?: string
     ): Promise<void> {
-        utils.goToGeneratedCode(sdfgName, sdfgId, stateId, nodeId, cachePath);
+        return utils.goToGeneratedCode(
+            sdfgName, sdfgId, stateId, nodeId, cachePath
+        );
     }
 
     public static async openEditorFor(
         uri: Uri
     ): Promise<SDFGEditorBase | undefined> {
         let editor = DaCeVSCode.getInstance().sdfgEditorMap.get(uri);
-        if (!editor)
-            editor = await commands.executeCommand('vscode.open', uri);
+        editor ??= await commands.executeCommand('vscode.open', uri);
         return editor;
     }
 
@@ -216,9 +217,28 @@ export abstract class SDFGEditorBase extends BaseComponent {
         const uri = typeof sdfgPath === 'string' ?
             Uri.file(sdfgPath) : sdfgPath;
         const editor = await SDFGEditorBase.openEditorFor(uri);
-        editor?.invoke('zoomToUUIDs', [zoomTo]);
+        await editor?.invoke('zoomToUUIDs', [zoomTo]);
         if (displayBreakpoints)
-            editor?.invoke('displayBreakpoints', [displayBreakpoints]);
+            await editor?.invoke('displayBreakpoints', [displayBreakpoints]);
+    }
+
+    @ICPCRequest()
+    public showActivity(text: string): string {
+        const cancellation = window.setStatusBarMessage(text);
+        let uuid = uuidv4();
+        while (this.statusBarMessages.has(uuid))
+            uuid = uuidv4();
+        this.statusBarMessages.set(uuid, cancellation);
+        return uuid;
+    }
+
+    @ICPCRequest()
+    public hideActivity(uuid: string): void {
+        const cancellation = this.statusBarMessages.get(uuid);
+        if (cancellation) {
+            cancellation.dispose();
+            this.statusBarMessages.delete(uuid);
+        }
     }
 
 }

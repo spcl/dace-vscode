@@ -1,8 +1,7 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import $ = require('jquery');
-(window as any).jQuery = $;
+import $ from 'jquery';
 
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -14,18 +13,20 @@ import '../../elements/treeview/treeview.css';
 import './transformation_history.css';
 
 import {
-    ICPCRequest
+    ICPCRequest,
 } from '../../../common/messaging/icpc_messaging_component';
 import {
     CustomTreeView,
-    CustomTreeViewItem
+    CustomTreeViewItem,
 } from '../../elements/treeview/treeview';
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent,
 } from '../../messaging/icpc_webclient_messaging_component';
 import { ComponentTarget } from '../../../components/components';
+import type { WebviewApi } from 'vscode-webview';
 
-declare const vscode: any;
+
+declare const vscode: WebviewApi<unknown>;
 
 class TransformationHistoryItem extends CustomTreeViewItem {
 
@@ -41,33 +42,37 @@ class TransformationHistoryItem extends CustomTreeViewItem {
     }
 
     // No nesting allowed.
-    public addItem(_: CustomTreeViewItem): void {}
+    public addItem(_: CustomTreeViewItem): void {
+        return;
+    }
 
-    public generateHtml(): JQuery<HTMLElement> {
+    public generateHtml(): JQuery {
         const item = super.generateHtml();
 
-        if (this.disabled)
+        if (this.disabled) {
             item.addClass('disabled');
-        else
+        } else {
             item.on('click', () => {
                 if (this.list !== undefined) {
                     this.list.selectedItem = this;
                     this.list.generateHtml();
                 }
-                TransformationHistoryPanel.getInstance().invoke(
+                void TransformationHistoryPanel.getInstance().invoke(
                     'previewHistoryPoint', [this.index], ComponentTarget.DaCe
                 );
             });
+        }
 
         const labelContainer = item.find('.tree-view-item-label-container');
 
         if (this.index !== undefined && !this.disabled) {
             $('<div>', {
                 'class': 'transformation-history-apply-button',
-                'html': '<i class="material-symbols-outlined">restore</i>&nbsp;Revert To',
+                'html': '<i class="material-symbols-outlined">' +
+                    'restore</i>&nbsp;Revert To',
                 'title': '',
                 'click': (e: MouseEvent) => {
-                    TransformationHistoryPanel.getInstance().invoke(
+                    void TransformationHistoryPanel.getInstance().invoke(
                         'applyHistoryPoint', [this.index], ComponentTarget.DaCe
                     );
                     e.stopPropagation();
@@ -81,8 +86,7 @@ class TransformationHistoryItem extends CustomTreeViewItem {
             }).appendTo(labelContainer);
         }
 
-        if (this.list !== undefined &&
-            this.list.selectedItem !== undefined &&
+        if (this.list?.selectedItem !== undefined &&
             this.list.selectedItem === this)
             item.addClass('selected');
 
@@ -109,7 +113,12 @@ class TransformationHistoryList extends CustomTreeView {
             this.notifyDataChanged();
     }
 
-    public parseHistory(history: any, activeIndex?: number | null): void {
+    public parseHistory(
+        history: ({
+            transformation: string,
+            dace_unregistered?: boolean,
+        } | undefined)[], activeIndex?: number | null
+    ): void {
         this.clear('Parsing transformation history', true);
         let encounteredDummy = false;
         for (let i = 0; i < history.length; i++) {
@@ -120,7 +129,7 @@ class TransformationHistoryList extends CustomTreeView {
 
             if (current) {
                 const itemCurrentState = new TransformationHistoryItem(
-                    item['transformation'],
+                    item.transformation,
                     'Current SDFG',
                     undefined,
                     this,
@@ -133,7 +142,7 @@ class TransformationHistoryList extends CustomTreeView {
                 let disabled = false;
                 let tooltip = 'Preview';
 
-                if (item['dace_unregistered']) {
+                if (item.dace_unregistered) {
                     disabled = true;
                     encounteredDummy = true;
                     tooltip = 'This transformation is not available in your ' +
@@ -145,7 +154,7 @@ class TransformationHistoryList extends CustomTreeView {
                 }
 
                 const historyItem = new TransformationHistoryItem(
-                    item['transformation'],
+                    item.transformation,
                     tooltip,
                     i,
                     this,
@@ -177,14 +186,14 @@ class TransformationHistoryList extends CustomTreeView {
 
     public generateHtml(): void {
         super.generateHtml();
-        if (this.items.length === 0)
+        if (this.items.length === 0) {
             this.rootElement.append($('<div>', {
                 'class': 'empty-transformation-history-text',
                 'text': this.clearText,
             }));
+        }
 
-        if (this.selectedItem !== undefined &&
-            this.selectedItem.element !== undefined)
+        if (this.selectedItem?.element !== undefined)
             this.selectedItem.element.addClass('selected');
     }
 
@@ -213,11 +222,16 @@ class TransformationHistoryPanel extends ICPCWebclientMessagingComponent {
         this.transformationHistList.generateHtml();
         this.transformationHistList.show();
 
-        this.invoke('onReady');
+        void this.invoke('onReady');
     }
 
     @ICPCRequest()
-    public setHistory(history: any, activeIndex?: number): void {
+    public setHistory(
+        history: ({
+            transformation: string,
+            dace_unregistered?: boolean,
+        } | undefined)[], activeIndex?: number
+    ): void {
         this.transformationHistList?.parseHistory(history, activeIndex);
     }
 

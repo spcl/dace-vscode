@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as path from 'path';
@@ -10,8 +10,8 @@ import { ComponentTarget } from './components';
 import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 
 export class OutlineProvider
-extends BaseComponent
-implements vscode.WebviewViewProvider {
+    extends BaseComponent
+    implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = ComponentTarget.Outline;
 
@@ -99,9 +99,9 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest(true)
-    public onReady(): Promise<void> {
+    public onReady(): void {
         vscode.commands.executeCommand('sdfgOutline.sync');
-        return super.onReady();
+        super.onReady();
     }
 
 }

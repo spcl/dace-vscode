@@ -1,9 +1,17 @@
-// Copyright 2019-2024 ETH Zurich and the DaCe authors. All rights reserved.
+// Copyright 2019-2025 ETH Zurich and the DaCe authors. All rights reserved.
 
 import { findGraphElementByUUID } from '@spcl/sdfv/src/utils/sdfg/sdfg_utils';
 import { ISDFVUserInterface } from '@spcl/sdfv/src/sdfv_ui';
+import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
+import { SDFVComponent, VSCodeSDFV } from './vscode_sdfv';
+import {
+    appendDataDescriptorTable,
+    appendSymbolsTable,
+    generateAttributesTable,
+} from './utils/attributes_table';
 import {
     AccessNode,
+    Connector,
     Edge,
     EntryNode,
     ExitNode,
@@ -11,61 +19,78 @@ import {
     ScopeNode,
     SDFG,
     SDFGElement,
-} from '@spcl/sdfv/src/renderer/renderer_elements';
-import { SDFGRenderer } from '@spcl/sdfv/src/renderer/renderer';
-import { SDFVSettings } from '@spcl/sdfv/src/utils/sdfv_settings';
-import { SDFVComponent } from './vscode_sdfv';
-import {
-    appendDataDescriptorTable,
-    appendSymbolsTable,
-    generateAttributesTable,
-} from './utils/attributes_table';
+    SDFGRenderer,
+    State,
+} from '@spcl/sdfv/src';
 
 declare let SPLIT_DIRECTION: 'vertical' | 'horizontal';
+
+const SYMBOLS_START_EXPANDED_THRESHOLD = 10;
+const DATA_CONTAINERS_START_EXPANDED_THRESHOLD = 10;
 
 export class SDFVVSCodeUI implements ISDFVUserInterface {
 
     private static readonly INSTANCE: SDFVVSCodeUI = new SDFVVSCodeUI();
 
     private constructor() {
+        return;
     }
 
     public static getInstance(): SDFVVSCodeUI {
         return SDFVVSCodeUI.INSTANCE;
     }
 
-    private infoContainer?: JQuery<HTMLElement>;
-    private layoutToggleBtn?: JQuery<HTMLElement>;
-    private expandInfoBtn?: JQuery<HTMLElement>;
-    private infoCloseBtn?: JQuery<HTMLElement>;
-    private topBar?: JQuery<HTMLElement>;
+    private infoContainer?: JQuery;
+    private layoutToggleBtn?: JQuery;
+    private expandInfoBtn?: JQuery;
+    private infoCloseBtn?: JQuery;
+    private topBar?: JQuery;
 
-    private infoDragBar?: JQuery<HTMLElement>;
+    private infoDragBar?: JQuery;
     private draggingInfoBar: boolean = false;
     private infoBarLastVertWidth: number = 350;
     private infoBarLastHorHeight: number = 200;
 
     private infoTrayExplicitlyHidden: boolean = false;
 
-    public get infoContentContainer(): JQuery<HTMLElement> {
+    public get infoContentContainer(): JQuery {
         return $('#info-contents');
+    }
+
+    public registerExpandInfoButton(): void {
+        this.expandInfoBtn = $('<div>', {
+            id: 'expand-info-btn',
+            title: 'Expand Tray',
+            html: '<span><i class="material-symbols-outlined">' +
+                (SPLIT_DIRECTION === 'vertical' ?
+                    'right_panel_open' : 'bottom_panel_open') +
+                '</i></span>',
+        }).prependTo($('.button-bar-secondary'));
+        this.expandInfoBtn.on('click', () => {
+            this.expandInfoBtn?.hide();
+            this.infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
+            this.infoContainer?.addClass('show');
+            this.infoTrayExplicitlyHidden = false;
+            this.checkTrayCoversMinimap(true);
+        });
     }
 
     public init(): void {
         this.infoContainer = $('#info-container');
         this.layoutToggleBtn = $('#layout-toggle-btn');
         this.infoDragBar = $('#info-drag-bar');
-        this.expandInfoBtn = $('#expand-info-btn');
         this.infoCloseBtn = $('#info-close-btn');
         this.topBar = $('#top-bar');
 
         // Set up resizing of the info drawer.
         this.draggingInfoBar = false;
-        const infoChangeHeightHandler = (e: any) => {
+        const infoChangeHeightHandler = (e: JQuery.MouseMoveEvent) => {
             if (this.draggingInfoBar) {
                 const documentHeight = $('body').innerHeight();
                 if (documentHeight) {
-                    const newHeight = documentHeight - e.originalEvent.y;
+                    const newHeight = documentHeight - (
+                        e.originalEvent?.y ?? 0
+                    );
                     if (newHeight < documentHeight) {
                         this.infoBarLastHorHeight = newHeight;
                         this.infoContainer?.height(
@@ -75,11 +100,11 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
                 }
             }
         };
-        const infoChangeWidthHandler = (e: any) => {
+        const infoChangeWidthHandler = (e: JQuery.MouseMoveEvent) => {
             if (this.draggingInfoBar) {
                 const documentWidth = $('body').innerWidth();
                 if (documentWidth) {
-                    const newWidth = documentWidth - e.originalEvent.x;
+                    const newWidth = documentWidth - (e.originalEvent?.x ?? 0);
                     if (newWidth < documentWidth) {
                         this.infoBarLastVertWidth = newWidth;
                         this.infoContainer?.width(newWidth.toString() + 'px');
@@ -97,7 +122,7 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
         $(document).on('mouseup', () => {
             this.draggingInfoBar = false;
         });
-        this.infoDragBar?.on('mousedown', () => {
+        this.infoDragBar.on('mousedown', () => {
             this.draggingInfoBar = true;
         });
         if (SPLIT_DIRECTION === 'vertical')
@@ -106,7 +131,7 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
             $(document).on('mousemove', infoChangeHeightHandler);
 
         // Set up changing the info drawer layout.
-        this.layoutToggleBtn?.on('click', () => {
+        this.layoutToggleBtn.on('click', () => {
             const oldDir = SPLIT_DIRECTION;
             SPLIT_DIRECTION = SPLIT_DIRECTION === 'vertical' ?
                 'horizontal' : 'vertical';
@@ -148,28 +173,20 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
             this.infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
             this.checkTrayCoversMinimap();
 
-            SDFVComponent.getInstance().invoke(
+            void SDFVComponent.getInstance().invoke(
                 'setSplitDirection', [SPLIT_DIRECTION]
             );
         });
 
-        if (this.infoContainer)
-            new ResizeObserver(() => {
-                this.infoBoxCheckStacking(this.infoContainer);
-            }).observe(this.infoContainer[0]);
+        new ResizeObserver(() => {
+            this.infoBoxCheckStacking(this.infoContainer);
+        }).observe(this.infoContainer[0]);
 
         // Set up toggling the info tray.
-        this.infoCloseBtn?.on('click', () => {
+        this.infoCloseBtn.on('click', () => {
             this.expandInfoBtn?.show();
             this.infoContainer?.removeClass('show');
             this.infoTrayExplicitlyHidden = true;
-            this.checkTrayCoversMinimap(true);
-        });
-        this.expandInfoBtn?.on('click', () => {
-            this.expandInfoBtn?.hide();
-            this.infoBoxCheckUncoverTopBar(this.infoContainer, this.topBar);
-            this.infoContainer?.addClass('show');
-            this.infoTrayExplicitlyHidden = false;
             this.checkTrayCoversMinimap(true);
         });
     }
@@ -193,14 +210,15 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
             this.checkTrayCoversMinimap(true);
         }
 
-        if (SPLIT_DIRECTION === 'vertical')
+        if (SPLIT_DIRECTION === 'vertical') {
             this.infoContainer?.width(
                 this.infoBarLastVertWidth.toString() + 'px'
             );
-        else
+        } else {
             this.infoContainer?.height(
                 this.infoBarLastHorHeight.toString() + 'px'
             );
+        }
     }
 
     public infoHide(): void {
@@ -224,7 +242,9 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
      * This dynamically builds one or more tables showing all of the relevant
      * info about a given element.
      */
-    public showElementInfo(elem: SDFGElement, renderer: SDFGRenderer): void {
+    public showElementInfo(
+        elem?: SDFGElement, renderer?: SDFGRenderer
+    ): void {
         const buttons = [
             $('#goto-source-btn'),
             $('#goto-cpp-btn'),
@@ -239,22 +259,24 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
             btn.prop('title', '');
         });
 
-        if (elem) {
-            this.infoSetTitle(elem.type() + ' ' + elem.label());
+        if (elem && renderer) {
+            this.infoSetTitle(elem.type + ' ' + elem.label);
 
             const contents = $('#info-contents');
             contents.html('');
 
-            if (elem instanceof Edge && elem.data.type === 'Memlet' &&
-                elem.parent_id !== null) {
-                const ndEdges = elem.cfg?.nodes[elem.parent_id].edges;
+            if (elem instanceof Edge && elem.type === 'Memlet' &&
+                elem.parentStateId !== undefined) {
+                const ndEdges = elem.cfg?.nodes[elem.parentStateId].edges;
                 if (ndEdges) {
-                    let sdfg_edge = ndEdges[elem.id];
+                    const sdfgEdge = ndEdges[elem.id];
                     $('<p>', {
                         'class': 'info-subtitle',
-                        'html': 'Connectors: ' + sdfg_edge.src_connector +
+                        'html': 'Connectors: ' +
+                            (sdfgEdge.src_connector ?? '') +
                             ' <i class="material-symbols-outlined">' +
-                            'arrow_forward</i> ' + sdfg_edge.dst_connector,
+                            'arrow_forward</i> ' +
+                            (sdfgEdge.dst_connector ?? ''),
                     }).appendTo(contents);
                     $('<hr>').appendTo(contents);
                 }
@@ -267,23 +289,24 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
 
             if (elem instanceof AccessNode) {
                 // If we're processing an access node, add array info too.
-                const sdfg_array = elem.sdfg.attributes._arrays[
-                    elem.attributes().data
-                ];
-                $('<br>').appendTo(contents);
-                $('<p>', {
-                    'class': 'info-subtitle',
-                    'text': sdfg_array.type + ' properties:',
-                }).appendTo(contents);
+                const dataAttr = elem.attributes()?.data;
+                if (dataAttr) {
+                    const desc = elem.sdfg.attributes?._arrays[dataAttr];
+                    $('<br>').appendTo(contents);
+                    $('<p>', {
+                        'class': 'info-subtitle',
+                        'text': (desc?.type ?? '') + ' properties:',
+                    }).appendTo(contents);
 
-                // TODO: Allow container types to be changed here too.
-                const tableContainer = $('<div>', {
-                    'class': 'container-fluid attr-table-base-container',
-                }).appendTo(contents);
-                generateAttributesTable(sdfg_array, undefined, tableContainer);
+                    // TODO: Allow container types to be changed here too.
+                    const tableContainer = $('<div>', {
+                        'class': 'container-fluid attr-table-base-container',
+                    }).appendTo(contents);
+                    generateAttributesTable(desc, undefined, tableContainer);
+                }
             } else if (elem instanceof NestedSDFG) {
                 // If nested SDFG, add SDFG info too.
-                const sdfg_sdfg = elem.attributes().sdfg;
+                const nsdfgSdfg = elem.attributes()?.sdfg;
                 $('<br>').appendTo(contents);
                 $('<p>', {
                     'class': 'info-subtitle',
@@ -293,83 +316,130 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
                 const tableContainer = $('<div>', {
                     'class': 'container-fluid attr-table-base-container',
                 }).appendTo(contents);
-                generateAttributesTable(sdfg_sdfg, undefined, tableContainer);
+                generateAttributesTable(nsdfgSdfg, undefined, tableContainer);
+                const nSdfgAttrs = nsdfgSdfg?.attributes;
+                if (nSdfgAttrs) {
+                    appendDataDescriptorTable(
+                        contents, nSdfgAttrs._arrays, nsdfgSdfg,
+                        DATA_CONTAINERS_START_EXPANDED_THRESHOLD
+                    );
+                    appendSymbolsTable(
+                        contents, nSdfgAttrs.symbols,
+                        SYMBOLS_START_EXPANDED_THRESHOLD
+                    );
+                }
             } else if (elem instanceof ScopeNode) {
                 // If we're processing a scope node, we want to append the exit
                 // node's props when selecting an entry node, and vice versa.
-                let other_element = undefined;
+                let otherElem = undefined;
 
-                let other_uuid = undefined;
+                let otherUuid = undefined;
                 if (elem instanceof EntryNode &&
-                    !elem.attributes().is_collapsed) {
-                    other_uuid = elem.cfg!.cfg_list_id + '/' +
-                        elem.parent_id + '/' +
-                        elem.data.node.scope_exit + '/-1';
+                    !elem.attributes()?.is_collapsed) {
+                    otherUuid = elem.cfg!.cfg_list_id.toString() + '/' +
+                        (elem.parentStateId ?? -1).toString() + '/' +
+                        (elem.jsonData?.scope_exit ?? -1).toString() + '/-1';
                 } else if (elem instanceof ExitNode) {
-                    other_uuid = elem.cfg!.cfg_list_id + '/' +
-                        elem.parent_id + '/' +
-                        elem.data.node.scope_entry + '/-1';
+                    otherUuid = elem.cfg!.cfg_list_id.toString() + '/' +
+                        (elem.parentStateId ?? -1).toString() + '/' +
+                        (elem.jsonData?.scope_entry ?? -1).toString() + '/-1';
                 }
 
-                if (other_uuid) {
-                    other_element = findGraphElementByUUID(
-                        renderer.getCFGList(), other_uuid
+                if (otherUuid) {
+                    otherElem = findGraphElementByUUID(
+                        renderer.cfgList, otherUuid
                     );
                 }
 
-                if (other_element && other_element instanceof SDFGElement) {
+                if (otherElem && otherElem instanceof SDFGElement) {
                     $('<br>').appendTo(contents);
                     $('<p>', {
                         'class': 'info-subtitle',
-                        'text':
-                            other_element.type() + ' ' + other_element.label(),
+                        'text': otherElem.type + ' ' + otherElem.label,
                     }).appendTo(contents);
 
                     const tableContainer = $('<div>', {
                         'class': 'container-fluid attr-table-base-container',
                     }).appendTo(contents);
                     generateAttributesTable(
-                        other_element, undefined, tableContainer
+                        otherElem, undefined, tableContainer
                     );
                 }
             } else if (elem instanceof SDFG) {
-                if (elem.data?.attributes) {
+                const attrs = elem.attributes();
+                if (attrs && elem.jsonData) {
                     appendDataDescriptorTable(
-                        contents, elem.data.attributes._arrays, elem.data
+                        contents, attrs._arrays, elem.jsonData,
+                        DATA_CONTAINERS_START_EXPANDED_THRESHOLD
                     );
                     appendSymbolsTable(
-                        contents, elem.data.attributes.symbols, elem.data
+                        contents, attrs.symbols,
+                        SYMBOLS_START_EXPANDED_THRESHOLD
                     );
                 }
-            } else if (elem instanceof NestedSDFG) {
-                if (elem.data?.node?.attributes) {
-                    appendDataDescriptorTable(
-                        contents,
-                        elem.data.node.attributes.sdfg.attributes._arrays,
-                        elem.data.node.attributes.sdfg
-                    );
-                    appendSymbolsTable(
-                        contents,
-                        elem.data.node.attributes.sdfg.attributes.symbols,
-                        elem.data.node.attributes.sdfg
-                    );
+            }
+
+            // Display a button to jump to the generated C++ code.
+            if (
+                elem instanceof SDFGElement &&
+                !(elem instanceof Edge) &&
+                !(elem instanceof Connector)
+            ) {
+                const gotoCppBtn = $('#goto-cpp-btn');
+                const undefinedVal = -1;
+                const sdfgName =
+                    VSCodeSDFV.getInstance().renderer?.sdfg?.attributes?.name ??
+                    'program';
+                const sdfgId = elem.sdfg.cfg_list_id;
+                let stateId = undefinedVal;
+                let nodeId = undefinedVal;
+
+                if (elem instanceof State) {
+                    stateId = elem.id;
+                } else if (elem instanceof Node) {
+                    if (elem.parentStateId === undefined)
+                        stateId = undefinedVal;
+                    else
+                        stateId = elem.parentStateId;
+                    nodeId = elem.id;
                 }
+
+                gotoCppBtn.on('click', () => {
+                    VSCodeSDFV.getInstance().gotoCpp(
+                        sdfgName,
+                        sdfgId,
+                        stateId,
+                        nodeId
+                    ).catch((reason: unknown) => {
+                        console.error('Failed to jump to C++ code:', reason);
+                    });
+                });
+                gotoCppBtn.prop(
+                    'title',
+                    sdfgName + ':' + String(sdfgId) +
+                        (stateId === undefinedVal ?
+                            '' : (':' + String(stateId)) +
+                        (nodeId === undefinedVal ? '' : (':' + String(nodeId))))
+                );
+                gotoCppBtn.show();
             }
 
             this.infoBoxCheckStacking($('#info-container'));
         } else {
             this.infoClear();
         }
+
+        this.infoShow();
     }
 
     private infoBoxCheckUncoverTopBar(
-        infoContainer?: JQuery<HTMLElement>, topBar?: JQuery<HTMLElement>
+        infoContainer?: JQuery, topBar?: JQuery
     ): void {
         // If the info container is to the side, ensure it doesn't cover up the
         // top bar when shown.
         if (infoContainer?.hasClass('offcanvas-end')) {
-            const topBarHeight = topBar?.outerHeight(false);
-            infoContainer?.css('top', topBarHeight + 'px');
+            const topBarHeight = topBar?.outerHeight(false) ?? 0;
+            infoContainer.css('top', topBarHeight.toString() + 'px');
         } else {
             infoContainer?.css('top', '');
         }
@@ -380,7 +450,7 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
      * If not, stack them one on top of the other.
      * @param infoContainer The info box container.
      */
-    private infoBoxCheckStacking(infoContainer?: JQuery<HTMLElement>): void {
+    private infoBoxCheckStacking(infoContainer?: JQuery): void {
         const innerWidth = infoContainer?.innerWidth();
         if (innerWidth && innerWidth <= 575)
             infoContainer?.addClass('stacked');
@@ -394,26 +464,40 @@ export class SDFVVSCodeUI implements ISDFVUserInterface {
                 !this.infoTrayExplicitlyHidden) {
                 try {
                     const pixels = this.infoBarLastVertWidth + 5;
-                    if (animate)
+                    if (animate) {
                         $('#minimap').css(
                             'transition', 'right 0.3s ease-in-out'
                         );
-                    else
+                    } else {
                         $('#minimap').css('transition', '');
+                    }
                     $('#minimap').css('right', pixels.toString() + 'px');
                 } catch (e) {
                     console.warn(e);
                 }
             } else {
-                if (animate)
+                if (animate) {
                     $('#minimap').css(
                         'transition', 'right 0.3s ease-in-out'
                     );
-                else
+                } else {
                     $('#minimap').css('transition', '');
+                }
                 $('#minimap').css('right', '5px');
             }
         }
+    }
+
+    public async showActivityIndicatorFor<T>(
+        message: string, fun: (...args: unknown[]) => Promise<T>
+    ): Promise<T> {
+        const sdfvComponent = SDFVComponent.getInstance();
+        const uuid = await sdfvComponent.invoke<string>(
+            'showActivity', [message]
+        );
+        const ret = await fun();
+        await sdfvComponent.invoke('hideActivity', [uuid]);
+        return ret;
     }
 
 }

@@ -1,17 +1,16 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as vscode from 'vscode';
 
-interface CompressedSDFGEdit {
-}
+type CompressedSDFGEdit = unknown;
 
 interface CompressedSDFGDocumentDelegate {
-    getFileData(): Promise<Uint8Array>;
+    getFileData(): Promise<ArrayBuffer>;
 }
 
 interface CompressedSDFGDocumentChangedEvent {
-    readonly content?: Uint8Array;
+    readonly content?: ArrayBuffer;
     readonly edits: readonly CompressedSDFGEdit[];
 }
 
@@ -43,12 +42,12 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         this._onDidDispose, this._onDidChangeDocument, this._onDidChange
     );
 
-    private _documentData: Uint8Array;
+    private _documentData: ArrayBuffer;
     private _edits: CompressedSDFGEdit[] = [];
     private _savedEdits: CompressedSDFGEdit[] = [];
 
     private constructor(
-        uri: vscode.Uri, initialContent: Uint8Array,
+        uri: vscode.Uri, initialContent: ArrayBuffer,
         delegate: CompressedSDFGDocumentDelegate
     ) {
         this._uri = uri;
@@ -66,10 +65,11 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         return new CompressedSDFGDocument(uri, fileData, delegate);
     }
 
-    private static async readFile(uri: vscode.Uri): Promise<Uint8Array> {
+    private static async readFile(uri: vscode.Uri): Promise<ArrayBuffer> {
         if (uri.scheme === 'untitled')
-            return new Uint8Array();
-        return new Uint8Array(await vscode.workspace.fs.readFile(uri));
+            return (new Uint8Array()).buffer;
+        const res = await vscode.workspace.fs.readFile(uri);
+        return res.buffer as ArrayBuffer;
     }
 
     public dispose(): void {
@@ -81,13 +81,13 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         this._edits.push(edit);
         this._onDidChange.fire({
             label: 'Edit',
-            undo: async () => {
+            undo: () => {
                 this._edits.pop();
                 this._onDidChangeDocument.fire({
                     edits: this._edits,
                 });
             },
-            redo: async () => {
+            redo: () => {
                 this._edits.push(edit);
                 this._onDidChangeDocument.fire({
                     edits: this._edits,
@@ -101,7 +101,7 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         return this._uri;
     }
 
-    public get documentData(): Uint8Array {
+    public get documentData(): ArrayBuffer {
         return this._documentData;
     }
 
@@ -115,10 +115,12 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         targetResource: vscode.Uri, token?: vscode.CancellationToken
     ): Promise<boolean> {
         const fileData = await this._delegate.getFileData();
-        if (token && token.isCancellationRequested)
+        if (token?.isCancellationRequested)
             return false;
         try {
-            await vscode.workspace.fs.writeFile(targetResource, fileData);
+            await vscode.workspace.fs.writeFile(
+                targetResource, new Uint8Array(fileData)
+            );
             this._dirty = false;
             return true;
         } catch (_) {
@@ -145,13 +147,9 @@ export class CompressedSDFGDocument implements vscode.CustomDocument {
         await this.saveAs(destination, cancellation);
         return {
             id: destination.toString(),
-            delete: async () => {
-                try {
-                    await vscode.workspace.fs.delete(destination);
-                } catch {
-                    // noop
-                }
-            }
+            delete: () => {
+                void vscode.workspace.fs.delete(destination);
+            },
         };
     }
 

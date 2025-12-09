@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import { AnalysisProvider } from './analysis';
@@ -11,7 +11,9 @@ export class OptimizationPanel {
 
     private static INSTANCE: OptimizationPanel = new OptimizationPanel();
 
-    private constructor() {}
+    private constructor() {
+        return;
+    }
 
     public static getInstance(): OptimizationPanel {
         return this.INSTANCE;
@@ -31,7 +33,7 @@ export class OptimizationPanel {
     }
 
     public async clearAll(reason: string = 'No SDFG selected'): Promise<void> {
-        Promise.all([
+        await Promise.all([
             TransformationListProvider.getInstance()?.invoke(
                 'clearTransformations', [reason]
             ),

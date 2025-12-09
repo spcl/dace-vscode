@@ -1,11 +1,12 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
+import { ControlFlowBlock, SDFGNode } from '@spcl/sdfv/src';
 import { ComponentTarget } from '../../../../components/components';
 import {
     JsonTransformation,
     JsonTransformationGroup,
-    JsonTransformationList
+    JsonTransformationList,
 } from '../../transformations/transformations';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { generateAttributesTable } from '../utils/attributes_table';
@@ -19,44 +20,46 @@ export function transformationGetAffectedUUIDs(
     transformation: JsonTransformation
 ): string[] {
     const uuids = [];
-    if (transformation._subgraph !== undefined)
+    if (transformation._subgraph !== undefined) {
         for (const id of Object.values(transformation._subgraph)) {
-            if (transformation.state_id === -1)
+            if (transformation.state_id === -1) {
                 uuids.push(
-                    transformation.cfg_id + '/' +
-                    id + '/-1/-1'
+                    (transformation.cfg_id?.toString() ?? '0') + '/' +
+                    id.toString() + '/-1/-1'
                 );
-            else
+            } else {
                 uuids.push(
-                    transformation.cfg_id + '/' +
-                    transformation.state_id + '/' + id +
-                    '/-1'
+                    (transformation.cfg_id?.toString() ?? '0') + '/' +
+                    (transformation.state_id?.toString() ?? '-1') + '/' +
+                    id.toString() + '/-1'
                 );
+            }
         }
-    else
+    } else {
         uuids.push('-1/-1/-1/-1');
+    }
     return uuids;
 }
 
-type SelectedElementT = {
+interface SelectedElementT {
     readonly type: string;
     readonly stateId: number | null;
     readonly cfgId: number;
     readonly id: number;
-};
+}
 
 export function getCleanedSelectedElements(): SelectedElementT[] {
     const cleanedSelected: SelectedElementT[] = [];
-    VSCodeRenderer.getInstance()?.get_selected_elements().forEach(element => {
+    VSCodeRenderer.getInstance()?.selectedRenderables.forEach(element => {
         let type = 'other';
-        if (element.data !== undefined && element.data.node !== undefined)
+        if (element.data?.node !== undefined)
             type = 'node';
-        else if (element.data !== undefined && element.data.state !== undefined)
+        else if (element.data?.state !== undefined)
             type = 'state';
 
         cleanedSelected.push({
             type: type,
-            stateId: element.parent_id,
+            stateId: element.parentStateId ?? null,
             cfgId: element.cfg?.cfg_list_id ?? 0,
             id: element.id,
         });
@@ -67,8 +70,9 @@ export function getCleanedSelectedElements(): SelectedElementT[] {
 /**
  * Request a list of applicable transformations from DaCe.
  */
-export async function getApplicableTransformations(): Promise<any[]> {
-    return SDFVComponent.getInstance().invoke(
+export async function getApplicableTransformations(
+): Promise<JsonTransformation[] | undefined> {
+    return SDFVComponent.getInstance().invoke<JsonTransformation[] | undefined>(
         'loadTransformations', [
             VSCodeSDFV.getInstance().getSdfgString(),
             getCleanedSelectedElements(),
@@ -78,29 +82,31 @@ export async function getApplicableTransformations(): Promise<any[]> {
 
 export async function refreshXform(sdfv: VSCodeSDFV): Promise<void> {
     clearSelectedTransformation();
-    return getApplicableTransformations().then(transformations => {
+    const transformations = await getApplicableTransformations();
+    if (transformations !== undefined) {
         sdfv.setDaemonConnected(true);
-        if (transformations !== undefined)
-            sdfv.setTransformations({
-                selection: [],
-                viewport: [],
-                passes: [],
-                uncategorized: [{
+        sdfv.setTransformations({
+            selection: [],
+            viewport: [],
+            passes: [],
+            uncategorized: [
+                {
                     title: 'Uncategorized',
                     ordering: 0,
                     xforms: transformations,
-                }],
-            });
-        else
-            sdfv.setTransformations({
-                selection: [],
-                viewport: [],
-                passes: [],
-                uncategorized: [],
-            });
+                },
+            ],
+        });
+    } else {
+        sdfv.setTransformations({
+            selection: [],
+            viewport: [],
+            passes: [],
+            uncategorized: [],
+        });
+    }
 
-        sortTransformations(true, refreshTransformationList, true);
-    });
+    sortTransformations(true, refreshTransformationList, true);
 }
 
 /**
@@ -108,9 +114,10 @@ export async function refreshXform(sdfv: VSCodeSDFV): Promise<void> {
  *
  * @param {*} callback  Callback to call when sorting has been completed.
  */
-export async function sortTransformations(
-    resortAll: boolean = true, callback: CallableFunction, ...args: any[]
-): Promise<void> {
+export function sortTransformations(
+    resortAll: boolean = true, callback?: (...args: any[]) => unknown,
+    ...args: unknown[]
+): void {
     // Run this asynchronosuly to not block the UI thread.
     setTimeout(() => {
         const sortedTransformations: JsonTransformationList = {
@@ -124,7 +131,7 @@ export async function sortTransformations(
         if (!renderer)
             return;
 
-        const selectedElements = renderer.get_selected_elements();
+        const selectedElements = Array.from(renderer.selectedRenderables);
         const clearSubgraphXforms = selectedElements.length <= 1;
 
         // Gather all transformations that need to be sorted. If the resortAll
@@ -153,23 +160,26 @@ export async function sortTransformations(
         }
 
         // Sort each transformation into the respective category.
-        const visibleElements = renderer.getVisibleElements();
-        const buckets: {
-            [key: string]: JsonTransformation[],
-        } = {
-            'selection': [],
-            'viewport': [],
-            'passes': [],
-            'uncategorized': [],
+        const visibleElements = renderer.getVisibleElementsAsObjects();
+        const buckets = {
+            selection: [],
+            viewport: [],
+            passes: [],
+            uncategorized: [],
+        } as {
+            selection: JsonTransformation[],
+            viewport: JsonTransformation[],
+            passes: JsonTransformation[],
+            uncategorized: JsonTransformation[],
         };
         for (const xform of toSort) {
             // Subgraph Transformations always apply to the selection.
             if (xform.type === 'SubgraphTransformation') {
                 if (!clearSubgraphXforms)
-                    buckets['selection'].push(xform);
+                    buckets.selection.push(xform);
                 continue;
             } else if (xform.type === 'Pass' || xform.type === 'Pipeline') {
-                buckets['passes'].push(xform);
+                buckets.passes.push(xform);
                 continue;
             }
 
@@ -178,13 +188,14 @@ export async function sortTransformations(
                 // Matching a node.
                 if (xform._subgraph) {
                     for (const nid of Object.values(xform._subgraph)) {
-                        if (selectedElements.filter((e) => {
-                                return (e.data.node !== undefined) &&
-                                    e.sdfg.cfg_list_id === xform.cfg_id &&
-                                    e.parent_id === xform.state_id &&
-                                    e.id === Number(nid);
-                            }).length > 0) {
-                            buckets['selection'].push(xform);
+                        const idMatched = selectedElements.filter((e) => {
+                            return (e.data?.node !== undefined) &&
+                                e.sdfg.cfg_list_id === xform.cfg_id &&
+                                e.parentStateId === xform.state_id &&
+                                e.id === Number(nid);
+                        });
+                        if (idMatched.length > 0) {
+                            buckets.selection.push(xform);
                             matched = true;
                             break;
                         }
@@ -192,13 +203,15 @@ export async function sortTransformations(
 
                     if (!matched) {
                         for (const nid of Object.values(xform._subgraph)) {
-                            if (visibleElements.filter((e) => {
-                                    return e.type === 'node' &&
-                                        e.cfgId === xform.cfg_id &&
-                                        e.stateId === xform.state_id &&
-                                        e.id === Number(nid);
-                                }).length > 0) {
-                                buckets['viewport'].push(xform);
+                            const idMatched = visibleElements.filter((e) => {
+                                return e instanceof SDFGNode &&
+                                    e.parentElem?.cfg?.cfg_list_id ===
+                                        xform.cfg_id &&
+                                    e.parentStateId === xform.state_id &&
+                                    e.id === Number(nid);
+                            });
+                            if (idMatched.length > 0) {
+                                buckets.viewport.push(xform);
                                 matched = true;
                                 break;
                             }
@@ -208,12 +221,13 @@ export async function sortTransformations(
             } else {
                 if (xform._subgraph) {
                     for (const nid of Object.values(xform._subgraph)) {
-                        if (selectedElements.filter((e) => {
-                                return (e.data.state !== undefined) &&
-                                    e.sdfg.cfg_list_id === xform.cfg_id &&
-                                    e.id === Number(nid);
-                            }).length > 0) {
-                            buckets['selection'].push(xform);
+                        const idMatched = selectedElements.filter((e) => {
+                            return (e.data?.state !== undefined) &&
+                                e.sdfg.cfg_list_id === xform.cfg_id &&
+                                e.id === Number(nid);
+                        });
+                        if (idMatched.length > 0) {
+                            buckets.selection.push(xform);
                             matched = true;
                             break;
                         }
@@ -221,12 +235,13 @@ export async function sortTransformations(
 
                     if (!matched) {
                         for (const nid of Object.values(xform._subgraph)) {
-                            if (visibleElements.filter((e) => {
-                                    return e.type === 'state' &&
-                                        e.cfgId === xform.cfg_id &&
-                                        e.id === Number(nid);
-                                }).length > 0) {
-                                buckets['viewport'].push(xform);
+                            const idMatched = visibleElements.filter((e) => {
+                                return e instanceof ControlFlowBlock &&
+                                    e.jsonData?.cfg_list_id === xform.cfg_id &&
+                                    e.id === Number(nid);
+                            });
+                            if (idMatched.length > 0) {
+                                buckets.viewport.push(xform);
                                 matched = true;
                                 break;
                             }
@@ -240,18 +255,18 @@ export async function sortTransformations(
                 (!xform._subgraph ||
                  Object.keys(xform._subgraph).length === 0)) {
                 xform.CATEGORY = 'Global';
-                buckets['viewport'].push(xform);
+                buckets.viewport.push(xform);
                 matched = true;
             }
 
             if (!matched)
-                buckets['uncategorized'].push(xform);
+                buckets.uncategorized.push(xform);
         }
 
         // Perform grouping inside each category and sort the groups.
         // For each group, perform sorting inside the group where applicable.
         for (const ct of categoriesToSort) {
-            const groupDict: Map<string, JsonTransformationGroup> = new Map();
+            const groupDict = new Map<string, JsonTransformationGroup>();
             for (const xform of buckets[ct]) {
                 let groupName = xform.transformation;
                 let groupOrdering = 0;
@@ -264,14 +279,15 @@ export async function sortTransformations(
                     groupOrdering = 100;
                 }
 
-                if (groupDict.has(groupName))
+                if (groupDict.has(groupName)) {
                     groupDict.get(groupName)?.xforms.push(xform);
-                else
+                } else {
                     groupDict.set(groupName, {
                         title: groupName,
                         ordering: groupOrdering,
                         xforms: [xform],
                     });
+                }
             }
 
             for (const [_, grp] of groupDict) {
@@ -327,18 +343,18 @@ export async function refreshTransformationList(
     hideLoading: boolean = false
 ): Promise<void> {
     const transformations = VSCodeSDFV.getInstance().getTransformations();
-    if (transformations !== undefined)
-        if (VSCodeSDFV.getInstance().getViewingHistoryState())
-            await SDFVComponent.getInstance().invoke(
-                'clearTransformations', [
-                    'Can\'t show transformations while viewing a history state',
-                ], ComponentTarget.Transformations
-            );
-        else
-            await SDFVComponent.getInstance().invoke(
-                'setTransformations', [transformations, hideLoading],
-                ComponentTarget.Transformations
-            );
+    if (VSCodeSDFV.getInstance().getViewingHistoryState()) {
+        await SDFVComponent.getInstance().invoke(
+            'clearTransformations',
+            ['Can\'t show transformations while viewing a history state'],
+            ComponentTarget.Transformations
+        );
+    } else {
+        await SDFVComponent.getInstance().invoke(
+            'setTransformations', [transformations, hideLoading],
+            ComponentTarget.Transformations
+        );
+    }
 }
 
 export function clearSelectedTransformation(): void {
@@ -396,7 +412,7 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
         zoomToUUIDs(affectedIds);
 
-    if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
+    if (xform.type !== 'Pass' && xform.type !== 'Pipeline') {
         $('<div>', {
             class: 'btn btn-sm btn-primary',
             click: () => {
@@ -406,24 +422,25 @@ export function showTransformationDetails(xform: JsonTransformation): void {
                 highlightUUIDs(affectedIds);
             },
             mouseleave: () => {
-                VSCodeRenderer.getInstance()?.draw_async();
+                VSCodeRenderer.getInstance()?.drawAsync();
             },
         }).append($('<span>', {
             'text': 'Zoom to area',
         })).appendTo(xformButtonContainer);
+    }
 
     $('<div>', {
         class: 'btn btn-sm btn-primary',
         click: () => {
             SDFVComponent.getInstance().invoke(
                 'previewTransformation', [xform], ComponentTarget.DaCe
-            );
+            ).catch(console.error);
         },
         mouseenter: () => {
             highlightUUIDs(affectedIds);
         },
         mouseleave: () => {
-            VSCodeRenderer.getInstance()?.draw_async();
+            VSCodeRenderer.getInstance()?.drawAsync();
         },
     }).append($('<span>', {
         'text': 'Preview',
@@ -432,29 +449,30 @@ export function showTransformationDetails(xform: JsonTransformation): void {
     $('<div>', {
         class: 'btn btn-sm btn-primary',
         click: () => {
-            applyTransformations(xform);
+            applyTransformations(xform).catch(console.error);
         },
         mouseenter: () => {
             highlightUUIDs(affectedIds);
         },
         mouseleave: () => {
-            VSCodeRenderer.getInstance()?.draw_async();
+            VSCodeRenderer.getInstance()?.drawAsync();
         },
     }).append($('<span>', {
         'text': 'Apply',
     })).appendTo(xformButtonContainer);
 
-    if (xform.type !== 'Pass' && xform.type !== 'Pipeline')
+    if (xform.type !== 'Pass' && xform.type !== 'Pipeline') {
         $('<div>', {
             class: 'btn btn-sm btn-primary',
             click: () => {
                 SDFVComponent.getInstance().invoke(
                     'exportTransformation', [xform], ComponentTarget.DaCe
-                );
+                ).catch(console.error);
             },
         }).append($('<span>', {
             text: 'Export To File',
         })).appendTo(xformButtonContainer);
+    }
 
     const tableContainer = $('<div>', {
         'class': 'container-fluid attr-table-base-container',
@@ -470,7 +488,7 @@ export async function applyTransformations(
     VSCodeRenderer.getInstance()?.clearSelectedItems();
     VSCodeSDFV.getInstance().linkedUI.infoClear(true);
     $('#exit-preview-button').hide();
-    return SDFVComponent.getInstance().invoke(
+    await SDFVComponent.getInstance().invoke(
         'applyTransformations', [xforms], ComponentTarget.DaCe
     );
 }

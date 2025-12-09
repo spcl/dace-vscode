@@ -1,13 +1,13 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as vscode from 'vscode';
 import {
-    ICPCExtensionMessagingComponent
+    ICPCExtensionMessagingComponent,
 } from './messaging/icpc_extension_messaging_component';
 import {
     ICPCRequest,
-    ICPCRequestMessage
+    ICPCRequestMessage,
 } from '../common/messaging/icpc_messaging_component';
 
 
@@ -18,7 +18,7 @@ export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
     protected readonly scriptSrcIdentifier = /{{ SCRIPT_SRC }}/g;
 
     private isReady: boolean = false;
-    private readonly pcMap: Map<string, ICPCRequestMessage> = new Map();
+    private readonly pcMap = new Map<string, ICPCRequestMessage>();
 
     constructor(
         protected readonly context: vscode.ExtensionContext,
@@ -28,11 +28,17 @@ export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
         super(type, webview);
     }
 
-    protected _doSendRequest(message: ICPCRequestMessage): void {
-        if (!this.isReady || !this.target)
-            this.pcMap.set(message.procedure, message);
-        else
+    protected _doSendRequest(
+        message: ICPCRequestMessage, buffer?: boolean
+    ): void {
+        if (!this.isReady || !this.target) {
+            if (buffer)
+                this.pcMap.set(message.id, message);
+            else
+                this.handleUninitializedTargetRequest(message);
+        } else {
             super._doSendRequest(message);
+        }
     }
 
     private processQueuedRequests(): void {
@@ -41,7 +47,7 @@ export abstract class BaseComponent extends ICPCExtensionMessagingComponent {
     }
 
     @ICPCRequest(true)
-    public async onReady(): Promise<void> {
+    public onReady(): void {
         this.isReady = true;
         this.processQueuedRequests();
     }

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as bootstrap from 'bootstrap';
@@ -8,16 +8,19 @@ import 'material-symbols';
 
 import './dace_panel.css';
 
-import $ = require('jquery');
-(window as any).jQuery = $;
+import $ from 'jquery';
 
 import {
-    ICPCWebclientMessagingComponent
+    ICPCWebclientMessagingComponent,
 } from '../../messaging/icpc_webclient_messaging_component';
 import { ComponentTarget } from '../../../components/components';
-import { ICPCRequest } from '../../../common/messaging/icpc_messaging_component';
+import {
+    ICPCRequest,
+} from '../../../common/messaging/icpc_messaging_component';
+import type { WebviewApi } from 'vscode-webview';
 
-declare const vscode: any;
+
+declare const vscode: WebviewApi<unknown>;
 
 class DaCePanel extends ICPCWebclientMessagingComponent {
 
@@ -31,9 +34,9 @@ class DaCePanel extends ICPCWebclientMessagingComponent {
         return this.INSTANCE;
     }
 
-    private launchBtn?: JQuery<HTMLElement>;
-    private connectBtn?: JQuery<HTMLElement>;
-    private quitBtn?: JQuery<HTMLElement>;
+    private launchBtn?: JQuery;
+    private connectBtn?: JQuery;
+    private quitBtn?: JQuery;
     private portInput?: JQuery<HTMLInputElement>;
 
     public init(): void {
@@ -54,7 +57,7 @@ class DaCePanel extends ICPCWebclientMessagingComponent {
             this.quitDaemon();
         });
 
-        this.invoke('onReady');
+        void this.invoke('onReady');
     }
 
     private getPort(): number | undefined {
@@ -69,22 +72,22 @@ class DaCePanel extends ICPCWebclientMessagingComponent {
 
     public launchDaemon(): void {
         const port = this.getPort();
-        this.invoke('startDaemonInTerminal', [port]);
+        void this.invoke('startDaemonInTerminal', [port]);
     }
 
     public connectDaemon(): void {
         const port = this.getPort();
         if (port) {
-            this.invoke('setPort', [port]).then(() => {
-                this.invoke('pollDaemon');
+            void this.invoke('setPort', [port]).then(() => {
+                void this.invoke('pollDaemon');
             });
         } else {
-            this.invoke('pollDaemon');
+            void this.invoke('pollDaemon');
         }
     }
 
     public quitDaemon(): void {
-        this.invoke('quitDaemon');
+        void this.invoke('quitDaemon');
     }
 
     @ICPCRequest()

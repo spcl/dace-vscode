@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as path from 'path';
@@ -10,8 +10,8 @@ import { ComponentTarget } from './components';
 import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 
 export class TransformationListProvider
-extends BaseComponent
-implements vscode.WebviewViewProvider {
+    extends BaseComponent
+    implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = ComponentTarget.Transformations;
 
@@ -42,7 +42,7 @@ implements vscode.WebviewViewProvider {
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
-        _context: vscode.WebviewViewResolveContext<unknown>,
+        _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
     ): void | Thenable<void> {
         // If the DaCe interface has not been started yet, start it here.
@@ -81,15 +81,15 @@ implements vscode.WebviewViewProvider {
         });
     }
 
-    public async showLoading(): Promise<void> {
+    public async showLoading(): Promise<unknown> {
         return this.invoke('showLoading');
     }
 
-    public async hideLoading(): Promise<void> {
+    public async hideLoading(): Promise<unknown> {
         return this.invoke('hideLoading');
     }
 
-    public async deselect(): Promise<void> {
+    public async deselect(): Promise<unknown> {
         return this.invoke('deselect');
     }
 
@@ -104,9 +104,9 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest(true)
-    public onReady(): Promise<void> {
+    public onReady(): void {
         vscode.commands.executeCommand('transformationList.sync');
-        return super.onReady();
+        super.onReady();
     }
 
 }

@@ -207,7 +207,7 @@
     "DataInstrumentationType": {
       "metatype": "DataInstrumentationType",
       "desc": "Instrument data contents at this access",
-      "category": "General",
+      "category": "Instrumentation",
       "default": "No_Instrumentation",
       "choices": [
         "No_Instrumentation",
@@ -218,7 +218,7 @@
     "CodeBlock": {
       "metatype": "CodeBlock",
       "desc": "Condition under which to trigger the instrumentation",
-      "category": "General",
+      "category": "Instrumentation",
       "default": {
         "string_data": "1",
         "language": "CPP"
@@ -3126,7 +3126,7 @@
     "instrument": {
       "metatype": "DataInstrumentationType",
       "desc": "Instrument data contents at this access",
-      "category": "General",
+      "category": "Instrumentation",
       "default": "No_Instrumentation",
       "choices": [
         "No_Instrumentation",
@@ -3137,7 +3137,7 @@
     "instrument_condition": {
       "metatype": "CodeBlock",
       "desc": "Condition under which to trigger the instrumentation",
-      "category": "General",
+      "category": "Instrumentation",
       "default": {
         "string_data": "1",
         "language": "CPP"
@@ -3479,6 +3479,12 @@
       "category": "General",
       "default": null
     },
+    "ext_sdfg_path": {
+      "metatype": "str",
+      "desc": "Path to a file containing the SDFG for this nested SDFG",
+      "category": "General",
+      "default": null
+    },
     "schedule": {
       "metatype": "ScheduleType",
       "desc": "SDFG schedule",
@@ -3751,6 +3757,13 @@
       "default": "0",
       "indirected": true
     },
+    "gpu_force_syncthreads": {
+      "metatype": "bool",
+      "desc": "Force a call to the __syncthreads for the map",
+      "category": "General",
+      "default": false,
+      "indirected": true
+    },
     "in_connectors": {
       "metatype": "dict",
       "desc": "A set of input connectors for this node.",
@@ -3933,6 +3946,12 @@
       "desc": "GPU kernel launch bounds. A value of -1 disables the statement, 0 (default) enables the statement if block size is not symbolic, and any other value (including tuples) sets it explicitly.",
       "category": "General",
       "default": "0"
+    },
+    "gpu_force_syncthreads": {
+      "metatype": "bool",
+      "desc": "Force a call to the __syncthreads for the map",
+      "category": "General",
+      "default": false
     }
   },
   "ConsumeEntry": {
@@ -4356,6 +4375,13 @@
       "default": "0",
       "indirected": true
     },
+    "gpu_force_syncthreads": {
+      "metatype": "bool",
+      "desc": "Force a call to the __syncthreads for the map",
+      "category": "General",
+      "default": false,
+      "indirected": true
+    },
     "in_connectors": {
       "metatype": "dict",
       "desc": "A set of input connectors for this node.",
@@ -4568,6 +4594,12 @@
       "desc": "GPU kernel launch bounds. A value of -1 disables the statement, 0 (default) enables the statement if block size is not symbolic, and any other value (including tuples) sets it explicitly.",
       "category": "General",
       "default": "0"
+    },
+    "gpu_force_syncthreads": {
+      "metatype": "bool",
+      "desc": "Force a call to the __syncthreads for the map",
+      "category": "General",
+      "default": false
     }
   },
   "LibraryNode": {
@@ -4665,6 +4697,47 @@
   },
   "DataflowGraphView": {},
   "ControlGraphView": {},
+  "GlobalDepAccessEntry": {
+    "node_id": {
+      "metatype": "int",
+      "desc": "ID of the node describing the access (access node, or CFG block). None if the access is on an interstate edge or meta access.",
+      "category": "General",
+      "default": null
+    },
+    "edge_id": {
+      "metatype": "int",
+      "desc": "ID of the edge for the access. None if the access node is a CFG block.",
+      "category": "General",
+      "default": null
+    }
+  },
+  "GlobalDepDataRecord": {
+    "subset": {
+      "metatype": "SubsetProperty",
+      "desc": "Subset of the data involved in the dependency entry",
+      "category": "General",
+      "default": null
+    },
+    "dynamic": {
+      "metatype": "bool",
+      "desc": "",
+      "category": "General",
+      "default": false
+    },
+    "volume": {
+      "metatype": "SymbolicProperty",
+      "desc": "",
+      "category": "General",
+      "default": 0
+    },
+    "accesses": {
+      "metatype": "list",
+      "desc": "Accesses involved in this dependency",
+      "category": "General",
+      "default": [],
+      "element_type": "GlobalDepAccessEntry"
+    }
+  },
   "ControlFlowBlock": {
     "guid": {
       "metatype": "str",
@@ -4701,6 +4774,58 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "SDFGState": {
@@ -4745,26 +4870,6 @@
         "language": "CPP"
       }
     },
-    "executions": {
-      "metatype": "SymbolicProperty",
-      "desc": "The number of times this state gets executed (0 stands for unbounded)",
-      "category": "General",
-      "default": 0
-    },
-    "dynamic_executions": {
-      "metatype": "bool",
-      "desc": "The number of executions of this state is dynamic",
-      "category": "General",
-      "default": true
-    },
-    "ranges": {
-      "metatype": "dict",
-      "desc": "Variable ranges, typically within loops",
-      "category": "General",
-      "default": {},
-      "key_type": "symbol",
-      "value_type": "Range"
-    },
     "location": {
       "metatype": "dict",
       "desc": "Full storage location identifier (e.g., rank, GPU ID)",
@@ -4808,6 +4913,58 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ContinueBlock": {
@@ -4846,6 +5003,58 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "BreakBlock": {
@@ -4884,6 +5093,58 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ReturnBlock": {
@@ -4922,6 +5183,148 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    }
+  },
+  "AbstractControlFlowRegion": {
+    "guid": {
+      "metatype": "str",
+      "desc": "",
+      "category": "General",
+      "default": ""
+    },
+    "is_collapsed": {
+      "metatype": "bool",
+      "desc": "Show this block as collapsed",
+      "category": "General",
+      "default": false
+    },
+    "pre_conditions": {
+      "metatype": "dict",
+      "desc": "Pre-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "post_conditions": {
+      "metatype": "dict",
+      "desc": "Post-conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "invariant_conditions": {
+      "metatype": "dict",
+      "desc": "Invariant conditions for this block",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ControlFlowRegion": {
@@ -4960,6 +5363,58 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "LoopRegion": {
@@ -5034,6 +5489,58 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ConditionalBlock": {
@@ -5072,6 +5579,58 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "NamedRegion": {
@@ -5123,6 +5682,58 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "FunctionCallRegion": {
@@ -5182,6 +5793,58 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "ProcessGrid": {
@@ -5428,7 +6091,7 @@
     },
     "constants_prop": {
       "metatype": "dict",
-      "desc": "Compile-time constants",
+      "desc": "Compile-time constants. The dictionary maps between a constant name to a tuple of its type and the actual constant data.",
       "category": "General",
       "default": {}
     },
@@ -5555,9 +6218,9 @@
       "key_type": "str",
       "value_type": "str"
     },
-    "using_experimental_blocks": {
+    "using_explicit_control_flow": {
       "metatype": "bool",
-      "desc": "Whether the SDFG contains experimental control flow blocks",
+      "desc": "Whether the SDFG contains explicit control flow constructs",
       "category": "General",
       "default": false
     },
@@ -5596,11 +6259,84 @@
       "default": {},
       "key_type": "str",
       "value_type": "list"
+    },
+    "ranges": {
+      "metatype": "dict",
+      "desc": "Variable ranges across this block, typically within loops",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "Range"
+    },
+    "executions": {
+      "metatype": "SymbolicProperty",
+      "desc": "The number of times this block gets executed (0 stands for unbounded)",
+      "category": "General",
+      "default": 0
+    },
+    "dynamic_executions": {
+      "metatype": "bool",
+      "desc": "The number of executions of this block is dynamic",
+      "category": "General",
+      "default": true
+    },
+    "certain_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_reads": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "certain_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
+    },
+    "possible_writes": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "General",
+      "default": {},
+      "key_type": "str",
+      "value_type": "GlobalDepDataRecord"
     }
   },
   "Pass": {},
   "VisitorPass": {},
-  "StatePass": {},
+  "StatePass": {
+    "top_down": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply top down (i.e., parents before children)",
+      "category": "General",
+      "default": false
+    }
+  },
+  "ControlFlowRegionPass": {
+    "apply_to_conditionals": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply to conditional blocks. If false, do not apply to conditional blocks, but only their children.",
+      "category": "General",
+      "default": false
+    },
+    "top_down": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply top down (i.e., parents before children)",
+      "category": "General",
+      "default": false
+    }
+  },
   "ScopePass": {},
   "Pipeline": {
     "passes": {
@@ -8320,7 +9056,7 @@
       "metatype": "Property",
       "desc": "",
       "category": "General",
-      "default": null
+      "default": "None"
     },
     "name": {
       "metatype": "str",
@@ -8822,14 +9558,53 @@
       "default": false
     }
   },
-  "SymbolAccessSets": {},
+  "SymbolAccessSets": {
+    "apply_to_conditionals": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply to conditional blocks. If false, do not apply to conditional blocks, but only their children.",
+      "category": "General",
+      "default": false
+    },
+    "top_down": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply top down (i.e., parents before children)",
+      "category": "General",
+      "default": false
+    }
+  },
   "AccessSets": {},
   "FindAccessStates": {},
   "FindAccessNodes": {},
-  "SymbolWriteScopes": {},
+  "SymbolWriteScopes": {
+    "apply_to_conditionals": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply to conditional blocks. If false, do not apply to conditional blocks, but only their children.",
+      "category": "General",
+      "default": false
+    },
+    "top_down": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply top down (i.e., parents before children)",
+      "category": "General",
+      "default": false
+    }
+  },
   "ScalarWriteShadowScopes": {},
   "AccessRanges": {},
-  "FindReferenceSources": {},
+  "FindReferenceSources": {
+    "trace_through_code": {
+      "metatype": "bool",
+      "desc": "Trace inputs through tasklets.",
+      "category": "General",
+      "default": false
+    },
+    "recursive": {
+      "metatype": "bool",
+      "desc": "Add reference of reference dependencies.",
+      "category": "General",
+      "default": false
+    }
+  },
   "DeriveSDFGConstraints": {
     "assume_max_data_size": {
       "metatype": "int",
@@ -9395,6 +10170,12 @@
       "category": "General",
       "default": false
     },
+    "skew": {
+      "metatype": "bool",
+      "desc": "If True, offsets inner tile back such that it starts with zero",
+      "category": "General",
+      "default": false
+    },
     "cfg_id": {
       "metatype": "int",
       "desc": "",
@@ -9472,6 +10253,12 @@
     "tile_trivial": {
       "metatype": "bool",
       "desc": "Tiles even if tile_size is 1",
+      "category": "General",
+      "default": false
+    },
+    "skew": {
+      "metatype": "bool",
+      "desc": "If True, offsets inner tile back such that it starts with zero",
       "category": "General",
       "default": false
     },
@@ -9857,6 +10644,40 @@
     }
   },
   "PruneConnectors": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "TaskletFusion": {
+    "new_name": {
+      "metatype": "str",
+      "desc": "New name to give tasklet. If None, fuses tasklet names",
+      "category": "General",
+      "default": null
+    },
     "cfg_id": {
       "metatype": "int",
       "desc": "",
@@ -10546,6 +11367,20 @@
       "category": "General",
       "default": ""
     },
+    "host_maps": {
+      "metatype": "list",
+      "desc": "List of map GUIDs, the passed maps are not offloaded to the GPU",
+      "category": "General",
+      "default": null,
+      "element_type": "str"
+    },
+    "host_data": {
+      "metatype": "list",
+      "desc": "List of data names, the passed data are not offloaded to the GPU",
+      "category": "General",
+      "default": null,
+      "element_type": "str"
+    },
     "cfg_id": {
       "metatype": "int",
       "desc": "",
@@ -10698,6 +11533,12 @@
       "category": "General",
       "default": 0
     },
+    "inline_iterations": {
+      "metatype": "bool",
+      "desc": "Whether or not to inline individual iterations' CFGs after unrolling",
+      "category": "General",
+      "default": true
+    },
     "cfg_id": {
       "metatype": "int",
       "desc": "",
@@ -10738,6 +11579,12 @@
       "category": "General",
       "default": 0
     },
+    "inline_iterations": {
+      "metatype": "bool",
+      "desc": "Whether or not to inline individual iterations' CFGs after unrolling",
+      "category": "General",
+      "default": true
+    },
     "cfg_id": {
       "metatype": "int",
       "desc": "",
@@ -10766,12 +11613,6 @@
     }
   },
   "LoopToMap": {
-    "itervar": {
-      "metatype": "str",
-      "desc": "The name of the iteration variable (optional).",
-      "category": "General",
-      "default": null
-    },
     "cfg_id": {
       "metatype": "int",
       "desc": "",
@@ -11026,6 +11867,18 @@
       "desc": "If True, marks code with Persistent allocation lifetime as dead",
       "category": "General",
       "default": false
+    },
+    "apply_to_conditionals": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply to conditional blocks. If false, do not apply to conditional blocks, but only their children.",
+      "category": "General",
+      "default": false
+    },
+    "top_down": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply top down (i.e., parents before children)",
+      "category": "General",
+      "default": false
     }
   },
   "DeadStateElimination": {},
@@ -11059,6 +11912,38 @@
     "multistate": {
       "metatype": "bool",
       "desc": "If True, include multi-state inlining.",
+      "category": "General",
+      "default": true
+    }
+  },
+  "InlineControlFlowRegions": {
+    "progress": {
+      "metatype": "bool",
+      "desc": "Whether to print progress, or None for default (print after 5 seconds).",
+      "category": "General",
+      "default": null
+    },
+    "no_inline_loops": {
+      "metatype": "bool",
+      "desc": "Whether to prevent inlining loops.",
+      "category": "General",
+      "default": true
+    },
+    "no_inline_conditional": {
+      "metatype": "bool",
+      "desc": "Whether to prevent inlining conditional blocks.",
+      "category": "General",
+      "default": true
+    },
+    "no_inline_function_call_regions": {
+      "metatype": "bool",
+      "desc": "Whether to prevent inlining function call regions.",
+      "category": "General",
+      "default": true
+    },
+    "no_inline_named_regions": {
+      "metatype": "bool",
+      "desc": "Whether to prevent inlining named control flow regions.",
       "category": "General",
       "default": true
     }
@@ -11250,6 +12135,56 @@
     }
   },
   "ReferenceToView": {},
+  "LoopLifting": {
+    "cfg_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "state_id": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    },
+    "_subgraph": {
+      "metatype": "dict",
+      "desc": "",
+      "category": "(Debug)",
+      "default": {},
+      "key_type": "int",
+      "value_type": "int"
+    },
+    "expr_index": {
+      "metatype": "int",
+      "desc": "",
+      "category": "(Debug)",
+      "default": 0
+    }
+  },
+  "ControlFlowRaising": {
+    "raise_sink_node_returns": {
+      "metatype": "bool",
+      "desc": "Whether or not to lift sink nodes in an SDFG context to explicit return blocks.",
+      "category": "General",
+      "default": false
+    }
+  },
+  "PruneEmptyConditionalBranches": {
+    "apply_to_conditionals": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply to conditional blocks. If false, do not apply to conditional blocks, but only their children.",
+      "category": "General",
+      "default": false
+    },
+    "top_down": {
+      "metatype": "bool",
+      "desc": "Whether or not to apply top down (i.e., parents before children)",
+      "category": "General",
+      "default": false
+    }
+  },
   "SimplifyPass": {
     "validate": {
       "metatype": "bool",
@@ -11272,6 +12207,18 @@
     "verbose": {
       "metatype": "bool",
       "desc": "Whether to print reports after every pass.",
+      "category": "General",
+      "default": false
+    },
+    "no_inline_function_call_regions": {
+      "metatype": "bool",
+      "desc": "Whether to prevent inlining function call regions.",
+      "category": "General",
+      "default": false
+    },
+    "no_inline_named_regions": {
+      "metatype": "bool",
+      "desc": "Whether to prevent inlining named control flow regions.",
       "category": "General",
       "default": false
     },

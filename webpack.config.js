@@ -5,6 +5,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const MonacoEditorWebpackPlugin = require('monaco-editor-webpack-plugin');
 
 /**
  * @type {import('webpack').Configuration}
@@ -77,8 +78,21 @@ const webclientConfig = {
         rules: [
             {
                 test: /\.m?[jt]sx?$/,
-                exclude: /node_modules/,
-                use: 'ts-loader',
+                include: [
+                    path.resolve(__dirname, 'src'),
+                    path.resolve(
+                        __dirname, 'packages/sdfv/src'
+                    ),
+                ],
+                use: [
+                    'babel-loader',
+                    {
+                        loader: 'ts-loader',
+                        options: {
+                            configFile: 'tsconfig.json',
+                        },
+                    }
+                ],
             },
             {
                 test: /\.css$/,
@@ -132,6 +146,7 @@ const webclientConfig = {
                 },
             ],
         }),
+        new MonacoEditorWebpackPlugin(),
     ],
 };
 

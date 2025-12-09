@@ -1,9 +1,26 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-export type Range = {
-    start: number | string | string[] | undefined | null,
-    end: number | string | string[] | undefined | null,
-    tile: number | string | string[] | undefined | null,
-    step: number | string | string[] | undefined | null,
+import type { OverlayType } from '@spcl/sdfv/src';
+
+export type MetaDictT = Record<string, unknown> & {
+    default?: unknown,
+    category?: string,
+    __reverse_type_lookup__?: Record<string, unknown>,
+    __data_container_types__?: Record<string, unknown>,
 };
+
+export interface IOutlineElem {
+    icon: string;
+    type: string;
+    label: string;
+    collapsed: boolean;
+    uuid: string;
+    children: IOutlineElem[];
+}
+
+export interface IOverlayDescription {
+    class: string;
+    label: string;
+    type: OverlayType;
+}

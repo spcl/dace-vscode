@@ -1,4 +1,4 @@
-# Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+# Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 # All rights reserved.
 
 import sys
@@ -18,7 +18,7 @@ def ids_to_string(cfg_id, state_id=-1, node_id=-1, edge_id=-1):
             str(node_id) + UUID_SEPARATOR + str(edge_id))
 
 
-def sdfg_find_state_from_element(sdfg, element):
+def sdfg_find_state_from_element(sdfg: SDFG, element):
     if hasattr(sdfg, 'cfg_list'):
         graph = sdfg.cfg_list[element['cfgId']]
     else:
@@ -30,7 +30,7 @@ def sdfg_find_state_from_element(sdfg, element):
         return None
 
 
-def sdfg_find_node_from_element(sdfg, element):
+def sdfg_find_node_from_element(sdfg: SDFG, element):
     if hasattr(sdfg, 'cfg_list'):
         graph = sdfg.cfg_list[element['cfgId']]
     else:

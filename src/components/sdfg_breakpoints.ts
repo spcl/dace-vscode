@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import * as path from 'path';
@@ -6,15 +6,15 @@ import * as vscode from 'vscode';
 import { ICPCRequest } from '../common/messaging/icpc_messaging_component';
 import {
     BreakpointHandler,
-    ISDFGDebugNodeInfo
+    ISDFGDebugNodeInfo,
 } from '../debugger/breakpoint_handler';
 import { BaseComponent } from './base_component';
 import { goToGeneratedCode } from '../utils/utils';
 import { SDFGEditorBase } from './sdfg_editor/common';
 
 export class SdfgBreakpointProvider
-extends BaseComponent
-implements vscode.WebviewViewProvider {
+    extends BaseComponent
+    implements vscode.WebviewViewProvider {
 
     private static readonly viewType: string = 'sdfgBreakpoints';
 
@@ -81,20 +81,24 @@ implements vscode.WebviewViewProvider {
     }
 
     @ICPCRequest()
-    public goToSDFG(node: ISDFGDebugNodeInfo) {
-        if (node.sdfgName && node.sdfgPath)
-            SDFGEditorBase.goToSDFG(
-                node.sdfgPath, [`${node.sdfgId}/${node.stateId}/-1/-1`], true
+    public async goToSDFG(node: ISDFGDebugNodeInfo): Promise<void> {
+        if (node.sdfgName && node.sdfgPath) {
+            return SDFGEditorBase.goToSDFG(
+                node.sdfgPath,
+                [`${node.sdfgId.toString()}/${node.stateId.toString()}/-1/-1`],
+                true
             );
+        }
     }
 
     @ICPCRequest()
-    public goToCPP(node: ISDFGDebugNodeInfo) {
-        if (node.sdfgName && node.sdfgPath)
-            goToGeneratedCode(
+    public async goToCPP(node: ISDFGDebugNodeInfo): Promise<void> {
+        if (node.sdfgName && node.sdfgPath) {
+            return goToGeneratedCode(
                 node.sdfgName, node.sdfgId, node.stateId, node.nodeId,
                 node.cache
             );
+        }
     }
 
     @ICPCRequest()
@@ -104,7 +108,7 @@ implements vscode.WebviewViewProvider {
 
     public async addBreakpoint(
         node: ISDFGDebugNodeInfo, unbounded: boolean = false
-    ): Promise<void> {
+    ): Promise<unknown> {
         return this.invoke('addSDFGBreakpoint', [node, unbounded]);
     }
 
@@ -118,19 +122,19 @@ implements vscode.WebviewViewProvider {
         return this.view.visible;
     }
 
-    public async clear(): Promise<void> {
+    public async clear(): Promise<unknown> {
         return this.invoke('refresh', [undefined]);
     }
 
-    public async refresh(): Promise<void> {
+    public async refresh(): Promise<unknown> {
         const nodes = BreakpointHandler.getInstance()?.getAllNodes();
         return this.invoke('onRefresh', [nodes]);
     }
 
     @ICPCRequest(true)
-    public onReady(): Promise<void> {
+    public onReady(): void {
         vscode.commands.executeCommand('sdfgBreakpoints.sync');
-        return super.onReady();
+        super.onReady();
     }
 
 }

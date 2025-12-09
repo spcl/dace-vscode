@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
@@ -11,17 +11,16 @@ import {
     SDFGRenderer,
     StaticFlopsOverlay,
     DepthOverlay,
-    AvgParallelismOverlay
+    AvgParallelismOverlay,
+    RuntimeReportOverlay,
 } from '@spcl/sdfv/src';
 import {
-    ICPCRequest
+    ICPCRequest,
 } from '../../../../common/messaging/icpc_messaging_component';
 import { VSCodeRenderer } from '../renderer/vscode_renderer';
 import { SDFVComponent, VSCodeSDFV } from '../vscode_sdfv';
 import { ComponentTarget } from '../../../../components/components';
-import {
-    RuntimeReportOverlay,
-} from '@spcl/sdfv/src/overlays/generic_sdfg_overlay';
+import { IOverlayDescription } from '../../../../types';
 
 declare const vscode: any;
 
@@ -30,7 +29,9 @@ export class AnalysisController {
     private static readonly INSTANCE: AnalysisController =
         new AnalysisController();
 
-    private constructor() {}
+    private constructor() {
+        return;
+    }
 
     public static getInstance(): AnalysisController {
         return this.INSTANCE;
@@ -43,7 +44,7 @@ export class AnalysisController {
      */
     @ICPCRequest()
     public onSymbolValueChanged(symbol: string, value?: number): void {
-        VSCodeRenderer.getInstance()?.overlayManager.on_symbol_value_changed(
+        VSCodeRenderer.getInstance()?.overlayManager.onSymbolValueChanged(
             symbol, value
         );
     }
@@ -56,15 +57,18 @@ export class AnalysisController {
     @ICPCRequest()
     public onHeatmapScalingChanged(method: string, subMethod?: number): void {
         const olManager = VSCodeRenderer.getInstance()?.overlayManager;
-        olManager?.update_heatmap_scaling_method(method);
+        if (!olManager)
+            return;
+
+        olManager.heatmapScalingMethod = method;
 
         if (subMethod !== undefined) {
             switch (method) {
                 case 'hist':
-                    olManager?.update_heatmap_scaling_hist_n_buckets(subMethod);
+                    olManager.heatmapScalingHistNBuckets = subMethod;
                     break;
                 case 'exponential_interpolation':
-                    olManager?.update_heatmap_scaling_exp_base(subMethod);
+                    olManager.heatmapScalingExpBase = subMethod;
                     break;
             }
         }
@@ -80,9 +84,8 @@ export class AnalysisController {
         report: { traceEvents: any[] }, criterium: string
     ): void {
         const sdfv = VSCodeSDFV.getInstance();
-        const renderer = sdfv.get_renderer() ?? undefined;
-        sdfv.onLoadedRuntimeReport(report, renderer);
-        this.setInstrumentationReportCriterium(criterium, renderer);
+        sdfv.onLoadedRuntimeReport(report, sdfv.renderer);
+        this.setInstrumentationReportCriterium(criterium, sdfv.renderer);
     }
 
     /**
@@ -95,10 +98,10 @@ export class AnalysisController {
         criterium: string, renderer?: SDFGRenderer
     ): void {
         const rend = renderer ?? VSCodeRenderer.getInstance();
-        const overlays = rend?.overlayManager.get_overlays();
+        const overlays = rend?.overlayManager.overlays;
         for (const ol of overlays ?? []) {
             if (ol instanceof RuntimeReportOverlay) {
-                ol.set_criterium(criterium);
+                ol.criterium = criterium;
                 ol.refresh();
             }
         }
@@ -113,14 +116,14 @@ export class AnalysisController {
         const olManager = VSCodeRenderer.getInstance()?.overlayManager;
         if (types) {
             for (const clearType of types) {
-                const rtOverlay = olManager?.get_overlay(
+                const rtOverlay = olManager?.getOverlay(
                     VSCodeSDFV.OVERLAYS[clearType]
                 );
                 if (rtOverlay && rtOverlay instanceof RuntimeReportOverlay)
                     rtOverlay.clearRuntimeData();
             }
         } else {
-            for (const ol of olManager?.get_overlays() ?? []) {
+            for (const ol of olManager?.overlays ?? []) {
                 if (ol instanceof RuntimeReportOverlay)
                     ol.clearRuntimeData();
             }
@@ -131,35 +134,34 @@ export class AnalysisController {
      * Refresh the analysis side panel.
      */
     @ICPCRequest()
-    public async refreshAnalysisPane(): Promise<void> {
+    public refreshAnalysisPane(): void {
         const renderer = VSCodeRenderer.getInstance();
         if (renderer !== null && vscode !== undefined) {
             const overlayManager = renderer.overlayManager;
-            const symbolResolver = overlayManager?.get_symbol_resolver();
-            symbolResolver?.removeStaleSymbols();
-            const map = symbolResolver?.get_symbol_value_map();
+            const symbolResolver = overlayManager.symbolResolver;
+            symbolResolver.removeStaleSymbols();
+            const map = symbolResolver.symbolValueMap;
 
             const activeOverlays = [];
-            for (const activeOverlay of overlayManager.get_overlays())
+            for (const activeOverlay of overlayManager.overlays)
                 activeOverlays.push(activeOverlay.constructor.name);
 
             let additionalMethodVal = undefined;
-            switch (overlayManager.get_heatmap_scaling_method()) {
+            switch (overlayManager.heatmapScalingMethod) {
                 case 'hist':
                     additionalMethodVal =
-                        overlayManager.get_heatmap_scaling_hist_n_buckets();
+                        overlayManager.heatmapScalingHistNBuckets;
                     break;
                 case 'exponential_interpolation':
-                    additionalMethodVal =
-                        overlayManager.get_heatmap_scaling_exp_base();
+                    additionalMethodVal = overlayManager.heatmapScalingExpBase;
                     break;
             }
 
-            const symbols: { [sym: string]: number | undefined | string } = {};
+            const symbols: Record<string, number | undefined | string> = {};
             Object.keys(map).forEach((symbol) => {
                 symbols[symbol] = map[symbol] ?? '';
             });
-            const availableOverlays = [
+            const availableOverlays: IOverlayDescription[] = [
                 {
                     class: 'MemoryVolumeOverlay',
                     label: 'Logical Memory Volume',
@@ -206,15 +208,15 @@ export class AnalysisController {
                     type: RuntimeMicroSecondsOverlay.type,
                 },
             ];
-            return SDFVComponent.getInstance().invoke(
+            SDFVComponent.getInstance().invoke(
                 'updateAnalysisPane', [
                     activeOverlays,
                     symbols,
-                    overlayManager.get_heatmap_scaling_method(),
+                    overlayManager.heatmapScalingMethod,
                     additionalMethodVal,
-                    availableOverlays
+                    availableOverlays,
                 ], ComponentTarget.Analysis
-            );
+            ).catch(console.error);
         }
     }
 

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
@@ -8,13 +8,14 @@ import {
     Uri,
     commands,
     window,
-    workspace
+    workspace,
 } from 'vscode';
 import { gunzipSync } from 'zlib';
 import { AnalysisProvider } from './components/analysis';
 import { SDFGEditorBase } from './components/sdfg_editor/common';
 import { CompressedSDFGDocument } from './components/sdfg_editor/sdfg_document';
 import { OptimizationPanel } from './components/optimization_panel';
+import { JsonSDFG } from '@spcl/sdfv/src';
 
 interface ChangeActiveSDFGEditorEvent {
     readonly activeEditor?: SDFGEditorBase;
@@ -24,7 +25,9 @@ export class DaCeVSCode {
 
     private static INSTANCE = new DaCeVSCode();
 
-    private constructor() { }
+    private constructor() {
+        return;
+    }
 
     public static getInstance(): DaCeVSCode {
         return this.INSTANCE;
@@ -38,7 +41,7 @@ export class DaCeVSCode {
     private context?: ExtensionContext;
     private _outputChannel?: OutputChannel;
 
-    public readonly sdfgEditorMap: Map<Uri, SDFGEditorBase> = new Map();
+    public readonly sdfgEditorMap = new Map<Uri, SDFGEditorBase>();
     private _activeEditor?: SDFGEditorBase;
 
     public openInstrumentationReport(url: Uri, report: any): void {
@@ -49,16 +52,16 @@ export class DaCeVSCode {
 
         // Make the analysis panel visible.
         if (!analysisProvider.isVisible())
-            commands.executeCommand(
-                'sdfgAnalysis.focus'
-            );
+            commands.executeCommand('sdfgAnalysis.focus');
 
-        analysisProvider.invoke(
+        analysisProvider.invoke<string>(
             'onAutoloadReport', [url.fsPath]
-        ).then((criterium: string) => {
-            this._activeEditor?.invoke(
+        ).then(async (criterium) => {
+            await this._activeEditor?.invoke(
                 'loadInstrumentationReport', [report, criterium]
             );
+        }).catch((err: unknown) => {
+            console.error('Error loading instrumentation report:', err);
         });
     }
 
@@ -136,7 +139,7 @@ export class DaCeVSCode {
                     workspace.getConfiguration('dace.general');
                 const configKey = 'autoOpenSdfgs';
 
-                const autoOpenPref = autoOpen?.get<string>(configKey);
+                const autoOpenPref = autoOpen.get<string>(configKey);
                 if (autoOpenPref === 'Always') {
                     this.openGeneratedSdfg(
                         targetUri,
@@ -184,16 +187,16 @@ export class DaCeVSCode {
     public init(ctx: ExtensionContext): void {
         this.context = ctx;
 
-        this.onDidChangeActiveSDFGEditor((e) => {
+        this.onDidChangeActiveSDFGEditor(async (e) => {
             if (e.activeEditor) {
-                Promise.all([
+                await Promise.all([
                     e.activeEditor.invoke('resyncTransformations', [false]),
                     e.activeEditor.invoke('resyncTransformationHistory'),
                     e.activeEditor.invoke('refreshAnalysisPane'),
                     e.activeEditor.invoke('outline'),
                 ]);
             } else {
-                OptimizationPanel.getInstance().clearAll();
+                await OptimizationPanel.getInstance().clearAll();
             }
         });
     }
@@ -207,48 +210,48 @@ export class DaCeVSCode {
     }
 
     public get outputChannel(): OutputChannel {
-        if (!this._outputChannel)
-            this._outputChannel = window.createOutputChannel(
-                'SDFG Viewer'
-            );
+        this._outputChannel ??= window.createOutputChannel('SDFG Viewer');
         return this._outputChannel;
     }
 
-    public async getActiveSdfg(fromDisk = false): Promise<any | undefined> {
+    public async getActiveSdfg(
+        fromDisk: boolean = false
+    ): Promise<JsonSDFG | undefined> {
         if (!this.activeSDFGEditor)
             return undefined;
 
         let sdfgJson = undefined;
-        if (fromDisk === true) {
-            if (this.activeSDFGEditor.document instanceof CompressedSDFGDocument)
-                sdfgJson = gunzipSync(Buffer.from((await workspace.fs.readFile(
-                    this.activeSDFGEditor.document.uri
-                )))).toString();
-            else
-                sdfgJson = (await workspace.fs.readFile(
-                    this.activeSDFGEditor.document.uri
-                )).toString();
+        const document = this.activeSDFGEditor.document;
+        if (fromDisk) {
+            if (document instanceof CompressedSDFGDocument) {
+                sdfgJson = String(gunzipSync(Buffer.from(
+                    await workspace.fs.readFile(document.uri)
+                )));
+            } else {
+                sdfgJson = String(await workspace.fs.readFile(document.uri));
+            }
         } else {
-            if (this.activeSDFGEditor.document instanceof CompressedSDFGDocument)
-                sdfgJson = gunzipSync(
-                    Buffer.from(this.activeSDFGEditor.document.documentData)
-                ).toString();
-            else
-                sdfgJson = this.activeSDFGEditor.document.getText();
+            if (document instanceof CompressedSDFGDocument) {
+                sdfgJson = String(gunzipSync(Buffer.from(
+                    document.documentData
+                )));
+            } else {
+                sdfgJson = document.getText();
+            }
         }
 
         if (sdfgJson === '' || !sdfgJson)
             sdfgJson = undefined;
         else
-            sdfgJson = JSON.parse(sdfgJson);
+            sdfgJson = JSON.parse(sdfgJson) as JsonSDFG;
         return sdfgJson;
     }
+
+    private _debounceActiveSDFGEditorChangeTimeoutId?: NodeJS.Timeout | number;
 
     public get activeSDFGEditor(): SDFGEditorBase | undefined {
         return this._activeEditor;
     }
-
-    private _debounceActiveSDFGEditorChangeTimeoutId?: NodeJS.Timeout | number;
 
     public set activeSDFGEditor(editor: SDFGEditorBase | undefined) {
         this._activeEditor = editor;

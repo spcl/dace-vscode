@@ -1,25 +1,34 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
-import { string_to_sdfg_typeclass } from '@spcl/sdfv/src';
+import {
+    DataSubset,
+    SDFGRange,
+    stringToSDFGTypeclass,
+} from '@spcl/sdfv/src';
 import { editor } from 'monaco-editor';
-import { Range } from '../../../../types';
+import { JsonTransformation } from '../../transformations/transformations';
 import { showTransformationDetails } from '../transformation/transformation';
-import { attributeTablePutEntry } from '../utils/attributes_table';
+import {
+    attributeTablePutEntry,
+    type WithAttributes,
+} from '../utils/attributes_table';
 import { createSingleUseModal, elementUpdateLabel } from '../utils/helpers';
 import { VSCodeSDFV } from '../vscode_sdfv';
+import { MetaDictT } from '../../../../types';
 
-type PropertyValueReturn = {
-    value: any,
-    valueChanged: boolean,
-};
 
-type RangeInput = {
-    start: JQuery<HTMLElement>,
-    end: JQuery<HTMLElement>,
-    tile: JQuery<HTMLElement>,
-    step: JQuery<HTMLElement>,
-};
+interface PropertyValueReturn {
+    value?: unknown;
+    valueChanged: boolean;
+}
+
+interface RangeInput {
+    start: JQuery;
+    end: JQuery;
+    tile: JQuery;
+    step: JQuery;
+}
 
 // Note that this Property class is not an equivalent to SDFG Properties, but
 // a more general attribute of SDFG elements in VSCode.
@@ -27,10 +36,10 @@ export abstract class Property {
 
     private _deleted: boolean = false;
 
-    constructor (
-        protected element: any | undefined,
-        protected xform: any | undefined,
-        protected target: any,
+    constructor(
+        protected element: WithAttributes | undefined,
+        protected xform: JsonTransformation | undefined,
+        protected target: Partial<Record<string, unknown>>,
         protected key: string,
         protected subkey: string | undefined,
         protected datatype: string
@@ -45,19 +54,24 @@ export abstract class Property {
         return this._deleted;
     }
 
-    protected writeBack(value: any): void {
+    protected writeBack(value: unknown): void {
         if (this.subkey !== undefined) {
             if (this.datatype === 'Range' ||
                 this.datatype === 'SubsetProperty') {
-                if (this.target[this.key])
-                    this.target[this.key][this.subkey] = value;
-                else
+                if (this.target[this.key]) {
+                    (this.target[this.key] as Record<string, unknown>)[
+                        this.subkey
+                    ] = value;
+                } else {
                     this.target[this.key] = {
                         type: 'Range',
                         ranges: value,
                     };
+                }
             } else {
-                this.target[this.key][this.subkey] = value;
+                (this.target[this.key] as Record<string, unknown>)[
+                    this.subkey
+                ] = value;
             }
         } else {
             this.target[this.key] = value;
@@ -88,7 +102,7 @@ export abstract class Property {
         return this.subkey;
     }
 
-    public getTarget(): any {
+    public getTarget(): Record<string, unknown> {
         return this.target;
     }
 
@@ -99,6 +113,7 @@ export abstract class Property {
 }
 
 export class KeyProperty {
+
     /*
      * Note: This does not extend the Property class by design, because it
      * behaves slightly differently.
@@ -107,14 +122,14 @@ export class KeyProperty {
      */
 
     private _deleted: boolean = false;
-    private _connectedProps: Set<Property> = new Set();
+    private _connectedProps = new Set<Property>();
 
     constructor(
-        protected element: any | undefined,
-        protected xform: any | undefined,
-        protected target: any,
+        protected element: WithAttributes | undefined,
+        protected xform: JsonTransformation | undefined,
+        protected target: Record<string, unknown>,
         protected key: string,
-        protected input: JQuery<HTMLElement>
+        protected input: JQuery
     ) {
     }
 
@@ -126,8 +141,8 @@ export class KeyProperty {
         return this._deleted;
     }
 
-    public getValue(): { value: any, valueChanged: boolean } {
-        const newKey = this.input.val();
+    public getValue(): { value: string, valueChanged: boolean } {
+        const newKey = this.input.val()?.toString() ?? '';
         return {
             value: newKey,
             valueChanged: newKey !== this.key,
@@ -140,12 +155,13 @@ export class KeyProperty {
             const propertyDescriptor = Object.getOwnPropertyDescriptor(
                 this.target, this.key
             );
-            if (propertyDescriptor)
+            if (propertyDescriptor) {
                 Object.defineProperty(
                     this.target,
                     res.value,
                     propertyDescriptor
                 );
+            }
             delete this.target[this.key];
             this.key = res.value;
             for (const connectedProp of this.connectedProperties)
@@ -154,7 +170,7 @@ export class KeyProperty {
         return res.valueChanged;
     }
 
-    public getInput(): JQuery<HTMLElement> {
+    public getInput(): JQuery {
         return this.input;
     }
 
@@ -171,19 +187,19 @@ export class KeyProperty {
 export class ValueProperty extends Property {
 
     constructor(
-        element: any | undefined,
-        xform: any | undefined,
-        target: any,
+        element: WithAttributes | undefined,
+        xform: JsonTransformation | undefined,
+        target: Record<string, any>,
         key: string,
         subkey: string | undefined,
         datatype: string,
-        protected input: JQuery<HTMLElement>
+        protected input: JQuery
     ) {
         super(element, xform, target, key, subkey, datatype);
     }
 
     public getValue(): PropertyValueReturn {
-        let value: any = this.input.is(':checkbox') ?
+        let value: unknown = this.input.is(':checkbox') ?
             this.input.is(':checked') : this.input.val();
 
         if (this.datatype === 'LambdaProperty') {
@@ -191,7 +207,8 @@ export class ValueProperty extends Property {
                 value = null;
         } else if (this.input.attr('type') === 'number') {
             try {
-                value = parseInt(value);
+                if (typeof value === 'string')
+                    value = parseInt(value);
             } catch {
                 // ignored.
             }
@@ -209,7 +226,7 @@ export class ValueProperty extends Property {
         return res.valueChanged;
     }
 
-    public getInput(): JQuery<HTMLElement> {
+    public getInput(): JQuery {
         return this.input;
     }
 
@@ -217,15 +234,15 @@ export class ValueProperty extends Property {
 
 export class ComboboxProperty extends ValueProperty {
 
-    constructor (
-        element: any | undefined,
-        xform: any | undefined,
-        target: any,
+    constructor(
+        element: WithAttributes | undefined,
+        xform: JsonTransformation | undefined,
+        target: Record<string, any>,
         key: string,
         subkey: string | undefined,
         datatype: string,
-        input: JQuery<HTMLElement>,
-        protected backgroundInput: JQuery<HTMLElement>
+        input: JQuery,
+        protected backgroundInput: JQuery
     ) {
         super(element, xform, target, key, subkey, datatype, input);
     }
@@ -233,10 +250,11 @@ export class ComboboxProperty extends ValueProperty {
     public getValue(): PropertyValueReturn {
         let originalValue = undefined;
 
+        const subProps = this.target[this.key] as Record<string, any>;
         if (this.subkey !== undefined)
-            originalValue = this.target[this.key][this.subkey];
+            originalValue = subProps[this.subkey] as unknown;
         else
-            originalValue = this.target[this.key];
+            originalValue = subProps;
 
         const value = this.backgroundInput.val();
         return {
@@ -250,22 +268,22 @@ export class ComboboxProperty extends ValueProperty {
 export class CodeProperty extends Property {
 
     constructor(
-        element: any | undefined,
-        xform: any | undefined,
-        target: any,
+        element: WithAttributes | undefined,
+        xform: JsonTransformation | undefined,
+        target: Record<string, any>,
         key: string,
         subkey: string | undefined,
         dtype: string,
-        protected codeInput: JQuery<HTMLElement>,
-        protected langInput: JQuery<HTMLElement>,
+        protected codeInput: JQuery,
+        protected langInput: JQuery,
         protected editor: editor.ICodeEditor
     ) {
         super(element, xform, target, key, subkey, dtype);
     }
 
     public getValue(): PropertyValueReturn {
-        let codeVal = this.editor.getModel()?.getValue();
-        let langVal = this.langInput.val();
+        const codeVal = this.editor.getModel()?.getValue();
+        const langVal = this.langInput.val();
 
         return {
             value: {
@@ -286,11 +304,11 @@ export class CodeProperty extends Property {
         return this.editor;
     }
 
-    public getCodeInput(): JQuery<HTMLElement> {
+    public getCodeInput(): JQuery {
         return this.codeInput;
     }
 
-    public getLangInput(): JQuery<HTMLElement> {
+    public getLangInput(): JQuery {
         return this.langInput;
     }
 
@@ -299,21 +317,21 @@ export class CodeProperty extends Property {
 export class TypeclassProperty extends ComboboxProperty {
 
     private compoundEditHandler?: () => void;
-    private compoundProp: DictProperty | null = null;
-    private compoundValues: { [keys: string]: any } | null = null;
-    private compoundValueType: string | null = null;
+    private compoundProp?: DictProperty;
+    private compoundValues?: Record<string, unknown>;
+    private compoundValueType?: string;
 
     constructor(
-        element: any | undefined,
-        xform: any | undefined,
-        target: any,
+        element: WithAttributes | undefined,
+        xform: JsonTransformation | undefined,
+        target: Record<string, any>,
         key: string,
         subkey: string | undefined,
         datatype: string,
-        input: JQuery<HTMLElement>,
-        backgroundInput: JQuery<HTMLElement>,
-        editCompoundButton: JQuery<HTMLElement>,
-        compoundTypes: { [keys: string]: any }
+        input: JQuery,
+        backgroundInput: JQuery,
+        editCompoundButton: JQuery,
+        compoundTypes: Record<string, unknown>
     ) {
         super(
             element, xform, target, key, subkey, datatype, input,
@@ -322,26 +340,27 @@ export class TypeclassProperty extends ComboboxProperty {
 
         if (target[key] && typeof target[key] === 'object') {
             editCompoundButton.show();
-            this.compoundValueType = target[key]['type'];
-            this.compoundValues = target[key];
+            this.compoundValues = target[key] as Record<string, any>;
+            this.compoundValueType = this.compoundValues.type as string;
             this.compoundProp = new DictProperty(
                 undefined, undefined, this, 'compoundValues', undefined,
                 'dict', [], this.compoundValues
             );
             this.compoundEditHandler = () => {
-                if (this.compoundValueType)
+                if (this.compoundValueType) {
                     this.baseCompoundEditHandler(
                         this.compoundValueType, compoundTypes
                     );
+                }
             };
             editCompoundButton.on('click', this.compoundEditHandler);
         } else {
             if (this.compoundEditHandler)
                 editCompoundButton.off('click', this.compoundEditHandler);
             editCompoundButton.hide();
-            this.compoundValues = null;
-            this.compoundValueType = null;
-            this.compoundProp = null;
+            this.compoundValues = undefined;
+            this.compoundValueType = undefined;
+            this.compoundProp = undefined;
         }
 
         input.on('hidden.editable-select', () => {
@@ -362,10 +381,12 @@ export class TypeclassProperty extends ComboboxProperty {
                     'type': val,
                 };
                 this.compoundValueType = val;
-                const compoundFields = compoundTypes[val];
+                const compoundFields = compoundTypes[
+                    val
+                ] as Record<string, Record<string, unknown>>;
                 for (const key in compoundFields) {
                     const descriptor = compoundFields[key];
-                    const defaultVal = descriptor['default'];
+                    const defaultVal = descriptor.default;
                     this.compoundValues[key] = defaultVal;
                 }
 
@@ -381,8 +402,8 @@ export class TypeclassProperty extends ComboboxProperty {
                 editCompoundButton.on('click', this.compoundEditHandler);
             } else {
                 // This is a base type, hide the edit button.
-                this.compoundValues = null;
-                this.compoundProp = null;
+                this.compoundValues = undefined;
+                this.compoundProp = undefined;
                 editCompoundButton.hide();
                 if (this.compoundEditHandler)
                     editCompoundButton.off('click', this.compoundEditHandler);
@@ -393,7 +414,7 @@ export class TypeclassProperty extends ComboboxProperty {
     }
 
     private baseCompoundEditHandler(
-        val: string, compoundTypes: { [keys: string]: any }
+        val: string, compoundTypes: Record<string, unknown>
     ): void {
         if (!this.compoundValues)
             return;
@@ -407,26 +428,22 @@ export class TypeclassProperty extends ComboboxProperty {
         }).appendTo(modal.body);
 
         // Print an entry for each attribute of the compound.
-        const compoundFields = compoundTypes[val];
+        const compoundFields = compoundTypes[val] as Record<string, unknown>;
         for (const key in compoundFields) {
-            const descriptor = compoundFields[key];
-            const type = descriptor['type'];
-
             const val = this.compoundValues[key];
-            VSCodeSDFV.getInstance().getMetaDict().then(meta => {
+            void VSCodeSDFV.getInstance().getMetaDict().then(meta => {
                 let valMeta = undefined;
-                if (type in meta['__reverse_type_lookup__'])
-                    valMeta = meta['__reverse_type_lookup__'][type];
+                for (const type in meta.__reverse_type_lookup__)
+                    valMeta = meta.__reverse_type_lookup__[type] as MetaDictT;
 
                 const row = $('<div>', {
                     class: 'row attr-table-row',
                 }).appendTo(rowbox);
-                attributeTablePutEntry(
-                    key, val, valMeta, this.compoundValues, undefined,
-                    undefined, row, false, false, false
+                void attributeTablePutEntry(
+                    key, val, valMeta, this.compoundValues ?? {}, undefined,
+                    undefined, row, false, false, false, false
                 ).then(attrProp => {
-                    if (attrProp)
-                        this.compoundProp?.getProperties().push(attrProp);
+                    this.compoundProp?.getProperties().push(attrProp);
                 });
             });
         }
@@ -437,24 +454,26 @@ export class TypeclassProperty extends ComboboxProperty {
         modal.confirmBtn?.on('click', () => {
             const nVal = this.compoundProp?.getValue();
             if (nVal && nVal.valueChanged && nVal.value) {
-                this.compoundValues = nVal.value;
-                if (this.compoundValues)
-                    this.compoundValues['type'] = this.compoundValueType;
+                this.compoundValues = nVal.value as Record<string, unknown>;
+                this.compoundValues.type = this.compoundValueType;
                 this.input.trigger('typeclass.change');
             }
-            modal.modal.modal('hide');
+            modal.modal.hide();
         });
 
-        modal.modal.modal('show');
+        modal.modal.show();
     }
 
     public getValue(): PropertyValueReturn {
         let originalValue = undefined;
 
-        if (this.subkey !== undefined)
-            originalValue = this.target[this.key][this.subkey];
-        else
+        if (this.subkey !== undefined) {
+            originalValue = (this.target[this.key] as Record<string, unknown>)[
+                this.subkey
+            ];
+        } else {
             originalValue = this.target[this.key];
+        }
 
         if (this.compoundValues) {
             const value = this.compoundValues;
@@ -465,7 +484,7 @@ export class TypeclassProperty extends ComboboxProperty {
         } else {
             const inputVal = this.backgroundInput.val()?.toString();
             const value =
-                inputVal ? string_to_sdfg_typeclass(inputVal) : undefined;
+                inputVal ? stringToSDFGTypeclass(inputVal) : undefined;
             return {
                 value: value,
                 valueChanged: originalValue !== value,
@@ -478,31 +497,31 @@ export class TypeclassProperty extends ComboboxProperty {
 export class ListProperty extends Property {
 
     constructor(
-        element: any | undefined,
-        xform: any | undefined,
-        target: any,
+        element: WithAttributes | undefined,
+        xform: JsonTransformation | undefined,
+        target: Record<string, any>,
         key: string,
         subkey: string | undefined,
         datatype: string,
         protected propertiesList: Property[],
-        protected originalValue: any
+        protected originalValue: any[]
     ) {
         super(element, xform, target, key, subkey, datatype);
     }
 
     public getValue(): PropertyValueReturn {
-        if (!this.propertiesList.length)
+        if (!this.propertiesList.length) {
             return {
                 value: this.originalValue,
                 valueChanged: false,
             };
+        }
 
         const newList = [];
-        for (let i = 0; i < this.propertiesList.length; i++) {
-            if (!this.propertiesList[i].deleted) {
-                const res = this.propertiesList[i].getValue();
-                if (res !== undefined && res.value !== undefined &&
-                    res.value !== '')
+        for (const prop of this.propertiesList) {
+            if (!prop.deleted) {
+                const res = prop.getValue();
+                if (res.value !== undefined && res.value !== '')
                     newList.push(res.value);
             }
         }
@@ -528,12 +547,12 @@ export class ListProperty extends Property {
 
 }
 
-export type PropertyEntry = {
-    key: string | undefined,
-    keyProp: KeyProperty | undefined,
-    valProp: Property[] | undefined,
-    deleteBtn: JQuery<HTMLElement> | undefined,
-    row: JQuery<HTMLElement>,
+export interface PropertyEntry {
+    key: string | undefined;
+    keyProp: KeyProperty | undefined;
+    valProp: Property[] | undefined;
+    deleteBtn: JQuery | undefined;
+    row: JQuery;
 };
 
 type DictPropertyList = PropertyEntry[];
@@ -541,26 +560,27 @@ type DictPropertyList = PropertyEntry[];
 export class DictProperty extends Property {
 
     constructor(
-        element: any | undefined,
-        xform: any | undefined,
-        target: any,
+        element: WithAttributes | undefined,
+        xform: JsonTransformation | undefined,
+        target: Record<string, any>,
         key: string,
         subkey: string | undefined,
         datatype: string,
         protected properties: DictPropertyList,
-        protected originalValue: any
+        protected originalValue?: Record<string, any>
     ) {
         super(element, xform, target, key, subkey, datatype);
     }
 
     public getValue(): PropertyValueReturn {
-        if (!this.properties.length)
+        if (!this.properties.length) {
             return {
                 value: this.originalValue,
                 valueChanged: false,
             };
+        }
 
-        const newDict: { [key: string]: any } = {};
+        const newDict: Record<string, any> = {};
         let valueChanged = false;
         this.properties.forEach(prop => {
             if ((prop.keyProp || prop.key) && prop.valProp) {
@@ -579,7 +599,9 @@ export class DictProperty extends Property {
                             // For code properties, we need to write back
                             // the entire code property structure, including
                             // language info.
-                            let codeVal = vp.getTarget()[vp.getKey()];
+                            const codeVal = vp.getTarget()[
+                                vp.getKey()
+                            ] as Record<string, unknown>;
                             codeVal[valSubkey] = valRes.value;
                             newDict[keyVal] = codeVal;
                         } else {
@@ -618,14 +640,14 @@ export class LogicalGroupProperty extends Property {
     private readonly colorProperty: ValueProperty;
 
     constructor(
-        element: any | undefined,
-        xform: any | undefined,
-        target: any,
+        element: WithAttributes | undefined,
+        xform: JsonTransformation | undefined,
+        target: Record<string, any>,
         key: string,
         subkey: string | undefined,
         datatype: string,
-        protected nameInput: JQuery<HTMLElement>,
-        protected colorInput: JQuery<HTMLElement>,
+        protected nameInput: JQuery,
+        protected colorInput: JQuery
     ) {
         super(element, xform, target, key, subkey, datatype);
 
@@ -638,33 +660,34 @@ export class LogicalGroupProperty extends Property {
     }
 
     public getValue(): PropertyValueReturn {
-        const newDict: { [key: string]: any } = {};
+        const newDict: Record<string, any> = {};
         let valueChanged = false;
 
-        for (const key in this.target[this.key]) {
+        const subRecord = this.target[this.key] as Record<string, any>;
+        for (const key in subRecord) {
             if (key === 'color' || key === 'name')
                 continue;
 
-            newDict[key] = this.target[this.key][key];
+            newDict[key] = subRecord[key] as unknown;
         }
 
         const nameRet = this.nameProperty.getValue();
-        valueChanged = valueChanged || nameRet.valueChanged;
-        newDict['name'] = nameRet.value;
+        valueChanged = nameRet.valueChanged;
+        newDict.name = nameRet.value as string;
 
         const colorRet = this.colorProperty.getValue();
         valueChanged = valueChanged || colorRet.valueChanged;
-        newDict['color'] = colorRet.value;
+        newDict.color = colorRet.value as string;
 
         if (!('nodes' in newDict))
-            newDict['nodes'] = [];
+            newDict.nodes = [];
         if (!('states' in newDict))
-            newDict['states'] = [];
+            newDict.states = [];
         if (!('type' in newDict))
-            newDict['type'] = 'LogicalGroup';
+            newDict.type = 'LogicalGroup';
 
         return {
-            value: newDict['name'] === '' ? undefined : newDict,
+            value: newDict.name === '' ? undefined : newDict,
             valueChanged: valueChanged,
         };
     }
@@ -675,11 +698,11 @@ export class LogicalGroupProperty extends Property {
         return res.valueChanged;
     }
 
-    public getNameInput(): JQuery<HTMLElement> {
+    public getNameInput(): JQuery {
         return this.nameInput;
     }
 
-    public getColorInput(): JQuery<HTMLElement> {
+    public getColorInput(): JQuery {
         return this.colorInput;
     }
 
@@ -688,44 +711,40 @@ export class LogicalGroupProperty extends Property {
 export class RangeProperty extends Property {
 
     constructor(
-        element: any | undefined,
-        xform: any | undefined,
-        target: any,
+        element: WithAttributes | undefined,
+        xform: JsonTransformation | undefined,
+        target: Record<string, any>,
         key: string,
         subkey: string | undefined,
         datatype: string,
         protected rangeInputList: RangeInput[],
-        protected originalValue: any
+        protected originalValue?: SDFGRange | DataSubset
     ) {
         super(element, xform, target, key, subkey, datatype);
     }
 
     public getValue(): PropertyValueReturn {
-        if (!this.rangeInputList.length)
+        if (!this.rangeInputList.length) {
             return {
                 value: this.originalValue,
                 valueChanged: false,
             };
+        }
 
-        let newRanges: Range[] = [];
-        for (let i = 0; i < this.rangeInputList.length; i++) {
-            let targetRange: Range = {
-                start: null,
-                end: null,
-                tile: null,
-                step: null,
+        const newRanges: SDFGRange[] = [];
+        for (const rangeInput of this.rangeInputList) {
+            const targetRange: SDFGRange = {
+                start: String(rangeInput.start.val() ?? ''),
+                end: String(rangeInput.end.val() ?? ''),
+                tile: String(rangeInput.step.val() ?? ''),
+                step: String(rangeInput.tile.val() ?? ''),
             };
-            let rangeInput = this.rangeInputList[i];
-            targetRange.start = rangeInput.start.val();
-            targetRange.end = rangeInput.end.val();
-            targetRange.step = rangeInput.step.val();
-            targetRange.tile = rangeInput.tile.val();
             if (targetRange.start === '' && targetRange.end === '' &&
                 targetRange.step === '' && targetRange.tile === '')
                 continue;
             newRanges.push(targetRange);
         }
-        let value = newRanges;
+        const value = newRanges;
         return {
             value: value,
             valueChanged: true,

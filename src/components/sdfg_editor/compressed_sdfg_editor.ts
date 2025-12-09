@@ -1,9 +1,8 @@
-// Copyright 2020-2024 ETH Zurich and the DaCe-VSCode authors.
+// Copyright 2020-2025 ETH Zurich and the DaCe-VSCode authors.
 // All rights reserved.
 
 import {
     CancellationToken,
-    CustomDocument,
     CustomDocumentBackup,
     CustomDocumentBackupContext,
     CustomDocumentEditEvent,
@@ -16,7 +15,7 @@ import {
     WebviewOptions,
     WebviewPanel,
     WebviewPanelOptions,
-    window
+    window,
 } from 'vscode';
 import { SDFGEditorBase } from './common';
 import { CompressedSDFGDocument } from './sdfg_document';
@@ -37,31 +36,34 @@ export class CompressedSDFGEditor extends SDFGEditorBase {
 
     protected async _updateContents(
         preventRefresh: boolean = false
-    ): Promise<void> {
+    ): Promise<any> {
         return this.invoke(
             'updateContents', [this.document.documentData, preventRefresh]
         );
     }
 
-    protected async _getUpToDateContents(): Promise<Uint8Array> {
-        return this.document.documentData;
+    protected _getUpToDateContents(): string {
+        return Buffer.from(this.document.documentData).toString('base64');
     }
 
     public async handleLocalEdit(sdfg: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            const compressed = new Uint8Array(gzipSync(sdfg));
+            const compressed = gzipSync(sdfg).buffer;
             Promise.all([
                 this.onSDFGEdited(compressed),
-                this.invoke('updateContents', [compressed, false])
+                this.invoke('updateContents', [compressed, false]),
             ]).then(() => {
                 resolve();
-            }).catch((reason) => {
-                reject(reason);
+            }).catch((reason: unknown) => {
+                if (reason instanceof Error)
+                    reject(reason);
+                else
+                    reject(new Error('Failed to handle local edit'));
             });
         });
     }
 
-    protected async _onSDFGEdited(): Promise<boolean> {
+    protected _onSDFGEdited(): boolean {
         this.document.makeEdit({});
         return false;
     }
@@ -78,7 +80,9 @@ export class CompressedSDFGEditorProvider implements CustomEditorProvider {
         return CompressedSDFGEditorProvider.INSTANCE;
     }
 
-    private constructor() {}
+    private constructor() {
+        return;
+    }
 
     public static readonly viewType = 'compressedSdfgCustom.sdfv';
 
@@ -137,9 +141,12 @@ export class CompressedSDFGEditorProvider implements CustomEditorProvider {
             uri, openContext.backupId, {
                 getFileData: async () => {
                     const editor = DaCeVSCode.getInstance().activeSDFGEditor;
-                    if (editor && editor instanceof CompressedSDFGEditor)
-                        return await editor.invoke('getCompressedSDFG');
-                    return new Uint8Array();
+                    if (editor && editor instanceof CompressedSDFGEditor) {
+                        return (await editor.invoke<ArrayBuffer | null>(
+                            'getCompressedSDFG'
+                        )) ?? (new Uint8Array()).buffer;
+                    }
+                    return (new Uint8Array()).buffer;
                 },
             }
         );
@@ -154,30 +161,28 @@ export class CompressedSDFGEditorProvider implements CustomEditorProvider {
             });
         }));
 
-        disposables.push(document.onDidChangeContent(e => {
+        disposables.push(document.onDidChangeContent(async () => {
             const editor = DaCeVSCode.getInstance().sdfgEditorMap.get(
                 document.uri
             );
-            editor?.updateContents();
+            await editor?.updateContents();
         }));
 
         document.onDidDispose(() => {
-            disposables.forEach((d) => d.dispose());
+            disposables.forEach((d) => void d.dispose());
         });
 
         return document;
     }
 
-    public async resolveCustomEditor(
+    public resolveCustomEditor(
         document: CompressedSDFGDocument, webviewPanel: WebviewPanel,
         token: CancellationToken
-    ): Promise<void> {
+    ): void {
         // Create editor and add it to the open editors.
         if (!this.context)
             throw new Error('CompressedSDFGEditorProvider not initialized');
-        const editor = new CompressedSDFGEditor(
-            this.context, token, webviewPanel, document
-        );
+        new CompressedSDFGEditor(this.context, token, webviewPanel, document);
     }
 
 }
