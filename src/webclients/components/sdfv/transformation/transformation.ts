@@ -24,14 +24,14 @@ export function transformationGetAffectedUUIDs(
         for (const id of Object.values(transformation._subgraph)) {
             if (transformation.state_id === -1) {
                 uuids.push(
-                    String(transformation.cfg_id) + '/' +
-                    String(id) + '/-1/-1'
+                    (transformation.cfg_id?.toString() ?? '0') + '/' +
+                    id.toString() + '/-1/-1'
                 );
             } else {
                 uuids.push(
-                    String(transformation.cfg_id) + '/' +
-                    String(transformation.state_id) + '/' + String(id) +
-                    '/-1'
+                    (transformation.cfg_id?.toString() ?? '0') + '/' +
+                    (transformation.state_id?.toString() ?? '-1') + '/' +
+                    id.toString() + '/-1'
                 );
             }
         }

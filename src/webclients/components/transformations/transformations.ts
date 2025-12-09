@@ -128,12 +128,13 @@ export class Transformation extends TransformationListItem {
                 const id = this.subgraph[key];
                 if (this.stateId === -1) {
                     uuids.push(
-                        String(this.cfgId) + '/' + String(id) + '/-1/-1'
+                        this.cfgId.toString() + '/' + id.toString() + '/-1/-1'
                     );
                 } else {
                     uuids.push(
-                        String(this.cfgId) + '/' + String(this.stateId) + '/' +
-                        String(id) + '/-1'
+                        this.cfgId.toString() + '/' +
+                        this.stateId.toString() + '/' +
+                        id.toString() + '/-1'
                     );
                 }
             }
@@ -142,7 +143,7 @@ export class Transformation extends TransformationListItem {
         if (uuids.length)
             return uuids;
 
-        uuids.push(String(this.cfgId) + '/-1/-1/-1');
+        uuids.push(this.cfgId.toString() + '/-1/-1/-1');
 
         return uuids;
     }

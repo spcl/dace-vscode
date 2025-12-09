@@ -751,12 +751,12 @@ export class VSCodeSDFV extends SDFV {
             vscode.postMessage({
                 type: 'sdfv.register_breakpointindicator',
             });
-            $('#breakpoint-btn').text('Hide Breakpoints');
+            //$('#breakpoint-btn').prop('title', 'Hide Breakpoints');
         } else if (!this.showingBreakpoints) {
             vscode.postMessage({
                 type: 'sdfv.deregister_breakpointindicator',
             });
-            $('#breakpoint-btn').text('Display Breakpoints');
+            //$('#breakpoint-btn').prop('title', 'Show Breakpoints');
         }
     }
 

@@ -11,7 +11,7 @@ import {
     ViewColumn,
     env,
     window,
-    workspace
+    workspace,
 } from 'vscode';
 import { SDFGDebugNode, getCppRange } from '../debugger/breakpoint_handler';
 
